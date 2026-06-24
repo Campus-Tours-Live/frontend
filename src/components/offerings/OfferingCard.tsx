@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Alert, Button, StatusBadge } from "@/components/ui";
-import { ApiError } from "@/lib/data-access/http";
-import { useActivateOffering, type Offering } from "@/lib/data-access";
-import { formatOfferingPrice, offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
+import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
+import { formatOfferingPrice } from "@/lib/format";
+import { offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
 
 export interface OfferingCardProps {
   offering: Offering;

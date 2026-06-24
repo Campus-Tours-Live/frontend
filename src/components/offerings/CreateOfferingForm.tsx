@@ -2,9 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, Button, Link, SectionHeading, Spinner, TextField, Textarea } from "@/components/ui";
-import { ApiError } from "@/lib/data-access/http";
-import { useCreateOffering, useTourTopics } from "@/lib/data-access";
+import {
+  Alert,
+  Button,
+  Field,
+  Link,
+  SectionHeading,
+  SelectField,
+  Spinner,
+  TextField,
+  Textarea,
+} from "@/components/ui";
+import { ApiError, useCreateOffering, useTourTopics } from "@/lib/data-access";
 import {
   UniversityMultiSelect,
   type UniversityOption,
@@ -50,10 +59,16 @@ export function CreateOfferingForm() {
       return;
     }
 
+    const university = values.university[0];
+    if (!university) {
+      setError("university", { message: "University is required" });
+      return;
+    }
+
     try {
       await createOffering.mutateAsync({
         title: values.title.trim(),
-        universityId: values.university[0]!.id,
+        universityId: university.id,
         topic: values.topic,
         durationMin: Number(values.durationMin),
         priceCents: Math.round(dollars * 100),
@@ -94,8 +109,7 @@ export function CreateOfferingForm() {
           {...register("title", { required: "Title is required" })}
         />
 
-        <div>
-          <label className="mb-2 block text-[13px] font-semibold text-ink">University</label>
+        <Field label="University" error={errors.university?.message}>
           <Controller
             control={control}
             name="university"
@@ -106,46 +120,30 @@ export function CreateOfferingForm() {
               <UniversityMultiSelect value={field.value} onChange={field.onChange} max={1} />
             )}
           />
-          {errors.university ? (
-            <p className="mt-1 text-[12px] text-coral">{errors.university.message}</p>
-          ) : null}
-        </div>
+        </Field>
 
-        <div>
-          <label htmlFor="topic" className="mb-2 block text-[13px] font-semibold text-ink">
-            Topic
-          </label>
-          <select
-            id="topic"
-            className="input"
-            disabled={topicsLoading}
-            {...register("topic", { required: "Topic is required" })}
-          >
-            <option value="">Select a topic</option>
-            {topicOptions.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-          {errors.topic ? (
-            <p className="mt-1 text-[12px] text-coral">{errors.topic.message}</p>
-          ) : null}
-        </div>
+        <SelectField
+          label="Topic"
+          error={errors.topic?.message}
+          disabled={topicsLoading}
+          {...register("topic", { required: "Topic is required" })}
+        >
+          <option value="">Select a topic</option>
+          {topicOptions.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </SelectField>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label htmlFor="durationMin" className="mb-2 block text-[13px] font-semibold text-ink">
-              Duration
-            </label>
-            <select id="durationMin" className="input" {...register("durationMin")}>
-              {DURATIONS.map((d) => (
-                <option key={d} value={d}>
-                  {d} minutes
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectField label="Duration" {...register("durationMin")}>
+            {DURATIONS.map((d) => (
+              <option key={d} value={d}>
+                {d} minutes
+              </option>
+            ))}
+          </SelectField>
           <TextField
             label="Price (USD)"
             type="number"

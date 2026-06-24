@@ -11,3 +11,14 @@ export function formatMonthYear(iso: string | null | undefined): string {
   if (Number.isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(d);
 }
+
+/**
+ * Render a minor-unit price (cents) as a locale-aware currency string.
+ * e.g. 4200 USD → "$42.00", 4250 EUR → "€42.50" (en-US).
+ */
+export function formatOfferingPrice(priceCents: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(priceCents / 100);
+}
