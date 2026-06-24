@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CreateOfferingForm } from "@/components/offerings/CreateOfferingForm";
-import { ApiError } from "@/lib/data-access/http";
+import { ApiError } from "@/lib/data-access";
 
 const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -18,6 +18,7 @@ jest.mock("next/link", () => ({
 
 const mutateAsync = jest.fn();
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useCreateOffering: () => ({ mutateAsync, isPending: false }),
   useTourTopics: () => ({
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
@@ -83,6 +84,18 @@ describe("CreateOfferingForm", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
 
     expect(await screen.findByText("Price must be between $20 and $200")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("does not submit when university is missing", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
+
+    expect(await screen.findByText("University is required")).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 

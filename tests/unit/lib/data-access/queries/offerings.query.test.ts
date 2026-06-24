@@ -12,7 +12,7 @@ beforeEach(() => {
 
 describe("offeringsOptions", () => {
   it("uses the offerings queryKey", () => {
-    expect(offeringsOptions().queryKey).toEqual(queryKeys.offerings());
+    expect(offeringsOptions().queryKey).toEqual(queryKeys.guideOfferings());
     expect(offeringsOptions().queryKey).toEqual(["guide-offerings"]);
   });
 

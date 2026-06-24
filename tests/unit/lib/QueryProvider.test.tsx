@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { QueryProvider } from "@/lib/data-access/QueryProvider";
-import { ApiError } from "@/lib/data-access/http";
+import { ApiError } from "@/lib/data-access";
 import { AuthCancelledError } from "@/lib/auth";
 
 // Reaches into the shared client's default retry predicate and exercises every branch.

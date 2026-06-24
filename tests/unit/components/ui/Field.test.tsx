@@ -1,7 +1,7 @@
 import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Field, TextField, Textarea } from "@/components/ui/Field";
+import { Field, TextField, Textarea, SelectField } from "@/components/ui/Field";
 
 describe("Field", () => {
   it("renders a label associated with htmlFor", () => {
@@ -126,5 +126,38 @@ describe("Textarea", () => {
     const ref = createRef<HTMLTextAreaElement>();
     render(<Textarea label="Bio" ref={ref} />);
     expect(ref.current).toBeInstanceOf(HTMLTextAreaElement);
+  });
+});
+
+describe("SelectField", () => {
+  it("auto-associates label and select via a generated id", () => {
+    render(
+      <SelectField label="Topic">
+        <option value="a">A</option>
+      </SelectField>,
+    );
+    const select = screen.getByLabelText("Topic");
+    expect(select.tagName).toBe("SELECT");
+    expect(select).toHaveClass("input");
+  });
+
+  it("sets aria-invalid and renders the error", () => {
+    render(
+      <SelectField label="Topic" error="Required">
+        <option value="">Pick one</option>
+      </SelectField>,
+    );
+    expect(screen.getByLabelText("Topic")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Required");
+  });
+
+  it("forwards a ref to the select element", () => {
+    const ref = createRef<HTMLSelectElement>();
+    render(
+      <SelectField label="Duration" ref={ref}>
+        <option value="60">60 minutes</option>
+      </SelectField>,
+    );
+    expect(ref.current).toBeInstanceOf(HTMLSelectElement);
   });
 });
