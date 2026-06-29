@@ -1,9 +1,10 @@
 /**
- * Data-access public API — hooks + types only. The query/mutation definitions
- * and http/keys utilities are internal; the QueryProvider is imported directly
- * (src/lib/data-access/QueryProvider) by the root layout to keep the barrel out
- * of the server graph.
+ * Data-access public API — hooks, types, and {@link ApiError}. The query/mutation
+ * definitions and other http/keys utilities are internal; the QueryProvider is
+ * imported directly (src/lib/data-access/QueryProvider) by the root layout to
+ * keep the barrel out of the server graph.
  */
+export { ApiError } from "./http";
 export { useMe } from "./hooks/use-me";
 export { useParticipantProfile } from "./hooks/use-participant-profile";
 export { useGuideProfile } from "./hooks/use-guide-profile";
@@ -28,6 +29,7 @@ export type {
   University,
   TourTopic,
   Offering,
+  OfferingStatus,
   CreateOfferingInput,
   Dashboard,
   GuideDashboard,

@@ -22,8 +22,8 @@ describe("queryKeys", () => {
       expect(queryKeys.dashboard()).toEqual(["dashboard"]);
     });
 
-    it("offerings() → ['guide-offerings']", () => {
-      expect(queryKeys.offerings()).toEqual(["guide-offerings"]);
+    it("guideOfferings() → ['guide-offerings']", () => {
+      expect(queryKeys.guideOfferings()).toEqual(["guide-offerings"]);
     });
   });
 
@@ -69,7 +69,7 @@ describe("queryKeys", () => {
       ["guideProfile", () => queryKeys.guideProfile()],
       ["tourTopics", () => queryKeys.tourTopics()],
       ["dashboard", () => queryKeys.dashboard()],
-      ["offerings", () => queryKeys.offerings()],
+      ["guideOfferings", () => queryKeys.guideOfferings()],
       ["universitySearch", () => queryKeys.universitySearch("x")],
       ["onboarding", () => queryKeys.onboarding("x")],
     ];
@@ -90,7 +90,7 @@ describe("queryKeys", () => {
         queryKeys.guideProfile(),
         queryKeys.tourTopics(),
         queryKeys.dashboard(),
-        queryKeys.offerings(),
+        queryKeys.guideOfferings(),
         queryKeys.universitySearch("x"),
         queryKeys.onboarding("x"),
       ];

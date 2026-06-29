@@ -27,7 +27,7 @@ const guideData: GuideDashboard = {
       id: "o1",
       title: "Campus walk",
       slug: "campus-walk",
-      status: "PUBLISHED",
+      status: "ACTIVE",
       topic: "general",
       universityId: null,
       durationMin: 45,

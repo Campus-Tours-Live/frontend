@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OfferingCard } from "@/components/offerings/OfferingCard";
-import { ApiError } from "@/lib/data-access/http";
-import { useActivateOffering, type Offering } from "@/lib/data-access";
+import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useActivateOffering: jest.fn(),
 }));
 

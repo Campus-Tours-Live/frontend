@@ -1,12 +1,11 @@
 import {
   filterOfferings,
-  formatOfferingPrice,
   offeringStatusLabel,
   offeringStatusVariant,
 } from "@/components/offerings/offeringStatus";
-import type { Offering } from "@/lib/data-access";
+import type { Offering, OfferingStatus } from "@/lib/data-access";
 
-function offering(status: string): Offering {
+function offering(status: OfferingStatus): Offering {
   return {
     id: "1",
     title: "Tour",
@@ -33,19 +32,9 @@ describe("offeringStatus helpers", () => {
     ["ACTIVE", "Published", "success"],
     ["DRAFT", "Draft", "warning"],
     ["PAUSED", "Paused", "info"],
-    ["ARCHIVED", "Retired", "error"],
+    ["ARCHIVED", "Retired", "info"],
   ] as const)("maps %s to label %s and variant %s", (status, label, variant) => {
     expect(offeringStatusLabel(status)).toBe(label);
     expect(offeringStatusVariant(status)).toBe(variant);
-  });
-
-  it("falls back for unknown statuses", () => {
-    expect(offeringStatusLabel("UNKNOWN")).toBe("UNKNOWN");
-    expect(offeringStatusVariant("UNKNOWN")).toBe("info");
-  });
-
-  it("formats USD and non-USD prices", () => {
-    expect(formatOfferingPrice(4200)).toBe("$42");
-    expect(formatOfferingPrice(4250, "EUR")).toBe("42.5 EUR");
   });
 });

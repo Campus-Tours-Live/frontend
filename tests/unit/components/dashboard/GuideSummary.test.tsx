@@ -11,7 +11,7 @@ function offering(id: string): Offering {
     id,
     title: `Tour ${id}`,
     slug: `tour-${id}`,
-    status: "PUBLISHED",
+    status: "ACTIVE",
     topic: "general",
     universityId: null,
     durationMin: 30,

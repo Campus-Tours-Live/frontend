@@ -131,7 +131,7 @@ describe("createOfferingMutation", () => {
     createOfferingMutation(qc).onSuccess();
 
     const keys = invalidatedKeys(qc);
-    expect(keys).toContainEqual(queryKeys.offerings());
+    expect(keys).toContainEqual(queryKeys.guideOfferings());
     expect(keys).toContainEqual(queryKeys.dashboard());
     expect(qc.invalidateQueries).toHaveBeenCalledTimes(2);
   });
@@ -152,7 +152,7 @@ describe("activateOfferingMutation", () => {
     activateOfferingMutation(qc).onSuccess();
 
     const keys = invalidatedKeys(qc);
-    expect(keys).toContainEqual(queryKeys.offerings());
+    expect(keys).toContainEqual(queryKeys.guideOfferings());
     expect(keys).toContainEqual(queryKeys.dashboard());
     expect(qc.invalidateQueries).toHaveBeenCalledTimes(2);
   });

@@ -31,21 +31,33 @@ export interface ParticipantProfile {
 }
 
 export interface GuideProfile {
+  userId?: string;
   firstName?: string;
   lastName?: string;
   displayName?: string;
   email?: string;
-  applicationStatus?: string;
+  accountStatus?: string;
+  universityId?: string | null;
   major?: string;
   classYear?: string;
+  bio?: string | null;
+  languages?: string[];
+  specialties?: string[];
+  basePriceCents?: number | null;
+  currency?: string;
+  applicationStatus?: string | null;
+  verificationStatus?: string | null;
 }
+
+/** Lifecycle status of a guide's tour offering (Core TourOfferingStatus). */
+export type OfferingStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "ARCHIVED";
 
 /** A guide's sellable tour offering (Core TourOfferingResponse). */
 export interface Offering {
   id: string;
   title: string;
   slug: string;
-  status: string;
+  status: OfferingStatus;
   topic: string | null;
   universityId: string | null;
   durationMin: number;
