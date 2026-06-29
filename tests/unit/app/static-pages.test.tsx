@@ -15,6 +15,12 @@ jest.mock("@/components/signup/GuideOnboardingForm", () => ({
 jest.mock("@/components/signup/ParticipantOnboardingForm", () => ({
   ParticipantOnboardingForm: () => <div data-testid="participant-form" />,
 }));
+jest.mock("@/lib/data-access", () => ({
+  useMe: jest.fn(() => ({ me: { activeRole: "PARTICIPANT" } })),
+}));
+jest.mock("@/components/profile/GuideProfilePage", () => ({
+  GuideProfilePage: () => <div data-testid="guide-profile-page" />,
+}));
 
 import HomePage from "@/app/page";
 import ProfilePage from "@/app/(app)/profile/page";
