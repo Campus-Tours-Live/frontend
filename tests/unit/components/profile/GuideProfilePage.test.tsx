@@ -87,4 +87,15 @@ describe("GuideProfilePage", () => {
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByRole("button", { name: "Save profile" })).toBeInTheDocument();
   });
+
+  it("falls back to em dashes when display name and email are missing", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { ...profile, displayName: undefined, email: undefined },
+      isLoading: false,
+      isError: false,
+    });
+    render(<GuideProfilePage />);
+
+    expect(screen.getAllByText("—")).toHaveLength(2);
+  });
 });

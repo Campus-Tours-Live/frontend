@@ -6,13 +6,16 @@ import { GuideProfileForm } from "@/components/profile/GuideProfileForm";
 import { ApiError, type GuideProfile } from "@/lib/data-access";
 
 const mutateAsync = jest.fn();
+
+const mockUseTourTopics = jest.fn(() => ({
+  data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
+  isLoading: false,
+}));
+
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useUpdateGuideProfile: () => ({ mutateAsync, isPending: false }),
-  useTourTopics: () => ({
-    data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
-    isLoading: false,
-  }),
+  useTourTopics: () => mockUseTourTopics(),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({
@@ -23,9 +26,20 @@ jest.mock("@/components/signup/UniversityMultiSelect", () => ({
     value: Array<{ id: string; name: string }>;
     onChange: (next: Array<{ id: string; name: string }>) => void;
   }) => (
-    <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
-      {value.length ? value[0]!.name : "Pick university"}
-    </button>
+    <>
+      <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
+        {value.length && value[0] ? value[0].name : "Pick university"}
+      </button>
+      <button type="button" onClick={() => onChange([])}>
+        Clear university
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange([null as unknown as { id: string; name: string }])}
+      >
+        Set invalid university
+      </button>
+    </>
   ),
 }));
 
@@ -49,6 +63,10 @@ function renderWithQuery(ui: ReactElement) {
 beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(profile);
+  mockUseTourTopics.mockReturnValue({
+    data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
+    isLoading: false,
+  });
 });
 
 describe("GuideProfileForm", () => {
@@ -94,5 +112,91 @@ describe("GuideProfileForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Check your inputs — name, university, and major are required.",
     );
+  });
+
+  it("seeds empty defaults when profile fields are missing", () => {
+    renderWithQuery(<GuideProfileForm profile={{ major: "Physics" }} />);
+
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("");
+    expect(screen.getByLabelText(/last name/i)).toHaveValue("");
+    expect(screen.getByLabelText(/major/i)).toHaveValue("Physics");
+    expect(screen.getByLabelText(/base price per tour/i)).toHaveValue(28);
+    expect(screen.getByText("Pick university")).toBeInTheDocument();
+  });
+
+  it("requires a university before submitting", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(
+      <GuideProfileForm profile={{ firstName: "Ada", lastName: "Lovelace", major: "Math" }} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByText("University is required")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid university selection before calling the API", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    await user.click(screen.getByRole("button", { name: "Set invalid university" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByText("University is required")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("omits blank optional fields when saving", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    await user.click(screen.getByRole("button", { name: "Clear university" }));
+    await user.click(screen.getByRole("button", { name: "Pick university" }));
+    await user.clear(screen.getByLabelText(/class year/i));
+    await user.clear(screen.getByLabelText(/short bio/i));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        classYear: undefined,
+        bio: undefined,
+      }),
+    );
+  });
+
+  it("toggles language chips", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    await user.click(screen.getByRole("button", { name: "Spanish" }));
+    await user.click(screen.getByRole("button", { name: "English" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ languages: ["es"] }));
+  });
+
+  it("shows loading copy while tour topics load", () => {
+    mockUseTourTopics.mockReturnValue({ data: [], isLoading: true });
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+  });
+
+  it("toggles specialty chips", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={{ ...profile, specialties: [] }} />);
+
+    await user.click(screen.getByRole("button", { name: "General campus" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ specialties: ["GENERAL_CAMPUS"] }),
+    );
+
+    await user.click(screen.getByRole("button", { name: "General campus" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ specialties: [] }));
   });
 });

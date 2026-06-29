@@ -23,4 +23,11 @@ describe("guideProfileStatus helpers", () => {
   ] as const)("maps verification %s to %s", (status, label) => {
     expect(verificationStatusLabel(status)).toBe(label);
   });
+
+  it("falls back to em dash for unknown or missing statuses", () => {
+    expect(applicationStatusLabel(null)).toBe("—");
+    expect(applicationStatusLabel("ON_HOLD")).toBe("ON_HOLD");
+    expect(verificationStatusLabel(undefined)).toBe("—");
+    expect(verificationStatusLabel("CUSTOM")).toBe("CUSTOM");
+  });
 });
