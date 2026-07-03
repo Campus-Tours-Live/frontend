@@ -15,7 +15,9 @@ const config = [
     rules: { "@next/next/no-img-element": "off" },
   },
   {
-    ignores: [".next/**", "node_modules/**", "coverage/**"],
+    // .claude/ holds Claude Code tooling (e.g. the plugin ensure-hook, a Node .mjs
+    // script) — not app source, so it's outside this app-oriented lint config.
+    ignores: [".next/**", "node_modules/**", "coverage/**", ".claude/**"],
   },
 ];
 
