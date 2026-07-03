@@ -1,0 +1,31 @@
+{
+  "extraKnownMarketplaces": {
+    "claude-code-workflows": {
+      "source": { "source": "github", "repo": "wshobson/agents" }
+    },
+    "ui-ux-pro-max-skill": {
+      "source": { "source": "github", "repo": "nextlevelbuilder/ui-ux-pro-max-skill" }
+    }
+  },
+  "enabledPlugins": {
+    "frontend-mobile-development@claude-code-workflows": true,
+    "javascript-typescript@claude-code-workflows": true,
+    "ui-design@claude-code-workflows": true,
+    "unit-testing@claude-code-workflows": true,
+    "security-scanning@claude-code-workflows": true,
+    "comprehensive-review@claude-code-workflows": true,
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-plugins.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}
