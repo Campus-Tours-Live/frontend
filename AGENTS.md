@@ -30,3 +30,88 @@ Enforced by a local `commit-msg` hook (installed on first `./mvnw` / `npm instal
 - `ci` — unit + integration tests, project coverage gate, and ≥80% patch coverage on changed lines
 - `pr-template` — the PR-description checks above
 - a pull request is required (no direct push to `main`) with **1 approving review**
+
+---
+
+# Agent skills — when to use what (frontend)
+
+This guide covers **both Codex and Claude Code**. This repo is **frontend** (`:3001`,
+Next.js 16 / React 19 / TS / TanStack Query / Tailwind). It is one of three services:
+`frontend (:3001) → bff (:4000) → backend (:8080)`.
+
+Skills are **not** auto-applied every turn — the agent picks them per-message from their
+`description`. The table below steers that choice. To force a skill, invoke **its own slash
+command** (e.g. `/code-review`).
+
+> **Setup is automatic — for both agents.** This repo's plugins are declared in
+> `.claude/settings.json`; `.claude/hooks/ensure-plugins.mjs` installs and keeps them updated for
+> whichever agent CLI you have (`claude` and/or `codex`). The same plugin ids work for both — the
+> `wshobson/agents` marketplace ships dual `.claude-plugin` + `.codex-plugin` manifests.
+> - **Claude Code** — a `SessionStart` hook (every session) and the `predev` step (`npm run dev`)
+>   run the script. The hook emits `reloadSkills`, so a first-time install is usable in the
+>   **same** session (from the first prompt). Accept the workspace-trust dialog once so they load.
+> - **Codex** — Codex has no per-repo SessionStart auto-install, so its trigger is running the
+>   repo (`npm run dev` / the launcher) or `codex plugin add <name>@claude-code-workflows`.
+>   `ui-ux-pro-max` ships as a built-in Codex skill (already available).
+>
+> `predev`/the launcher run outside a session, so they only prepare the **next** one — but they
+> print a hint to run `/reload-plugins`, which pulls a fresh install into an already-open session
+> without a restart. Both agents also keep enabled plugins **updated to latest** (throttled to
+> ~once/day so session start stays fast; update everything now with the launcher's
+> `npm run update:skills`).
+>
+> **`†` = process skill (Claude-only).** Rows marked `†` (`superpowers:*`, `frontend-design`,
+> `webapp-testing`, `doc-coauthoring`) come from the **user-level** `superpowers` /
+> `example-skills` plugins — Claude-only, installed once at the user level (see
+> `campus-tours-live/AGENTS.md` → "One-time setup"). **Codex does not have these**; in Codex,
+> follow the same discipline (plan before coding, TDD, systematic debugging) with its built-in
+> flow. Everything unmarked is a domain skill auto-installed for both agents.
+
+## Situation → skill
+
+| When you are… | Use this skill |
+| --- | --- |
+| Planning any new feature / behavior change (think before coding) | `superpowers:brainstorming` † |
+| Refactoring (no behavior change) | `superpowers:brainstorming` †, then `comprehensive-review` |
+| Layout, color, typography, visual direction | `ui-design`, `ui-ux-pro-max`, `frontend-design` † |
+| React components / hooks / Server vs Client boundary | `frontend-mobile-development`, `javascript-typescript` |
+| Next.js App Router / SSR / data fetching | `frontend-mobile-development` |
+| Calling the bff API (types, TanStack Query) | `javascript-typescript` |
+| **Accessibility (a11y)** — public, student-facing UI | ⚠️ no dedicated enabled skill — use `ui-design` + `frontend-design` † and follow WCAG (semantics, focus, contrast, keyboard) |
+| Performance / Core Web Vitals / bundle size | `frontend-mobile-development` (no dedicated perf skill — measure first, then optimize) |
+| Env / config changes (`BFF_URL`, ports, `.env`) | ⚠️ cross-repo — port `:3001` is fixed (bff `WEB_ORIGIN` + Google OAuth redirect depend on it); see Cross-repo rules below |
+| Writing / adding unit & component tests (Jest + Testing Library) | `unit-testing`, `superpowers:test-driven-development` † |
+| End-to-end UI verification in a real browser | `webapp-testing` † |
+| Dependency upgrades / CVE remediation / `npm audit` | `security-scanning` |
+| Checking security (XSS, dependency CVEs, token storage) | `security-scanning` |
+| Fixing a red CI / failing build | `superpowers:systematic-debugging` † (reproduce locally: `npm run lint && npm run typecheck && npm test`) |
+| Debugging (any bug / test failure / unexpected behavior) | `superpowers:systematic-debugging` † |
+| Writing docs / README / comments | `doc-coauthoring` † |
+| Reviewing your own or someone else's PR, before merging | `comprehensive-review`, `/code-review`; security via `/security-review` |
+| **"Live" real-time tours (WebRTC / WebSocket)** | ⚠️ product core, **no skill and no infra yet** — always plan/`superpowers:brainstorming` † and design before coding |
+
+## ⚠️ Cross-repo observation rules (read before changing frontend)
+
+Frontend changes are rarely safe in isolation. When you touch any of the following,
+**you must also check the other two repos** (full matrix in `campus-tours-live/AGENTS.md`):
+
+- **Changing API calls / data types** → first confirm the matching route in **bff** (`bff`
+  is the proxy/aggregation layer; the shape it returns is the source of truth, not backend
+  directly). Trace back to the **backend** DTO only if needed.
+- **Changing auth / login flow / reading session** → session/cookies are owned by **bff**
+  (`SESSION_SECRET`, Google OAuth). The frontend only consumes the session bff gives it — do
+  not run OAuth against backend directly. Read bff before changing anything here.
+- **Env / ports / OAuth** → `:3001` is fixed; bff's `WEB_ORIGIN` and Google's redirect URI
+  depend on it. Never change the port, `BFF_URL`, or the OAuth client without coordinating bff,
+  backend, and the Google Console — see the hub's "Cross-repo environment contract".
+- **Adding a feature that needs backend support** → the coordination order is
+  **backend defines the contract → bff adapts → frontend consumes**. If backend/bff don't
+  provide it yet, open an issue / align the contract first — don't mock in frontend and merge.
+- **If you only cloned frontend** → you can't read bff/backend locally. Work against the agreed
+  Contract A (the bff response shape) via its OpenAPI/contract or an issue; don't guess backend
+  internals. Clone the siblings (`npm run clone-all` in campus-tours-live) when a change spans layers.
+
+> Rule of thumb: if your change alters "what flows between frontend and bff", it is a
+> cross-repo change — at minimum **read** the corresponding bff code (and possibly backend),
+> and verify end-to-end with the launcher (`npm run start:all`). The full cross-repo coordination
+> rules are in `campus-tours-live/AGENTS.md`.
