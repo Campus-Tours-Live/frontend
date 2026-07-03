@@ -45,7 +45,9 @@ command** (e.g. `/code-review`); `/plugin` only installs/manages plugins — it 
 > **Setup is automatic.** This repo's plugins are declared in `.claude/settings.json` and get
 > installed for you on first use: a `SessionStart` hook (every Claude session) and the `predev`
 > step (`npm run dev`) both run `.claude/hooks/ensure-plugins.mjs`. Accept the workspace-trust
-> dialog once so they load.
+> dialog once so they load. The `SessionStart` hook also emits `reloadSkills`, so a first-time
+> install is usable in the **same** session (from the first prompt); `predev`/the launcher run
+> outside a Claude session, so they only prepare the **next** one.
 >
 > **`†` = user-level skill.** Rows marked `†` (`superpowers:*`, `frontend-design`,
 > `webapp-testing`, `doc-coauthoring`) come from the **user-level** `superpowers` /

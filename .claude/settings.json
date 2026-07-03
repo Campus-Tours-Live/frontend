@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-plugins.mjs\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-plugins.mjs\" --hook"
           }
         ]
       }
