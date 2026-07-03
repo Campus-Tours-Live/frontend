@@ -1,0 +1,40 @@
+---
+description: Which agent skill to use per situation for the frontend, plus the Cursor install steps and cross-repo rules. Applies to Cursor, Codex, and Claude.
+alwaysApply: true
+---
+
+# Agent skills (frontend)
+
+This repo is **frontend** (`:3001`, Next.js 16 / React 19 / TS / TanStack Query / Tailwind), one
+of three services: `frontend (:3001) → bff (:4000) → backend (:8080)`.
+
+## Skills this repo uses (from `claude-code-workflows` = `wshobson/agents`)
+
+- `frontend-mobile-development` — React / Next.js UI
+- `javascript-typescript` — TypeScript / data-fetching patterns
+- `ui-design`, `ui-ux-pro-max` — UI/UX design, styles, palettes, typography
+- `unit-testing` — Jest + Testing Library
+- `security-scanning` — XSS, dependency CVEs, `npm audit`
+- `comprehensive-review` — multi-perspective code review
+
+Planning / TDD / systematic debugging are process disciplines (Claude: `superpowers:*`) — apply
+them regardless of agent.
+
+## Using these in Cursor (2.5+)
+
+Cursor has **no plugin CLI and no auto-install** (unlike Claude Code / Codex), so it's a one-time
+manual step **inside the editor**:
+
+1. Add the marketplace `wshobson/agents`.
+2. `/plugin install <name>` for the skills above (Cursor generates `.cursor/rules/` +
+   `.cursor-plugin/` pointing at the marketplace source).
+
+Notes: Cursor does **not** honor a skill's `tools:` allowlist. The project auto-install
+(`npm run skills`, the SessionStart hook, `predev`) only covers Claude/Codex — Cursor is manual.
+
+## Cross-repo rule (read before changing frontend)
+
+Frontend depends on the **bff response shape (Contract A)** — never on backend internals. When you
+change API calls, the auth/login flow, or ports, check **bff** first (and backend if needed); the
+port `:3001` is fixed (bff `WEB_ORIGIN` + Google OAuth redirect depend on it). The full
+Situation → skill table and cross-repo coordination rules are in `AGENTS.md` (Cursor reads it).
