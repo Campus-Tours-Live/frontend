@@ -32,3 +32,6 @@ next-env.d.ts
 
 # husky
 .husky/_/
+
+# Claude Code — personal settings (do not commit); share .claude/settings.json
+.claude/settings.local.json

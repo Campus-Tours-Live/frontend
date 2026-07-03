@@ -115,6 +115,27 @@ Scripts:
 | `npm run test:coverage`| Explicit coverage alias (same as `npm test`)  |
 | `npm run test:ci`      | Jest in CI mode                               |
 
+`predev` and `prebuild` also run automatically (npm lifecycle) — see **Claude Code skills** below.
+
+---
+
+## Claude Code skills
+
+This repo commits a `.claude/` config (plugin marketplace + the skills this stack needs) and a
+self-contained `.claude/hooks/ensure-plugins.mjs` that installs any missing Claude Code plugin.
+No extra command is needed:
+
+- **Opening the repo in Claude Code** installs them (a `SessionStart` hook).
+- **`npm run dev`** installs them first (a `predev` step); **`npm run build`** only checks
+  (`prebuild`, CI-safe).
+
+It's a no-op when the `claude` CLI is absent and never blocks dev/build. Which skill to use per
+situation — and the cross-repo observation rules — are in `CLAUDE.md`.
+
+> A few skills (`superpowers:*`, `frontend-design`, `webapp-testing`) are **user-level** and are
+> **not** auto-installed here — install them once (see `../campus-tours-live/CLAUDE.md` →
+> "One-time setup").
+
 ---
 
 ## Configuration (environment variables)
