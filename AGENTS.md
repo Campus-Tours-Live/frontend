@@ -53,6 +53,9 @@ command** (e.g. `/code-review`).
 > - **Codex** — Codex has no per-repo SessionStart auto-install, so its trigger is running the
 >   repo (`npm run dev` / the launcher) or `codex plugin add <name>@claude-code-workflows`.
 >   `ui-ux-pro-max` ships as a built-in Codex skill (already available).
+> - **Cursor (2.5+)** — no plugin CLI or auto-install; install once **in the editor** (add
+>   `wshobson/agents`, then `/plugin install <name>`). A committed `.cursor/rules/agent-skills.mdc`
+>   gives Cursor the per-repo guidance automatically; Cursor doesn't honor a skill's `tools:` allowlist.
 >
 > `predev`/the launcher run outside a session, so they only prepare the **next** one — but they
 > print a hint to run `/reload-plugins`, which pulls a fresh install into an already-open session
