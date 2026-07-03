@@ -115,26 +115,45 @@ Scripts:
 | `npm run test:coverage`| Explicit coverage alias (same as `npm test`)  |
 | `npm run test:ci`      | Jest in CI mode                               |
 
-`predev` and `prebuild` also run automatically (npm lifecycle) — see **Claude Code skills** below.
+`predev` and `prebuild` also run automatically (npm lifecycle) — see **Agent skills** below.
 
 ---
 
-## Claude Code skills
+## Agent skills (Codex & Claude)
 
-This repo commits a `.claude/` config (plugin marketplace + the skills this stack needs) and a
-self-contained `.claude/hooks/ensure-plugins.mjs` that installs any missing Claude Code plugin.
-No extra command is needed:
+This repo commits a `.claude/settings.json` (plugin marketplace + the skills this stack needs) and
+a self-contained `.claude/hooks/ensure-plugins.mjs` that installs and keeps them updated for
+**whichever agent CLI you have** — `claude` and/or `codex`. The `wshobson/agents` marketplace ships
+dual Codex + Claude plugin manifests, so the same plugin ids work for both.
 
-- **Opening the repo in Claude Code** installs them (a `SessionStart` hook).
-- **`npm run dev`** installs them first (a `predev` step); **`npm run build`** only checks
-  (`prebuild`, CI-safe).
+Auto-install (no extra command):
 
-It's a no-op when the `claude` CLI is absent and never blocks dev/build. Which skill to use per
-situation — and the cross-repo observation rules — are in `CLAUDE.md`.
+- **Claude Code** — opening the repo (a `SessionStart` hook that emits `reloadSkills`, so a
+  first-time install is usable in the same session) and `npm run dev` (a `predev` step);
+  `npm run build` only checks (`prebuild`, CI-safe).
+- **Codex** — running the repo (`npm run dev` / the launcher) or `codex plugin add`.
 
-> A few skills (`superpowers:*`, `frontend-design`, `webapp-testing`) are **user-level** and are
-> **not** auto-installed here — install them once (see `../campus-tours-live/CLAUDE.md` →
-> "One-time setup").
+Manual, **this repo only**: `npm run skills` (install missing) or `npm run skills:update` (update
+to latest). It's a no-op when neither CLI is present and never blocks dev/build.
+
+Skills this repo enables (both agents unless noted):
+
+| Skill / plugin | Used for |
+| --- | --- |
+| `frontend-mobile-development` | React / Next.js UI |
+| `javascript-typescript` | TypeScript / data-fetching patterns |
+| `ui-design` | UI/UX design |
+| `ui-ux-pro-max` | styles, palettes, typography — **Codex: built-in skill** |
+| `unit-testing` | Jest + Testing Library |
+| `security-scanning` | XSS, dependency CVEs, `npm audit` |
+| `comprehensive-review` | multi-perspective code review |
+
+> Process skills — `superpowers:*` (plan / TDD / debug), `frontend-design`, `webapp-testing` — are
+> **Claude-only** user-level installs (see `../campus-tours-live/README.md`). In Codex, follow the
+> same discipline with its built-in flow.
+
+Which skill for which situation, and the cross-repo rules, are in `AGENTS.md` (Codex) and
+`CLAUDE.md` (Claude).
 
 ---
 
