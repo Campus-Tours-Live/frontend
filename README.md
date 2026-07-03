@@ -132,6 +132,10 @@ No extra command is needed:
 It's a no-op when the `claude` CLI is absent and never blocks dev/build. Which skill to use per
 situation — and the cross-repo observation rules — are in `CLAUDE.md`.
 
+> A few skills (`superpowers:*`, `frontend-design`, `webapp-testing`) are **user-level** and are
+> **not** auto-installed here — install them once (see `../campus-tours-live/CLAUDE.md` →
+> "One-time setup").
+
 ---
 
 ## Configuration (environment variables)
