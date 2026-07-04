@@ -36,7 +36,8 @@ describe("TourCard", () => {
       />,
     );
     expect(screen.getByRole("heading", { level: 4, name: /test tour/i })).toBeInTheDocument();
-    expect(screen.getByText(/Test University · Jane Doe · 30 min/i)).toBeInTheDocument();
+    expect(screen.getByText("Test University · Jane Doe")).toBeInTheDocument();
+    expect(screen.getByText(/30\s*min/i)).toBeInTheDocument();
     expect(screen.getByText("$25")).toBeInTheDocument();
     expect(screen.getByText(/verified guide/i)).toBeInTheDocument();
   });

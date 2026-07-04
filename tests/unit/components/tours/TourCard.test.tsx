@@ -24,12 +24,11 @@ describe("TourCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the university · guide · duration meta line", () => {
+  it("renders university and guide meta plus duration badge", () => {
     renderCard();
 
-    expect(
-      screen.getByText("Stanford University · Ada L. · 45 min"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Stanford University · Ada L.")).toBeInTheDocument();
+    expect(screen.getByText(/45\s*min/i)).toBeInTheDocument();
   });
 
   it("renders the price with a dollar sign", () => {
@@ -48,9 +47,7 @@ describe("TourCard", () => {
     renderCard();
 
     expect(screen.getByText("Verified guide")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "View tour" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View tour" })).toBeInTheDocument();
   });
 
   it("reflects different prop values (prop variation)", () => {
@@ -62,12 +59,9 @@ describe("TourCard", () => {
       price: 55,
     });
 
-    expect(
-      screen.getByRole("heading", { name: "Night Tour of the Quad" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("MIT · Grace H. · 90 min"),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Night Tour of the Quad" })).toBeInTheDocument();
+    expect(screen.getByText("MIT · Grace H.")).toBeInTheDocument();
+    expect(screen.getByText(/90\s*min/i)).toBeInTheDocument();
     expect(screen.getByText("$55")).toBeInTheDocument();
   });
 });
