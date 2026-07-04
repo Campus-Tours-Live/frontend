@@ -56,7 +56,7 @@ export function SiteHeader({
 
         {/* Search — sits between the logo and the nav at every width.
             min-w-0 lets it shrink (instead of squeezing the logo) on narrow screens. */}
-        <div className="search flex max-w-sm flex-1">
+        <div className="search flex min-w-0 max-w-sm flex-1">
           <input
             type="text"
             inputMode="search"

@@ -1,4 +1,4 @@
-import { Button, StatusBadge } from "@/components/ui";
+import { Link, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -6,6 +6,7 @@ import { Button, StatusBadge } from "@/components/ui";
  * of title length (footer is pinned to the bottom). Inert "View tour" button.
  */
 export interface TourCardProps {
+  id: string;
   title: string;
   university: string;
   guide: string;
@@ -13,7 +14,7 @@ export interface TourCardProps {
   price: number;
 }
 
-export function TourCard({ title, university, guide, durationMinutes, price }: TourCardProps) {
+export function TourCard({ id, title, university, guide, durationMinutes, price }: TourCardProps) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-[18px] border border-border bg-card shadow-card">
       {/* Image placeholder — imported editorial campus crop */}
@@ -21,14 +22,18 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
         Imported editorial campus crop
       </div>
       <div className="flex flex-1 flex-col p-[18px]">
-        <StatusBadge variant="success" className="self-start">Verified guide</StatusBadge>
+        <StatusBadge variant="success" className="self-start">
+          Verified guide
+        </StatusBadge>
         <h4 className="mb-1.5 mt-3.5 min-h-[2.6em] font-display text-h4 text-ink">{title}</h4>
         <div className="text-[13px] text-ink-soft">
           {university} · {guide} · {durationMinutes} min
         </div>
         <div className="mt-auto flex items-center justify-between pt-4">
           <span className="text-[18px] font-extrabold text-ink">${price}</span>
-          <Button variant="secondary" size="sm">View tour</Button>
+          <Link href={`/tours/${id}`} variant="secondary" size="sm" aria-label={`View ${title}`}>
+            View tour
+          </Link>
         </div>
       </div>
     </article>

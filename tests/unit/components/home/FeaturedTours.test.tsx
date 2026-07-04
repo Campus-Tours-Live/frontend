@@ -14,7 +14,7 @@ describe("FeaturedTours", () => {
     render(<FeaturedTours />);
     expect(screen.getByText(/campus life and hidden study spots/i)).toBeInTheDocument();
     expect(screen.getByText(/research labs and grad pathways/i)).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /view tour/i })).toHaveLength(9);
+    expect(screen.getAllByRole("link", { name: /^view (?!all tours)/i })).toHaveLength(9);
   });
 
   it("renders carousel navigation arrows", () => {
@@ -28,6 +28,7 @@ describe("TourCard", () => {
   it("renders price, guide meta and a verified badge", () => {
     render(
       <TourCard
+        id="test-tour"
         title="Test tour"
         university="Test University"
         guide="Jane Doe"
