@@ -381,7 +381,7 @@ missing the type or the `<BOARD>-<NUMBER>` ticket are rejected. Bypass in an eme
 
 Open a PR against `main` (direct pushes are blocked by a branch ruleset). The gate requires:
 
-- **A filled-in `.github/pull_request_template.md`** — a real **Summary** (>= 100 characters / 15 words) and **Testing** (>= 40 characters / 7 words), and at least one **Type of change** box checked. Placeholder / junk / gibberish text and an identical Summary and Testing are rejected; a required AI check also verifies the description matches the diff.
+- **A filled-in `.github/pull_request_template.md`** — a real **Summary** (>= 100 characters / 15 words) and **Testing** (>= 40 characters / 7 words), and at least one **Type of change** box checked. Placeholder / junk / gibberish text and an identical Summary and Testing are rejected; an AI step in the same check also verifies the description matches the diff.
 - **Before / After screenshots** under **## Screenshots** for changes that touch UI files (`.tsx` / `.jsx` / `.css`, ...). Markdown-, config-, and `.ts`-only changes are exempt (or check only "Docs / chore / config").
 - All required checks green + **1 approving review**.
 
