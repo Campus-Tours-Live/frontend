@@ -22,7 +22,7 @@
 
 ## Screenshots
 
-<!-- For UI changes, attach before / after screenshots. Delete if not applicable. -->
+<!-- UI changes: attach BEFORE and AFTER screenshots (required — the pr-template check enforces >= 2 images). If there is no visual change, check only "Docs / chore / config" above. -->
 
 ## Checklist
 
