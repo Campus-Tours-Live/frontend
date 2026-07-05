@@ -22,7 +22,15 @@
 
 ## Screenshots
 
-<!-- UI changes: attach BEFORE and AFTER screenshots (required — the pr-template check enforces >= 2 images). If there is no visual change, check only "Docs / chore / config" above. -->
+<!-- UI code changes (.tsx/.jsx/.css and similar): fill in BOTH Before and After with a screenshot. Not required for markdown/config/.ts-only changes, or if you check only "Docs / chore / config" above. -->
+
+**Before:**
+
+<!-- screenshot of the current / previous state -->
+
+**After:**
+
+<!-- screenshot of the new state -->
 
 ## Checklist
 
