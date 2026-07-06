@@ -102,7 +102,7 @@ describe("DashboardPage", () => {
 
     // Guide-specific signals: eyebrow label + firstName in the greeting.
     expect(screen.getByText("Guide Dashboard")).toBeInTheDocument();
-    expect(screen.getByRole("heading")).toHaveTextContent("Ada");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ada");
 
     // It should NOT render the participant welcome heading.
     expect(screen.queryByText(/Your participant profile is saved\./)).not.toBeInTheDocument();
