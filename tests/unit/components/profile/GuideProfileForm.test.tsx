@@ -115,6 +115,18 @@ describe("GuideProfileForm", () => {
     );
   });
 
+  it("shows a generic message for non-422 errors", async () => {
+    const user = userEvent.setup();
+    mutateAsync.mockRejectedValue(new ApiError(500, "Server error"));
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Could not save your profile. Please try again.",
+    );
+  });
+
   it("seeds empty defaults when profile fields are missing", () => {
     renderWithQuery(<GuideProfileForm profile={{ major: "Physics" }} />);
 

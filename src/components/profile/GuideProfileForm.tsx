@@ -98,6 +98,8 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
       return;
     }
 
+    // Defence-in-depth: the Controller's rules.validate already blocks submit on an
+    // empty selection, so this only fires for the [null] slot case.
     const university = values.university[0];
     if (!university) {
       setError("university", { message: "University is required" });
