@@ -80,6 +80,14 @@ describe("public barrels", () => {
       "useOfferings",
       "useCreateOffering",
       "useActivateOffering",
+      "useGuideAvailability",
+      "useCreateAvailabilityRule",
+      "useUpdateAvailabilityRule",
+      "useDeleteAvailabilityRule",
+      "useCreateAvailabilityException",
+      "useUpdateAvailabilityException",
+      "useDeleteAvailabilityException",
+      "useUpdateBookingSettings",
     ]);
   });
 });
