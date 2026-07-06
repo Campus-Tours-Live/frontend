@@ -80,7 +80,7 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Tours",
     items: [
       { label: "Upcoming tours", icon: Calendar },
-      { label: "Availability", icon: Clock },
+      { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
     ],
   },
