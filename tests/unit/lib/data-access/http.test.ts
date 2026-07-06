@@ -1,4 +1,4 @@
-import { apiJson, patchJson, postJson, ApiError } from "@/lib/data-access/http";
+import { apiJson, deleteJson, patchJson, postJson, ApiError } from "@/lib/data-access/http";
 import { apiFetch } from "@/lib/http";
 
 jest.mock("@/lib/http", () => ({ apiFetch: jest.fn() }));
@@ -41,27 +41,21 @@ describe("ApiError", () => {
 describe("apiJson", () => {
   it("unwraps the `{ data }` envelope and returns json.data", async () => {
     const payload = { id: 1, name: "Alice" };
-    mockedApiFetch.mockResolvedValue(
-      makeRes({ ok: true, status: 200, json: { data: payload } }),
-    );
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: true, status: 200, json: { data: payload } }));
 
     await expect(apiJson("/v1/thing")).resolves.toEqual(payload);
   });
 
   it("returns the whole json when there is no `data` key", async () => {
     const payload = { id: 1, name: "Alice" };
-    mockedApiFetch.mockResolvedValue(
-      makeRes({ ok: true, status: 200, json: payload }),
-    );
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: true, status: 200, json: payload }));
 
     await expect(apiJson("/v1/thing")).resolves.toEqual(payload);
   });
 
   it("returns the whole json when `data` is null/undefined (nullish coalescing)", async () => {
     const payload = { data: null, other: 5 };
-    mockedApiFetch.mockResolvedValue(
-      makeRes({ ok: true, status: 200, json: payload }),
-    );
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: true, status: 200, json: payload }));
 
     // json.data is null → ?? falls back to the whole json object.
     await expect(apiJson("/v1/thing")).resolves.toEqual(payload);
@@ -79,9 +73,7 @@ describe("apiJson", () => {
   });
 
   it("forwards the init through to apiFetch unchanged", async () => {
-    mockedApiFetch.mockResolvedValue(
-      makeRes({ ok: true, status: 200, json: { data: {} } }),
-    );
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: true, status: 200, json: { data: {} } }));
     const init = {
       method: "DELETE",
       headers: { "X-Test": "1" },
@@ -149,8 +141,30 @@ describe("postJson", () => {
   it("propagates ApiError from a failed POST", async () => {
     mockedApiFetch.mockResolvedValue(makeRes({ ok: false, status: 422 }));
 
-    await expect(
-      postJson("/v1/session/active-role", { role: "STAFF" }),
-    ).rejects.toMatchObject({ name: "ApiError", status: 422 });
+    await expect(postJson("/v1/session/active-role", { role: "STAFF" })).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+    });
+  });
+});
+
+describe("deleteJson", () => {
+  it("calls apiFetch with DELETE and unwraps the response", async () => {
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: true, status: 200, json: { data: null } }));
+
+    await deleteJson("/v1/guide/availability/rules/r1");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/v1/guide/availability/rules/r1", {
+      method: "DELETE",
+    });
+  });
+
+  it("propagates ApiError from a failed DELETE", async () => {
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: false, status: 404 }));
+
+    await expect(deleteJson("/v1/guide/availability/rules/missing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 404,
+    });
   });
 });

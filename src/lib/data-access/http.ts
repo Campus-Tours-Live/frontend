@@ -37,3 +37,8 @@ export function postJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
 }
+
+/** DELETE convenience over {@link apiJson}. */
+export function deleteJson<T = void>(path: string): Promise<T> {
+  return apiJson<T>(path, { method: "DELETE" });
+}
