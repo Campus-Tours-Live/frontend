@@ -44,8 +44,14 @@ export interface GuideProfileFormProps {
 }
 
 function universitySeed(profile: GuideProfile): UniversityOption[] {
-  if (!profile.universityId) return [];
-  return [{ id: profile.universityId, name: "Your university" }];
+  if (!profile.universityId || !profile.universityName) return [];
+  return [
+    {
+      id: profile.universityId,
+      name: profile.universityName,
+      shortName: profile.universityShortName ?? null,
+    },
+  ];
 }
 
 function toFormValues(profile: GuideProfile): FormValues {

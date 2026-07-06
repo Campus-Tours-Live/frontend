@@ -9,8 +9,9 @@ import { GuideProfilePage } from "@/components/profile/GuideProfilePage";
  * loads the editable guide profile; participant hat stays a placeholder for now.
  */
 export default function ProfilePage() {
-  const { me } = useMe();
+  const { me, isLoading } = useMe();
 
+  if (isLoading) return <p className="text-ink-soft">Loading…</p>;
   if (me?.activeRole === "GUIDE") return <GuideProfilePage />;
 
   return (

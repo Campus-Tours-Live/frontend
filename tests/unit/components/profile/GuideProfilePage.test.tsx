@@ -29,6 +29,7 @@ const profile: GuideProfile = {
   displayName: "Ada Lovelace",
   email: "ada@example.com",
   universityId: "uni-1",
+  universityName: "State University",
   major: "Computer Science",
   classYear: "2027",
   bio: "Campus explorer.",

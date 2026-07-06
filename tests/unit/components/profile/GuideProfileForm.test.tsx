@@ -23,12 +23,12 @@ jest.mock("@/components/signup/UniversityMultiSelect", () => ({
     value,
     onChange,
   }: {
-    value: Array<{ id: string; name: string }>;
-    onChange: (next: Array<{ id: string; name: string }>) => void;
+    value: Array<{ id: string; name: string; shortName?: string | null }>;
+    onChange: (next: Array<{ id: string; name: string; shortName?: string | null }>) => void;
   }) => (
     <>
       <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
-        {value.length && value[0] ? value[0].name : "Pick university"}
+        {value.length && value[0] ? value[0].shortName || value[0].name : "Pick university"}
       </button>
       <button type="button" onClick={() => onChange([])}>
         Clear university
@@ -47,6 +47,7 @@ const profile: GuideProfile = {
   firstName: "Ada",
   lastName: "Lovelace",
   universityId: "uni-1",
+  universityName: "State University",
   major: "Computer Science",
   classYear: "2027",
   bio: "Campus explorer.",
@@ -122,6 +123,22 @@ describe("GuideProfileForm", () => {
     expect(screen.getByLabelText(/major/i)).toHaveValue("Physics");
     expect(screen.getByLabelText(/base price per tour/i)).toHaveValue(28);
     expect(screen.getByText("Pick university")).toBeInTheDocument();
+  });
+
+  it("seeds university chip from profile university name", () => {
+    renderWithQuery(
+      <GuideProfileForm
+        profile={{
+          universityId: "uni-1",
+          universityName: "Stanford University",
+          universityShortName: "Stanford",
+          major: "CS",
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Stanford")).toBeInTheDocument();
+    expect(screen.queryByText("Your university")).not.toBeInTheDocument();
   });
 
   it("requires a university before submitting", async () => {

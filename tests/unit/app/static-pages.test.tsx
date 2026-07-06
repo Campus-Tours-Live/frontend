@@ -16,7 +16,7 @@ jest.mock("@/components/signup/ParticipantOnboardingForm", () => ({
   ParticipantOnboardingForm: () => <div data-testid="participant-form" />,
 }));
 jest.mock("@/lib/data-access", () => ({
-  useMe: jest.fn(() => ({ me: { activeRole: "PARTICIPANT" } })),
+  useMe: jest.fn(() => ({ me: { activeRole: "PARTICIPANT" }, isLoading: false })),
 }));
 jest.mock("@/components/profile/GuideProfilePage", () => ({
   GuideProfilePage: () => <div data-testid="guide-profile-page" />,
@@ -28,6 +28,9 @@ import SupportPage from "@/app/(app)/support/page";
 import StaffPage from "@/app/staff/page";
 import GuideOnboardingPage from "@/app/onboarding/guide/page";
 import ParticipantOnboardingPage from "@/app/onboarding/participant/page";
+import { useMe } from "@/lib/data-access";
+
+const mockUseMe = useMe as jest.Mock;
 
 describe("static / shell pages", () => {
   it("home renders header + hero + featured tours", () => {
@@ -38,8 +41,22 @@ describe("static / shell pages", () => {
   });
 
   it("profile placeholder shows its heading", () => {
+    mockUseMe.mockReturnValue({ me: { activeRole: "PARTICIPANT" }, isLoading: false });
     render(<ProfilePage />);
     expect(screen.getByText("Profile")).toBeInTheDocument();
+  });
+
+  it("profile shows loading before role branch resolves", () => {
+    mockUseMe.mockReturnValue({ me: null, isLoading: true });
+    render(<ProfilePage />);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
+  });
+
+  it("profile renders guide page when active role is GUIDE", () => {
+    mockUseMe.mockReturnValue({ me: { activeRole: "GUIDE" }, isLoading: false });
+    render(<ProfilePage />);
+    expect(screen.getByTestId("guide-profile-page")).toBeInTheDocument();
   });
 
   it("support placeholder shows its heading", () => {
