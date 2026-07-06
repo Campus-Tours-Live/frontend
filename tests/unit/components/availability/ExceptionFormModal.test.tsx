@@ -49,7 +49,7 @@ describe("ExceptionFormModal", () => {
     expect(exceptionFormErrorMessage(new ApiError(422, "startLocal must be before endLocal"))).toBe(
       "startLocal must be before endLocal",
     );
-    expect(exceptionFormErrorMessage(new ApiError(422))).toMatch(/15-minute slots/i);
+    expect(exceptionFormErrorMessage(new ApiError(422))).toMatch(/check your input/i);
     expect(exceptionFormErrorMessage(new Error("network"))).toMatch(/Please try again/i);
   });
 

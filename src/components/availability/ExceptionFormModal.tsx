@@ -189,8 +189,7 @@ export function ExceptionFormModal({
 export function exceptionFormErrorMessage(err: unknown): string {
   if (err instanceof ApiError && err.status === 422) {
     return (
-      apiErrorMessage(err) ||
-      "End time must be after start time. Check the 15-minute slots and try again."
+      apiErrorMessage(err) || "Could not save the exception. Please check your input and try again."
     );
   }
   return "Could not save the exception. Please try again.";

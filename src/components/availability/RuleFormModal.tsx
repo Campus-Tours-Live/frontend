@@ -236,16 +236,11 @@ export function RuleFormModal({
 }
 
 export function ruleFormErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 422) {
-      return (
-        apiErrorMessage(err) ||
-        "End time must be after start time, and blocks cannot overlap on the same day."
-      );
-    }
-    if (err.status === 500) {
-      return "Could not save recurring hours. Please check that end time is after start time.";
-    }
+  if (err instanceof ApiError && err.status === 422) {
+    return (
+      apiErrorMessage(err) ||
+      "Could not save recurring hours. Please check your input and try again."
+    );
   }
   return "Could not save recurring hours. Please try again.";
 }

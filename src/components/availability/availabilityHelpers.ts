@@ -49,6 +49,11 @@ export function formatNotice(minutes: number): string {
   return `${minutes}m`;
 }
 
+export function formatDurations(minutes: number[]): string {
+  if (minutes.length === 0) return "—";
+  return `${minutes.join(", ")} min`;
+}
+
 export { todayIsoDate } from "@/lib/availability/formatDate";
 
 export function formatExceptionDate(isoDate: string): string {

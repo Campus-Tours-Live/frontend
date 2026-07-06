@@ -62,7 +62,8 @@ describe("RuleFormModal", () => {
     expect(
       ruleFormErrorMessage(new ApiError(422, "This time block overlaps an existing rule")),
     ).toBe("This time block overlaps an existing rule");
-    expect(ruleFormErrorMessage(new ApiError(500))).toMatch(/Could not save recurring hours/i);
+    expect(ruleFormErrorMessage(new ApiError(500))).toMatch(/Please try again/i);
+    expect(ruleFormErrorMessage(new ApiError(422))).toMatch(/check your input/i);
     expect(ruleFormErrorMessage(new Error("network"))).toMatch(/Please try again/i);
   });
 

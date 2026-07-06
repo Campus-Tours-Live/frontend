@@ -90,6 +90,8 @@ describe("GuideAvailabilityPage", () => {
     expect(screen.getByText("Date-specific hours")).toBeInTheDocument();
     expect(screen.getByText("Holiday")).toBeInTheDocument();
     expect(screen.getByText("1d")).toBeInTheDocument();
+    expect(screen.getByText("60 min")).toBeInTheDocument();
+    expect(screen.getByText("90m")).toBeInTheDocument();
     expect(screen.getAllByText("Unavailable").length).toBeGreaterThan(0);
   });
 

@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui";
 import type { BookingSettings } from "@/lib/data-access";
-import { formatNotice, formatTimezoneLabel } from "./availabilityHelpers";
+import { formatDurations, formatNotice, formatTimezoneLabel } from "./availabilityHelpers";
 
 interface BookingRulesPanelProps {
   settings: BookingSettings;
@@ -24,12 +24,26 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
           </dd>
         </div>
         <div className="flex justify-between gap-4">
+          <dt className="text-ink-soft">Tour durations</dt>
+          <dd className="text-right font-medium text-ink">
+            {formatDurations(settings.durationsOffered)}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-4">
           <dt className="text-ink-soft">Minimum notice</dt>
           <dd className="font-medium text-ink">{formatNotice(settings.minNoticeMin)}</dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-ink-soft">Scheduling window</dt>
           <dd className="font-medium text-ink">{settings.maxAdvanceDays} days ahead</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-ink-soft">Response deadline</dt>
+          <dd className="font-medium text-ink">{formatNotice(settings.responseDeadlineMin)}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-ink-soft">Buffer before tour</dt>
+          <dd className="font-medium text-ink">{settings.bufferBeforeMin} min</dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-ink-soft">Buffer after tour</dt>

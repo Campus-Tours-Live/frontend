@@ -1,6 +1,7 @@
 import {
   DAY_LABELS,
   formatLocalTime,
+  formatDurations,
   formatNotice,
   formatTimeRange,
   groupRulesByDay,
@@ -53,5 +54,11 @@ describe("availabilityHelpers", () => {
     expect(formatNotice(1440)).toBe("1d");
     expect(formatNotice(120)).toBe("2h");
     expect(formatNotice(45)).toBe("45m");
+  });
+
+  it("formats tour duration lists", () => {
+    expect(formatDurations([60])).toBe("60 min");
+    expect(formatDurations([30, 45, 60])).toBe("30, 45, 60 min");
+    expect(formatDurations([])).toBe("—");
   });
 });
