@@ -100,10 +100,14 @@ function RuleFormModalContent({
           return;
         }
         const effectiveToRaw = fields.effectiveTo.trim();
-        const effectiveTo = effectiveToRaw ? normalizeIsoDateInput(effectiveToRaw) : "";
-        if (effectiveToRaw && !effectiveTo) {
-          setError("effectiveTo", { message: "Use MM/DD/YYYY format" });
-          return;
+        let effectiveTo = "";
+        if (effectiveToRaw) {
+          const parsed = normalizeIsoDateInput(effectiveToRaw);
+          if (!parsed) {
+            setError("effectiveTo", { message: "Use MM/DD/YYYY format" });
+            return;
+          }
+          effectiveTo = parsed;
         }
 
         const payload: RuleFormValues = {
