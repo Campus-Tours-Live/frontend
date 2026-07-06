@@ -1,18 +1,8 @@
-import {
-  BadgeCheck,
-  CalendarDays,
-  Clock,
-  GraduationCap,
-  List,
-  Trophy,
-} from "lucide-react";
-import {
-  MemberCard,
-  type MemberCardHighlight,
-  type MemberCardItem,
-} from "@/components/ui";
+import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lucide-react";
+import { MemberCard, type MemberCardHighlight, type MemberCardItem } from "@/components/ui";
 import type { GuideDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
+import { DashboardHeader } from "./guide/DashboardHeader";
 
 /**
  * Guide dashboard slice — presentational. The /v1/dashboard aggregate composed the
@@ -44,13 +34,16 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
       };
 
   return (
-    <MemberCard
-      name={guide.displayName ?? "Member"}
-      role="GUIDE"
-      roleLabel="Student Guide"
-      verification={canPublish ? "Identity and University Verified" : undefined}
-      items={items}
-      highlight={highlight}
-    />
+    <div className="space-y-6">
+      <DashboardHeader firstName={guide.firstName} />
+      <MemberCard
+        name={guide.displayName ?? "Member"}
+        role="GUIDE"
+        roleLabel="Student Guide"
+        verification={canPublish ? "Identity and University Verified" : undefined}
+        items={items}
+        highlight={highlight}
+      />
+    </div>
   );
 }

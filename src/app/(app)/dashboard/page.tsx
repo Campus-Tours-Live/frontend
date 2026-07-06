@@ -3,7 +3,7 @@
 import { Alert } from "@/components/ui";
 import { useDashboard } from "@/lib/data-access";
 import { ParticipantSummary } from "@/components/dashboard/ParticipantSummary";
-import { GuideDashboardShell } from "@/components/dashboard/guide/GuideDashboardShell";
+import { GuideSummary } from "@/components/dashboard/GuideSummary";
 
 /**
  * Shared signed-in dashboard — one route, one BFF aggregate. The BFF reads the
@@ -18,9 +18,5 @@ export default function DashboardPage() {
   if (isLoading) return <p className="text-ink-soft">Loading…</p>;
   if (isError || !data) return <Alert variant="error">Failed to load your dashboard</Alert>;
 
-  return data.kind === "guide" ? (
-    <GuideDashboardShell data={data} />
-  ) : (
-    <ParticipantSummary data={data} />
-  );
+  return data.kind === "guide" ? <GuideSummary data={data} /> : <ParticipantSummary data={data} />;
 }
