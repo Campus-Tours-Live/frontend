@@ -46,7 +46,16 @@ describe("ExceptionFormModal", () => {
   });
 
   it("maps API validation errors via exceptionFormErrorMessage", () => {
+    expect(exceptionFormErrorMessage(new ApiError(422, "startLocal must be before endLocal"))).toBe(
+      "startLocal must be before endLocal",
+    );
     expect(exceptionFormErrorMessage(new ApiError(422))).toMatch(/15-minute slots/i);
     expect(exceptionFormErrorMessage(new Error("network"))).toMatch(/Please try again/i);
+  });
+
+  it("wires the dialog accessible name to the title", () => {
+    render(<ExceptionFormModal open onClose={jest.fn()} onSubmit={jest.fn()} />);
+
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-labelledby", "exception-modal-title");
   });
 });

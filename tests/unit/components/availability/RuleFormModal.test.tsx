@@ -59,8 +59,23 @@ describe("RuleFormModal", () => {
   });
 
   it("surfaces server validation errors via ruleFormErrorMessage", () => {
-    expect(ruleFormErrorMessage(new ApiError(422, "Overlap"))).toBe("Overlap");
+    expect(
+      ruleFormErrorMessage(new ApiError(422, "This time block overlaps an existing rule")),
+    ).toBe("This time block overlaps an existing rule");
     expect(ruleFormErrorMessage(new ApiError(500))).toMatch(/Could not save recurring hours/i);
     expect(ruleFormErrorMessage(new Error("network"))).toMatch(/Please try again/i);
+  });
+
+  it("wires the dialog accessible name to the title", () => {
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        timezone="America/Los_Angeles"
+        onSubmit={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-labelledby", "rule-modal-title");
   });
 });

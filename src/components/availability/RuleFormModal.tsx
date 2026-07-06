@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Alert, Button, Modal, SelectField, TextField } from "@/components/ui";
-import { ApiError, type AvailabilityRule } from "@/lib/data-access";
+import { ApiError, apiErrorMessage, type AvailabilityRule } from "@/lib/data-access";
 import { normalizeIsoDateInput } from "@/lib/availability/formatDate";
 import { parseRuleTimeRangeForSubmit } from "@/lib/availability/submitTimeRange";
 import {
@@ -213,7 +213,12 @@ export function RuleFormModal({
   const formKey = initial?.id ?? `new-${defaultDayOfWeek ?? "any"}`;
 
   return (
-    <Modal open={open} onClose={onClose} className="max-w-lg overflow-hidden">
+    <Modal
+      open={open}
+      onClose={onClose}
+      labelledBy="rule-modal-title"
+      className="max-w-lg overflow-hidden"
+    >
       {open ? (
         <RuleFormModalContent
           key={formKey}
@@ -234,7 +239,7 @@ export function ruleFormErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 422) {
       return (
-        err.message ||
+        apiErrorMessage(err) ||
         "End time must be after start time, and blocks cannot overlap on the same day."
       );
     }

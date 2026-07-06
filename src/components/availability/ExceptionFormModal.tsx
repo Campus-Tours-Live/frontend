@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Alert, Button, Modal, SelectField, TextField, Textarea } from "@/components/ui";
 import {
   ApiError,
+  apiErrorMessage,
   type AvailabilityException,
   type AvailabilityExceptionType,
 } from "@/lib/data-access";
@@ -165,7 +166,12 @@ export function ExceptionFormModal({
   const formKey = initial?.id ?? "new";
 
   return (
-    <Modal open={open} onClose={onClose} className="max-w-lg overflow-hidden">
+    <Modal
+      open={open}
+      onClose={onClose}
+      labelledBy="exception-modal-title"
+      className="max-w-lg overflow-hidden"
+    >
       {open ? (
         <ExceptionFormModalContent
           key={formKey}
@@ -182,7 +188,10 @@ export function ExceptionFormModal({
 
 export function exceptionFormErrorMessage(err: unknown): string {
   if (err instanceof ApiError && err.status === 422) {
-    return "End time must be after start time. Check the 15-minute slots and try again.";
+    return (
+      apiErrorMessage(err) ||
+      "End time must be after start time. Check the 15-minute slots and try again."
+    );
   }
   return "Could not save the exception. Please try again.";
 }

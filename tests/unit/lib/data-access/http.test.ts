@@ -1,4 +1,11 @@
-import { apiJson, deleteJson, patchJson, postJson, ApiError } from "@/lib/data-access/http";
+import {
+  apiJson,
+  deleteJson,
+  patchJson,
+  postJson,
+  ApiError,
+  apiErrorMessage,
+} from "@/lib/data-access/http";
 import { apiFetch } from "@/lib/http";
 
 jest.mock("@/lib/http", () => ({ apiFetch: jest.fn() }));
@@ -38,6 +45,18 @@ describe("ApiError", () => {
   });
 });
 
+describe("apiErrorMessage", () => {
+  it("returns server text when present", () => {
+    expect(apiErrorMessage(new ApiError(422, "This time block overlaps an existing rule"))).toBe(
+      "This time block overlaps an existing rule",
+    );
+  });
+
+  it("returns undefined for the generic default message", () => {
+    expect(apiErrorMessage(new ApiError(422))).toBeUndefined();
+  });
+});
+
 describe("apiJson", () => {
   it("unwraps the `{ data }` envelope and returns json.data", async () => {
     const payload = { id: 1, name: "Alice" };
@@ -72,6 +91,48 @@ describe("apiJson", () => {
     });
   });
 
+  it("throws ApiError with the problem+json title on a non-2xx response", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({
+        ok: false,
+        status: 422,
+        json: { title: "This time block overlaps an existing rule" },
+      }),
+    );
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+      message: "This time block overlaps an existing rule",
+    });
+  });
+
+  it("prefers detail over title in problem+json errors", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({
+        ok: false,
+        status: 422,
+        json: {
+          title: "Validation failed",
+          detail: "Invalid value for 'dayOfWeek'",
+        },
+      }),
+    );
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      status: 422,
+      message: "Invalid value for 'dayOfWeek'",
+    });
+  });
+
+  it("returns undefined for 204 No Content without reading JSON", async () => {
+    const res = makeRes({ ok: true, status: 204 });
+    mockedApiFetch.mockResolvedValue(res);
+
+    await expect(apiJson("/v1/thing")).resolves.toBeUndefined();
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
   it("forwards the init through to apiFetch unchanged", async () => {
     mockedApiFetch.mockResolvedValue(makeRes({ ok: true, status: 200, json: { data: {} } }));
     const init = {
@@ -85,12 +146,19 @@ describe("apiJson", () => {
     expect(mockedApiFetch).toHaveBeenCalledWith("/v1/thing", init);
   });
 
-  it("does not read the body when the response is not ok", async () => {
-    const res = makeRes({ ok: false, status: 500 });
+  it("reads the problem+json body when the response is not ok", async () => {
+    const res = makeRes({
+      ok: false,
+      status: 500,
+      json: { title: "Internal server error" },
+    });
     mockedApiFetch.mockResolvedValue(res);
 
-    await expect(apiJson("/v1/thing")).rejects.toBeInstanceOf(ApiError);
-    expect(res.json).not.toHaveBeenCalled();
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      status: 500,
+      message: "Internal server error",
+    });
+    expect(res.json).toHaveBeenCalled();
   });
 });
 

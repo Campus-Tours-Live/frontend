@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GuideAvailabilityPage } from "@/components/availability/GuideAvailabilityPage";
+import { ApiError } from "@/lib/data-access/http";
 import {
   useCreateAvailabilityException,
   useCreateAvailabilityRule,
@@ -9,10 +10,11 @@ import {
   useGuideAvailability,
   useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
+  type AvailabilitySummary,
 } from "@/lib/data-access";
-import type { AvailabilitySummary } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useGuideAvailability: jest.fn(),
   useCreateAvailabilityRule: jest.fn(),
   useUpdateAvailabilityRule: jest.fn(),
@@ -152,5 +154,24 @@ describe("GuideAvailabilityPage", () => {
     await user.click(screen.getByRole("button", { name: "Remove hours" }));
 
     expect(mutateAsync).toHaveBeenCalledWith("r1");
+  });
+
+  it("shows an alert when rule delete fails", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest
+      .fn()
+      .mockRejectedValue(new ApiError(500, "Could not remove recurring hours"));
+    (useDeleteAvailabilityRule as jest.Mock).mockReturnValue({
+      mutateAsync,
+      isPending: false,
+      variables: null,
+    });
+    jest.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<GuideAvailabilityPage />);
+
+    await user.click(screen.getByRole("button", { name: "Remove hours" }));
+
+    expect(await screen.findByText("Could not remove recurring hours")).toBeInTheDocument();
   });
 });

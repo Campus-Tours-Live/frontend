@@ -10,6 +10,8 @@ import {
   useGuideAvailability,
   useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
+  ApiError,
+  apiErrorMessage,
   type AvailabilityException,
   type AvailabilityRule,
 } from "@/lib/data-access";
@@ -41,8 +43,16 @@ export function GuideAvailabilityPage() {
   const [exceptionModalOpen, setExceptionModalOpen] = useState(false);
   const [editingException, setEditingException] = useState<AvailabilityException | null>(null);
   const [exceptionError, setExceptionError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const timezone = data?.bookingSettings.timezone ?? "America/Los_Angeles";
+
+  function actionErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof ApiError) {
+      return apiErrorMessage(err) ?? fallback;
+    }
+    return fallback;
+  }
 
   const openCreateRule = (dayOfWeek?: number) => {
     setEditingRule(null);
@@ -124,14 +134,28 @@ export function GuideAvailabilityPage() {
     ) {
       return;
     }
-    await deleteRule.mutateAsync(rule.id);
+    setDeleteError(null);
+    try {
+      await deleteRule.mutateAsync(rule.id);
+    } catch (err) {
+      setDeleteError(
+        actionErrorMessage(err, "Could not remove recurring hours. Please try again."),
+      );
+    }
   };
 
   const handleDeleteException = async (exception: AvailabilityException) => {
     if (!window.confirm(`Remove date-specific hours on ${exception.exceptionDate}?`)) {
       return;
     }
-    await deleteException.mutateAsync(exception.id);
+    setDeleteError(null);
+    try {
+      await deleteException.mutateAsync(exception.id);
+    } catch (err) {
+      setDeleteError(
+        actionErrorMessage(err, "Could not remove date-specific hours. Please try again."),
+      );
+    }
   };
 
   return (
@@ -142,6 +166,8 @@ export function GuideAvailabilityPage() {
         lead="Manage when participants can book you — weekly hours, date overrides, and booking limits."
         level={1}
       />
+
+      {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
 
       {isLoading ? (
         <div className="flex items-center gap-2 text-ink-soft">
