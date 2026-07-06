@@ -85,6 +85,12 @@ describe("AccountNav — participant", () => {
 
     expect(screen.getByTestId("role-switcher")).toBeInTheDocument();
   });
+
+  it("links Profile to /profile", () => {
+    render(<AccountNav />);
+
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
+  });
 });
 
 describe("AccountNav — guide", () => {
@@ -103,13 +109,12 @@ describe("AccountNav — guide", () => {
 
     expect(screen.getByText("Upcoming tours")).toBeInTheDocument();
     // "Earnings" is both a section label and an item; assert the item button.
-    expect(
-      screen.getByRole("button", { name: "Earnings" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Earnings" })).toBeInTheDocument();
     expect(screen.getByText("Verification")).toBeInTheDocument();
     // Participant-only items must NOT appear.
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
     expect(screen.queryByText("Guardian & consent")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
   });
 
   it("shows the default 'Guide account' subtitle when not pending review", () => {
@@ -145,10 +150,7 @@ describe("AccountNav — guide", () => {
 
 describe("AccountNav — defaults", () => {
   it("falls back to the participant nav when activeRole is null", () => {
-    setupMe(
-      { activeRole: null, roles: ["PARTICIPANT"] },
-      { isOnboarded: true },
-    );
+    setupMe({ activeRole: null, roles: ["PARTICIPANT"] }, { isOnboarded: true });
 
     render(<AccountNav />);
 

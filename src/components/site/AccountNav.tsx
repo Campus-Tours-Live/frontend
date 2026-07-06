@@ -27,7 +27,7 @@ import { RoleSwitcher } from "./RoleSwitcher";
  * current user to pick the participant vs guide menu, and renders nothing when
  * logged out.
  *
- * Item destinations are intentionally stubbed for now (only Dashboard navigates).
+ * Item destinations are stubbed except Dashboard, Profile, and (for guides) Tour offerings.
  * Icons use lucide-react.
  */
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
@@ -58,7 +58,7 @@ const PARTICIPANT_NAV: NavGroup[] = [
   {
     label: "Account",
     items: [
-      { label: "Profile", icon: User },
+      { label: "Profile", icon: User, href: "/profile" },
       { label: "Payment methods", icon: CreditCard },
       { label: "Guardian & consent", icon: FileSignature },
     ],
@@ -91,7 +91,7 @@ const GUIDE_NAV: NavGroup[] = [
   {
     label: "Account",
     items: [
-      { label: "Profile", icon: User },
+      { label: "Profile", icon: User, href: "/profile" },
       { label: "Verification", icon: BadgeCheck },
       { label: "Reviews", icon: Star },
     ],
