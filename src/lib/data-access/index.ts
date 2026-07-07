@@ -16,6 +16,8 @@ export { useSetActiveRole } from "./hooks/use-set-active-role";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useOnboarding } from "./hooks/use-onboarding";
 export { useOfferings } from "./hooks/use-offerings";
+export { useTourCatalog } from "./hooks/use-tour-catalog";
+export { useTourDetail } from "./hooks/use-tour-detail";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
 
@@ -30,6 +32,8 @@ export type {
   TourTopic,
   Offering,
   OfferingStatus,
+  TourSummary,
+  TourDetail,
   CreateOfferingInput,
   Dashboard,
   GuideDashboard,

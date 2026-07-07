@@ -1,6 +1,42 @@
 import { render, screen } from "@testing-library/react";
+
+const tours = Array.from({ length: 9 }, (_, index) => ({
+  id: `00000000-0000-4000-8000-00000000000${index}`,
+  title:
+    index === 0
+      ? "Campus life and hidden study spots"
+      : index === 8
+        ? "Research labs and grad pathways"
+        : `Tour ${index + 1}`,
+  slug: `tour-${index + 1}`,
+  topic: "GENERAL_CAMPUS",
+  universityId: "university-id",
+  universityName: "Test University",
+  guideId: "guide-id",
+  guideDisplayName: "Jane Doe",
+  durationMin: 30,
+  priceCents: 2500,
+  currency: "USD",
+  avgRating: 4.5,
+  reviewCount: 10,
+}));
+
+const mockUseTourCatalog = jest.fn();
+jest.mock("@/lib/data-access", () => ({
+  ApiError: class ApiError extends Error {
+    constructor(public status: number) {
+      super(`HTTP ${status}`);
+    }
+  },
+  useTourCatalog: () => mockUseTourCatalog(),
+}));
 import { FeaturedTours } from "@/components/home/FeaturedTours";
 import { TourCard } from "@/components/tours/TourCard";
+import { ApiError } from "@/lib/data-access";
+
+beforeEach(() => {
+  mockUseTourCatalog.mockReturnValue({ data: tours, isLoading: false, error: null });
+});
 
 describe("FeaturedTours", () => {
   it("renders the section heading", () => {
@@ -22,6 +58,24 @@ describe("FeaturedTours", () => {
     expect(screen.getByRole("button", { name: /previous tours/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /next tours/i })).toBeInTheDocument();
   });
+
+  it("shows loading, signed-out, and empty catalog states", () => {
+    mockUseTourCatalog.mockReturnValueOnce({ data: [], isLoading: true, error: null });
+    const { rerender } = render(<FeaturedTours />);
+    expect(screen.getByText(/loading tours/i)).toBeInTheDocument();
+
+    mockUseTourCatalog.mockReturnValueOnce({
+      data: [],
+      isLoading: false,
+      error: new ApiError(401),
+    });
+    rerender(<FeaturedTours />);
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
+
+    mockUseTourCatalog.mockReturnValueOnce({ data: [], isLoading: false, error: null });
+    rerender(<FeaturedTours />);
+    expect(screen.getByText(/no live tours are available/i)).toBeInTheDocument();
+  });
 });
 
 describe("TourCard", () => {
@@ -33,12 +87,15 @@ describe("TourCard", () => {
         university="Test University"
         guide="Jane Doe"
         durationMinutes={30}
-        price={25}
+        priceCents={2500}
+        currency="USD"
+        avgRating={4.5}
+        reviewCount={10}
       />,
     );
     expect(screen.getByRole("heading", { level: 4, name: /test tour/i })).toBeInTheDocument();
     expect(screen.getByText(/Test University · Jane Doe · 30 min/i)).toBeInTheDocument();
-    expect(screen.getByText("$25")).toBeInTheDocument();
+    expect(screen.getByText("$25.00")).toBeInTheDocument();
     expect(screen.getByText(/verified guide/i)).toBeInTheDocument();
   });
 });

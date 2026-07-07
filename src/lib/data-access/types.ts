@@ -68,6 +68,33 @@ export interface Offering {
   description?: string | null;
 }
 
+/** Public marketplace card returned by GET /v1/tours (Core TourSummaryResponse). */
+export interface TourSummary {
+  id: string;
+  title: string;
+  slug: string;
+  topic: string;
+  universityId: string;
+  universityName: string;
+  guideId: string;
+  guideDisplayName: string;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
+}
+
+/** Public marketplace detail returned by GET /v1/tours/{tourId}. */
+export interface TourDetail extends TourSummary {
+  description: string | null;
+  languages: string[] | null;
+  universitySlug: string;
+  universityCity: string | null;
+  universityRegion: string | null;
+  guideBio: string | null;
+}
+
 /** Body for POST /v1/guide/offerings — creates a DRAFT offering. */
 export interface CreateOfferingInput {
   title: string;

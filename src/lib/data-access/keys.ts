@@ -10,5 +10,7 @@ export const queryKeys = {
   universitySearch: (q: string) => ["university-search", q] as const,
   dashboard: () => ["dashboard"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
+  tourCatalog: () => ["tour-catalog"] as const,
+  tourDetail: (tourId: string) => ["tour-detail", tourId] as const,
   onboarding: (role: string) => ["onboarding", role] as const,
 };

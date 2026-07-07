@@ -1,9 +1,10 @@
 import { Link, StatusBadge } from "@/components/ui";
+import { formatOfferingPrice } from "@/lib/format";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
  * Full-height flex column so cards stay equal-sized in the carousel regardless
- * of title length (footer is pinned to the bottom). Inert "View tour" button.
+ * of title length (footer is pinned to the bottom).
  */
 export interface TourCardProps {
   id: string;
@@ -11,10 +12,23 @@ export interface TourCardProps {
   university: string;
   guide: string;
   durationMinutes: number;
-  price: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
 }
 
-export function TourCard({ id, title, university, guide, durationMinutes, price }: TourCardProps) {
+export function TourCard({
+  id,
+  title,
+  university,
+  guide,
+  durationMinutes,
+  priceCents,
+  currency,
+  avgRating,
+  reviewCount,
+}: TourCardProps) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-[18px] border border-border bg-card shadow-card">
       {/* Image placeholder — imported editorial campus crop */}
@@ -29,8 +43,13 @@ export function TourCard({ id, title, university, guide, durationMinutes, price 
         <div className="text-[13px] text-ink-soft">
           {university} · {guide} · {durationMinutes} min
         </div>
+        <div className="mt-2 text-[13px] font-semibold text-ink-soft">
+          {reviewCount > 0 ? `★ ${avgRating.toFixed(1)} (${reviewCount})` : "New tour"}
+        </div>
         <div className="mt-auto flex items-center justify-between pt-4">
-          <span className="text-[18px] font-extrabold text-ink">${price}</span>
+          <span className="text-[18px] font-extrabold text-ink">
+            {formatOfferingPrice(priceCents, currency)}
+          </span>
           <Link href={`/tours/${id}`} variant="secondary" size="sm" aria-label={`View ${title}`}>
             View tour
           </Link>

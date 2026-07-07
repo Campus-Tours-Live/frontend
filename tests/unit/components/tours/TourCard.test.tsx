@@ -7,7 +7,10 @@ const base: TourCardProps = {
   university: "Stanford University",
   guide: "Ada L.",
   durationMinutes: 45,
-  price: 29,
+  priceCents: 2900,
+  currency: "USD",
+  avgRating: 4.5,
+  reviewCount: 12,
 };
 
 function renderCard(overrides: Partial<TourCardProps> = {}) {
@@ -32,15 +35,15 @@ describe("TourCard", () => {
   });
 
   it("renders the price with a dollar sign", () => {
-    renderCard({ price: 120 });
+    renderCard({ priceCents: 12000 });
 
-    expect(screen.getByText("$120")).toBeInTheDocument();
+    expect(screen.getByText("$120.00")).toBeInTheDocument();
   });
 
   it("renders a free tour as $0", () => {
-    renderCard({ price: 0 });
+    renderCard({ priceCents: 0 });
 
-    expect(screen.getByText("$0")).toBeInTheDocument();
+    expect(screen.getByText("$0.00")).toBeInTheDocument();
   });
 
   it("renders the verified-guide badge and links to the detail page", () => {
@@ -58,11 +61,11 @@ describe("TourCard", () => {
       university: "MIT",
       guide: "Grace H.",
       durationMinutes: 90,
-      price: 55,
+      priceCents: 5500,
     });
 
     expect(screen.getByRole("heading", { name: "Night Tour of the Quad" })).toBeInTheDocument();
     expect(screen.getByText("MIT · Grace H. · 90 min")).toBeInTheDocument();
-    expect(screen.getByText("$55")).toBeInTheDocument();
+    expect(screen.getByText("$55.00")).toBeInTheDocument();
   });
 });
