@@ -3,8 +3,10 @@ import { cn } from "@/lib/utils";
 
 /**
  * SectionHeading — the recurring eyebrow + title (+ lead) block used across
- * pages and sections. `level` controls the heading tag + size (maps to the
- * `.h1`–`.h4` design-system classes). All optional except `title`.
+ * pages and sections. `level` sets the heading tag (`<h1>`–`<h4>`) and its
+ * default size; `titleSize` overrides the visual size independently — the
+ * `.h1`–`.h4` classes or the 24px `.subhead` (e.g. an `<h1>` shown at subhead
+ * size). All optional except `title`.
  */
 type Level = 1 | 2 | 3 | 4;
 /** Title size tokens: the numeric heading levels, plus `subhead` (24px, filling the h2↔h3 gap). */

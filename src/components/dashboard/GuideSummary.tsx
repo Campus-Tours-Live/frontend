@@ -45,6 +45,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
         level={1}
         titleSize="subhead"
         eyebrow="Guide Dashboard"
+        // Greet by first name, falling back to display name (OAuth accounts can lack firstName) then "there".
         title={dashboardGreeting(guide.firstName || guide.displayName)}
         lead="Review booking requests, prepare for today's tours, and keep your guide profile ready."
       />

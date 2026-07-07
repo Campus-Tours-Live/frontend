@@ -58,6 +58,7 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
         level={1}
         titleSize="subhead"
         eyebrow="Participant Dashboard"
+        // Greet by first name, falling back to display name (OAuth accounts can lack firstName) then "there".
         title={dashboardGreeting(p.firstName || p.displayName)}
         lead="Manage your next tour, finish anything that needs attention, and keep exploring."
       />
