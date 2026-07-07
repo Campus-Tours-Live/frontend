@@ -43,6 +43,29 @@ describe("GuideSummary", () => {
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
   });
 
+  it("renders the greeting header and the Edit Availability action", () => {
+    render(
+      <GuideSummary
+        data={makeData({
+          guide: {
+            firstName: "Ada",
+            displayName: "Ada Lovelace",
+            major: "Computer Science",
+            applicationStatus: "APPROVED",
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText("Guide Dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ada");
+  });
+
+  it("greets by displayName when firstName is missing", () => {
+    render(<GuideSummary data={makeData()} />); // default guide has displayName, no firstName
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ada Lovelace");
+    expect(screen.getByRole("button", { name: /edit availability/i })).toBeInTheDocument();
+  });
+
   it("shows the application status from guideStatus", () => {
     render(<GuideSummary data={makeData({ guideStatus: "PENDING" })} />);
     expect(screen.getByText("Application")).toBeInTheDocument();

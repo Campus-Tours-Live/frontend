@@ -42,6 +42,7 @@ const guideData: GuideDashboard = {
 const participantData: ParticipantDashboard = {
   kind: "participant",
   participant: {
+    firstName: "Grace",
     displayName: "Grace Hopper",
     email: "grace@example.com",
     participantType: "STUDENT",
@@ -104,17 +105,18 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Guide Dashboard")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ada");
 
-    // It should NOT render the participant welcome heading.
-    expect(screen.queryByText(/Your participant profile is saved\./)).not.toBeInTheDocument();
+    // It should NOT render the participant eyebrow.
+    expect(screen.queryByText("Participant Dashboard")).not.toBeInTheDocument();
   });
 
   it("renders the participant summary branch when data.kind is 'participant'", () => {
     setHook({ data: participantData });
     render(<DashboardPage />);
 
-    // Participant-specific signals: the welcome heading + lead copy.
-    expect(screen.getByText("Welcome, Grace Hopper.")).toBeInTheDocument();
-    expect(screen.getByText("Your participant profile is saved.")).toBeInTheDocument();
+    // Participant-specific signals: eyebrow + firstName in the greeting + subtitle copy.
+    expect(screen.getByText("Participant Dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Grace");
+    expect(screen.getByText(/Manage your next tour.*keep exploring\./)).toBeInTheDocument();
 
     // It should NOT render the guide-only offerings row.
     expect(screen.queryByText("Offerings")).not.toBeInTheDocument();

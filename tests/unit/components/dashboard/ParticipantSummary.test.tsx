@@ -24,46 +24,40 @@ function makeData(
 }
 
 describe("ParticipantSummary", () => {
-  it("renders the participant display name in the heading and card", () => {
-    render(<ParticipantSummary data={makeData()} />);
-    expect(screen.getByText("Welcome, Grace Hopper.")).toBeInTheDocument();
-    // Also rendered as the MemberCard name.
+  it("renders the greeting header (eyebrow + first name) and the display name in the card", () => {
+    render(<ParticipantSummary data={makeData({ firstName: "Grace" })} />);
+    expect(screen.getByText("Participant Dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Grace");
+  });
+
+  it("greets by displayName when firstName is missing", () => {
+    render(<ParticipantSummary data={makeData()} />); // default has displayName, no firstName
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Grace Hopper");
+    // displayName is the MemberCard name.
     expect(screen.getByText("Grace Hopper")).toBeInTheDocument();
   });
 
   it("renders the participant type", () => {
-    render(
-      <ParticipantSummary data={makeData({ participantType: "PARENT" })} />,
-    );
+    render(<ParticipantSummary data={makeData({ participantType: "PARENT" })} />);
     expect(screen.getByText("Type")).toBeInTheDocument();
     expect(screen.getByText("PARENT")).toBeInTheDocument();
   });
 
   it("shows the topics count as 'N selected'", () => {
-    render(
-      <ParticipantSummary
-        data={makeData({ topicsOfInterest: ["a", "b", "c"] })}
-      />,
-    );
+    render(<ParticipantSummary data={makeData({ topicsOfInterest: ["a", "b", "c"] })} />);
     expect(screen.getByText("Topics")).toBeInTheDocument();
     expect(screen.getByText("3 selected")).toBeInTheDocument();
   });
 
   it("shows the universities count as 'N selected'", () => {
-    render(
-      <ParticipantSummary
-        data={makeData({ universitiesOfInterest: ["x", "y"] })}
-      />,
-    );
+    render(<ParticipantSummary data={makeData({ universitiesOfInterest: ["x", "y"] })} />);
     expect(screen.getByText("Universities")).toBeInTheDocument();
     expect(screen.getByText("2 selected")).toBeInTheDocument();
   });
 
   it("falls back to — for empty topics and universities arrays", () => {
     render(
-      <ParticipantSummary
-        data={makeData({ topicsOfInterest: [], universitiesOfInterest: [] })}
-      />,
+      <ParticipantSummary data={makeData({ topicsOfInterest: [], universitiesOfInterest: [] })} />,
     );
     // Both the Topics and Universities rows fall back to the em-dash.
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
@@ -92,28 +86,23 @@ describe("ParticipantSummary", () => {
   });
 
   it("renders the Guardian highlight for a PARENT participant", () => {
-    render(
-      <ParticipantSummary data={makeData({ participantType: "PARENT" })} />,
-    );
+    render(<ParticipantSummary data={makeData({ participantType: "PARENT" })} />);
     expect(screen.getByText("Guardian consent active")).toBeInTheDocument();
     expect(screen.queryByText("Ready to explore")).not.toBeInTheDocument();
   });
 
   it("renders the explorer highlight for a non-PARENT participant", () => {
-    render(
-      <ParticipantSummary data={makeData({ participantType: "STUDENT" })} />,
-    );
+    render(<ParticipantSummary data={makeData({ participantType: "STUDENT" })} />);
     expect(screen.getByText("Ready to explore")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Guardian consent active"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Guardian consent active")).not.toBeInTheDocument();
   });
 
-  it("renders a bare 'Welcome.' and 'Member' when displayName is missing", () => {
+  it("greets 'there' and shows 'Member' when name fields are missing", () => {
     const data = makeData();
     delete data.participant.displayName;
     render(<ParticipantSummary data={data} />);
-    expect(screen.getByText("Welcome.")).toBeInTheDocument();
+    // No firstName/displayName -> greeting falls back to "there", card name to "Member".
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("there");
     expect(screen.getByText("Member")).toBeInTheDocument();
   });
 

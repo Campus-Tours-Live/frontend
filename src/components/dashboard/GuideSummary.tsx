@@ -1,8 +1,14 @@
 import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lucide-react";
-import { MemberCard, type MemberCardHighlight, type MemberCardItem } from "@/components/ui";
+import {
+  Button,
+  MemberCard,
+  SectionHeading,
+  type MemberCardHighlight,
+  type MemberCardItem,
+} from "@/components/ui";
 import type { GuideDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
-import { DashboardHeader } from "./guide/DashboardHeader";
+import { dashboardGreeting } from "./utils/greeting";
 
 /**
  * Guide dashboard slice — presentational. The /v1/dashboard aggregate composed the
@@ -34,8 +40,19 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
       };
 
   return (
-    <div className="space-y-6">
-      <DashboardHeader firstName={guide.firstName} />
+    <div className="space-y-6 max-w-4xl">
+      <SectionHeading
+        level={1}
+        titleSize="subhead"
+        eyebrow="Guide Dashboard"
+        title={dashboardGreeting(guide.firstName || guide.displayName)}
+        lead="Review booking requests, prepare for today's tours, and keep your guide profile ready."
+      />
+      <div className="flex justify-end">
+        <Button variant="secondary" size="sm">
+          Edit Availability
+        </Button>
+      </div>
       <MemberCard
         name={guide.displayName ?? "Member"}
         role="GUIDE"

@@ -1,10 +1,4 @@
-import {
-  CalendarDays,
-  Compass,
-  GraduationCap,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { CalendarDays, Compass, GraduationCap, ShieldCheck, UserRound } from "lucide-react";
 import {
   MemberCard,
   SectionHeading,
@@ -14,6 +8,7 @@ import {
 } from "@/components/ui";
 import type { ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
+import { dashboardGreeting } from "./utils/greeting";
 
 /**
  * Participant dashboard slice — presentational. The /v1/dashboard aggregate already
@@ -31,16 +26,12 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
     {
       icon: Compass,
       label: "Topics",
-      value: p.topicsOfInterest?.length
-        ? `${p.topicsOfInterest.length} selected`
-        : "—",
+      value: p.topicsOfInterest?.length ? `${p.topicsOfInterest.length} selected` : "—",
     },
     {
       icon: GraduationCap,
       label: "Universities",
-      value: p.universitiesOfInterest?.length
-        ? `${p.universitiesOfInterest.length} selected`
-        : "—",
+      value: p.universitiesOfInterest?.length ? `${p.universitiesOfInterest.length} selected` : "—",
     },
     {
       icon: CalendarDays,
@@ -62,15 +53,16 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       };
 
   return (
-    <div>
+    <div className="space-y-6 max-w-4xl">
       <SectionHeading
-        eyebrow="Dashboard"
-        title={`Welcome${p.displayName ? `, ${p.displayName}` : ""}.`}
-        lead="Your participant profile is saved."
+        level={1}
+        titleSize="subhead"
+        eyebrow="Participant Dashboard"
+        title={dashboardGreeting(p.firstName || p.displayName)}
+        lead="Manage your next tour, finish anything that needs attention, and keep exploring."
       />
 
       <MemberCard
-        className="mt-8"
         name={p.displayName ?? "Member"}
         role={role}
         verification={p.email ? "Email Verified" : undefined}

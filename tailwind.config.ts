@@ -2,11 +2,7 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: [
-    "./src/app/**/*.{ts,tsx}",
-    "./src/components/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-  ],
+  content: ["./src/app/**/*.{ts,tsx}", "./src/components/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,
@@ -20,9 +16,20 @@ export default {
       },
       fontSize: {
         // CampusToursLive type scale (design system)
-        display: ["clamp(42px,6vw,76px)", { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" }],
-        h1: ["clamp(42px,6vw,76px)", { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" }],
-        h2: ["clamp(30px,4vw,48px)", { lineHeight: "1.08", letterSpacing: "-0.035em", fontWeight: "700" }],
+        display: [
+          "clamp(42px,6vw,76px)",
+          { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" },
+        ],
+        h1: [
+          "clamp(42px,6vw,76px)",
+          { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" },
+        ],
+        h2: [
+          "clamp(30px,4vw,48px)",
+          { lineHeight: "1.08", letterSpacing: "-0.035em", fontWeight: "700" },
+        ],
+        // Fixed 24px heading between h2 and h3 — e.g. dashboard greetings that shouldn't scale to hero size.
+        subhead: ["24px", { lineHeight: "1.25", letterSpacing: "-0.02em", fontWeight: "700" }],
         h3: ["21px", { lineHeight: "1.3", fontWeight: "700" }],
         h4: ["18px", { lineHeight: "1.3", fontWeight: "700" }],
         lead: ["19px", { lineHeight: "1.6", fontWeight: "500" }],
