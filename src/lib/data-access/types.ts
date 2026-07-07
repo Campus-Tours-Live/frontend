@@ -38,6 +38,8 @@ export interface GuideProfile {
   email?: string;
   accountStatus?: string;
   universityId?: string | null;
+  universityName?: string | null;
+  universityShortName?: string | null;
   major?: string;
   classYear?: string;
   bio?: string | null;
@@ -142,4 +144,96 @@ export interface University {
 export interface TourTopic {
   value: string;
   label: string;
+}
+
+export type AvailabilityExceptionType = "UNAVAILABLE_ALL_DAY" | "UNAVAILABLE_RANGE" | "ADDITIONAL";
+
+/** Recurring weekly availability block (Core AvailabilityRuleResponse). */
+export interface AvailabilityRule {
+  id: string;
+  dayOfWeek: number;
+  startLocal: string;
+  endLocal: string;
+  timezone: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  active: boolean;
+  createdAt: string | null;
+}
+
+/** One-off override to weekly availability (Core AvailabilityExceptionResponse). */
+export interface AvailabilityException {
+  id: string;
+  exceptionDate: string;
+  type: AvailabilityExceptionType;
+  startLocal: string | null;
+  endLocal: string | null;
+  reason: string | null;
+  createdAt: string | null;
+}
+
+/** Per-guide booking policy (Core BookingSettingsResponse). */
+export interface BookingSettings {
+  acceptanceMode: "AUTO" | "MANUAL";
+  responseDeadlineMin: number;
+  minNoticeMin: number;
+  maxAdvanceDays: number;
+  bufferBeforeMin: number;
+  bufferAfterMin: number;
+  durationsOffered: number[];
+  timezone: string;
+}
+
+/** GET /v1/guide/availability */
+export interface AvailabilitySummary {
+  rules: AvailabilityRule[];
+  exceptions: AvailabilityException[];
+  bookingSettings: BookingSettings;
+}
+
+export interface CreateAvailabilityRuleInput {
+  dayOfWeek: number;
+  startLocal: string;
+  endLocal: string;
+  timezone?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  active?: boolean;
+}
+
+export interface UpdateAvailabilityRuleInput {
+  dayOfWeek?: number;
+  startLocal?: string;
+  endLocal?: string;
+  timezone?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  active?: boolean;
+}
+
+export interface CreateAvailabilityExceptionInput {
+  exceptionDate: string;
+  type: AvailabilityExceptionType;
+  startLocal?: string;
+  endLocal?: string;
+  reason?: string;
+}
+
+export interface UpdateAvailabilityExceptionInput {
+  exceptionDate?: string;
+  type?: AvailabilityExceptionType;
+  startLocal?: string;
+  endLocal?: string;
+  reason?: string;
+}
+
+export interface UpdateBookingSettingsInput {
+  acceptanceMode?: "AUTO" | "MANUAL";
+  responseDeadlineMin?: number;
+  minNoticeMin?: number;
+  maxAdvanceDays?: number;
+  bufferBeforeMin?: number;
+  bufferAfterMin?: number;
+  durationsOffered?: number[];
+  timezone?: string;
 }

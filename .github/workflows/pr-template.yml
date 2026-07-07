@@ -2,13 +2,20 @@ name: PR template
 
 on:
   pull_request:
-    branches: [main]
+    # No `branches:` filter: run on PRs targeting ANY base branch so the gate can't be
+    # skipped by branch naming.
     types: [opened, edited, reopened, synchronize]
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  # Single required check. Step 1 = deterministic structure/quality (+ frontend Before/After
+  # screenshots on UI-file changes). Step 2 = a best-effort AI check that the description matches
+  # the diff — it blocks on a clear FAIL but skips cleanly if ANTHROPIC_API_KEY is unset or the API
+  # errors. Keeping both in one job means there is exactly one required check ("pr-template"), so a
+  # PR whose branch predates this job never gets stuck on a phantom pending check.
   pr-template:
     runs-on: ubuntu-latest
     steps:
@@ -17,33 +24,119 @@ jobs:
         with:
           script: |
             const body = context.payload.pull_request.body || '';
-            // Strip HTML comments so the template's placeholder hints don't count as content.
+            const repo = context.repo.repo;
             const clean = body.replace(/<!--[\s\S]*?-->/g, '');
             const problems = [];
-
             const section = (name) => {
               const re = new RegExp('##\\s*' + name + '\\b([\\s\\S]*?)(?=\\n##\\s|$)', 'i');
               const m = clean.match(re);
               return m ? m[1].trim() : null;
             };
-
-            const summary = section('Summary');
-            if (summary === null) problems.push('Missing the "## Summary" section');
-            else if (!summary) problems.push('The "## Summary" section is empty');
-
-            const testing = section('Testing');
-            if (testing === null) problems.push('Missing the "## Testing" section');
-            else if (!testing) problems.push('The "## Testing" section is empty');
-
+            const JUNK = new Set(['n/a','na','none','nil','no','yes','tbd','todo','to do','test','testing','asdf','asdfasdf','xxx','x','.','-','--','...','ok','okay','done','wip','update','fix','fixes','change','changes','stuff','things','misc']);
+            const words = (s) => (s.match(/[A-Za-z0-9]+/g) || []);
+            const isGibberish = (s) => {
+              const t = (s || '').trim();
+              if (/^(.)\1{5,}$/.test(t.replace(/\s/g, ''))) return true;
+              if (words(t).length <= 1 && t.replace(/\s/g, '').length >= 20) return true;
+              return false;
+            };
+            const check = (name, minChars, minWords) => {
+              const s = section(name);
+              if (s === null) { problems.push(`Missing the "## ${name}" section`); return null; }
+              if (!s) { problems.push(`The "## ${name}" section is empty`); return null; }
+              const norm = s.toLowerCase().replace(/[.!\s]+$/, '').trim();
+              if (JUNK.has(norm)) { problems.push(`The "## ${name}" section looks like a placeholder ("${s.slice(0, 25)}") — write a real description`); return s; }
+              if (isGibberish(s)) { problems.push(`The "## ${name}" section looks like gibberish — write a real description`); return s; }
+              if (s.length < minChars) { problems.push(`The "## ${name}" section is too short (needs at least ${minChars} characters)`); return s; }
+              if (words(s).length < minWords) { problems.push(`The "## ${name}" section needs at least ${minWords} words`); return s; }
+              return s;
+            };
+            const summary = check('Summary', 100, 15);
+            const testing = check('Testing', 40, 7);
+            if (summary && testing && summary.trim().toLowerCase() === testing.trim().toLowerCase())
+              problems.push('The "## Summary" and "## Testing" sections are identical — describe testing separately');
             const typeBlock = (body.match(/##\s*Type of change\b([\s\S]*?)(?=\n##\s|$)/i) || [, ''])[1];
-            if (!/-\s*\[x\]/i.test(typeBlock)) problems.push('Check at least one box under "## Type of change"');
-
-            if (problems.length) {
-              core.setFailed(
-                'PR description does not follow .github/pull_request_template.md:\n- ' +
-                  problems.join('\n- ') +
-                  '\n\nEdit the PR description and the check will re-run.'
-              );
-            } else {
-              core.info('PR description follows the template.');
+            const checkedLines = typeBlock.split('\n').filter((l) => /-\s*\[x\]/i.test(l));
+            if (!checkedLines.length) problems.push('Check at least one box under "## Type of change"');
+            if (repo === 'frontend') {
+              const onlyDocs = checkedLines.length > 0 && checkedLines.every((l) => /docs|chore|config/i.test(l));
+              if (!onlyDocs) {
+                let touchesUI = false;
+                try {
+                  const files = await github.paginate(github.rest.pulls.listFiles, {
+                    owner: context.repo.owner, repo: context.repo.repo, pull_number: context.payload.pull_request.number,
+                  });
+                  const UI_RE = /\.(tsx|jsx|vue|svelte|css|scss|sass|less|html|astro)$/i;
+                  touchesUI = files.some((f) => UI_RE.test(f.filename));
+                } catch (e) {
+                  core.warning('Could not list PR files (' + e.message + ') — skipping screenshot check.');
+                }
+                if (touchesUI) {
+                  const shots = section('Screenshots') || '';
+                  const lines = shots.split('\n');
+                  const imgRe = /!\[[^\]]*\]\([^)]+\)|<img\b|https?:\/\/(?:github\.com\/user-attachments|[^\s)]*githubusercontent\.com)[^\s)]*/i;
+                  const labelIdx = (w) => lines.findIndex((l) => new RegExp('^\\s{0,3}(?:#{1,6}\\s*)?(?:\\*\\*|__)?\\s*' + w + '\\b', 'i').test(l));
+                  const bi = labelIdx('before'), ai = labelIdx('after');
+                  const imgInRange = (a, b) => a >= 0 && imgRe.test(lines.slice(a, b < 0 ? undefined : b).join('\n'));
+                  if (bi < 0 || ai < 0 || ai <= bi) {
+                    problems.push('Frontend UI change: use **Before** and **After** headings under "## Screenshots", each with a screenshot (or check only "Docs / chore / config" if there is no visual change).');
+                  } else {
+                    if (!imgInRange(bi, ai)) problems.push('Frontend UI change: attach a screenshot under **Before**');
+                    if (!imgInRange(ai, -1)) problems.push('Frontend UI change: attach a screenshot under **After**');
+                  }
+                }
+              }
             }
+            if (problems.length) {
+              core.setFailed('PR description does not follow .github/pull_request_template.md:\n- ' + problems.join('\n- ') + '\n\nEdit the PR description and the check will re-run.');
+            } else {
+              core.info('PR description structure + quality OK.');
+            }
+
+      - name: AI sanity-check the description against the diff
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then echo "No ANTHROPIC_API_KEY — skipping AI description check."; exit 0; fi
+          gh pr diff "$PR_NUMBER" --repo "$REPO" 2>/dev/null > /tmp/diff.txt || true
+          node - <<'NODE'
+          const fs = require('fs');
+          const body = process.env.PR_BODY || '';
+          let diff = fs.existsSync('/tmp/diff.txt') ? fs.readFileSync('/tmp/diff.txt', 'utf8') : '';
+          const DIFF_CAP = 600000; // ~150K tokens; only guards against a pathologically huge diff
+          let diffNote = '';
+          if (diff.length > DIFF_CAP) { diff = diff.slice(0, DIFF_CAP); diffNote = ' (truncated at ' + DIFF_CAP + ' chars - very large PR)'; }
+          const base = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
+          const prompt = [
+            'You are a LENIENT PR-description gate. Decide whether the PR description genuinely and on-topically describes the change shown in the diff.',
+            'Be lenient: short but real descriptions PASS. Only FAIL when the description is clearly meaningless, generic filler ("some changes", "update stuff", "improve things"), copy-paste noise, or plainly contradicts/ignores the diff. When in doubt, PASS.',
+            'Reply with exactly one line: "VERDICT: PASS" or "VERDICT: FAIL - <short reason>".',
+            '', '=== PR DESCRIPTION ===', body, '', '=== DIFF' + diffNote + ' ===', diff,
+          ].join('\n');
+          (async () => {
+            try {
+              const r = await fetch(base + '/v1/messages', {
+                method: 'POST',
+                headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+                body: JSON.stringify({ model: 'claude-opus-4-8', max_tokens: 150, messages: [{ role: 'user', content: prompt }] }),
+              });
+              if (!r.ok) { console.log('AI check HTTP ' + r.status + ' — skipping.'); process.exit(0); }
+              const j = await r.json();
+              const text = (j.content || []).map((c) => c.text || '').join('').trim();
+              console.log('AI verdict: ' + text);
+              if (/VERDICT:\s*FAIL/i.test(text)) {
+                const reason = (text.split(/FAIL\s*[-–—:]*\s*/i)[1] || 'description not meaningful').trim();
+                console.log('::error::AI description check failed: ' + reason);
+                process.exit(1);
+              }
+            } catch (e) {
+              console.log('AI check error (' + e.message + ') — skipping.');
+            }
+            process.exit(0);
+          })();
+          NODE
