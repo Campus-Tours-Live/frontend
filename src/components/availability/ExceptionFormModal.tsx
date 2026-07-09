@@ -30,6 +30,7 @@ interface ExceptionFormFields {
 interface ExceptionFormModalProps {
   open: boolean;
   onClose: () => void;
+  timezone: string;
   initial?: AvailabilityException | null;
   onSubmit: (values: ExceptionFormValues) => Promise<void>;
   submitting?: boolean;
@@ -38,6 +39,7 @@ interface ExceptionFormModalProps {
 
 function ExceptionFormModalContent({
   onClose,
+  timezone,
   initial,
   onSubmit,
   submitting,
@@ -60,7 +62,7 @@ function ExceptionFormModalContent({
     formState: { errors },
   } = useForm<ExceptionFormFields>({
     defaultValues: {
-      exceptionDate: initial?.exceptionDate ?? todayIsoDate(),
+      exceptionDate: initial?.exceptionDate ?? todayIsoDate(timezone),
       reason: initial?.reason ?? "",
     },
   });
@@ -158,6 +160,7 @@ function ExceptionFormModalContent({
 export function ExceptionFormModal({
   open,
   onClose,
+  timezone,
   initial,
   onSubmit,
   submitting,
@@ -176,6 +179,7 @@ export function ExceptionFormModal({
         <ExceptionFormModalContent
           key={formKey}
           onClose={onClose}
+          timezone={timezone}
           initial={initial}
           onSubmit={onSubmit}
           submitting={submitting}

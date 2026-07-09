@@ -11,7 +11,14 @@ describe("ExceptionFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<ExceptionFormModal open onClose={jest.fn()} onSubmit={onSubmit} />);
+    render(
+      <ExceptionFormModal
+        open
+        onClose={jest.fn()}
+        timezone="America/Los_Angeles"
+        onSubmit={onSubmit}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Add exception" }));
 
@@ -28,7 +35,14 @@ describe("ExceptionFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<ExceptionFormModal open onClose={jest.fn()} onSubmit={onSubmit} />);
+    render(
+      <ExceptionFormModal
+        open
+        onClose={jest.fn()}
+        timezone="America/Los_Angeles"
+        onSubmit={onSubmit}
+      />,
+    );
 
     await user.selectOptions(screen.getByLabelText("Exception type"), "ADDITIONAL");
     expect(screen.getByLabelText("Start time")).toBeInTheDocument();
@@ -54,7 +68,14 @@ describe("ExceptionFormModal", () => {
   });
 
   it("wires the dialog accessible name to the title", () => {
-    render(<ExceptionFormModal open onClose={jest.fn()} onSubmit={jest.fn()} />);
+    render(
+      <ExceptionFormModal
+        open
+        onClose={jest.fn()}
+        timezone="America/Los_Angeles"
+        onSubmit={jest.fn()}
+      />,
+    );
 
     expect(screen.getByRole("dialog")).toHaveAttribute("aria-labelledby", "exception-modal-title");
   });

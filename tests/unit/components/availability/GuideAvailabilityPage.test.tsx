@@ -111,10 +111,11 @@ describe("GuideAvailabilityPage", () => {
       data: undefined,
       isLoading: false,
       isError: true,
+      error: new ApiError(503, "Service unavailable"),
     });
 
     render(<GuideAvailabilityPage />);
-    expect(screen.getByText(/Failed to load your availability/i)).toBeInTheDocument();
+    expect(screen.getByText("Service unavailable")).toBeInTheDocument();
   });
 
   it("creates a recurring rule from the modal", async () => {

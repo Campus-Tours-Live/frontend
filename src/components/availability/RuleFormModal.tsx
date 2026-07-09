@@ -76,7 +76,7 @@ function RuleFormModalContent({
   } = useForm<RuleFormFields>({
     defaultValues: {
       dayOfWeek: String(initial?.dayOfWeek ?? defaultDayOfWeek ?? 1),
-      effectiveFrom: initial?.effectiveFrom ?? todayIsoDate(),
+      effectiveFrom: initial?.effectiveFrom ?? todayIsoDate(timezone),
       effectiveTo: initial?.effectiveTo ?? "",
       timezone: initial?.timezone ?? timezone,
     },

@@ -3,8 +3,17 @@ export const US_DATE_PLACEHOLDER = "MM/DD/YYYY";
 const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const US_DATE_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 
-/** Today's date in the user's local timezone as yyyy-mm-dd (API format). */
-export function todayIsoDate(): string {
+/** Today's calendar date as yyyy-mm-dd (API format). Uses guide timezone when provided. */
+export function todayIsoDate(timeZone?: string): string {
+  if (timeZone) {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  }
+
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");

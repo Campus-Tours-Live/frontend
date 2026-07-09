@@ -27,7 +27,7 @@ import { RuleFormModal, ruleFormErrorMessage, type RuleFormValues } from "./Rule
 import { WeeklySchedulePanel } from "./WeeklySchedulePanel";
 
 export function GuideAvailabilityPage() {
-  const { data, isLoading, isError } = useGuideAvailability();
+  const { data, isLoading, isError, error: loadError } = useGuideAvailability();
   const createRule = useCreateAvailabilityRule();
   const updateRule = useUpdateAvailabilityRule();
   const deleteRule = useDeleteAvailabilityRule();
@@ -176,7 +176,11 @@ export function GuideAvailabilityPage() {
         </div>
       ) : null}
 
-      {isError ? <Alert variant="error">Failed to load your availability.</Alert> : null}
+      {isError ? (
+        <Alert variant="error">
+          {actionErrorMessage(loadError, "Failed to load your availability.")}
+        </Alert>
+      ) : null}
 
       {data ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
@@ -223,6 +227,7 @@ export function GuideAvailabilityPage() {
       <ExceptionFormModal
         open={exceptionModalOpen}
         onClose={() => setExceptionModalOpen(false)}
+        timezone={timezone}
         initial={editingException}
         onSubmit={handleExceptionSubmit}
         submitting={createException.isPending || updateException.isPending}

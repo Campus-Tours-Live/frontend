@@ -8,7 +8,10 @@ interface BookingRulesPanelProps {
   settings: BookingSettings;
 }
 
-/** Sidebar summary of booking constraints (Calendly-adjacent “settings” panel). */
+/**
+ * Sidebar summary of booking constraints (Calendly-adjacent “settings” panel).
+ * Phase 1 is read-only; editing uses {@link useUpdateBookingSettings} in a follow-up.
+ */
 export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
   return (
     <Card>
