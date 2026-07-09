@@ -27,7 +27,10 @@ describe("TourCard", () => {
   it("renders university and guide meta plus duration badge", () => {
     renderCard();
 
-    expect(screen.getByText("Stanford University · Ada L.")).toBeInTheDocument();
+    // University and guide render as separate elements (university truncates on
+    // overflow; the guide name — the key trust signal — always stays fully visible).
+    expect(screen.getByText("Stanford University")).toBeInTheDocument();
+    expect(screen.getByText("· Ada L.")).toBeInTheDocument();
     expect(screen.getByText(/45\s*min/i)).toBeInTheDocument();
   });
 
@@ -60,7 +63,8 @@ describe("TourCard", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Night Tour of the Quad" })).toBeInTheDocument();
-    expect(screen.getByText("MIT · Grace H.")).toBeInTheDocument();
+    expect(screen.getByText("MIT")).toBeInTheDocument();
+    expect(screen.getByText("· Grace H.")).toBeInTheDocument();
     expect(screen.getByText(/90\s*min/i)).toBeInTheDocument();
     expect(screen.getByText("$55")).toBeInTheDocument();
   });

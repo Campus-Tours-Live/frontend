@@ -32,10 +32,9 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
       <div className="card-pad flex flex-1 flex-col">
         <h4 className="mb-1.5 line-clamp-2 min-h-[2.6em] font-display text-h4 text-ink">{title}</h4>
         <div className="flex items-center gap-1.5 text-[13px] text-ink-soft">
-          <Icon icon={GraduationCap} size={14} className="text-sage-deep" />
-          <span className="truncate">
-            {university} · {guide}
-          </span>
+          <Icon icon={GraduationCap} size={14} className="shrink-0 text-sage-deep" />
+          <span className="min-w-0 flex-1 truncate">{university}</span>
+          <span className="shrink-0">· {guide}</span>
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-4">

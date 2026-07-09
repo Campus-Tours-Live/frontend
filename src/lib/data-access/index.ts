@@ -18,6 +18,7 @@ export { useOnboarding } from "./hooks/use-onboarding";
 export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
+export { useTours } from "./hooks/use-tours";
 
 export type {
   Me,
@@ -28,6 +29,7 @@ export type {
   GuideProfileUpdate,
   University,
   TourTopic,
+  TourSummary,
   Offering,
   OfferingStatus,
   CreateOfferingInput,

@@ -146,6 +146,23 @@ export interface TourTopic {
   label: string;
 }
 
+/** GET /v1/tours — public marketplace card (Core TourSummaryResponse). */
+export interface TourSummary {
+  id: string;
+  title: string;
+  slug: string;
+  topic: string;
+  universityId: string;
+  universityName: string;
+  guideId: string;
+  guideDisplayName: string;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
+}
+
 export type AvailabilityExceptionType = "UNAVAILABLE_ALL_DAY" | "UNAVAILABLE_RANGE" | "ADDITIONAL";
 
 /** Recurring weekly availability block (Core AvailabilityRuleResponse). */

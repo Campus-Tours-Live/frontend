@@ -1,11 +1,37 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { FeaturedTours } from "@/components/home/FeaturedTours";
+import { useTours } from "@/lib/data-access";
+import type { TourSummary } from "@/lib/data-access";
 
 /**
  * The carousel paging math reads live layout (offsetLeft / clientWidth) and calls
  * scrollTo — neither of which jsdom provides — so we stub the geometry to exercise
- * pageMetrics(), goToPage() and the chevron/dot handlers.
+ * pageMetrics(), goToPage() and the chevron/dot handlers. FeaturedTours now reads
+ * its cards via useTours(), so the hook is mocked with nine fixture tours (same
+ * count the geometry stubbing below assumes).
  */
+jest.mock("@/lib/data-access", () => ({
+  useTours: jest.fn(),
+}));
+
+const mockUseTours = useTours as jest.Mock;
+
+const TOURS: TourSummary[] = Array.from({ length: 9 }, (_, i) => ({
+  id: `t${i + 1}`,
+  title: `Tour ${i + 1}`,
+  slug: `tour-${i + 1}`,
+  topic: "GENERAL_CAMPUS",
+  universityId: "u1",
+  universityName: "Test University",
+  guideId: `g${i + 1}`,
+  guideDisplayName: `Guide ${i + 1}`,
+  durationMin: 30,
+  priceCents: 3000,
+  currency: "USD",
+  avgRating: 4.5,
+  reviewCount: 10,
+}));
+
 describe("FeaturedTours carousel interactions", () => {
   const scrollToSpy = jest.fn();
 
@@ -14,6 +40,14 @@ describe("FeaturedTours carousel interactions", () => {
       configurable: true,
       value: scrollToSpy,
     });
+  });
+
+  beforeEach(() => {
+    mockUseTours.mockReturnValue({ data: TOURS, isLoading: false, isError: false });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   function findScroller(container: HTMLElement): HTMLElement {
