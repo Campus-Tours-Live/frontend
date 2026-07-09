@@ -39,19 +39,19 @@ directly.
 
 ## Tech stack
 
-| Concern        | Choice                                                                      |
-| -------------- | --------------------------------------------------------------------------- |
-| Framework      | **Next.js 16** (App Router, React Server Components)                         |
-| UI runtime     | **React 19**                                                                |
-| Language       | **TypeScript** (strict)                                                      |
-| Bundler        | **Turbopack** (Next.js built-in, Rust-based — for both `dev` and `build`)    |
-| Styling        | **Tailwind CSS v3** + brand design tokens (`src/app/globals.css`)            |
-| Data fetching  | **TanStack Query v5** over a typed `fetch` wrapper                           |
-| Forms          | **react-hook-form**                                                          |
-| Icons          | **lucide-react**; class merging via `clsx` + `tailwind-merge`               |
-| Fonts          | **Quicksand** (display) + **Nunito** (text) via `next/font`                  |
-| Linting        | **ESLint 9** (flat config) + `eslint-config-next`                            |
-| Testing        | **Jest** + **React Testing Library** (wired through `next/jest`)             |
+| Concern       | Choice                                                                    |
+| ------------- | ------------------------------------------------------------------------- |
+| Framework     | **Next.js 16** (App Router, React Server Components)                      |
+| UI runtime    | **React 19**                                                              |
+| Language      | **TypeScript** (strict)                                                   |
+| Bundler       | **Turbopack** (Next.js built-in, Rust-based — for both `dev` and `build`) |
+| Styling       | **Tailwind CSS v3** + brand design tokens (`src/app/globals.css`)         |
+| Data fetching | **TanStack Query v5** over a typed `fetch` wrapper                        |
+| Forms         | **react-hook-form**                                                       |
+| Icons         | **lucide-react**; class merging via `clsx` + `tailwind-merge`             |
+| Fonts         | **Quicksand** (display) + **Nunito** (text) via `next/font`               |
+| Linting       | **ESLint 9** (flat config) + `eslint-config-next`                         |
+| Testing       | **Jest** + **React Testing Library** (wired through `next/jest`)          |
 
 > **Why no Webpack/Vite config?** Next.js owns the build pipeline; Next 16 defaults to Turbopack for
 > dev and build. There's nothing to configure and Vite isn't used with Next.js.
@@ -99,21 +99,66 @@ npm run dev:poll
 
 Scripts:
 
-| Script                 | Does                                          |
-| ---------------------- | --------------------------------------------- |
-| `npm run dev`          | Dev server on `:3001` (Fast Refresh)          |
-| `npm run dev:poll`     | Dev server with file-watch polling            |
-| `npm run build`        | Production build (Turbopack)                  |
-| `npm run start`        | Serve the production build on `:3001`         |
-| `npm run lint`         | ESLint (`eslint .`)                           |
-| `npm run lint:fix`     | ESLint with autofix                           |
-| `npm run format`       | Prettier (write)                              |
-| `npm run format:check` | Prettier (check only)                         |
-| `npm run typecheck`    | `tsc --noEmit`                                |
-| `npm test`             | Jest + RTL — runs with coverage (terminal + HTML report) |
-| `npm run test:watch`   | Jest in watch mode                            |
-| `npm run test:coverage`| Explicit coverage alias (same as `npm test`)  |
-| `npm run test:ci`      | Jest in CI mode                               |
+| Script                  | Does                                                     |
+| ----------------------- | -------------------------------------------------------- |
+| `npm run dev`           | Dev server on `:3001` (Fast Refresh)                     |
+| `npm run dev:poll`      | Dev server with file-watch polling                       |
+| `npm run build`         | Production build (Turbopack)                             |
+| `npm run start`         | Serve the production build on `:3001`                    |
+| `npm run lint`          | ESLint (`eslint .`)                                      |
+| `npm run lint:fix`      | ESLint with autofix                                      |
+| `npm run format`        | Prettier (write)                                         |
+| `npm run format:check`  | Prettier (check only)                                    |
+| `npm run typecheck`     | `tsc --noEmit`                                           |
+| `npm test`              | Jest + RTL — runs with coverage (terminal + HTML report) |
+| `npm run test:watch`    | Jest in watch mode                                       |
+| `npm run test:coverage` | Explicit coverage alias (same as `npm test`)             |
+| `npm run test:ci`       | Jest in CI mode                                          |
+
+`predev` and `prebuild` also run automatically (npm lifecycle) — see **Agent skills** below.
+
+---
+
+## Agent skills (Codex & Claude)
+
+This repo commits a `.claude/settings.json` (plugin marketplace + the skills this stack needs) and
+a self-contained `.claude/hooks/ensure-plugins.mjs` that installs and keeps them updated for
+**whichever agent CLI you have** — `claude` and/or `codex`. The `wshobson/agents` marketplace ships
+dual Codex + Claude plugin manifests, so the same plugin ids work for both.
+
+Auto-install (no extra command):
+
+- **Claude Code** — opening the repo (a `SessionStart` hook that emits `reloadSkills`, so a
+  first-time install is usable in the same session) and `npm run dev` (a `predev` step);
+  `npm run build` only checks (`prebuild`, CI-safe).
+- **Codex** — running the repo (`npm run dev` / the launcher) or `codex plugin add`.
+
+Manual, **this repo only**: `npm run skills` (install missing) or `npm run skills:update` (update
+to latest). It's a no-op when neither CLI is present and never blocks dev/build.
+
+**Cursor (2.5+):** no plugin CLI or auto-install — install once **in the editor** (add the
+`wshobson/agents` marketplace, then `/plugin install <name>` for the skills below). A committed
+`.cursor/rules/agent-skills.mdc` gives Cursor the per-repo guidance automatically; Cursor doesn't
+honor a skill's `tools:` allowlist.
+
+Skills this repo enables (both agents unless noted):
+
+| Skill / plugin                | Used for                                                 |
+| ----------------------------- | -------------------------------------------------------- |
+| `frontend-mobile-development` | React / Next.js UI                                       |
+| `javascript-typescript`       | TypeScript / data-fetching patterns                      |
+| `ui-design`                   | UI/UX design                                             |
+| `ui-ux-pro-max`               | styles, palettes, typography — **Codex: built-in skill** |
+| `unit-testing`                | Jest + Testing Library                                   |
+| `security-scanning`           | XSS, dependency CVEs, `npm audit`                        |
+| `comprehensive-review`        | multi-perspective code review                            |
+
+> Process skills — `superpowers:*` (plan / TDD / debug), `frontend-design`, `webapp-testing` — are
+> **Claude-only** user-level installs (see `../campus-tours-live/README.md`). In Codex, follow the
+> same discipline with its built-in flow.
+
+Which skill for which situation, and the cross-repo rules, are in `AGENTS.md` (Codex) and
+`CLAUDE.md` (Claude).
 
 ---
 
@@ -125,10 +170,10 @@ Next.js has a hard split between server-only and browser-exposed variables, whic
   secrets here. Changing one requires a dev-server restart (or rebuild) to take effect.
 - **No prefix** — available only on the **server** (RSC, route handlers, `next.config.ts`).
 
-| Variable              | Used by                                                | Purpose                                                                  | Default                 |
-| --------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | ----------------------- |
-| `BFF_URL`             | `next.config.ts` rewrites + `getServerMe` (server)     | BFF origin to proxy `/auth/*`, `/api/*`, `/v1/*` to, and for RSC guards   | `http://localhost:4000` |
-| `NEXT_PUBLIC_BFF_URL` | `AuthOptions` (browser)                                 | Where the browser starts sign-in. **Empty = same-origin (recommended)**  | _(empty)_               |
+| Variable              | Used by                                            | Purpose                                                                 | Default                 |
+| --------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------- |
+| `BFF_URL`             | `next.config.ts` rewrites + `getServerMe` (server) | BFF origin to proxy `/auth/*`, `/api/*`, `/v1/*` to, and for RSC guards | `http://localhost:4000` |
+| `NEXT_PUBLIC_BFF_URL` | `AuthOptions` (browser)                            | Where the browser starts sign-in. **Empty = same-origin (recommended)** | _(empty)_               |
 
 `NEXT_PUBLIC_BFF_URL` is empty by default on purpose: `"" + "/auth/login"` is a **same-origin
 relative URL**, which the rewrites forward to the BFF (keeping the session cookie first-party). Only
@@ -178,14 +223,14 @@ src/
 File-based **App Router** routing under `src/app/`. Folders are routes; `layout.tsx` wraps a subtree;
 the `(app)` folder is a **route group** (groups routes under one layout without adding a URL segment).
 
-| Route                              | Area        | Notes                                                |
-| ---------------------------------- | ----------- | ---------------------------------------------------- |
-| `/`                                | public      | Home / marketing                                     |
-| `/signin`                          | public      | Sign-in entry (delegates to the BFF)                 |
-| `/signup/role` `…/participant` `…/guide` | public | Choose a role / start onboarding                     |
-| `/onboarding/guide` `…/participant`| protected   | Complete a role's onboarding                         |
-| `/dashboard` `/profile` `/support` | protected   | Signed-in app area — `(app)` group, role-guarded     |
-| `/staff`                           | protected   | Staff (ADMIN / SUPPORT) area, own layout             |
+| Route                                    | Area      | Notes                                            |
+| ---------------------------------------- | --------- | ------------------------------------------------ |
+| `/`                                      | public    | Home / marketing                                 |
+| `/signin`                                | public    | Sign-in entry (delegates to the BFF)             |
+| `/signup/role` `…/participant` `…/guide` | public    | Choose a role / start onboarding                 |
+| `/onboarding/guide` `…/participant`      | protected | Complete a role's onboarding                     |
+| `/dashboard` `/profile` `/support`       | protected | Signed-in app area — `(app)` group, role-guarded |
+| `/staff`                                 | protected | Staff (ADMIN / SUPPORT) area, own layout         |
 
 **Server vs Client Components:** pages and layouts are **Server Components** by default (they can read
 cookies and run guards server-side). Components that need browser APIs, state, or events opt in with
@@ -306,11 +351,11 @@ trailing commas, 100-col). TypeScript runs in strict mode.
 Git hooks are managed by **husky** and installed automatically on `npm install` (via the `prepare`
 script). They match the BFF and Core repos.
 
-| Hook         | Runs            | Purpose                                              |
-| ------------ | --------------- | ---------------------------------------------------- |
-| `pre-commit` | `lint-staged`   | ESLint `--fix` + Prettier on staged files            |
-| `commit-msg` | `commitlint`    | Enforces the commit convention below                 |
-| `pre-push`   | `npm test`      | Jest suite must pass before pushing                  |
+| Hook         | Runs          | Purpose                                   |
+| ------------ | ------------- | ----------------------------------------- |
+| `pre-commit` | `lint-staged` | ESLint `--fix` + Prettier on staged files |
+| `commit-msg` | `commitlint`  | Enforces the commit convention below      |
+| `pre-push`   | `npm test`    | Jest suite must pass before pushing       |
 
 **Commit message format** (identical across all three repos):
 
@@ -332,6 +377,14 @@ missing the type or the `<BOARD>-<NUMBER>` ticket are rejected. Bypass in an eme
 
 ---
 
+## Pull requests
+
+Open a PR against `main` (direct pushes are blocked by a branch ruleset). The gate requires:
+
+- **A filled-in `.github/pull_request_template.md`** — a real **Summary** (>= 100 characters / 15 words) and **Testing** (>= 40 characters / 7 words), and at least one **Type of change** box checked. Placeholder / junk / gibberish text and an identical Summary and Testing are rejected; an AI step in the same check also verifies the description matches the diff.
+- **Before / After screenshots** under **## Screenshots** for changes that touch UI files (`.tsx` / `.jsx` / `.css`, ...). Markdown-, config-, and `.ts`-only changes are exempt (or check only "Docs / chore / config").
+- All required checks green + **1 approving review**.
+
 ## Build & deploy
 
 ```bash
@@ -349,11 +402,11 @@ npm run start          # serve the build
 
 ## Troubleshooting
 
-| Symptom                                              | Cause & fix                                                                                                                |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `/v1/*` or `/auth/*` returns 404                     | Rewrites not active — `BFF_URL` unset, or the BFF isn't running. Set `BFF_URL` and start the BFF.                          |
-| Signed in but immediately bounced to `/signin`       | The session cookie isn't first-party. The dev server is pinned to `:3001` (the BFF's origin) — make sure you didn't override the port.       |
-| Login redirect fails / `redirect_uri_mismatch`       | The web app's origin must match the BFF's `GOOGLE_REDIRECT_URI` and the Google client's redirect URI (all `:3001`).                          |
-| `NEXT_PUBLIC_*` change not taking effect             | These are inlined at build time — restart the dev server (or rebuild).                                                     |
-| Hydration mismatch warning                           | Server and client rendered differently — avoid `Date.now()`/`window` in render; gate browser-only code behind `useEffect`. |
-| Saving a file doesn't refresh the browser            | iCloud-synced folders drop file events — use `npm run dev:poll`.                                                           |
+| Symptom                                        | Cause & fix                                                                                                                            |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `/v1/*` or `/auth/*` returns 404               | Rewrites not active — `BFF_URL` unset, or the BFF isn't running. Set `BFF_URL` and start the BFF.                                      |
+| Signed in but immediately bounced to `/signin` | The session cookie isn't first-party. The dev server is pinned to `:3001` (the BFF's origin) — make sure you didn't override the port. |
+| Login redirect fails / `redirect_uri_mismatch` | The web app's origin must match the BFF's `GOOGLE_REDIRECT_URI` and the Google client's redirect URI (all `:3001`).                    |
+| `NEXT_PUBLIC_*` change not taking effect       | These are inlined at build time — restart the dev server (or rebuild).                                                                 |
+| Hydration mismatch warning                     | Server and client rendered differently — avoid `Date.now()`/`window` in render; gate browser-only code behind `useEffect`.             |
+| Saving a file doesn't refresh the browser      | iCloud-synced folders drop file events — use `npm run dev:poll`.                                                                       |

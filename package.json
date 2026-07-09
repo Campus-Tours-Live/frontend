@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node .claude/hooks/ensure-plugins.mjs",
+    "prebuild": "node .claude/hooks/ensure-plugins.mjs --check",
+    "skills": "node .claude/hooks/ensure-plugins.mjs",
+    "skills:update": "node .claude/hooks/ensure-plugins.mjs --force-update",
     "dev": "next dev -p 3001",
     "dev:poll": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev -p 3001",
     "build": "next build",
