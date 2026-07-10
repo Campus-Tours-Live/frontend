@@ -9,12 +9,14 @@ import {
 } from "@/lib/data-access/hooks/use-guide-availability";
 
 function jsonResponse(status: number, body: unknown): Response {
+  const serialized = JSON.stringify(body);
   return {
     ok: status >= 200 && status < 300,
     status,
     headers: { get: () => null },
     body: null,
     json: async () => body,
+    text: async () => serialized,
   } as unknown as Response;
 }
 

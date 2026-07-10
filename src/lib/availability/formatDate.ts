@@ -29,12 +29,33 @@ export function formatIsoDateToUs(iso: string): string {
   return `${month}/${day}/${year}`;
 }
 
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function formatIsoDateParts(year: number, month: number, day: number): string {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function parseIsoDateString(input: string): string | null {
+  const match = ISO_DATE_RE.exec(input.trim());
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!isValidCalendarDate(year, month, day)) return null;
+
+  return formatIsoDateParts(year, month, day);
+}
+
 /** Parse mm/dd/yyyy (or m/d/yyyy) into yyyy-mm-dd, or null when invalid. */
 export function parseUsDateToIso(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  if (ISO_DATE_RE.test(trimmed)) return trimmed;
+  if (ISO_DATE_RE.test(trimmed)) return parseIsoDateString(trimmed);
 
   const match = US_DATE_RE.exec(trimmed);
   if (!match) return null;
@@ -42,12 +63,9 @@ export function parseUsDateToIso(input: string): string | null {
   const month = Number(match[1]);
   const day = Number(match[2]);
   const year = Number(match[3]);
-  const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
-    return null;
-  }
+  if (!isValidCalendarDate(year, month, day)) return null;
 
-  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return formatIsoDateParts(year, month, day);
 }
 
 /** Normalize a form value that may be ISO or US format into ISO for the API. */

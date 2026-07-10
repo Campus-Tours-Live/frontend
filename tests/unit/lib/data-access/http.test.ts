@@ -13,11 +13,14 @@ jest.mock("@/lib/http", () => ({ apiFetch: jest.fn() }));
 const mockedApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
 
 /** Build a minimal Response-like object for apiFetch to resolve with. */
-function makeRes(opts: { ok: boolean; status: number; json?: unknown }) {
+function makeRes(opts: { ok: boolean; status: number; json?: unknown; text?: string }) {
+  const hasText = opts.text !== undefined;
+  const body = hasText ? opts.text! : JSON.stringify(opts.json ?? {});
   return {
     ok: opts.ok,
     status: opts.status,
     json: jest.fn().mockResolvedValue(opts.json),
+    text: hasText ? jest.fn().mockResolvedValue(body) : undefined,
   } as unknown as Response;
 }
 
@@ -125,12 +128,20 @@ describe("apiJson", () => {
     });
   });
 
-  it("returns undefined for 204 No Content without reading JSON", async () => {
-    const res = makeRes({ ok: true, status: 204 });
+  it("returns undefined for 204 No Content without parsing a body", async () => {
+    const res = makeRes({ ok: true, status: 204, text: "" });
     mockedApiFetch.mockResolvedValue(res);
 
     await expect(apiJson("/v1/thing")).resolves.toBeUndefined();
     expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it("returns undefined for an empty 200 response body", async () => {
+    const res = makeRes({ ok: true, status: 200, text: "   " });
+    mockedApiFetch.mockResolvedValue(res);
+
+    await expect(apiJson("/v1/thing")).resolves.toBeUndefined();
+    expect(res.text).toHaveBeenCalled();
   });
 
   it("forwards the init through to apiFetch unchanged", async () => {

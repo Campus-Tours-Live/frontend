@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Alert, Button, Modal, SelectField, TextField, Textarea } from "@/components/ui";
+import { Alert, Button, Modal, SelectField, Textarea } from "@/components/ui";
 import {
   ApiError,
   apiErrorMessage,
   type AvailabilityException,
   type AvailabilityExceptionType,
 } from "@/lib/data-access";
+import { normalizeIsoDateInput } from "@/lib/availability/formatDate";
 import { parseRuleTimeRangeForSubmit } from "@/lib/availability/submitTimeRange";
 import { defaultEndTime, defaultStartTime, snapToTimeGrid } from "@/lib/availability/timeOptions";
 import { EXCEPTION_TYPE_LABELS, todayIsoDate } from "./availabilityHelpers";
 import { TimeRangeSelect } from "./TimeRangeSelect";
+import { UsDateField } from "./UsDateField";
 
 export interface ExceptionFormValues {
   exceptionDate: string;
@@ -55,14 +57,19 @@ function ExceptionFormModalContent({
   const [timeError, setTimeError] = useState<string | null>(null);
 
   const showTimes = exceptionType !== "UNAVAILABLE_ALL_DAY";
+  const defaultExceptionDate = useMemo(
+    () => initial?.exceptionDate ?? todayIsoDate(timezone),
+    [initial?.exceptionDate, timezone],
+  );
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ExceptionFormFields>({
     defaultValues: {
-      exceptionDate: initial?.exceptionDate ?? todayIsoDate(timezone),
+      exceptionDate: defaultExceptionDate,
       reason: initial?.reason ?? "",
     },
   });
@@ -82,8 +89,13 @@ function ExceptionFormModalContent({
           }
         }
 
+        const exceptionDate = normalizeIsoDateInput(fields.exceptionDate);
+        if (!exceptionDate) {
+          return;
+        }
+
         const values: ExceptionFormValues = {
-          exceptionDate: fields.exceptionDate,
+          exceptionDate,
           type: exceptionType,
           startLocal: times?.startLocal ?? defaultStartTime(),
           endLocal: times?.endLocal ?? defaultEndTime(),
@@ -112,11 +124,12 @@ function ExceptionFormModalContent({
       ) : null}
 
       <div className="mt-5 space-y-4">
-        <TextField
+        <UsDateField
+          control={control}
+          name="exceptionDate"
           label="Date"
-          type="date"
           error={errors.exceptionDate?.message}
-          {...register("exceptionDate", { required: "Date is required" })}
+          requiredMessage="Date is required"
         />
 
         <SelectField

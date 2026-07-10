@@ -21,6 +21,7 @@ describe("formatDate", () => {
     expect(parseUsDateToIso("02/30/2026")).toBeNull();
     expect(parseUsDateToIso("13/01/2026")).toBeNull();
     expect(parseUsDateToIso("06-01-2026")).toBeNull();
+    expect(parseUsDateToIso("2026-02-30")).toBeNull();
   });
 
   it("normalizes mixed form input for API submit", () => {

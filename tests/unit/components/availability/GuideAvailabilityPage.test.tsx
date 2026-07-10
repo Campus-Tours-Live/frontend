@@ -150,13 +150,44 @@ describe("GuideAvailabilityPage", () => {
       isPending: false,
       variables: null,
     });
-    jest.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<GuideAvailabilityPage />);
 
     await user.click(screen.getByRole("button", { name: "Remove hours" }));
+    await user.click(screen.getByRole("button", { name: "Remove" }));
 
     expect(mutateAsync).toHaveBeenCalledWith("r1");
+  });
+
+  it("preserves inactive state when editing a rule", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest.fn().mockResolvedValue({});
+    (useUpdateAvailabilityRule as jest.Mock).mockReturnValue({
+      mutateAsync,
+      isPending: false,
+    });
+    mockUseGuideAvailability.mockReturnValue({
+      data: {
+        ...sampleSummary,
+        rules: [{ ...sampleSummary.rules[0], active: false }],
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<GuideAvailabilityPage />);
+
+    await user.click(screen.getByRole("button", { name: "Edit hours" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "r1",
+          body: expect.objectContaining({ active: false }),
+        }),
+      ),
+    );
   });
 
   it("shows an alert when rule delete fails", async () => {
@@ -169,11 +200,11 @@ describe("GuideAvailabilityPage", () => {
       isPending: false,
       variables: null,
     });
-    jest.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<GuideAvailabilityPage />);
 
     await user.click(screen.getByRole("button", { name: "Remove hours" }));
+    await user.click(screen.getByRole("button", { name: "Remove" }));
 
     expect(await screen.findByText("Could not remove recurring hours")).toBeInTheDocument();
   });

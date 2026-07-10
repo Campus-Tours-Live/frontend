@@ -224,7 +224,7 @@ export interface UpdateAvailabilityExceptionInput {
   type?: AvailabilityExceptionType;
   startLocal?: string;
   endLocal?: string;
-  reason?: string;
+  reason?: string | null;
 }
 
 export interface UpdateBookingSettingsInput {

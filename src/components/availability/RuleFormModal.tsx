@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Alert, Button, Modal, SelectField, TextField } from "@/components/ui";
+import { Alert, Button, Modal, SelectField } from "@/components/ui";
 import { ApiError, apiErrorMessage, type AvailabilityRule } from "@/lib/data-access";
 import { normalizeIsoDateInput } from "@/lib/availability/formatDate";
 import { parseRuleTimeRangeForSubmit } from "@/lib/availability/submitTimeRange";
+import { isValidIanaTimeZone, listIanaTimeZones } from "@/lib/availability/timezones";
 import {
   defaultEndTime,
   defaultStartTime,
@@ -110,13 +111,25 @@ function RuleFormModalContent({
           effectiveTo = parsed;
         }
 
+        const ruleTimezone = fields.timezone.trim() || timezone;
+        if (!isValidIanaTimeZone(ruleTimezone)) {
+          setError("timezone", { message: "Choose a valid IANA timezone" });
+          return;
+        }
+        if (ruleTimezone !== timezone) {
+          setError("timezone", {
+            message: `Must match booking settings timezone (${timezone})`,
+          });
+          return;
+        }
+
         const payload: RuleFormValues = {
           dayOfWeek: fields.dayOfWeek,
           startLocal: times.startLocal,
           endLocal: times.endLocal,
           effectiveFrom,
           effectiveTo,
-          timezone: fields.timezone.trim() || timezone,
+          timezone: ruleTimezone,
         };
 
         try {
@@ -164,11 +177,18 @@ function RuleFormModalContent({
           endError={timeError ?? undefined}
         />
 
-        <TextField
+        <SelectField
           label="Timezone"
-          hint="IANA timezone, e.g. America/Los_Angeles"
-          {...register("timezone")}
-        />
+          hint={`Must match booking settings (${timezone})`}
+          error={errors.timezone?.message}
+          {...register("timezone", { required: "Timezone is required" })}
+        >
+          {listIanaTimeZones().map((zone) => (
+            <option key={zone} value={zone}>
+              {zone}
+            </option>
+          ))}
+        </SelectField>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <UsDateField

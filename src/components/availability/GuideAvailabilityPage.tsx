@@ -25,6 +25,7 @@ import {
 } from "./ExceptionFormModal";
 import { RuleFormModal, ruleFormErrorMessage, type RuleFormValues } from "./RuleFormModal";
 import { WeeklySchedulePanel } from "./WeeklySchedulePanel";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 export function GuideAvailabilityPage() {
   const { data, isLoading, isError, error: loadError } = useGuideAvailability();
@@ -44,6 +45,11 @@ export function GuideAvailabilityPage() {
   const [editingException, setEditingException] = useState<AvailabilityException | null>(null);
   const [exceptionError, setExceptionError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "rule"; rule: AvailabilityRule }
+    | { kind: "exception"; exception: AvailabilityException }
+    | null
+  >(null);
 
   const timezone = data?.bookingSettings.timezone ?? "America/Los_Angeles";
 
@@ -82,21 +88,23 @@ export function GuideAvailabilityPage() {
 
   const handleRuleSubmit = async (values: RuleFormValues) => {
     setRuleError(null);
-    const body = {
+    const shared = {
       dayOfWeek: Number(values.dayOfWeek),
       startLocal: values.startLocal,
       endLocal: values.endLocal,
       timezone: values.timezone.trim() || timezone,
       effectiveFrom: values.effectiveFrom,
       effectiveTo: values.effectiveTo.trim() || null,
-      active: true,
     };
 
     try {
       if (editingRule) {
-        await updateRule.mutateAsync({ id: editingRule.id, body });
+        await updateRule.mutateAsync({
+          id: editingRule.id,
+          body: { ...shared, active: editingRule.active },
+        });
       } else {
-        await createRule.mutateAsync(body);
+        await createRule.mutateAsync({ ...shared, active: true });
       }
     } catch (err) {
       setRuleError(ruleFormErrorMessage(err));
@@ -106,19 +114,28 @@ export function GuideAvailabilityPage() {
 
   const handleExceptionSubmit = async (values: ExceptionFormValues) => {
     setExceptionError(null);
-    const body = {
-      exceptionDate: values.exceptionDate,
-      type: values.type,
-      startLocal: values.type === "UNAVAILABLE_ALL_DAY" ? undefined : values.startLocal,
-      endLocal: values.type === "UNAVAILABLE_ALL_DAY" ? undefined : values.endLocal,
-      reason: values.reason.trim() || undefined,
-    };
+    const ranged = values.type !== "UNAVAILABLE_ALL_DAY";
 
     try {
       if (editingException) {
-        await updateException.mutateAsync({ id: editingException.id, body });
+        await updateException.mutateAsync({
+          id: editingException.id,
+          body: {
+            exceptionDate: values.exceptionDate,
+            type: values.type,
+            startLocal: ranged ? values.startLocal : undefined,
+            endLocal: ranged ? values.endLocal : undefined,
+            reason: values.reason.trim(),
+          },
+        });
       } else {
-        await createException.mutateAsync(body);
+        await createException.mutateAsync({
+          exceptionDate: values.exceptionDate,
+          type: values.type,
+          startLocal: ranged ? values.startLocal : undefined,
+          endLocal: ranged ? values.endLocal : undefined,
+          reason: values.reason.trim() || undefined,
+        });
       }
     } catch (err) {
       setExceptionError(exceptionFormErrorMessage(err));
@@ -126,34 +143,33 @@ export function GuideAvailabilityPage() {
     }
   };
 
-  const handleDeleteRule = async (rule: AvailabilityRule) => {
-    if (
-      !window.confirm(
-        `Remove ${DAY_LABELS[rule.dayOfWeek]} ${formatTimeRange(rule.startLocal, rule.endLocal)}?`,
-      )
-    ) {
-      return;
-    }
-    setDeleteError(null);
-    try {
-      await deleteRule.mutateAsync(rule.id);
-    } catch (err) {
-      setDeleteError(
-        actionErrorMessage(err, "Could not remove recurring hours. Please try again."),
-      );
-    }
+  const handleDeleteRule = (rule: AvailabilityRule) => {
+    setPendingDelete({ kind: "rule", rule });
   };
 
-  const handleDeleteException = async (exception: AvailabilityException) => {
-    if (!window.confirm(`Remove date-specific hours on ${exception.exceptionDate}?`)) {
-      return;
-    }
+  const handleDeleteException = (exception: AvailabilityException) => {
+    setPendingDelete({ kind: "exception", exception });
+  };
+
+  const confirmPendingDelete = async () => {
+    if (!pendingDelete) return;
+
     setDeleteError(null);
     try {
-      await deleteException.mutateAsync(exception.id);
+      if (pendingDelete.kind === "rule") {
+        await deleteRule.mutateAsync(pendingDelete.rule.id);
+      } else {
+        await deleteException.mutateAsync(pendingDelete.exception.id);
+      }
+      setPendingDelete(null);
     } catch (err) {
       setDeleteError(
-        actionErrorMessage(err, "Could not remove date-specific hours. Please try again."),
+        actionErrorMessage(
+          err,
+          pendingDelete.kind === "rule"
+            ? "Could not remove recurring hours. Please try again."
+            : "Could not remove date-specific hours. Please try again.",
+        ),
       );
     }
   };
@@ -232,6 +248,23 @@ export function GuideAvailabilityPage() {
         onSubmit={handleExceptionSubmit}
         submitting={createException.isPending || updateException.isPending}
         error={exceptionError}
+      />
+
+      <ConfirmDeleteModal
+        open={pendingDelete != null}
+        title={
+          pendingDelete?.kind === "rule" ? "Remove recurring hours?" : "Remove date-specific hours?"
+        }
+        description={
+          pendingDelete?.kind === "rule"
+            ? `This removes ${DAY_LABELS[pendingDelete.rule.dayOfWeek]} ${formatTimeRange(pendingDelete.rule.startLocal, pendingDelete.rule.endLocal)} from your weekly schedule.`
+            : pendingDelete?.kind === "exception"
+              ? `This removes the override on ${pendingDelete.exception.exceptionDate}.`
+              : ""
+        }
+        confirming={deleteRule.isPending || deleteException.isPending}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => void confirmPendingDelete()}
       />
     </div>
   );

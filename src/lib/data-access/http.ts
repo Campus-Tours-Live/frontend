@@ -29,14 +29,24 @@ async function readProblemMessage(res: Response): Promise<string | undefined> {
 
 /** User-facing text when {@link ApiError} carries a server/business message. */
 export function apiErrorMessage(err: ApiError): string | undefined {
+  const message = err.message?.trim();
   if (
-    !err.message ||
-    err.message === `HTTP ${err.status}` ||
-    err.message === `Request failed (${err.status})`
+    !message ||
+    message === `Request failed (${err.status})` ||
+    message === `HTTP ${err.status}`
   ) {
     return undefined;
   }
-  return err.message;
+  return message;
+}
+
+async function readSuccessBody(res: Response): Promise<unknown> {
+  if (typeof res.text === "function") {
+    const text = await res.text();
+    if (!text.trim()) return undefined;
+    return JSON.parse(text);
+  }
+  return res.json();
 }
 
 /** apiFetch + unwrap the `{ data }` envelope. Throws {@link ApiError} on non-2xx. */
@@ -49,8 +59,13 @@ export async function apiJson<T>(path: string, init?: ApiFetchInit): Promise<T> 
   if (res.status === 204) {
     return undefined as T;
   }
-  const json = await res.json();
-  return (json?.data ?? json) as T;
+
+  const json = await readSuccessBody(res);
+  if (json === undefined) {
+    return undefined as T;
+  }
+
+  return ((json as { data?: T })?.data ?? json) as T;
 }
 
 /** PATCH JSON convenience over {@link apiJson}. */

@@ -30,7 +30,15 @@ describe("timeOptions", () => {
     expect(options.some((option) => option.value === "09:00")).toBe(false);
     expect(options.some((option) => option.value === "16:00")).toBe(true);
     expect(options.some((option) => option.value === "22:00")).toBe(true);
-    expect(options.at(-1)).toEqual({ value: "23:45", label: "11:45pm" });
+    expect(options.at(-1)).toEqual({
+      value: "23:59",
+      label: "11:59pm (end of day)",
+    });
+  });
+
+  it("includes end-of-day when start is late but before midnight", () => {
+    const options = endTimeOptionsAfter("23:45");
+    expect(options).toEqual([{ value: "23:59", label: "11:59pm (end of day)" }]);
   });
 
   it("coerces invalid end times when start moves later", () => {
@@ -82,7 +90,10 @@ describe("timeOptions", () => {
       startLocal: "17:00",
       endLocal: "18:00",
     });
-    expect(normalizeRuleTimeRange("23:45", "23:00")).toBeNull();
+    expect(normalizeRuleTimeRange("23:45", "23:00")).toEqual({
+      startLocal: "23:45",
+      endLocal: "23:59",
+    });
   });
 
   it("handles empty and malformed time values", () => {
@@ -90,6 +101,6 @@ describe("timeOptions", () => {
     expect(normalizeTimeValue(null)).toBe("");
     expect(normalizeTimeValue("bad")).toBe("bad");
     expect(snapToTimeGrid("")).toBe("09:00");
-    expect(coerceEndTimeAfterStart("23:45", "")).toBe("");
+    expect(coerceEndTimeAfterStart("23:45", "")).toBe("23:59");
   });
 });

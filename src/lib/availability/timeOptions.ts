@@ -2,6 +2,9 @@ import { formatLocalTime } from "./formatTime";
 
 export const TIME_SLOT_MINUTES = 15;
 
+/** Latest same-day end time (backend accepts HH:mm and HH:mm:ss). */
+export const END_OF_DAY_TIME = "23:59";
+
 export interface TimeOption {
   value: string;
   label: string;
@@ -41,7 +44,21 @@ export const START_TIME_OPTIONS = buildTimeOptions(TIME_SLOT_MINUTES);
 /** End must be strictly after start on the same day. */
 export function endTimeOptionsAfter(startValue: string): TimeOption[] {
   const startMinutes = localTimeToMinutes(startValue);
-  return START_TIME_OPTIONS.filter((option) => localTimeToMinutes(option.value) > startMinutes);
+  const options = START_TIME_OPTIONS.filter(
+    (option) => localTimeToMinutes(option.value) > startMinutes,
+  );
+
+  if (localTimeToMinutes(END_OF_DAY_TIME) > startMinutes) {
+    const hasEndOfDay = options.some((option) => option.value === END_OF_DAY_TIME);
+    if (!hasEndOfDay) {
+      options.push({
+        value: END_OF_DAY_TIME,
+        label: `${formatLocalTime(END_OF_DAY_TIME)} (end of day)`,
+      });
+    }
+  }
+
+  return options;
 }
 
 export function isEndAfterStart(startValue: string, endValue: string): boolean {
