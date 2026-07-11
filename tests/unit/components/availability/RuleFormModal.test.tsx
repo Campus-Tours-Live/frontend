@@ -8,7 +8,15 @@ describe("RuleFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<RuleFormModal open onClose={jest.fn()} defaultDayOfWeek={1} onSubmit={onSubmit} />);
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        defaultDayOfWeek={1}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "22:00" } });
     await user.selectOptions(screen.getByLabelText("Availability window"), "240");
@@ -28,7 +36,15 @@ describe("RuleFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<RuleFormModal open onClose={jest.fn()} defaultDayOfWeek={1} onSubmit={onSubmit} />);
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        defaultDayOfWeek={1}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "20:00" } });
     await user.selectOptions(screen.getByLabelText("Availability window"), "240");
@@ -44,7 +60,15 @@ describe("RuleFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<RuleFormModal open onClose={jest.fn()} defaultDayOfWeek={1} onSubmit={onSubmit} />);
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        defaultDayOfWeek={1}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
 
     fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "22:00" } });
     await user.selectOptions(screen.getByLabelText("Availability window"), "240");
@@ -62,7 +86,14 @@ describe("RuleFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<RuleFormModal open onClose={jest.fn()} onSubmit={onSubmit} />);
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
 
     await user.selectOptions(screen.getByLabelText("Weekday"), "3");
     fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "09:00" } });
@@ -94,6 +125,7 @@ describe("RuleFormModal", () => {
           active: true,
         }}
         onSubmit={jest.fn()}
+        settingsTimezone="America/Los_Angeles"
       />,
     );
 
@@ -110,6 +142,7 @@ describe("RuleFormModal", () => {
         onSubmit={jest.fn()}
         submitting
         error="Could not save recurring hours. Please try again."
+        settingsTimezone="America/Los_Angeles"
       />,
     );
 
@@ -135,6 +168,7 @@ describe("RuleFormModal", () => {
           active: true,
         }}
         onSubmit={jest.fn()}
+        settingsTimezone="America/Los_Angeles"
       />,
     );
 
@@ -148,7 +182,15 @@ describe("RuleFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<RuleFormModal open onClose={jest.fn()} defaultDayOfWeek={1} onSubmit={onSubmit} />);
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        defaultDayOfWeek={1}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
 
     await user.selectOptions(screen.getByLabelText("Availability window"), "custom");
     await user.click(screen.getByRole("button", { name: "Add hours" }));
@@ -161,7 +203,15 @@ describe("RuleFormModal", () => {
     const user = userEvent.setup();
     const onSubmit = jest.fn().mockResolvedValue(undefined);
 
-    render(<RuleFormModal open onClose={jest.fn()} defaultDayOfWeek={1} onSubmit={onSubmit} />);
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        defaultDayOfWeek={1}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
 
     await user.type(screen.getByLabelText("Effective from (optional)"), "not-a-date");
     await user.click(screen.getByRole("button", { name: "Add hours" }));
@@ -178,7 +228,76 @@ describe("RuleFormModal", () => {
   });
 
   it("renders nothing when closed", () => {
-    render(<RuleFormModal open={false} onClose={jest.fn()} onSubmit={jest.fn()} />);
+    render(
+      <RuleFormModal
+        open={false}
+        onClose={jest.fn()}
+        onSubmit={jest.fn()}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows the read-only booking-settings timezone and never includes it in the submit payload", async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        defaultDayOfWeek={1}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
+
+    const tzField = screen.getByLabelText("Timezone");
+    expect(tzField).toHaveValue("America/Los_Angeles");
+    expect(tzField).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Start time"), { target: { value: "09:00" } });
+    await user.click(screen.getByRole("button", { name: "Add hours" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload).not.toHaveProperty("timezone");
+  });
+
+  it("does not block saving when the rule's stored timezone is an alias that differs from the settings timezone", async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+
+    render(
+      <RuleFormModal
+        open
+        onClose={jest.fn()}
+        initial={{
+          id: "r3",
+          dayOfWeek: 2,
+          startLocal: "10:00",
+          windowMin: 60,
+          // Alias for America/Los_Angeles — differs textually from settingsTimezone below, and a
+          // canonical-only whitelist would reject it. Neither should ever block saving: the tz
+          // isn't submitted, and validation here is alias-tolerant.
+          timezone: "US/Pacific",
+          effectiveFrom: null,
+          effectiveTo: null,
+          active: true,
+        }}
+        onSubmit={onSubmit}
+        settingsTimezone="America/Los_Angeles"
+      />,
+    );
+
+    const tzField = screen.getByLabelText("Timezone");
+    expect(tzField).toHaveValue("America/Los_Angeles");
+    expect(tzField).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).not.toHaveProperty("timezone");
   });
 });

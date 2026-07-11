@@ -10,6 +10,7 @@ import {
 } from "@/lib/data-access";
 import { normalizeIsoDateInput } from "@/lib/availability/formatDate";
 import { minutesToPresetValue, presetValueToMinutes } from "@/lib/availability/duration";
+import { formatTimezoneLabel, isValidTimezone } from "@/lib/availability/timezones";
 import { DAY_LABELS } from "./availabilityHelpers";
 import { DurationField } from "./DurationField";
 import { UsDateField } from "./UsDateField";
@@ -34,6 +35,13 @@ interface RuleFormModalProps {
   onClose: () => void;
   initial?: AvailabilityRule | null;
   defaultDayOfWeek?: number;
+  /**
+   * The guide's booking-settings timezone (server-set, single value for all their
+   * availability — CTL-55 Task 1/2). Rendered read-only in this form: the guide can see which
+   * zone their availability is in, but cannot edit it here, and it is never part of the
+   * submitted payload. Task 4 wires this from `useAvailabilitySettings()`'s `timezone`.
+   */
+  settingsTimezone: string;
   onSubmit: (values: RuleFormValues) => Promise<void>;
   submitting?: boolean;
   error?: string | null;
@@ -46,10 +54,20 @@ function RuleFormModalContent({
   onClose,
   initial,
   defaultDayOfWeek,
+  settingsTimezone,
   onSubmit,
   submitting,
   error,
 }: Omit<RuleFormModalProps, "open">) {
+  // The rule's own stored zone may be an alias (e.g. "US/Pacific") or simply differ from the
+  // current settings zone (the guide changed their settings after this rule was created). It is
+  // display-only here — never submitted, and never blocks saving. Guard the note with
+  // `isValidTimezone` so a corrupt/garbage stored value doesn't render a confusing label.
+  const storedTimezoneNote =
+    initial?.timezone && initial.timezone !== settingsTimezone && isValidTimezone(initial.timezone)
+      ? `Saved with ${formatTimezoneLabel(initial.timezone)} at the time — now shown in your current booking-settings timezone.`
+      : null;
+
   const [durationValue, setDurationValue] = useState(() =>
     initial ? minutesToPresetValue(initial.windowMin) : DEFAULT_DURATION_PRESET,
   );
@@ -158,6 +176,14 @@ function RuleFormModalContent({
           />
         </div>
 
+        <TextField
+          label="Timezone"
+          value={settingsTimezone}
+          disabled
+          readOnly
+          hint={storedTimezoneNote ?? "Set in your booking settings"}
+        />
+
         <div className="grid gap-4 sm:grid-cols-2">
           <UsDateField
             control={control}
@@ -198,6 +224,7 @@ export function RuleFormModal({
   onClose,
   initial,
   defaultDayOfWeek,
+  settingsTimezone,
   onSubmit,
   submitting,
   error,
@@ -216,6 +243,7 @@ export function RuleFormModal({
           key={formKey}
           onClose={onClose}
           initial={initial}
+          settingsTimezone={settingsTimezone}
           defaultDayOfWeek={defaultDayOfWeek}
           onSubmit={onSubmit}
           submitting={submitting}
