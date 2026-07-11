@@ -2,6 +2,7 @@ import {
   CUSTOM_DURATION_VALUE,
   DURATION_PRESETS,
   formatDuration,
+  formatWindow,
   isValidWindowMin,
   minutesToPresetValue,
   presetValueToMinutes,
@@ -83,5 +84,25 @@ describe("formatDuration", () => {
     expect(formatDuration(0)).toBe("");
     expect(formatDuration(-5)).toBe("");
     expect(formatDuration(Number.NaN)).toBe("");
+  });
+});
+
+describe("formatWindow", () => {
+  it("combines a 12-hour start time with the duration, e.g. '10:00 AM · 4h'", () => {
+    expect(formatWindow("10:00", 240)).toBe("10:00 AM · 4h");
+  });
+
+  it("renders PM for afternoon/evening starts", () => {
+    expect(formatWindow("22:00", 90)).toBe("10:00 PM · 1h 30m");
+    expect(formatWindow("13:05", 30)).toBe("1:05 PM · 30m");
+  });
+
+  it("renders midnight as 12:00 AM and noon as 12:00 PM", () => {
+    expect(formatWindow("00:00", 30)).toBe("12:00 AM · 30m");
+    expect(formatWindow("12:00", 60)).toBe("12:00 PM · 1h");
+  });
+
+  it("falls back to the raw startLocal when it doesn't parse as HH:mm", () => {
+    expect(formatWindow("garbage", 60)).toBe("garbage · 1h");
   });
 });
