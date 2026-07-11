@@ -1,0 +1,57 @@
+import { existsSync, readFileSync } from "fs";
+import path from "path";
+import { presetValueToMinutes } from "@/lib/availability/duration";
+
+/**
+ * CTL-55 Task 2 replaces the old start+END time-range picker (PR #32) with start+duration. This
+ * guards against the obsolete end-of-day / `23:59` / snap-to-grid / wraparound machinery quietly
+ * creeping back in: it must not exist on disk, and the new modals must not reference it.
+ */
+
+const repoRoot = path.resolve(__dirname, "../../../..");
+
+const BANNED_MODULES = [
+  "src/lib/availability/submitTimeRange.ts",
+  "src/lib/availability/timeOptions.ts",
+  "src/components/availability/timeOptions.ts",
+  "src/components/availability/TimeRangeSelect.tsx",
+];
+
+const BANNED_TOKENS = [
+  "submitTimeRange",
+  "timeOptions",
+  "snapToTimeGrid",
+  "23:59",
+  "endLocal",
+  "parseRuleTimeRangeForSubmit",
+];
+
+const MODALS_UNDER_TEST = [
+  "src/components/availability/RuleFormModal.tsx",
+  "src/components/availability/ExceptionFormModal.tsx",
+  "src/components/availability/DurationField.tsx",
+  "src/lib/availability/duration.ts",
+];
+
+describe("no obsolete end-time / sentinel / snap-to-grid code path", () => {
+  it("does not bring the old submitTimeRange/timeOptions/TimeRangeSelect modules over", () => {
+    for (const relativePath of BANNED_MODULES) {
+      expect(existsSync(path.join(repoRoot, relativePath))).toBe(false);
+    }
+  });
+
+  it("the start+duration modals/helpers never reference the banned end-time tokens", () => {
+    for (const relativePath of MODALS_UNDER_TEST) {
+      const source = readFileSync(path.join(repoRoot, relativePath), "utf8");
+      for (const token of BANNED_TOKENS) {
+        expect(source).not.toContain(token);
+      }
+    }
+  });
+
+  it("windowMin has no 24:00-style sentinel: minutes map straight through, unmodified", () => {
+    // A window that runs past midnight (22:00 start + 4h) is just 240 minutes — never rewritten
+    // to a sentinel or clamped to end-of-day.
+    expect(presetValueToMinutes("240")).toBe(240);
+  });
+});
