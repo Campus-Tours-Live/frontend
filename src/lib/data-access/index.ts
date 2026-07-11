@@ -18,6 +18,20 @@ export { useOnboarding } from "./hooks/use-onboarding";
 export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
+export {
+  useAvailabilityExceptions,
+  useAvailabilityRules,
+  useAvailabilitySettings,
+  useCreateAvailabilityException,
+  useCreateAvailabilityRule,
+  useDeleteAvailabilityException,
+  useDeleteAvailabilityRule,
+  useOfferingSlots,
+  useResolvedAvailability,
+  useUpdateAvailabilityException,
+  useUpdateAvailabilityRule,
+  useUpdateAvailabilitySettings,
+} from "./hooks/use-guide-availability";
 
 export type {
   Me,
@@ -36,4 +50,18 @@ export type {
   ParticipantDashboard,
   OnboardingProgress,
   OnboardingStep,
+  AvailabilityRule,
+  AvailabilityException,
+  AvailabilityExceptionKind,
+  AvailabilitySettings,
+  AvailabilityOccurrence,
+  ResolvedAvailability,
+  AffectedBooking,
+  AvailabilityWriteEnvelope,
+  CreateAvailabilityRuleInput,
+  UpdateAvailabilityRuleInput,
+  CreateAvailabilityExceptionInput,
+  UpdateAvailabilityExceptionInput,
+  UpdateAvailabilitySettingsInput,
+  OfferingSlot,
 } from "./types";

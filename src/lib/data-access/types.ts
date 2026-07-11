@@ -146,34 +146,37 @@ export interface TourTopic {
   label: string;
 }
 
-export type AvailabilityExceptionType = "UNAVAILABLE_ALL_DAY" | "UNAVAILABLE_RANGE" | "ADDITIONAL";
+// --- Availability v2 (CTL-55) — start + duration, BFF Contract A (/v1/availability*) --------------
+// Supersedes the old (day_of_week, start_local, end_local, tz) shape: no `endLocal`, no 24:00
+// sentinel, no wraparound. A rule/exception carries `windowMin` (minutes) instead of an end time.
 
-/** Recurring weekly availability block (Core AvailabilityRuleResponse). */
+export type AvailabilityExceptionKind = "UNAVAILABLE" | "ADDITIONAL";
+
+/** Recurring weekly availability block (BFF AvailabilityRuleResponse — start + duration). */
 export interface AvailabilityRule {
   id: string;
-  dayOfWeek: number;
-  startLocal: string;
-  endLocal: string;
+  dayOfWeek: number; // 0-6
+  startLocal: string; // "HH:mm"
+  windowMin: number;
   timezone: string;
-  effectiveFrom: string;
+  effectiveFrom: string | null;
   effectiveTo: string | null;
   active: boolean;
-  createdAt: string | null;
 }
 
-/** One-off override to weekly availability (Core AvailabilityExceptionResponse). */
+/** One-off override to weekly availability (BFF AvailabilityExceptionResponse). */
 export interface AvailabilityException {
   id: string;
   exceptionDate: string;
-  type: AvailabilityExceptionType;
-  startLocal: string | null;
-  endLocal: string | null;
+  kind: AvailabilityExceptionKind;
+  startLocal: string;
+  windowMin: number;
   reason: string | null;
-  createdAt: string | null;
 }
 
-/** Per-guide booking policy (Core BookingSettingsResponse). */
-export interface BookingSettings {
+/** Per-guide booking policy (BFF AvailabilitySettingsResponse). */
+export interface AvailabilitySettings {
+  guideId: string;
   acceptanceMode: "AUTO" | "MANUAL";
   responseDeadlineMin: number;
   minNoticeMin: number;
@@ -182,52 +185,64 @@ export interface BookingSettings {
   bufferAfterMin: number;
   durationsOffered: number[];
   timezone: string;
+  updatedAt: string;
 }
 
-/** GET /v1/guide/availability */
-export interface AvailabilitySummary {
+/** A materialized, absolute-instant availability span (UTC, `Z`-suffixed) or a bookable slot. */
+export interface AvailabilityOccurrence {
+  startAt: string;
+  endAt: string;
+}
+
+/** GET /v1/availability — the backend-resolved (coalesced) read; the FE renders it, never
+ *  re-coalesces rules itself. */
+export interface ResolvedAvailability {
   rules: AvailabilityRule[];
-  exceptions: AvailabilityException[];
-  bookingSettings: BookingSettings;
+  occurrences: AvailabilityOccurrence[];
+  /** ISO dates where a DST spring-forward gap moved/skipped an occurrence — surfaced to the guide. */
+  dstGapDays: string[];
+}
+
+/** A booking whose scheduled window is covered by a rule/exception change — surfaced so the guide
+ *  sees what a reduction in availability affects (the booking itself is never retroactively cancelled). */
+export interface AffectedBooking {
+  bookingId: string;
+  bookingNumber: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+}
+
+/** Shape returned by every availability write (POST/PATCH/DELETE): the mutated resource (or, for
+ *  DELETE, the remaining list) plus any bookings the change affects. */
+export interface AvailabilityWriteEnvelope<T> {
+  data: T;
+  affectedBookings: AffectedBooking[];
+  meta?: Record<string, unknown>;
 }
 
 export interface CreateAvailabilityRuleInput {
   dayOfWeek: number;
   startLocal: string;
-  endLocal: string;
-  timezone?: string;
-  effectiveFrom?: string;
+  windowMin: number;
+  effectiveFrom?: string | null;
   effectiveTo?: string | null;
   active?: boolean;
 }
 
-export interface UpdateAvailabilityRuleInput {
-  dayOfWeek?: number;
-  startLocal?: string;
-  endLocal?: string;
-  timezone?: string;
-  effectiveFrom?: string;
-  effectiveTo?: string | null;
-  active?: boolean;
-}
+export type UpdateAvailabilityRuleInput = Partial<CreateAvailabilityRuleInput>;
 
 export interface CreateAvailabilityExceptionInput {
   exceptionDate: string;
-  type: AvailabilityExceptionType;
-  startLocal?: string;
-  endLocal?: string;
-  reason?: string;
+  kind: AvailabilityExceptionKind;
+  startLocal: string;
+  windowMin: number;
+  reason?: string | null;
 }
 
-export interface UpdateAvailabilityExceptionInput {
-  exceptionDate?: string;
-  type?: AvailabilityExceptionType;
-  startLocal?: string;
-  endLocal?: string;
-  reason?: string;
-}
+export type UpdateAvailabilityExceptionInput = Partial<CreateAvailabilityExceptionInput>;
 
-export interface UpdateBookingSettingsInput {
+export interface UpdateAvailabilitySettingsInput {
   acceptanceMode?: "AUTO" | "MANUAL";
   responseDeadlineMin?: number;
   minNoticeMin?: number;
@@ -237,3 +252,6 @@ export interface UpdateBookingSettingsInput {
   durationsOffered?: number[];
   timezone?: string;
 }
+
+/** GET /v1/offerings/{id}/slots — participant-facing bookable slots for an offering. */
+export type OfferingSlot = AvailabilityOccurrence;
