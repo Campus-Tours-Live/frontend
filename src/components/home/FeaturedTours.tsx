@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Alert, Link } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 import { useTours, type TourSummary } from "@/lib/data-access";
+import { formatOfferingPrice } from "@/lib/format";
 
 /**
  * FeaturedTours — featured section from design_new (#home .featured).
@@ -25,7 +26,7 @@ function toCardProps(tour: TourSummary): TourCardProps {
     university: tour.universityName,
     guide: tour.guideDisplayName,
     durationMinutes: tour.durationMin,
-    price: tour.priceCents / 100,
+    price: formatOfferingPrice(tour.priceCents, tour.currency),
   };
 }
 

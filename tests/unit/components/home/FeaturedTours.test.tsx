@@ -215,7 +215,7 @@ describe("TourCard", () => {
         university="Test University"
         guide="Jane Doe"
         durationMinutes={30}
-        price={25}
+        price="$25.00"
       />,
     );
     expect(screen.getByRole("heading", { level: 4, name: /test tour/i })).toBeInTheDocument();
@@ -224,7 +224,7 @@ describe("TourCard", () => {
     expect(screen.getByText("Test University")).toBeInTheDocument();
     expect(screen.getByText("· Jane Doe")).toBeInTheDocument();
     expect(screen.getByText(/30\s*min/i)).toBeInTheDocument();
-    expect(screen.getByText("$25")).toBeInTheDocument();
+    expect(screen.getByText("$25.00")).toBeInTheDocument();
     expect(screen.getByText(/verified guide/i)).toBeInTheDocument();
   });
 });

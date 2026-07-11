@@ -11,7 +11,8 @@ export interface TourCardProps {
   university: string;
   guide: string;
   durationMinutes: number;
-  price: number;
+  /** Locale/currency-formatted price (see formatOfferingPrice), e.g. "$42.00". */
+  price: string;
 }
 
 export function TourCard({ title, university, guide, durationMinutes, price }: TourCardProps) {
@@ -38,7 +39,7 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-4">
-          <span className="text-[18px] font-extrabold text-ink">${price}</span>
+          <span className="text-[18px] font-extrabold text-ink">{price}</span>
           <Button variant="secondary" size="sm" className="gap-1.5">
             View tour
             <Icon
