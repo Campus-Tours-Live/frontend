@@ -137,6 +137,36 @@ describe("ExceptionFormModal", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("blocks submit and shows a visible field error for an invalid exceptionDate — parity with the rule form's date validation", async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+
+    render(<ExceptionFormModal open onClose={jest.fn()} onSubmit={onSubmit} />);
+
+    // A native type="date" input sanitizes an unparsable value down to "" (verified: this is
+    // true in both real browsers and jsdom) — so typing garbage here lands on the same "required"
+    // error path as leaving the field empty, exercised by the RuleFormModal-equivalent
+    // (`UsDateField`'s Controller `rules.validate`) for effectiveFrom/effectiveTo.
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "not-a-date" } });
+    await user.click(screen.getByRole("button", { name: "Add exception" }));
+
+    expect(await screen.findByText("Date is required")).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("blocks submit and shows a visible field error for an emptied exceptionDate", async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+
+    render(<ExceptionFormModal open onClose={jest.fn()} onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "" } });
+    await user.click(screen.getByRole("button", { name: "Add exception" }));
+
+    expect(await screen.findByText("Date is required")).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("surfaces server validation errors via exceptionFormErrorMessage", () => {
     expect(exceptionFormErrorMessage(new ApiError(422, "Overlap"))).toBe("Overlap");
     expect(exceptionFormErrorMessage(new ApiError(422, ""))).toMatch(/overlaps another entry/i);

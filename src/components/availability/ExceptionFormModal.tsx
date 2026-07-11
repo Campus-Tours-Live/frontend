@@ -115,6 +115,17 @@ function ExceptionFormModalContent({
       ) : null}
 
       <div className="mt-5 space-y-4">
+        {/*
+          CTL-55 Task 5 — invalid-date handling parity with RuleFormModal's effectiveFrom/To
+          (which use `UsDateField`'s `Controller` `rules.validate` to reject unparsable text and
+          show "Use MM/DD/YYYY format"): a native `type="date"` input can never hold a malformed,
+          non-empty value in the first place — per the HTML value-sanitization algorithm, the
+          browser (verified: jsdom implements this too) resets any unparsable input straight to
+          `""`. So an invalid/garbled date and an emptied date both land on the same `""` value,
+          which the existing `required` rule below already catches with a visible field error and
+          blocks submit. Parity holds without an extra `setError`/validate rule here — see
+          ExceptionFormModal.test.tsx's "invalid exceptionDate" / "emptied exceptionDate" tests.
+        */}
         <TextField
           label="Date"
           type="date"

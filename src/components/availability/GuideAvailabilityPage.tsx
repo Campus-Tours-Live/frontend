@@ -145,6 +145,12 @@ export function GuideAvailabilityPage() {
     setPendingDelete({ kind: "exception", exception });
   };
 
+  /**
+   * On success, closes the modal (`setPendingDelete(null)`). On failure, `pendingDelete` is left
+   * set — the modal stays open — and `deleteError` is passed into `ConfirmDeleteModal`'s `error`
+   * prop so the guide sees the failure INSIDE the dialog (CTL-55 Task 5 carry-forward fix from
+   * #32; previously this rendered as a page-level `Alert` instead).
+   */
   const confirmPendingDelete = async () => {
     if (!pendingDelete) return;
 
@@ -174,8 +180,6 @@ export function GuideAvailabilityPage() {
         level={1}
       />
 
-      {deleteError ? <Alert variant="error">{deleteError}</Alert> : null}
-
       {isLoading ? (
         <div className="flex items-center gap-2 text-ink-soft">
           <Spinner />
@@ -193,7 +197,7 @@ export function GuideAvailabilityPage() {
               onAddDay={openCreateRule}
               onEditRule={openEditRule}
               onRemoveRule={handleRemoveRule}
-              removingRuleId={deleteRule.isPending ? (deleteRule.variables as string) : null}
+              removingRuleId={deleteRule.isPending ? deleteRule.variables : null}
             />
 
             <DateSpecificHoursPanel
@@ -201,7 +205,7 @@ export function GuideAvailabilityPage() {
               onAdd={openCreateException}
               onEdit={openEditException}
               onRemove={handleRemoveException}
-              removingId={deleteException.isPending ? (deleteException.variables as string) : null}
+              removingId={deleteException.isPending ? deleteException.variables : null}
             />
 
             <ResolvedAvailabilityPreview
@@ -252,6 +256,7 @@ export function GuideAvailabilityPage() {
               : ""
         }
         confirming={deleteRule.isPending || deleteException.isPending}
+        error={deleteError}
         onClose={() => setPendingDelete(null)}
         onConfirm={() => void confirmPendingDelete()}
       />

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Modal } from "@/components/ui";
+import { Alert, Button, Modal } from "@/components/ui";
 
 export interface ConfirmDeleteModalProps {
   open: boolean;
@@ -8,6 +8,14 @@ export interface ConfirmDeleteModalProps {
   description: string;
   confirmLabel?: string;
   confirming?: boolean;
+  /**
+   * A delete failure from the caller's mutation. CTL-55 Task 5 carry-forward fix (from #32's
+   * later revision): this renders as an `Alert` INSIDE the dialog body — not a page-level banner
+   * — so the guide sees the failure without the modal closing; the caller keeps the modal open
+   * (`open` stays true) on failure and clears `error` when the delete finally succeeds or a new
+   * delete is started.
+   */
+  error?: string | null;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -15,8 +23,7 @@ export interface ConfirmDeleteModalProps {
 /**
  * Confirmation dialog for deleting a rule or exception. Salvaged from #32
  * (`feature/CTL-18-guide-availability`'s later revision) — CTL-55 Task 4 wires it in for both
- * availability rules and exceptions. Surfacing the delete error *inside* this dialog (rather than
- * as a page-level Alert) is a CTL-55 Task 5 carry-forward fix, not done here.
+ * availability rules and exceptions.
  */
 export function ConfirmDeleteModal({
   open,
@@ -24,6 +31,7 @@ export function ConfirmDeleteModal({
   description,
   confirmLabel = "Remove",
   confirming,
+  error,
   onClose,
   onConfirm,
 }: ConfirmDeleteModalProps) {
@@ -39,6 +47,11 @@ export function ConfirmDeleteModal({
           {title}
         </h2>
         <p className="mt-2 text-[14px] text-ink-soft">{description}</p>
+        {error ? (
+          <Alert variant="error" className="mt-4">
+            {error}
+          </Alert>
+        ) : null}
         <div className="mt-6 flex items-center justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose} disabled={confirming}>
             Cancel

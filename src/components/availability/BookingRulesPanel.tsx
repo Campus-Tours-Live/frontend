@@ -16,8 +16,9 @@ function formatMinutesLabel(minutes: number): string {
 
 /**
  * Sidebar summary of the guide's booking policy (v2 `AvailabilitySettings` shape). Read-only
- * display, consistent with #32's settings panel — editing (`useUpdateAvailabilitySettings`) is
- * wired at the page level for a future settings-edit UI, out of CTL-55 Task 4's scope.
+ * display, consistent with #32's settings panel. Editing (`useUpdateAvailabilitySettings`) is
+ * NOT wired to any component here — this panel and the rest of CTL-55 are display-only; a
+ * settings-edit UI is out of scope and tracked as a future ticket.
  */
 export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
   return (

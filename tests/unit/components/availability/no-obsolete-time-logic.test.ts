@@ -15,6 +15,9 @@ const BANNED_MODULES = [
   "src/lib/availability/timeOptions.ts",
   "src/components/availability/timeOptions.ts",
   "src/components/availability/TimeRangeSelect.tsx",
+  // #32's legacy end-time formatter (superseded by `lib/availability/duration.ts`'s
+  // `formatWindow`/`formatDuration` — CTL-55 Task 2-review completeness gap).
+  "src/lib/availability/formatTime.ts",
 ];
 
 const BANNED_TOKENS = [

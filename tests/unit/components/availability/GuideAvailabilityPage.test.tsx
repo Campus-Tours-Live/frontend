@@ -378,7 +378,7 @@ describe("GuideAvailabilityPage — delete flow", () => {
     expect(deleteMutate).toHaveBeenCalledWith("rule-a");
   });
 
-  it("shows a delete-error message when the confirmed delete fails", async () => {
+  it("keeps the ConfirmDeleteModal open with the error visible INSIDE the dialog when the confirmed delete fails", async () => {
     const user = userEvent.setup();
     const deleteMutate = jest.fn().mockRejectedValue(new Error("boom"));
     mockUseDeleteAvailabilityRule.mockReturnValue({
@@ -392,7 +392,12 @@ describe("GuideAvailabilityPage — delete flow", () => {
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Remove" }));
 
-    expect(await screen.findByText(/could not remove recurring hours/i)).toBeInTheDocument();
+    // Assert via within(dialog) — not a whole-DOM screen query — so this proves the error
+    // renders inside the still-open dialog, not as a page-level banner.
+    expect(
+      await within(dialog).findByText(/could not remove recurring hours/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });
 
@@ -491,6 +496,26 @@ describe("GuideAvailabilityPage — exceptions panel", () => {
     await user.click(within(dialog).getByRole("button", { name: "Remove" }));
 
     expect(deleteMutate).toHaveBeenCalledWith("exc-1");
+  });
+
+  it("keeps the ConfirmDeleteModal open with the error visible INSIDE the dialog when an exception delete fails", async () => {
+    const user = userEvent.setup();
+    const deleteMutate = jest.fn().mockRejectedValue(new Error("boom"));
+    mockUseDeleteAvailabilityException.mockReturnValue({
+      mutateAsync: deleteMutate,
+      isPending: false,
+      variables: undefined,
+    });
+    render(<GuideAvailabilityPage />);
+
+    await user.click(screen.getByRole("button", { name: /remove date-specific hours/i }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+
+    expect(
+      await within(dialog).findByText(/could not remove date-specific hours/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("renders an ADDITIONAL exception without a reason, and disables Remove while it's deleting", () => {
