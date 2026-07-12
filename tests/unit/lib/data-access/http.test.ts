@@ -94,12 +94,69 @@ describe("apiJson", () => {
     expect(mockedApiFetch).toHaveBeenCalledWith("/v1/thing", init);
   });
 
-  it("does not read the body when the response is not ok", async () => {
-    const res = makeRes({ ok: false, status: 500 });
+  it("reads the body on a non-ok response to extract the error message", async () => {
+    const res = makeRes({ ok: false, status: 500, json: { title: "Boom" } });
     mockedApiFetch.mockResolvedValue(res);
 
-    await expect(apiJson("/v1/thing")).rejects.toBeInstanceOf(ApiError);
-    expect(res.json).not.toHaveBeenCalled();
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 500,
+      message: "Boom",
+    });
+    expect(res.json).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the problem+json `title` as the ApiError message on a 422", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({
+        ok: false,
+        status: 422,
+        json: { title: "This time overlaps another active rule." },
+      }),
+    );
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+      message: "This time overlaps another active rule.",
+    });
+  });
+
+  it("falls back to `detail` when `title` is absent", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({ ok: false, status: 400, json: { detail: "Missing required field." } }),
+    );
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 400,
+      message: "Missing required field.",
+    });
+  });
+
+  it("falls back to the generic message when the body is empty", async () => {
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: false, status: 422, json: undefined }));
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+      message: "Request failed (422)",
+    });
+  });
+
+  it("falls back to the generic message when the body is non-JSON", async () => {
+    const res = {
+      ok: false,
+      status: 503,
+      json: jest.fn().mockRejectedValue(new SyntaxError("Unexpected token")),
+    } as unknown as Response;
+    mockedApiFetch.mockResolvedValue(res);
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 503,
+      message: "Request failed (503)",
+    });
   });
 });
 
@@ -174,12 +231,69 @@ describe("apiJsonRaw", () => {
     });
   });
 
-  it("does not read the body when the response is not ok", async () => {
-    const res = makeRes({ ok: false, status: 500 });
+  it("reads the body on a non-ok response to extract the error message", async () => {
+    const res = makeRes({ ok: false, status: 500, json: { title: "Boom" } });
     mockedApiFetch.mockResolvedValue(res);
 
-    await expect(apiJsonRaw("/v1/thing")).rejects.toBeInstanceOf(ApiError);
-    expect(res.json).not.toHaveBeenCalled();
+    await expect(apiJsonRaw("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 500,
+      message: "Boom",
+    });
+    expect(res.json).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the problem+json `title` as the ApiError message on a 422", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({
+        ok: false,
+        status: 422,
+        json: { title: "This time overlaps another active rule." },
+      }),
+    );
+
+    await expect(apiJsonRaw("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+      message: "This time overlaps another active rule.",
+    });
+  });
+
+  it("falls back to `detail` when `title` is absent", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({ ok: false, status: 400, json: { detail: "Missing required field." } }),
+    );
+
+    await expect(apiJsonRaw("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 400,
+      message: "Missing required field.",
+    });
+  });
+
+  it("falls back to the generic message when the body is empty", async () => {
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: false, status: 422, json: undefined }));
+
+    await expect(apiJsonRaw("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 422,
+      message: "Request failed (422)",
+    });
+  });
+
+  it("falls back to the generic message when the body is non-JSON", async () => {
+    const res = {
+      ok: false,
+      status: 503,
+      json: jest.fn().mockRejectedValue(new SyntaxError("Unexpected token")),
+    } as unknown as Response;
+    mockedApiFetch.mockResolvedValue(res);
+
+    await expect(apiJsonRaw("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 503,
+      message: "Request failed (503)",
+    });
   });
 
   it("forwards the init through to apiFetch unchanged", async () => {
