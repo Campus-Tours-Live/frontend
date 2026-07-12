@@ -53,6 +53,33 @@ describe("queryKeys", () => {
     });
   });
 
+  describe("availabilityPreview(params)", () => {
+    const params = {
+      dateFrom: "2026-08-01",
+      dateTo: "2026-08-03",
+      kind: "UNAVAILABLE" as const,
+      startLocal: "09:30",
+      windowMin: 90,
+    };
+
+    it("returns ['availability-preview', params]", () => {
+      expect(queryKeys.availabilityPreview(params)).toEqual(["availability-preview", params]);
+    });
+
+    it("returns ['availability-preview', null] when params is null", () => {
+      expect(queryKeys.availabilityPreview(null)).toEqual(["availability-preview", null]);
+    });
+
+    it("varies by params", () => {
+      expect(queryKeys.availabilityPreview(params)).not.toEqual(
+        queryKeys.availabilityPreview(null),
+      );
+      expect(queryKeys.availabilityPreview(params)).not.toEqual(
+        queryKeys.availabilityPreview({ ...params, windowMin: 60 }),
+      );
+    });
+  });
+
   describe("universitySearch(q)", () => {
     it("returns ['university-search', q]", () => {
       expect(queryKeys.universitySearch("mit")).toEqual(["university-search", "mit"]);

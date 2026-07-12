@@ -146,6 +146,22 @@ describe("createAvailabilityExceptionMutation", () => {
     expect(keys).toContainEqual(queryKeys.availabilityExceptions());
     expect(keys).toContainEqual(queryKeys.availabilityResolved());
   });
+
+  it("mutationFn POSTs a multi-day {dateFrom,dateTo,kind,startLocal,windowMin} body as-is (Core expands the range)", async () => {
+    const qc = makeQc();
+    const body = {
+      dateFrom: "2026-08-01",
+      dateTo: "2026-08-03",
+      kind: "UNAVAILABLE",
+      startLocal: "09:30",
+      windowMin: 90,
+    };
+    const { mutationFn } = createAvailabilityExceptionMutation(qc);
+
+    await mutationFn(body as never);
+
+    expect(mockedPostJsonRaw).toHaveBeenCalledWith("/v1/availability/exceptions", body);
+  });
 });
 
 describe("updateAvailabilityExceptionMutation", () => {

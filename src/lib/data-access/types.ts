@@ -233,14 +233,52 @@ export interface CreateAvailabilityRuleInput {
 export type UpdateAvailabilityRuleInput = Partial<CreateAvailabilityRuleInput>;
 
 export interface CreateAvailabilityExceptionInput {
-  exceptionDate: string;
+  /** Single-day override date. Omit in favor of `dateFrom`/`dateTo` for a multi-day range. */
+  exceptionDate?: string;
   kind: AvailabilityExceptionKind;
   startLocal: string;
   windowMin: number;
   reason?: string | null;
+  /** Multi-day override range (CTL-55 v2.1, date-specific override modal) — when present, sent
+   *  to the BFF as-is. Core expands the range into per-date exceptions server-side; the FE never
+   *  recomputes per-day occurrences itself. Capped at 366 days by Core (422 if exceeded). */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export type UpdateAvailabilityExceptionInput = Partial<CreateAvailabilityExceptionInput>;
+
+/** One affected date's dry-run result from `GET /v1/availability/preview` (CTL-55 v2.1). */
+export interface OverridePreviewDay {
+  date: string;
+  /** The "after" net-available windows for this date, in the same absolute-instant shape as
+   *  {@link AvailabilityOccurrence} (reused — the FE never recomputes these, only renders them). */
+  resultingWindows: AvailabilityOccurrence[];
+  /** Weekly-rule windows this override would trim/replace on this date. */
+  trimmed: {
+    kind: AvailabilityExceptionKind;
+    startLocal: string;
+    windowMin: number;
+  }[];
+}
+
+/** GET /v1/availability/preview — a date-specific override dry-run (Block/Add-extra), returned
+ *  before the guide confirms a create. `valid`/`message` surface a would-be-422 without writing
+ *  anything; the FE renders this as-is (before/after + trimmed), never recomputing it. */
+export interface OverridePreviewResponse {
+  days: OverridePreviewDay[];
+  valid: boolean;
+  message: string | null;
+}
+
+/** Params for `GET /v1/availability/preview` (the dry-run query key + querystring). */
+export interface OverridePreviewParams {
+  dateFrom: string;
+  dateTo: string;
+  kind: AvailabilityExceptionKind;
+  startLocal: string;
+  windowMin: number;
+}
 
 export interface UpdateAvailabilitySettingsInput {
   acceptanceMode?: "AUTO" | "MANUAL";

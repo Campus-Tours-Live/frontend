@@ -10,6 +10,7 @@ import {
   useDeleteAvailabilityException,
   useDeleteAvailabilityRule,
   useOfferingSlots,
+  useOverridePreview,
   useResolvedAvailability,
   useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
@@ -155,6 +156,53 @@ describe("useOfferingSlots", () => {
   });
 });
 
+describe("useOverridePreview", () => {
+  it("GETs /v1/availability/preview with the given params and returns the parsed shape", async () => {
+    const preview = {
+      days: [
+        {
+          date: "2026-08-01",
+          resultingWindows: [{ startAt: "2026-08-01T16:30:00Z", endAt: "2026-08-01T18:00:00Z" }],
+          trimmed: [{ kind: "UNAVAILABLE", startLocal: "09:30", windowMin: 90 }],
+        },
+      ],
+      valid: true,
+      message: null,
+    };
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: preview }));
+
+    const { result } = renderHook(
+      () =>
+        useOverridePreview({
+          dateFrom: "2026-08-01",
+          dateTo: "2026-08-03",
+          kind: "UNAVAILABLE",
+          startLocal: "09:30",
+          windowMin: 90,
+        }),
+      { wrapper: wrapperFor(makeClient()) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/v1/availability/preview?dateFrom=2026-08-01&dateTo=2026-08-03&kind=UNAVAILABLE&startLocal=09%3A30&windowMin=90",
+      expect.objectContaining({ credentials: "same-origin" }),
+    );
+    expect(result.current.data).toEqual(preview);
+  });
+
+  it("is disabled (no fetch) when params is null", () => {
+    const { result } = renderHook(() => useOverridePreview(null), {
+      wrapper: wrapperFor(makeClient()),
+    });
+
+    expect(result.current.fetchStatus).toBe("idle");
+    expect(result.current.isPending).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe("useCreateAvailabilityRule", () => {
   it("POSTs { dayOfWeek, startLocal, windowMin } (no endLocal/timezone) and invalidates caches", async () => {
     const created = { id: "r1", dayOfWeek: 1, startLocal: "22:00", windowMin: 240 };
@@ -235,6 +283,34 @@ describe("useCreateAvailabilityException", () => {
       kind: "UNAVAILABLE" as const,
       startLocal: "00:00",
       windowMin: 1440,
+    };
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { data: { id: "e1", ...body }, affectedBookings: [] }),
+    );
+
+    const { result } = renderHook(() => useCreateAvailabilityException(), {
+      wrapper: wrapperFor(makeClient()),
+    });
+
+    result.current.mutate(body);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/v1/availability/exceptions",
+      expect.objectContaining({ method: "POST", body: JSON.stringify(body) }),
+    );
+  });
+});
+
+describe("useCreateAvailabilityException (multi-day dateFrom/dateTo)", () => {
+  it("POSTs /v1/availability/exceptions with {dateFrom,dateTo,kind,startLocal,windowMin} as-is", async () => {
+    const body = {
+      dateFrom: "2026-08-01",
+      dateTo: "2026-08-03",
+      kind: "UNAVAILABLE" as const,
+      startLocal: "09:30",
+      windowMin: 90,
     };
     fetchMock.mockResolvedValue(
       jsonResponse(200, { data: { id: "e1", ...body }, affectedBookings: [] }),

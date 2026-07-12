@@ -14,7 +14,9 @@ import { availabilityExceptionsOptions } from "../queries/availability-exception
 import { availabilityRulesOptions } from "../queries/availability-rules.query";
 import { availabilitySettingsOptions } from "../queries/availability-settings.query";
 import { offeringSlotsOptions } from "../queries/offering-slots.query";
+import { overridePreviewOptions } from "../queries/override-preview.query";
 import { resolvedAvailabilityOptions } from "../queries/resolved-availability.query";
+import type { OverridePreviewParams } from "../types";
 
 /** List the guide's recurring start+duration availability rules. */
 export function useAvailabilityRules() {
@@ -80,4 +82,13 @@ export function useResolvedAvailability() {
 /** Participant-facing bookable slots for an offering. */
 export function useOfferingSlots(offeringId: string, options?: { enabled?: boolean }) {
   return useQuery(offeringSlotsOptions(offeringId, options?.enabled ?? Boolean(offeringId)));
+}
+
+/**
+ * Date-specific override dry-run (Block/Add-extra) — `GET /v1/availability/preview`. Disabled
+ * (no fetch) when `params` is null, e.g. the override modal's form isn't filled in yet. Read-only:
+ * the FE renders the returned before/after windows + trimmed entries, never recomputing them.
+ */
+export function useOverridePreview(params: OverridePreviewParams | null) {
+  return useQuery(overridePreviewOptions(params));
 }
