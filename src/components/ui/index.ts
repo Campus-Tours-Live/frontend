@@ -24,6 +24,7 @@ export {
 } from "./MemberCard";
 export { SectionHeading, type SectionHeadingProps } from "./SectionHeading";
 export { Chip, type ChipProps } from "./Chip";
+export { Toggle, type ToggleProps } from "./Toggle";
 export {
   Field,
   TextField,

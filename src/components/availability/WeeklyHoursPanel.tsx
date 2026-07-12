@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Card } from "@/components/ui";
+import { Alert, Button, Card, Toggle } from "@/components/ui";
 import {
   ApiError,
   useAvailabilityRules,
@@ -130,22 +130,21 @@ export function WeeklyHoursPanel() {
                 <span className="text-[14px] font-semibold text-ink">{dayLabel}</span>
               </div>
 
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isAvailable}
-                aria-label={`${dayLabel} availability`}
-                disabled={isToggling}
-                onClick={() => void handleToggle(dayIndex, !isAvailable)}
-                className={
-                  "inline-flex h-8 shrink-0 items-center rounded-full border px-3 text-[13px] font-medium disabled:opacity-60 " +
-                  (isAvailable
-                    ? "border-primary/30 bg-primary-soft text-primary"
-                    : "border-border bg-canvas text-ink-soft")
-                }
-              >
-                {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <Toggle
+                  checked={isAvailable}
+                  onChange={(next) => void handleToggle(dayIndex, next)}
+                  disabled={isToggling}
+                  label={`${dayLabel} availability`}
+                />
+                <span
+                  className={
+                    "text-[13px] font-medium " + (isAvailable ? "text-primary" : "text-ink-soft")
+                  }
+                >
+                  {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
+                </span>
+              </div>
 
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 {isAvailable ? (
