@@ -7,6 +7,11 @@ import {
   useResolvedAvailability,
   type AvailabilityOccurrence,
 } from "@/lib/data-access";
+import {
+  bucketOccurrencesByDate,
+  isoDateInTimeZone,
+  partsInTimeZone,
+} from "@/lib/availability/bucketByDate";
 import { cn } from "@/lib/utils";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
@@ -54,30 +59,6 @@ function pad2(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-/** Extract {year, month, day} for `date` AS SEEN in `timeZone` — the only tz-aware calendar-date
- *  computation this component does (bucketing/"today", never net-availability math). */
-function partsInTimeZone(
-  date: Date,
-  timeZone: string,
-): { year: number; month: number; day: number } {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const map: Record<string, string> = {};
-  for (const part of parts) {
-    if (part.type !== "literal") map[part.type] = part.value;
-  }
-  return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
-}
-
-function isoDateInTimeZone(date: Date, timeZone: string): string {
-  const { year, month, day } = partsInTimeZone(date, timeZone);
-  return `${year}-${pad2(month)}-${pad2(day)}`;
-}
-
 /** Calendar-day arithmetic only (no clock time involved) — safe to do in UTC regardless of the
  *  settings timezone, since year/month/day were already resolved via `partsInTimeZone` above. */
 function daysInMonth(year: number, month: number): number {
@@ -86,28 +67,6 @@ function daysInMonth(year: number, month: number): number {
 
 function firstWeekdayOfMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-}
-
-/**
- * Bucket resolved occurrences by settings-tz calendar date. Because weekly rules are same-day
- * (option A), each occurrence belongs to exactly one settings-tz date — this is a straight
- * grouping, never a merge/coalesce of the occurrences themselves (FE-never-recomputes).
- */
-function bucketOccurrencesByDate(
-  occurrences: AvailabilityOccurrence[],
-  timeZone: string,
-): Map<string, AvailabilityOccurrence[]> {
-  const map = new Map<string, AvailabilityOccurrence[]>();
-  for (const occurrence of occurrences) {
-    const iso = isoDateInTimeZone(new Date(occurrence.startAt), timeZone);
-    const list = map.get(iso) ?? [];
-    list.push(occurrence);
-    map.set(iso, list);
-  }
-  for (const list of map.values()) {
-    list.sort((a, b) => a.startAt.localeCompare(b.startAt));
-  }
-  return map;
 }
 
 /** Sum a day's occurrence durations for the density bucket — the only arithmetic allowed on the
