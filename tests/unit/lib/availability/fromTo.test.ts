@@ -1,4 +1,12 @@
-import { formatFromTo, toWindowMin, windowToRawTo, windowToTo } from "@/lib/availability/fromTo";
+import {
+  buildToOptions,
+  formatClockLabel,
+  formatFromTo,
+  minutesFromHHmm,
+  toWindowMin,
+  windowToRawTo,
+  windowToTo,
+} from "@/lib/availability/fromTo";
 
 describe("toWindowMin", () => {
   it("computes windowMin between two same-day HH:mm times", () => {
@@ -74,6 +82,49 @@ describe("windowToRawTo", () => {
   it("round-trips through toWindowMin (the whole point — windowToTo's label cannot)", () => {
     expect(toWindowMin("09:00", windowToRawTo("09:00", 240))).toBe(240);
     expect(toWindowMin("22:00", windowToRawTo("22:00", 120))).toBe(120);
+  });
+});
+
+describe("minutesFromHHmm", () => {
+  it("parses a plain HH:mm clock time into minutes-from-midnight", () => {
+    expect(minutesFromHHmm("13:00")).toBe(780);
+    expect(minutesFromHHmm("00:15")).toBe(15);
+  });
+});
+
+describe("formatClockLabel", () => {
+  it('formats a plain HH:mm clock time as a 12-hour label, e.g. "13:00" -> "1:00 PM"', () => {
+    expect(formatClockLabel("13:00")).toBe("1:00 PM");
+    expect(formatClockLabel("00:15")).toBe("12:15 AM");
+    expect(formatClockLabel("09:00")).toBe("9:00 AM");
+  });
+});
+
+describe("buildToOptions (shared to-picker builder, hoisted from DayHoursModal/DateOverrideModal)", () => {
+  it('includes the "24:00" midnight/end-of-day option labelled "12:00 AM (midnight)"', () => {
+    const options = buildToOptions("13:00");
+    expect(options).toContainEqual({ value: "24:00", label: "12:00 AM (midnight)" });
+  });
+
+  it('does NOT include a "00:00" option (N1: ambiguous duplicate of the "24:00" end-of-day option)', () => {
+    const options = buildToOptions("13:00");
+    expect(options.some((option) => option.value === "00:00")).toBe(false);
+  });
+
+  it('does not (re-)introduce a "00:00" option even when "current" is passed as "00:00"', () => {
+    const options = buildToOptions("00:00");
+    expect(options.some((option) => option.value === "00:00")).toBe(false);
+  });
+
+  it('the grid\'s earliest option (excluding the "24:00" sentinel) is "00:15"', () => {
+    const options = buildToOptions("13:00").filter((option) => option.value !== "24:00");
+    const values = options.map((option) => option.value).sort();
+    expect(values[0]).toBe("00:15");
+  });
+
+  it('folds an off-grid "current" value into the options so it has a matching <option>', () => {
+    const options = buildToOptions("13:07");
+    expect(options).toContainEqual({ value: "13:07", label: formatClockLabel("13:07") });
   });
 });
 

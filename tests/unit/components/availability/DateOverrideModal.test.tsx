@@ -177,6 +177,17 @@ describe("DateOverrideModal — Confirm", () => {
     ) as HTMLOptionElement;
     expect(midnightOption.value).toBe("24:00");
   });
+
+  it('the To picker does NOT offer a "00:00" option (N1: ambiguous duplicate of "24:00")', () => {
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const toSelect = within(dialog).getByLabelText("To") as HTMLSelectElement;
+    const values = within(toSelect)
+      .getAllByRole<HTMLOptionElement>("option")
+      .map((option) => option.value);
+    expect(values).not.toContain("00:00");
+    expect(values).toContain("24:00");
+  });
 });
 
 describe("DateOverrideModal — backend 422 keeps the modal open with an in-modal notification", () => {

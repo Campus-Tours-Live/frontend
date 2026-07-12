@@ -101,6 +101,18 @@ describe("DayHoursModal — prefill + display", () => {
     ) as HTMLOptionElement;
     expect(midnightOption.value).toBe("24:00");
   });
+
+  it('the To picker does NOT offer a "00:00" option (N1: ambiguous duplicate of "24:00")', () => {
+    renderModal([mondayRule]);
+    const dialog = screen.getByRole("dialog");
+    const range = within(dialog).getByRole("group", { name: "Range 1" });
+    const toSelect = within(range).getByLabelText("To") as HTMLSelectElement;
+    const values = within(toSelect)
+      .getAllByRole<HTMLOptionElement>("option")
+      .map((option) => option.value);
+    expect(values).not.toContain("00:00");
+    expect(values).toContain("24:00");
+  });
 });
 
 describe("DayHoursModal — add / remove ranges", () => {

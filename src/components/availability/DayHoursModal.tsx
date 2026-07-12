@@ -10,7 +10,7 @@ import {
   useUpdateAvailabilityRule,
   type AvailabilityRule,
 } from "@/lib/data-access";
-import { toWindowMin, windowToRawTo, windowToTo } from "@/lib/availability/fromTo";
+import { buildToOptions, toWindowMin, windowToRawTo } from "@/lib/availability/fromTo";
 
 export interface DayHoursModalProps {
   open: boolean;
@@ -49,36 +49,6 @@ function draftsFromRules(rules: AvailabilityRule[]): RangeDraft[] {
       // label, which can't round-trip through `toWindowMin` — see fromTo.ts).
       to: windowToRawTo(rule.startLocal, rule.windowMin),
     }));
-}
-
-function minutesFromHHmm(value: string): number {
-  const [hour, minute] = value.split(":").map(Number);
-  return hour * 60 + minute;
-}
-
-const TO_OPTION_MINUTES = [0, 15, 30, 45];
-
-/**
- * The `to`-picker's options: a 15-minute grid across the day, PLUS the midnight sentinel
- * `"24:00"` (required — otherwise a guide can never reach end-of-day), labelled
- * `"12:00 AM (midnight)"` so it doesn't read as the ambiguous start-of-day `"00:00"`. `current` is
- * folded into the grid so an existing (possibly off-grid) rule's `to` always has a matching
- * `<option>` to prefill against.
- */
-function buildToOptions(current: string): { value: string; label: string }[] {
-  const gridValues = new Set<string>();
-  for (let hour = 0; hour < 24; hour++) {
-    for (const minute of TO_OPTION_MINUTES) {
-      gridValues.add(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-    }
-  }
-  if (current !== "24:00") gridValues.add(current);
-
-  const options = Array.from(gridValues)
-    .sort()
-    .map((value) => ({ value, label: windowToTo("00:00", minutesFromHHmm(value)) }));
-  options.push({ value: "24:00", label: "12:00 AM (midnight)" });
-  return options;
 }
 
 /** Surfaces the backend's 422 message verbatim (overlap / cross-midnight / re-activate) — this
