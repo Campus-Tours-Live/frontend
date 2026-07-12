@@ -167,28 +167,50 @@ function DayHoursModalContent({
   };
 
   return (
-    // Cap to the viewport (with a comfortable min height) and split into fixed
-    // header / scrollable body / fixed footer, so a long list of ranges scrolls
-    // inside the modal on any screen size.
-    <div className="flex max-h-[85vh] min-h-[min(24rem,80vh)] flex-col p-6">
-      <div className="shrink-0">
-        <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">
-          Edit {dayLabel} hours
-        </h2>
-        <p className="mt-1 text-[13px] text-ink-soft">Times shown in {settingsTimezone}.</p>
+    // The viewport-capped height + scrollable body now live in `Modal` itself
+    // (structured mode, via `header`/`footer`) — this component only supplies
+    // the fixed title (header), the fixed Cancel/Save actions (footer), and
+    // the scrollable content (children: persistent + error alerts, ranges, ＋Add).
+    <Modal
+      open
+      onClose={onClose}
+      labelledBy="day-hours-modal-title"
+      className="max-w-lg overflow-hidden"
+      header={
+        <>
+          <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">
+            Edit {dayLabel} hours
+          </h2>
+          <p className="mt-1 text-[13px] text-ink-soft">Times shown in {settingsTimezone}.</p>
+        </>
+      }
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => void handleSave()}
+            disabled={saving || hasStructuralError}
+          >
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      }
+    >
+      <Alert variant="info" role="status">
+        Hours that pass midnight should be added to the next day.
+      </Alert>
 
-        <Alert variant="info" role="status" className="mt-4">
-          Hours that pass midnight should be added to the next day.
+      {error ? (
+        <Alert variant="error" className="mt-3">
+          {error}
         </Alert>
+      ) : null}
 
-        {error ? (
-          <Alert variant="error" className="mt-3">
-            {error}
-          </Alert>
-        ) : null}
-      </div>
-
-      <div className="-mr-2 mt-5 flex-1 space-y-4 overflow-y-auto pr-2">
+      <div className="mt-4 space-y-4">
         {ranges.length === 0 ? (
           <p className="text-[13px] text-ink-soft">No hours yet — add a time range below.</p>
         ) : (
@@ -241,21 +263,7 @@ function DayHoursModalContent({
           Add time range
         </Button>
       </div>
-
-      <div className="mt-6 flex shrink-0 justify-end gap-3">
-        <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          onClick={() => void handleSave()}
-          disabled={saving || hasStructuralError}
-        >
-          {saving ? "Saving…" : "Save"}
-        </Button>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -273,25 +281,22 @@ export function DayHoursModal({
   settingsTimezone,
   onClose,
 }: DayHoursModalProps) {
+  // `DayHoursModalContent` owns the `Modal` call (its header/footer need this content's own
+  // save/error state), so it — and the dialog it renders — only mounts while `open`. `Modal`
+  // itself still no-ops (returns null + skips its effects) whenever `open` is false, so this is
+  // behaviorally identical to the previous always-mounted-`Modal`-with-conditional-children shape.
+  if (!open) return null;
+
   return (
-    <Modal
-      open={open}
+    <DayHoursModalContent
+      // Remount when the target day changes (Edit clicked on a different row while the modal
+      // was already open) so the form re-seeds from that day's own rules.
+      key={dayOfWeek}
+      dayOfWeek={dayOfWeek}
+      dayLabel={dayLabel}
+      rules={rules}
+      settingsTimezone={settingsTimezone}
       onClose={onClose}
-      labelledBy="day-hours-modal-title"
-      className="max-w-lg overflow-hidden"
-    >
-      {open ? (
-        <DayHoursModalContent
-          // Remount when the target day changes (Edit clicked on a different row while the modal
-          // was already open) so the form re-seeds from that day's own rules.
-          key={dayOfWeek}
-          dayOfWeek={dayOfWeek}
-          dayLabel={dayLabel}
-          rules={rules}
-          settingsTimezone={settingsTimezone}
-          onClose={onClose}
-        />
-      ) : null}
-    </Modal>
+    />
   );
 }

@@ -9,6 +9,12 @@ import { useScrollLock, useDismiss } from "@/hooks";
  * Escape to close, and body scroll lock. The panel ships with the base card
  * surface; pass `className` for sizing/overflow and `children` for its content.
  * Renders nothing while closed.
+ *
+ * Pass `header` and/or `footer` to opt into "structured" mode: the panel becomes
+ * a viewport-capped flex column (responsive max/min height) with a fixed header,
+ * a scrollable body (`children`), and a fixed footer — so long content scrolls
+ * inside the modal instead of growing past the viewport. Omit both for the
+ * original plain-panel behavior (unchanged for existing consumers).
  */
 export interface ModalProps {
   open: boolean;
@@ -20,6 +26,11 @@ export interface ModalProps {
   className?: string;
   /** Dismiss when the backdrop is clicked (default true). */
   dismissOnBackdrop?: boolean;
+  /** Fixed top region (e.g. title). Providing either `header` or `footer` switches
+   *  the panel to structured mode — see the component doc comment above. */
+  header?: ReactNode;
+  /** Fixed bottom region (e.g. Cancel/Save actions). See `header`. */
+  footer?: ReactNode;
 }
 
 export function Modal({
@@ -29,11 +40,18 @@ export function Modal({
   labelledBy,
   className,
   dismissOnBackdrop = true,
+  header,
+  footer,
 }: ModalProps) {
   useScrollLock(open);
   useDismiss({ enabled: open, onDismiss: onClose });
 
   if (!open) return null;
+
+  // Structured mode: cap the panel to the viewport and split it into a fixed
+  // header, a scrollable body, and a fixed footer. Fallback (neither provided):
+  // render children directly in the plain panel, exactly as before.
+  const structured = header !== undefined || footer !== undefined;
 
   return (
     <div
@@ -51,10 +69,23 @@ export function Modal({
       <div
         className={cn(
           "relative z-[61] w-full rounded-panel bg-card shadow-card",
+          structured && "flex max-h-[85vh] min-h-[min(24rem,80vh)] flex-col overflow-hidden",
           className,
         )}
       >
-        {children}
+        {structured ? (
+          <>
+            {header !== undefined ? (
+              <div className="shrink-0 border-b border-border p-6">{header}</div>
+            ) : null}
+            <div className="flex-1 overflow-y-auto p-6">{children}</div>
+            {footer !== undefined ? (
+              <div className="shrink-0 border-t border-border p-6">{footer}</div>
+            ) : null}
+          </>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );
