@@ -253,19 +253,23 @@ describe("DayHoursModal — backend 422 keeps the modal open with an in-modal er
 });
 
 describe("DayHoursModal — client-side structural validation (from<to only, never overlap)", () => {
-  it("an invalid from/to pairing (to not after from) shows a validation message and saves nothing", async () => {
+  it("start-after-end shows an inline row error, disables Save, and never mutates", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
     renderModal([mondayRule], onClose);
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
-    // Set From equal to the current To (1:00 PM / 13:00) — toWindowMin throws on to<=from.
+    // Set From equal to the current To (1:00 PM / 13:00) — toWindowMin rejects to<=from.
     await typeSegment(user, range, "Range 1 from hour", "1");
     await setPeriod(user, range, "Range 1 from AM/PM", "PM");
-    await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
-    expect(await within(dialog).findByText(/must be after/i)).toBeInTheDocument();
+    // Blocked live: inline error appears and Save is disabled — no click needed.
+    expect(
+      await within(dialog).findByText(/start time must be before the end time/i),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
+
     expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
     expect(deleteMutate).not.toHaveBeenCalled();

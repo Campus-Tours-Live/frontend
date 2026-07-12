@@ -60,6 +60,19 @@ export function dayHoursErrorMessage(err: unknown): string {
   return "Could not save these hours. Please try again.";
 }
 
+/** STRUCTURAL-only per-row check (start must be before end / same-day) via `toWindowMin` — never
+ *  overlap/trim, which stays backend-owned. Returns a friendly message (shown inline on the row and
+ *  used to block Save) or `null` when the pair is well-formed. Mirrors what the backend also
+ *  rejects, so an invalid `from >= to` never reaches a mutation. */
+export function structuralRangeError(from: string, to: string): string | null {
+  try {
+    toWindowMin(from, to);
+    return null;
+  } catch {
+    return "Start time must be before the end time.";
+  }
+}
+
 function DayHoursModalContent({
   dayOfWeek,
   dayLabel,
@@ -90,6 +103,11 @@ function DayHoursModalContent({
   const removeRange = (key: string) => {
     setRanges((prev) => prev.filter((range) => range.key !== key));
   };
+
+  // Live STRUCTURAL validity per row (start < end) — shown inline and used to block Save. Overlap
+  // is deliberately NOT pre-checked here (backend-authoritative → surfaced via the 422 alert).
+  const rangeErrors = ranges.map((range) => structuralRangeError(range.from, range.to));
+  const hasStructuralError = rangeErrors.some(Boolean);
 
   const handleSave = async () => {
     setError(null);
@@ -152,7 +170,7 @@ function DayHoursModalContent({
     // Cap to the viewport (with a comfortable min height) and split into fixed
     // header / scrollable body / fixed footer, so a long list of ranges scrolls
     // inside the modal on any screen size.
-    <div className="flex max-h-[85vh] min-h-[24rem] flex-col p-6">
+    <div className="flex max-h-[85vh] min-h-[min(24rem,80vh)] flex-col p-6">
       <div className="shrink-0">
         <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">
           Edit {dayLabel} hours
@@ -175,39 +193,45 @@ function DayHoursModalContent({
           <p className="text-[13px] text-ink-soft">No hours yet — add a time range below.</p>
         ) : (
           ranges.map((range, index) => (
-            <div
-              key={range.key}
-              role="group"
-              aria-label={`Range ${index + 1}`}
-              className="flex items-center gap-2"
-            >
-              <div className="flex-1">
-                <TimePicker
-                  aria-label={`Range ${index + 1} from`}
-                  value={range.from}
-                  openOnMount={range.key === autoOpenKey}
-                  onChange={(next) => updateRange(range.key, { from: next })}
-                />
-              </div>
-              <span aria-hidden className="text-ink-soft">
-                –
-              </span>
-              <div className="flex-1">
-                <TimePicker
-                  midnightIsEndOfDay
-                  aria-label={`Range ${index + 1} to`}
-                  value={range.to}
-                  onChange={(next) => updateRange(range.key, { to: next })}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => removeRange(range.key)}
-                aria-label={`Remove range ${index + 1}`}
-                className="tp-icon-btn"
+            <div key={range.key}>
+              <div
+                role="group"
+                aria-label={`Range ${index + 1}`}
+                className="flex items-center gap-2"
               >
-                <Trash2 size={16} strokeWidth={1.8} aria-hidden />
-              </button>
+                <div className="flex-1">
+                  <TimePicker
+                    aria-label={`Range ${index + 1} from`}
+                    value={range.from}
+                    openOnMount={range.key === autoOpenKey}
+                    onChange={(next) => updateRange(range.key, { from: next })}
+                  />
+                </div>
+                <span aria-hidden className="text-ink-soft">
+                  –
+                </span>
+                <div className="flex-1">
+                  <TimePicker
+                    midnightIsEndOfDay
+                    aria-label={`Range ${index + 1} to`}
+                    value={range.to}
+                    onChange={(next) => updateRange(range.key, { to: next })}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeRange(range.key)}
+                  aria-label={`Remove range ${index + 1}`}
+                  className="tp-icon-btn"
+                >
+                  <Trash2 size={16} strokeWidth={1.8} aria-hidden />
+                </button>
+              </div>
+              {rangeErrors[index] ? (
+                <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
+                  {rangeErrors[index]}
+                </p>
+              ) : null}
             </div>
           ))
         )}
@@ -222,7 +246,12 @@ function DayHoursModalContent({
         <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
           Cancel
         </Button>
-        <Button type="button" variant="primary" onClick={() => void handleSave()} disabled={saving}>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => void handleSave()}
+          disabled={saving || hasStructuralError}
+        >
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
