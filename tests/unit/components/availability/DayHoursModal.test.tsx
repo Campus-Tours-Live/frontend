@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { UserEvent } from "@testing-library/user-event";
 import { DayHoursModal } from "@/components/availability/DayHoursModal";
 import {
   ApiError,
@@ -66,22 +67,38 @@ function renderModal(rules: AvailabilityRule[] = [], onClose = jest.fn()) {
   return { onClose };
 }
 
-describe("DayHoursModal — prefill + display", () => {
-  it("prefills From/To from an existing rule via windowToRawTo (raw, round-trippable value)", () => {
+/** Set a TimePicker's value via its click-to-type inline input (jsdom can't scroll the wheel). */
+async function typeTime(user: UserEvent, scope: HTMLElement, labelRe: RegExp, text: string) {
+  await user.click(within(scope).getByRole("button", { name: labelRe }));
+  const input = within(scope).getByRole("textbox");
+  await user.clear(input);
+  await user.type(input, text);
+  await user.keyboard("{Enter}");
+}
+
+describe("DayHoursModal — prefill + layout", () => {
+  it("prefills From/To from an existing rule (09:00 → 13:00 shown as 9:00 AM / 1:00 PM)", () => {
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
-    expect(within(range).getByLabelText("From")).toHaveValue("09:00");
-    expect(within(range).getByLabelText("To")).toHaveValue("13:00");
+    expect(
+      within(range).getByRole("button", { name: /range 1 from: 9:00 AM/i }),
+    ).toBeInTheDocument();
+    expect(within(range).getByRole("button", { name: /range 1 to: 1:00 PM/i })).toBeInTheDocument();
   });
 
-  it("shows the settings timezone and the past-midnight hint", () => {
+  it("shows the persistent info alert about hours past midnight", () => {
+    renderModal([mondayRule]);
+    const dialog = screen.getByRole("dialog");
+    expect(
+      within(dialog).getByText(/hours that pass midnight should be added to the next day/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the settings timezone", () => {
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText(/america\/chicago/i)).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(/to offer hours past midnight, add a range on the next day/i),
-    ).toBeInTheDocument();
   });
 
   it("shows an empty state and no ranges when the day has no rules yet", () => {
@@ -91,37 +108,27 @@ describe("DayHoursModal — prefill + display", () => {
     expect(within(dialog).getByText(/no hours yet/i)).toBeInTheDocument();
   });
 
-  it("the To picker offers a 12:00 AM (midnight) option whose value is the '24:00' sentinel", () => {
+  it("each range renders two TimePickers (from + to) and a delete button", () => {
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
-    const toSelect = within(range).getByLabelText("To") as HTMLSelectElement;
-    const midnightOption = within(toSelect).getByText(
-      /12:00 am \(midnight\)/i,
-    ) as HTMLOptionElement;
-    expect(midnightOption.value).toBe("24:00");
-  });
-
-  it('the To picker does NOT offer a "00:00" option (N1: ambiguous duplicate of "24:00")', () => {
-    renderModal([mondayRule]);
-    const dialog = screen.getByRole("dialog");
-    const range = within(dialog).getByRole("group", { name: "Range 1" });
-    const toSelect = within(range).getByLabelText("To") as HTMLSelectElement;
-    const values = within(toSelect)
-      .getAllByRole<HTMLOptionElement>("option")
-      .map((option) => option.value);
-    expect(values).not.toContain("00:00");
-    expect(values).toContain("24:00");
+    expect(
+      within(range).getByRole("button", { name: /open range 1 from picker/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(range).getByRole("button", { name: /open range 1 to picker/i }),
+    ).toBeInTheDocument();
+    expect(within(range).getByRole("button", { name: /remove range 1/i })).toBeInTheDocument();
   });
 });
 
 describe("DayHoursModal — add / remove ranges", () => {
-  it("adding a range renders a second group with default from/to values", async () => {
+  it("adding a range renders a second group", async () => {
     const user = userEvent.setup();
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: /\+ add range/i }));
+    await user.click(within(dialog).getByRole("button", { name: /add time range/i }));
 
     expect(within(dialog).getByRole("group", { name: "Range 2" })).toBeInTheDocument();
   });
@@ -144,13 +151,11 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     renderModal([]);
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: /\+ add range/i }));
+    await user.click(within(dialog).getByRole("button", { name: /add time range/i }));
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
-    await user.clear(within(range).getByLabelText("From"));
-    await user.type(within(range).getByLabelText("From"), "09:00");
-    await user.selectOptions(within(range).getByLabelText("To"), "13:00");
-
+    // Default new range is 09:00–10:00; set the To to 1:00 PM (13:00 → windowMin 240).
+    await typeTime(user, range, /range 1 to.*edit as text/i, "1:00 PM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
@@ -161,13 +166,14 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     });
   });
 
-  it("changing an existing range's To and Save calls update with {id, body:{startLocal,windowMin}}", async () => {
+  it("setting an existing range's To to 12:00 AM (end of day) updates with windowMin 900", async () => {
     const user = userEvent.setup();
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
-    await user.selectOptions(within(range).getByLabelText("To"), "24:00");
+    // TO picker has midnightIsEndOfDay → typing 12:00 AM yields the "24:00" sentinel.
+    await typeTime(user, range, /range 1 to.*edit as text/i, "12:00 AM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(updateMutate).toHaveBeenCalledTimes(1));
@@ -205,7 +211,7 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
   });
 });
 
-describe("DayHoursModal — backend 422 keeps the modal open with an in-modal notification", () => {
+describe("DayHoursModal — backend 422 keeps the modal open with an in-modal error alert", () => {
   it("a mocked 422 from create keeps the modal open and shows the backend message", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
@@ -213,7 +219,7 @@ describe("DayHoursModal — backend 422 keeps the modal open with an in-modal no
     renderModal([], onClose);
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: /\+ add range/i }));
+    await user.click(within(dialog).getByRole("button", { name: /add time range/i }));
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(
@@ -230,7 +236,7 @@ describe("DayHoursModal — backend 422 keeps the modal open with an in-modal no
     renderModal([], onClose);
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: /\+ add range/i }));
+    await user.click(within(dialog).getByRole("button", { name: /add time range/i }));
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(await within(dialog).findByText(/could not save these hours/i)).toBeInTheDocument();
@@ -246,10 +252,8 @@ describe("DayHoursModal — client-side structural validation (from<to only, nev
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
-    // Set From equal to the current To (13:00) — toWindowMin throws on to<=from.
-    await user.clear(within(range).getByLabelText("From"));
-    await user.type(within(range).getByLabelText("From"), "13:00");
-
+    // Set From equal to the current To (1:00 PM / 13:00) — toWindowMin throws on to<=from.
+    await typeTime(user, range, /range 1 from.*edit as text/i, "1:00 PM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(await within(dialog).findByText(/must be after/i)).toBeInTheDocument();

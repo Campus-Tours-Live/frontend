@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
-import { Alert, Button, Modal, SelectField, TextField } from "@/components/ui";
+import { Plus, Trash2 } from "lucide-react";
+import { Alert, Button, Modal, TimePicker } from "@/components/ui";
 import {
   ApiError,
   useCreateAvailabilityRule,
@@ -10,7 +10,7 @@ import {
   useUpdateAvailabilityRule,
   type AvailabilityRule,
 } from "@/lib/data-access";
-import { buildToOptions, toWindowMin, windowToRawTo } from "@/lib/availability/fromTo";
+import { toWindowMin, windowToRawTo } from "@/lib/availability/fromTo";
 
 export interface DayHoursModalProps {
   open: boolean;
@@ -151,59 +151,61 @@ function DayHoursModalContent({
       </h2>
       <p className="mt-1 text-[13px] text-ink-soft">Times shown in {settingsTimezone}.</p>
 
+      <Alert variant="info" role="status" className="mt-4">
+        Hours that pass midnight should be added to the next day.
+      </Alert>
+
       {error ? (
-        <Alert variant="error" className="mt-4">
+        <Alert variant="error" className="mt-3">
           {error}
         </Alert>
       ) : null}
 
       <div className="mt-5 space-y-4">
         {ranges.length === 0 ? (
-          <p className="text-[13px] text-ink-soft">No hours yet — add a range below.</p>
+          <p className="text-[13px] text-ink-soft">No hours yet — add a time range below.</p>
         ) : (
           ranges.map((range, index) => (
             <div
               key={range.key}
               role="group"
               aria-label={`Range ${index + 1}`}
-              className="flex items-end gap-2"
+              className="flex items-center gap-2"
             >
-              <TextField
-                label="From"
-                type="time"
-                value={range.from}
-                onChange={(event) => updateRange(range.key, { from: event.target.value })}
-              />
-              <SelectField
-                label="To"
-                value={range.to}
-                onChange={(event) => updateRange(range.key, { to: event.target.value })}
-              >
-                {buildToOptions(range.to).map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </SelectField>
+              <div className="flex-1">
+                <TimePicker
+                  aria-label={`Range ${index + 1} from`}
+                  value={range.from}
+                  onChange={(next) => updateRange(range.key, { from: next })}
+                />
+              </div>
+              <span aria-hidden className="text-ink-soft">
+                –
+              </span>
+              <div className="flex-1">
+                <TimePicker
+                  midnightIsEndOfDay
+                  aria-label={`Range ${index + 1} to`}
+                  value={range.to}
+                  onChange={(next) => updateRange(range.key, { to: next })}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => removeRange(range.key)}
                 aria-label={`Remove range ${index + 1}`}
-                className="mb-[9px] rounded p-1.5 text-ink-soft hover:bg-error-soft hover:text-error-foreground"
+                className="tp-icon-btn"
               >
-                <X size={14} aria-hidden />
+                <Trash2 size={16} strokeWidth={1.8} aria-hidden />
               </button>
             </div>
           ))
         )}
 
         <Button type="button" variant="ghost" size="sm" onClick={addRange}>
-          + Add range
+          <Plus size={15} strokeWidth={2} aria-hidden />
+          Add time range
         </Button>
-
-        <p className="text-[12px] text-ink-soft">
-          To offer hours past midnight, add a range on the next day.
-        </p>
       </div>
 
       <div className="mt-6 flex justify-end gap-3">

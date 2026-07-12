@@ -43,3 +43,4 @@ export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./MenuItem";
 export { MenuSection, type MenuSectionProps } from "./Menu";
 export { Modal, type ModalProps } from "./Modal";
 export { Drawer, type DrawerProps } from "./Drawer";
+export { TimePicker, type TimePickerProps, type TimeParts } from "./TimePicker";

@@ -188,12 +188,20 @@ describe("WeeklyHoursPanel — Edit opens DayHoursModal prefilled with from–to
     expect(within(dialog).getByRole("heading", { name: /edit monday hours/i })).toBeInTheDocument();
 
     const range1 = within(dialog).getByRole("group", { name: "Range 1" });
-    expect(within(range1).getByLabelText("From")).toHaveValue("09:00");
-    expect(within(range1).getByLabelText("To")).toHaveValue("11:00");
+    expect(
+      within(range1).getByRole("button", { name: /range 1 from: 9:00 AM/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(range1).getByRole("button", { name: /range 1 to: 11:00 AM/i }),
+    ).toBeInTheDocument();
 
     const range2 = within(dialog).getByRole("group", { name: "Range 2" });
-    expect(within(range2).getByLabelText("From")).toHaveValue("13:00");
-    expect(within(range2).getByLabelText("To")).toHaveValue("14:00");
+    expect(
+      within(range2).getByRole("button", { name: /range 2 from: 1:00 PM/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(range2).getByRole("button", { name: /range 2 to: 2:00 PM/i }),
+    ).toBeInTheDocument();
   });
 });
 
