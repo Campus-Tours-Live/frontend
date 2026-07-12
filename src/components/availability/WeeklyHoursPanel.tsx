@@ -15,8 +15,8 @@ import { DayHoursModal } from "./DayHoursModal";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
 
-/** Bucket rules by day for layout only — mirrors `WeeklySchedulePanel`'s grouping, kept here
- *  independently since this panel owns its own hooks (no callback props from the page). */
+/** Bucket rules by day for layout only — kept here independently since this panel owns its own
+ *  hooks (no callback props from the page). */
 function groupRulesByDay(rules: AvailabilityRule[]): Map<number, AvailabilityRule[]> {
   const grouped = new Map<number, AvailabilityRule[]>();
   for (const rule of rules) {
@@ -41,8 +41,8 @@ function toggleErrorMessage(err: unknown): string {
 }
 
 /**
- * 7-day inline weekly hours editor (CTL-55 v2.1, Cal.com/Calendly-style) — replaces the per-rule
- * bar `WeeklySchedulePanel` (superseded, removed in Task 5). Each day is a single row: an
+ * 7-day inline weekly hours editor (CTL-55 v2.1, Cal.com/Calendly-style) — replaces the old
+ * per-rule-bar weekly panel. Each day is a single row: an
  * Available/Unavailable toggle (drives rule `active`, deactivate-preserve — never deletes a rule)
  * + that day's active ranges rendered read-only as from–to (`formatFromTo`) + one `Edit` button
  * opening `DayHoursModal`. No per-pill edit/delete — range editing only happens inside the modal.

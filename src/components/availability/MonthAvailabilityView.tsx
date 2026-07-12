@@ -110,8 +110,8 @@ function addMonths(cursor: MonthCursor, delta: number): MonthCursor {
 }
 
 /**
- * Month-density "actual availability" calendar (CTL-55 v2.1) — replaces the flat occurrence list
- * `ResolvedAvailabilityPreview` (superseded, removed in Task 5). Buckets the backend-resolved
+ * Month-density "actual availability" calendar (CTL-55 v2.1) — replaces the old flat occurrence
+ * list preview. Buckets the backend-resolved
  * `occurrences` by settings-tz calendar date (rendering only — no client-side coalescing): each
  * day cell shows a density indicator, with a hatch/grey pattern for a day with zero net
  * availability. Hovering a day opens a summary popover listing that day's windows 1:1, formatted

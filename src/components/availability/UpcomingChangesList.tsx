@@ -10,9 +10,8 @@ import {
 import { formatFromTo } from "@/lib/availability/fromTo";
 import { formatExceptionDate } from "./availabilityHelpers";
 
-/** Local labels/variants for the two exception kinds — deliberately NOT imported from
- *  `ExceptionFormModal` (superseded, removed in Task 5) so this list doesn't couple to a file
- *  slated for deletion. */
+/** Local labels/variants for the two exception kinds — deliberately not shared with any form
+ *  component so this list doesn't couple to modal-specific label copy. */
 const KIND_LABEL: Record<AvailabilityExceptionKind, string> = {
   UNAVAILABLE: "Blocked",
   ADDITIONAL: "Extra",
