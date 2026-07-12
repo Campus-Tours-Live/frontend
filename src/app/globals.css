@@ -376,6 +376,15 @@
            bg-white text-ink transition-all duration-150
            focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary-soft;
   }
+  /* One editable time segment (hour / minute / AM-PM) — plain-text look, fixed
+     width so the field never resizes; focused segment gets a soft highlight. */
+  .tp-seg {
+    @apply cursor-text bg-transparent p-0 text-center text-[14.5px] text-ink outline-none tabular-nums
+           disabled:cursor-not-allowed;
+  }
+  .tp-seg:focus {
+    @apply rounded bg-primary-soft text-primary-dark;
+  }
   /* Clock / icon button — same ghost hover as menu items (bg tint + colour shift). */
   .tp-icon-btn {
     @apply rounded p-1 text-ink-soft transition-colors
@@ -383,10 +392,10 @@
            focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft
            disabled:pointer-events-none;
   }
-  /* Dropdown popover under the field. */
+  /* Dropdown popover — portaled to <body> and fixed-positioned in JS, so no
+     scrolling/overflow ancestor (the modal) can clip it. */
   .tp-popover {
-    @apply absolute left-0 top-full z-[70] mt-1 flex gap-1 rounded-card border border-border
-           bg-popover p-2 shadow-md;
+    @apply z-[80] flex gap-1 rounded-card border border-border bg-popover p-2 shadow-lg;
   }
   /* One scroll-wheel column. */
   .tp-wheel {

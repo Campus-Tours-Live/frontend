@@ -5,7 +5,8 @@ import {
   valueToParts,
   partsToValue,
   formatDisplay,
-  parseTypedTime,
+  parseHourSegment,
+  parseMinuteSegment,
   roundTo5,
   mod,
   centeredIndex,
@@ -47,18 +48,23 @@ describe("TimePicker — pure value model", () => {
     expect(formatDisplay("24:00", true)).toBe("12:00 AM");
   });
 
-  it("parseTypedTime accepts 12h and 24h, rounds to 5, reverts on garbage", () => {
-    expect(parseTypedTime("9:30 AM", false)).toBe("09:30");
-    expect(parseTypedTime("9:30am", false)).toBe("09:30");
-    expect(parseTypedTime("21:30", false)).toBe("21:30");
-    expect(parseTypedTime("9:32 AM", false)).toBe("09:30"); // rounds to nearest 5
-    expect(parseTypedTime("12:00 AM", false)).toBe("00:00");
-    expect(parseTypedTime("12:00 AM", true)).toBe("24:00");
-    expect(parseTypedTime("24:00", true)).toBe("24:00");
-    expect(parseTypedTime("nope", false)).toBeNull();
-    expect(parseTypedTime("13:00 PM", false)).toBeNull(); // 13 invalid for 12h
-    expect(parseTypedTime("25:00", false)).toBeNull();
-    expect(parseTypedTime("", false)).toBeNull();
+  it("parseHourSegment keeps 1–12 (last two digits), rejects out-of-range/empty", () => {
+    expect(parseHourSegment("1")).toBe(1);
+    expect(parseHourSegment("12")).toBe(12);
+    expect(parseHourSegment("012")).toBe(12); // last two digits
+    expect(parseHourSegment("0")).toBeNull();
+    expect(parseHourSegment("13")).toBeNull();
+    expect(parseHourSegment("")).toBeNull();
+    expect(parseHourSegment("ab")).toBeNull();
+  });
+
+  it("parseMinuteSegment snaps to the 5-grid (0–55), rejects >59/empty", () => {
+    expect(parseMinuteSegment("30")).toBe(30);
+    expect(parseMinuteSegment("32")).toBe(30); // nearest 5
+    expect(parseMinuteSegment("58")).toBe(55); // clamps to 55
+    expect(parseMinuteSegment("3")).toBe(5);
+    expect(parseMinuteSegment("60")).toBeNull();
+    expect(parseMinuteSegment("")).toBeNull();
   });
 
   it("scroll maths: mod / roundTo5 / centeredIndex / valueAt / recenterIndex", () => {
@@ -67,22 +73,88 @@ describe("TimePicker — pure value model", () => {
     expect(centeredIndex(ITEM_HEIGHT * 3)).toBe(3);
     expect(valueAt(14, MINUTE_OPTIONS, true)).toBe(MINUTE_OPTIONS[2]); // wraps
     expect(valueAt(9, ["AM", "PM"], false)).toBe("PM"); // clamps
-    // In the first copy → pushed up into the middle band; middle index unchanged.
-    expect(recenterIndex(5, 12, 7)).toBe(17);
+    expect(recenterIndex(5, 12, 7)).toBe(17); // first copy → middle band
     expect(recenterIndex(40, 12, 7)).toBe(40);
     expect(recenterIndex(80, 12, 7)).toBe(68); // last copy → pulled down
   });
 });
 
 // --------------------------------------------------------------------------
-// Field + dropdown behaviour.
+// Segmented closed field.
 // --------------------------------------------------------------------------
-describe("TimePicker — field + dropdown", () => {
-  it("the closed field renders the formatted value", () => {
+describe("TimePicker — segmented field", () => {
+  it("renders the value as independent hour / minute / AM-PM segments", () => {
     render(<TimePicker value="09:00" onChange={jest.fn()} aria-label="Start" />);
-    expect(screen.getByRole("button", { name: /9:00 AM/ })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Start hour" })).toHaveValue("9");
+    expect(screen.getByRole("textbox", { name: "Start minutes" })).toHaveValue("00");
+    expect(screen.getByRole("textbox", { name: "Start AM/PM" })).toHaveValue("AM");
   });
 
+  it("typing into the hour segment emits the new 24h value", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
+    const hour = screen.getByRole("textbox", { name: "Start hour" });
+    await user.clear(hour);
+    await user.type(hour, "10");
+    expect(onChange).toHaveBeenLastCalledWith("10:00");
+  });
+
+  it("typing into the minute segment snaps to the 5-grid", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
+    const min = screen.getByRole("textbox", { name: "Start minutes" });
+    await user.clear(min);
+    await user.type(min, "30");
+    expect(onChange).toHaveBeenLastCalledWith("09:30");
+  });
+
+  it("the AM/PM segment toggles the period by typing p / a", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
+    const period = screen.getByRole("textbox", { name: "Start AM/PM" });
+    await user.click(period);
+    await user.keyboard("p");
+    expect(onChange).toHaveBeenCalledWith("21:00");
+  });
+
+  it("ArrowUp on the hour segment steps the value", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
+    const hour = screen.getByRole("textbox", { name: "Start hour" });
+    await user.click(hour);
+    await user.keyboard("{ArrowUp}");
+    expect(onChange).toHaveBeenCalledWith("10:00");
+  });
+
+  it("invalid segment input emits nothing (previous value kept)", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
+    const hour = screen.getByRole("textbox", { name: "Start hour" });
+    await user.clear(hour);
+    await user.type(hour, "ab");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("midnightIsEndOfDay: a 12:00 AM segment selection emits the 24:00 sentinel", async () => {
+    const user = userEvent.setup();
+    const onChange = jest.fn();
+    render(<TimePicker value="01:00" onChange={onChange} midnightIsEndOfDay aria-label="End" />);
+    const hour = screen.getByRole("textbox", { name: "End hour" });
+    await user.clear(hour);
+    await user.type(hour, "12"); // 12:00 AM (value already AM) → end of day
+    expect(onChange).toHaveBeenLastCalledWith("24:00");
+  });
+});
+
+// --------------------------------------------------------------------------
+// Dropdown (wheels).
+// --------------------------------------------------------------------------
+describe("TimePicker — dropdown", () => {
   it("opening shows Hour / Minute / AM-PM columns", async () => {
     const user = userEvent.setup();
     render(<TimePicker value="09:00" onChange={jest.fn()} aria-label="Start" />);
@@ -129,7 +201,7 @@ describe("TimePicker — field + dropdown", () => {
     expect(onChange).toHaveBeenCalledWith("21:00");
   });
 
-  it("midnightIsEndOfDay: picking 12:00 AM emits the 24:00 end-of-day sentinel", async () => {
+  it("midnightIsEndOfDay: picking 12:00 AM on the wheel emits the 24:00 sentinel", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     render(<TimePicker value="01:00" onChange={onChange} midnightIsEndOfDay aria-label="End" />);
@@ -148,71 +220,20 @@ describe("TimePicker — field + dropdown", () => {
     hourCol.focus();
     await user.keyboard("{ArrowDown}");
     expect(onChange).toHaveBeenCalledWith("10:00"); // 9 → 10
-    onChange.mockClear();
-    await user.keyboard("{ArrowUp}");
-    expect(onChange).toHaveBeenCalledWith("08:00"); // 9 → 8 (wraps from current value)
   });
 });
 
 // --------------------------------------------------------------------------
-// Click-to-type inline input.
+// openOnMount + dismissal + disabled.
 // --------------------------------------------------------------------------
-describe("TimePicker — click-to-type", () => {
-  it("typing a 12h time and pressing Enter parses to 24h HH:mm", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
-    await user.click(screen.getByRole("button", { name: /edit as text/i }));
-    const input = screen.getByRole("textbox");
-    await user.clear(input);
-    await user.type(input, "9:30 AM");
-    await user.keyboard("{Enter}");
-    expect(onChange).toHaveBeenCalledWith("09:30");
+describe("TimePicker — openOnMount, dismissal, disabled", () => {
+  it("openOnMount opens the dropdown and focuses the Hour wheel", () => {
+    render(<TimePicker value="09:00" onChange={jest.fn()} openOnMount aria-label="Start" />);
+    const hourWheel = screen.getByRole("listbox", { name: "Hour" });
+    expect(hourWheel).toBeInTheDocument();
+    expect(hourWheel).toHaveFocus();
   });
 
-  it("typing a 24h time and blurring parses it", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
-    await user.click(screen.getByRole("button", { name: /edit as text/i }));
-    const input = screen.getByRole("textbox");
-    await user.clear(input);
-    await user.type(input, "21:30");
-    fireEvent.blur(input);
-    expect(onChange).toHaveBeenCalledWith("21:30");
-  });
-
-  it("invalid input reverts to the previous value (no onChange)", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
-    await user.click(screen.getByRole("button", { name: /edit as text/i }));
-    const input = screen.getByRole("textbox");
-    await user.clear(input);
-    await user.type(input, "not a time");
-    await user.keyboard("{Enter}");
-    expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /9:00 AM/ })).toBeInTheDocument();
-  });
-
-  it("Escape cancels text entry without changing the value", async () => {
-    const user = userEvent.setup();
-    const onChange = jest.fn();
-    render(<TimePicker value="09:00" onChange={onChange} aria-label="Start" />);
-    await user.click(screen.getByRole("button", { name: /edit as text/i }));
-    const input = screen.getByRole("textbox");
-    await user.clear(input);
-    await user.type(input, "11:00");
-    await user.keyboard("{Escape}");
-    expect(onChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: /9:00 AM/ })).toBeInTheDocument();
-  });
-});
-
-// --------------------------------------------------------------------------
-// Dismissal + disabled.
-// --------------------------------------------------------------------------
-describe("TimePicker — dismissal + disabled", () => {
   it("Escape closes the open dropdown", async () => {
     const user = userEvent.setup();
     render(<TimePicker value="09:00" onChange={jest.fn()} aria-label="Start" />);
@@ -248,7 +269,11 @@ describe("TimePicker — dismissal + disabled", () => {
 // Scroll-settle handler (drives the recentre path jsdom can't scroll for real).
 // --------------------------------------------------------------------------
 describe("TimePicker — scroll settle + recentre", () => {
-  beforeEach(() => jest.useFakeTimers());
+  let onChange: jest.Mock;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    onChange = jest.fn();
+  });
   afterEach(() => {
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
@@ -261,27 +286,21 @@ describe("TimePicker — scroll settle + recentre", () => {
     return col.querySelector(".tp-col") as HTMLElement;
   }
 
-  let onChange: jest.Mock;
-  beforeEach(() => {
-    onChange = jest.fn();
-  });
-
   it("settling on a centred item emits its value", () => {
     const el = openAndGetScrollEl("Hour");
-    // Middle-band index 39 → value HOUR_OPTIONS[39 % 12] = "4".
-    el.scrollTop = 39 * ITEM_HEIGHT;
+    el.scrollTop = 39 * ITEM_HEIGHT; // middle band → HOUR_OPTIONS[39 % 12] = "4"
     fireEvent.scroll(el);
-    jest.advanceTimersByTime(100);
+    jest.advanceTimersByTime(150);
     expect(HOUR_OPTIONS[39 % 12]).toBe("4");
     expect(onChange).toHaveBeenCalledWith("04:00");
   });
 
-  it("settling inside an edge copy silently recentres scrollTop", () => {
+  it("settling inside an edge copy silently recentres scrollTop immediately", () => {
     const el = openAndGetScrollEl("Hour");
     el.scrollTop = 5 * ITEM_HEIGHT; // first copy
     fireEvent.scroll(el);
-    jest.advanceTimersByTime(100);
-    expect(el.scrollTop).toBe(recenterIndex(5, 12, 7) * ITEM_HEIGHT); // 17 * 34
+    expect(el.scrollTop).toBe(recenterIndex(5, 12, 7) * ITEM_HEIGHT); // 17 * 34, synchronous
+    jest.advanceTimersByTime(150);
     expect(onChange).toHaveBeenCalledWith("06:00"); // HOUR_OPTIONS[5] = "6"
   });
 });

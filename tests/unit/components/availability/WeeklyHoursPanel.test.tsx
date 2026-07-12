@@ -188,20 +188,16 @@ describe("WeeklyHoursPanel — Edit opens DayHoursModal prefilled with from–to
     expect(within(dialog).getByRole("heading", { name: /edit monday hours/i })).toBeInTheDocument();
 
     const range1 = within(dialog).getByRole("group", { name: "Range 1" });
-    expect(
-      within(range1).getByRole("button", { name: /range 1 from: 9:00 AM/i }),
-    ).toBeInTheDocument();
-    expect(
-      within(range1).getByRole("button", { name: /range 1 to: 11:00 AM/i }),
-    ).toBeInTheDocument();
+    expect(within(range1).getByRole("textbox", { name: "Range 1 from hour" })).toHaveValue("9");
+    expect(within(range1).getByRole("textbox", { name: "Range 1 from AM/PM" })).toHaveValue("AM");
+    expect(within(range1).getByRole("textbox", { name: "Range 1 to hour" })).toHaveValue("11");
+    expect(within(range1).getByRole("textbox", { name: "Range 1 to AM/PM" })).toHaveValue("AM");
 
     const range2 = within(dialog).getByRole("group", { name: "Range 2" });
-    expect(
-      within(range2).getByRole("button", { name: /range 2 from: 1:00 PM/i }),
-    ).toBeInTheDocument();
-    expect(
-      within(range2).getByRole("button", { name: /range 2 to: 2:00 PM/i }),
-    ).toBeInTheDocument();
+    expect(within(range2).getByRole("textbox", { name: "Range 2 from hour" })).toHaveValue("1");
+    expect(within(range2).getByRole("textbox", { name: "Range 2 from AM/PM" })).toHaveValue("PM");
+    expect(within(range2).getByRole("textbox", { name: "Range 2 to hour" })).toHaveValue("2");
+    expect(within(range2).getByRole("textbox", { name: "Range 2 to AM/PM" })).toHaveValue("PM");
   });
 });
 

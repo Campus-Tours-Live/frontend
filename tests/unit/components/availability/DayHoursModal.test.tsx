@@ -67,24 +67,30 @@ function renderModal(rules: AvailabilityRule[] = [], onClose = jest.fn()) {
   return { onClose };
 }
 
-/** Set a TimePicker's value via its click-to-type inline input (jsdom can't scroll the wheel). */
-async function typeTime(user: UserEvent, scope: HTMLElement, labelRe: RegExp, text: string) {
-  await user.click(within(scope).getByRole("button", { name: labelRe }));
-  const input = within(scope).getByRole("textbox");
-  await user.clear(input);
-  await user.type(input, text);
-  await user.keyboard("{Enter}");
+/** Type into a TimePicker hour/minute segment (jsdom can't scroll the wheel). */
+async function typeSegment(user: UserEvent, scope: HTMLElement, name: string, text: string) {
+  const el = within(scope).getByRole("textbox", { name });
+  await user.clear(el);
+  await user.type(el, text);
+}
+
+/** Set a TimePicker's AM/PM segment. */
+async function setPeriod(user: UserEvent, scope: HTMLElement, name: string, ampm: "AM" | "PM") {
+  const el = within(scope).getByRole("textbox", { name });
+  await user.click(el);
+  await user.keyboard(ampm === "PM" ? "p" : "a");
 }
 
 describe("DayHoursModal — prefill + layout", () => {
-  it("prefills From/To from an existing rule (09:00 → 13:00 shown as 9:00 AM / 1:00 PM)", () => {
+  it("prefills From/To segments from an existing rule (09:00 → 13:00 = 9:00 AM / 1:00 PM)", () => {
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
-    expect(
-      within(range).getByRole("button", { name: /range 1 from: 9:00 AM/i }),
-    ).toBeInTheDocument();
-    expect(within(range).getByRole("button", { name: /range 1 to: 1:00 PM/i })).toBeInTheDocument();
+    expect(within(range).getByRole("textbox", { name: "Range 1 from hour" })).toHaveValue("9");
+    expect(within(range).getByRole("textbox", { name: "Range 1 from minutes" })).toHaveValue("00");
+    expect(within(range).getByRole("textbox", { name: "Range 1 from AM/PM" })).toHaveValue("AM");
+    expect(within(range).getByRole("textbox", { name: "Range 1 to hour" })).toHaveValue("1");
+    expect(within(range).getByRole("textbox", { name: "Range 1 to AM/PM" })).toHaveValue("PM");
   });
 
   it("shows the persistent info alert about hours past midnight", () => {
@@ -155,7 +161,8 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
     // Default new range is 09:00–10:00; set the To to 1:00 PM (13:00 → windowMin 240).
-    await typeTime(user, range, /range 1 to.*edit as text/i, "1:00 PM");
+    await typeSegment(user, range, "Range 1 to hour", "1");
+    await setPeriod(user, range, "Range 1 to AM/PM", "PM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
@@ -172,8 +179,9 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     const dialog = screen.getByRole("dialog");
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
-    // TO picker has midnightIsEndOfDay → typing 12:00 AM yields the "24:00" sentinel.
-    await typeTime(user, range, /range 1 to.*edit as text/i, "12:00 AM");
+    // TO picker has midnightIsEndOfDay → 12:00 AM yields the "24:00" sentinel.
+    await typeSegment(user, range, "Range 1 to hour", "12");
+    await setPeriod(user, range, "Range 1 to AM/PM", "AM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(updateMutate).toHaveBeenCalledTimes(1));
@@ -253,7 +261,8 @@ describe("DayHoursModal — client-side structural validation (from<to only, nev
     const range = within(dialog).getByRole("group", { name: "Range 1" });
 
     // Set From equal to the current To (1:00 PM / 13:00) — toWindowMin throws on to<=from.
-    await typeTime(user, range, /range 1 from.*edit as text/i, "1:00 PM");
+    await typeSegment(user, range, "Range 1 from hour", "1");
+    await setPeriod(user, range, "Range 1 from AM/PM", "PM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(await within(dialog).findByText(/must be after/i)).toBeInTheDocument();

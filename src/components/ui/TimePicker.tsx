@@ -6,10 +6,11 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDismiss } from "@/hooks";
 
 /**
  * TimePicker — a time-of-day field with an iPhone-Clock-style infinite
@@ -105,41 +106,28 @@ export function formatDisplay(value: string, midnightIsEndOfDay: boolean): strin
 }
 
 /**
- * Parse a user-typed time into a 24h `"HH:mm"` value (or `"24:00"`), or `null` if
- * unparseable. Accepts `h:mm AM/PM` (any case/spacing) and 24h `hh:mm` (incl. the
- * literal `24:00`). Minutes are rounded to the nearest 5. On a TO field
- * (`midnightIsEndOfDay`) a 12:00 AM / end-of-day result maps to `"24:00"`.
+ * Parse what the user has typed into the Hour segment into a 1–12 hour, or `null`
+ * (keep the previous value). Only the last two digits count, so continuous typing
+ * shifts (e.g. `"1"` then `"2"` → 12). Off-range (0, >12) → `null`.
  */
-export function parseTypedTime(input: string, midnightIsEndOfDay: boolean): string | null {
-  const t = input.trim().toLowerCase();
-  if (!t) return null;
+export function parseHourSegment(raw: string): number | null {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  const n = parseInt(digits.slice(-2), 10);
+  return n >= 1 && n <= 12 ? n : null;
+}
 
-  let hour: number;
-  let minute: number;
-
-  const m12 = /^(\d{1,2}):(\d{2})\s*(am|pm)$/.exec(t);
-  const m24 = /^(\d{1,2}):(\d{2})$/.exec(t);
-  if (m12) {
-    hour = Number(m12[1]);
-    minute = Number(m12[2]);
-    if (hour < 1 || hour > 12 || minute > 59) return null;
-    const pm = m12[3] === "pm";
-    if (hour === 12) hour = pm ? 12 : 0;
-    else if (pm) hour += 12;
-  } else if (m24) {
-    hour = Number(m24[1]);
-    minute = Number(m24[2]);
-    if (minute > 59 || hour > 24 || (hour === 24 && minute !== 0)) return null;
-  } else {
-    return null;
-  }
-
-  const total = roundTo5(hour * 60 + minute);
-  if (total >= 1440) return midnightIsEndOfDay ? "24:00" : "00:00";
-  if (midnightIsEndOfDay && total === 0) return "24:00";
-  const hh = Math.floor(total / 60);
-  const mm = total % 60;
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+/**
+ * Parse what the user has typed into the Minute segment into a 0–55 value snapped
+ * to the 5-minute grid, or `null` (keep the previous value). Only the last two
+ * digits count; >59 → `null`.
+ */
+export function parseMinuteSegment(raw: string): number | null {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  const n = parseInt(digits.slice(-2), 10);
+  if (n < 0 || n > 59) return null;
+  return Math.min(55, roundTo5(n));
 }
 
 // ---------------------------------------------------------------------------
@@ -153,6 +141,12 @@ const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const PAD = (CONTAINER_HEIGHT - ITEM_HEIGHT) / 2;
 /** Odd number of list copies for a wrapping column, so there's a buffer each side. */
 export const WRAP_COPIES = 7;
+
+/** Approx. popover box size (px), for viewport flip/clamp positioning. Container +
+ *  the `.tp-popover` padding/border; width = 3 columns + gaps + padding. */
+const POPOVER_HEIGHT = CONTAINER_HEIGHT + 20;
+const POPOVER_WIDTH = 236;
+const MARGIN = 8;
 
 /** The centred item's index in the repeated list, from a scroll offset. */
 export function centeredIndex(scrollTop: number): number {
@@ -199,50 +193,82 @@ interface WheelColumnProps {
 function WheelColumn({ label, options, value, onChange, wrap }: WheelColumnProps) {
   const ref = useRef<HTMLDivElement>(null);
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didInit = useRef(false);
+  // `true` while WE are updating the value (scroll/click), so the value→scroll
+  // sync effect below doesn't fight the user's own gesture (which would jump).
+  const selfEmitRef = useRef(false);
 
   const copies = wrap ? WRAP_COPIES : 1;
   const midStart = options.length * Math.floor(copies / 2);
   const selectedIndex = Math.max(0, options.indexOf(value));
+
+  // The repeated-list index currently under the centre band. Tracked in state so
+  // the highlight follows the finger LIVE (no wait for the debounced commit → no
+  // lag/flash as the wheel crosses 12→1 / 55→00), and in a ref for the handlers.
+  const [activeIndex, setActiveIndex] = useState(midStart + selectedIndex);
+  const activeIndexRef = useRef(activeIndex);
+  const setActive = (index: number) => {
+    activeIndexRef.current = index;
+    setActiveIndex(index);
+  };
 
   const repeated = useMemo(
     () => Array.from({ length: copies }, () => options).flat(),
     [copies, options],
   );
 
-  // Centre the selected item once, when the column first mounts (the dropdown
-  // remounts on every open, so this re-seeds each time it's shown).
-  useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
+  const scrollToIndex = (index: number) => {
     const el = ref.current;
-    if (el) el.scrollTop = (midStart + selectedIndex) * ITEM_HEIGHT;
-  });
+    if (el) el.scrollTop = index * ITEM_HEIGHT;
+    setActive(index);
+  };
 
-  const emitFor = (rawIndex: number) => {
+  // Seed the scroll position on mount, and re-seed if the value changes from the
+  // OUTSIDE (e.g. typing in a segment) — but never in response to our own emit,
+  // which would yank the wheel back mid-scroll.
+  useEffect(() => {
+    if (selfEmitRef.current) {
+      selfEmitRef.current = false;
+      return;
+    }
+    scrollToIndex(midStart + Math.max(0, options.indexOf(value)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const emit = (rawIndex: number) => {
     const next = valueAt(rawIndex, options, wrap);
-    if (next !== value) onChange(next);
+    if (next !== value) {
+      selfEmitRef.current = true;
+      onChange(next);
+    }
   };
 
   const onScroll = () => {
-    if (settleRef.current) clearTimeout(settleRef.current);
-    settleRef.current = setTimeout(() => {
-      const el = ref.current;
-      if (!el) return;
-      const raw = centeredIndex(el.scrollTop);
-      if (wrap) {
-        const target = recenterIndex(raw, options.length, copies);
-        if (target !== raw) el.scrollTop = target * ITEM_HEIGHT; // silent recentre
+    const el = ref.current;
+    if (!el) return;
+    let raw = centeredIndex(el.scrollTop);
+    if (wrap) {
+      // Recentre WHILE scrolling (not on settle): repositioning by whole identical
+      // copies is invisible and momentum continues seamlessly — no edge flash.
+      const target = recenterIndex(raw, options.length, copies);
+      if (target !== raw) {
+        el.scrollTop = target * ITEM_HEIGHT;
+        raw = target;
       }
-      emitFor(raw);
-    }, SETTLE_MS);
+    } else {
+      raw = Math.min(options.length - 1, Math.max(0, raw));
+    }
+    if (raw !== activeIndexRef.current) setActive(raw); // live highlight
+    if (settleRef.current) clearTimeout(settleRef.current);
+    settleRef.current = setTimeout(() => emit(raw), SETTLE_MS); // commit on settle
   };
 
   const selectOption = (optionIndex: number) => {
-    const el = ref.current;
-    if (el) el.scrollTop = (midStart + optionIndex) * ITEM_HEIGHT;
+    scrollToIndex(midStart + optionIndex);
     const next = options[optionIndex];
-    if (next !== value) onChange(next);
+    if (next !== value) {
+      selfEmitRef.current = true;
+      onChange(next);
+    }
   };
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -274,7 +300,7 @@ function WheelColumn({ label, options, value, onChange, wrap }: WheelColumnProps
         style={{ paddingTop: PAD, paddingBottom: PAD }}
       >
         {repeated.map((opt, i) => {
-          const isSelected = i % options.length === selectedIndex;
+          const isSelected = i === activeIndex; // exactly the item under the band
           return (
             <button
               key={i}
@@ -298,6 +324,91 @@ function WheelColumn({ label, options, value, onChange, wrap }: WheelColumnProps
 }
 
 // ---------------------------------------------------------------------------
+// Editable segment (one of hour / minute / AM-PM in the closed field).
+// ---------------------------------------------------------------------------
+
+interface SegmentProps {
+  ariaLabel: string;
+  /** The current value shown when the segment isn't being typed into. */
+  display: string;
+  /** Fixed width (e.g. "2ch") so the field never resizes as digits change. */
+  width: string;
+  disabled?: boolean;
+  /** Period segment: key-driven only (a/p, arrows) — no free-text entry. */
+  readOnly?: boolean;
+  id?: string;
+  inputRef?: RefObject<HTMLInputElement | null>;
+  /** Live parse+emit for hour/minute as the user types. */
+  onCommit?: (raw: string) => void;
+  /** Arrow Up/Down steps the segment. */
+  onStep: (dir: 1 | -1) => void;
+  /** Period letter key (a/p). */
+  onChar?: (key: string) => void;
+}
+
+/**
+ * One inline, independently-focusable segment. Clicking a segment lands the caret
+ * IN that segment (each is its own `<input>`), and the fixed width keeps the field
+ * from resizing. A local `draft` holds the raw text while focused so typing isn't
+ * fought by the reformatted controlled `display`.
+ */
+function Segment({
+  ariaLabel,
+  display,
+  width,
+  disabled,
+  readOnly,
+  id,
+  inputRef,
+  onCommit,
+  onStep,
+  onChar,
+}: SegmentProps) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = readOnly ? display : (draft ?? display);
+  return (
+    <input
+      id={id}
+      ref={inputRef}
+      type="text"
+      inputMode="numeric"
+      autoComplete="off"
+      aria-label={ariaLabel}
+      disabled={disabled}
+      readOnly={readOnly}
+      value={shown}
+      style={{ width }}
+      className="tp-seg"
+      onFocus={(e) => {
+        if (!readOnly) setDraft(display);
+        e.currentTarget.select();
+      }}
+      onBlur={() => setDraft(null)}
+      onChange={(e) => {
+        if (readOnly) return;
+        setDraft(e.target.value);
+        onCommit?.(e.target.value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          onStep(1);
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          onStep(-1);
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        } else if (onChar && /^[a-zA-Z]$/.test(e.key)) {
+          e.preventDefault();
+          onChar(e.key);
+        }
+      }}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // TimePicker field + dropdown.
 // ---------------------------------------------------------------------------
 
@@ -309,6 +420,9 @@ export interface TimePickerProps {
   /** TO-field mode: a 12:00 AM selection emits `"24:00"` (end of day). Default false. */
   midnightIsEndOfDay?: boolean;
   disabled?: boolean;
+  /** On first mount, open the dropdown and focus the Hour segment (e.g. a freshly
+   *  added range row). Read once on mount. */
+  openOnMount?: boolean;
   "aria-label"?: string;
   id?: string;
 }
@@ -318,52 +432,93 @@ export function TimePicker({
   onChange,
   midnightIsEndOfDay = false,
   disabled = false,
+  openOnMount = false,
   "aria-label": ariaLabel,
   id,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
+  // Fixed-viewport position for the portaled popover, so no scrolling/overflow
+  // ancestor (the modal's scroll area) can clip it as rows pile up. Flipped above
+  // the field and clamped to the viewport so it never runs off-screen / out of the
+  // modal's visible area.
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const hourRef = useRef<HTMLInputElement>(null);
+  // Set when the dropdown should grab focus on the Hour wheel once it renders.
+  const focusHourWheelRef = useRef(false);
 
-  useDismiss({
-    enabled: open || editing,
-    outside: true,
-    ref: wrapperRef,
-    onDismiss: () => {
+  const positionPopover = () => {
+    const rect = wrapperRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const gap = 4;
+    const flipUp =
+      rect.bottom + POPOVER_HEIGHT + gap > window.innerHeight &&
+      rect.top - POPOVER_HEIGHT - gap > 0;
+    const left = Math.max(MARGIN, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - MARGIN));
+    const top = flipUp ? rect.top - POPOVER_HEIGHT - gap : rect.bottom + gap;
+    setPos({ left, top });
+  };
+
+  const openPicker = () => {
+    positionPopover();
+    setOpen(true);
+  };
+
+  // Close on outside pointer / Escape, and keep the popover pinned to the field
+  // while the modal scrolls or the window resizes.
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (wrapperRef.current?.contains(t) || popoverRef.current?.contains(t)) return;
       setOpen(false);
-      setEditing(false);
-    },
-  });
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onScroll = (e: Event) => {
+      // Reposition when an ANCESTOR (the modal) scrolls — but ignore the wheel's
+      // own inner scroll, which must not trigger a reposition re-render.
+      if (popoverRef.current?.contains(e.target as Node)) return;
+      positionPopover();
+    };
+    document.addEventListener("pointerdown", onPointer);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", positionPopover);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", positionPopover);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open]);
+
+  // Once the dropdown is open, move focus to the Hour wheel if requested (e.g. a
+  // freshly-added row) — the wheel is portaled, so focus it after it renders.
+  useEffect(() => {
+    if (!open || !focusHourWheelRef.current) return;
+    focusHourWheelRef.current = false;
+    const hourWheel = popoverRef.current?.querySelector<HTMLElement>('[role="listbox"]');
+    hourWheel?.focus();
+  }, [open]);
+
+  // Freshly-added row: pop the dropdown open and focus the Hour wheel. Opening
+  // on mount is intentional imperative behaviour (not derived state).
+  useEffect(() => {
+    if (!openOnMount || disabled) return;
+    focusHourWheelRef.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    openPicker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const parts = valueToParts(value, midnightIsEndOfDay);
-  const display = formatDisplay(value, midnightIsEndOfDay);
+  const segLabel = (part: string) => (ariaLabel ? `${ariaLabel} ${part}` : part);
 
   const setPart = (patch: Partial<TimeParts>) => {
     onChange(partsToValue({ ...parts, ...patch }, midnightIsEndOfDay));
-  };
-
-  const enterEdit = () => {
-    if (disabled) return;
-    setOpen(false);
-    setDraft(display);
-    setEditing(true);
-  };
-
-  const commitEdit = () => {
-    const parsed = parseTypedTime(draft, midnightIsEndOfDay);
-    if (parsed) onChange(parsed); // invalid → keep the previous value
-    setEditing(false);
-  };
-
-  const onEditKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      commitEdit();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      setEditing(false); // cancel — revert to the previous value
-    }
   };
 
   const onPopoverKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -381,72 +536,93 @@ export function TimePicker({
           disabled && "cursor-not-allowed opacity-50",
         )}
       >
-        {editing ? (
-          <input
+        <div role="group" aria-label={ariaLabel} className="flex flex-1 items-center gap-0.5">
+          <Segment
             id={id}
-            type="text"
-            autoFocus
-            aria-label={ariaLabel}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={onEditKeyDown}
-            onBlur={commitEdit}
-            className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14.5px] text-ink outline-none"
-          />
-        ) : (
-          <button
-            id={id}
-            type="button"
+            inputRef={hourRef}
+            ariaLabel={segLabel("hour")}
+            display={String(parts.hour12)}
+            width="2ch"
             disabled={disabled}
-            aria-label={
-              ariaLabel ? `${ariaLabel}: ${display}, edit as text` : `${display}, edit as text`
-            }
-            onClick={enterEdit}
-            className="min-w-0 flex-1 cursor-text bg-transparent text-left text-[14.5px] text-ink"
-          >
-            {display}
-          </button>
-        )}
+            onCommit={(raw) => {
+              const h = parseHourSegment(raw);
+              if (h !== null) setPart({ hour12: h });
+            }}
+            onStep={(d) => setPart({ hour12: ((parts.hour12 - 1 + d + 12) % 12) + 1 })}
+          />
+          <span aria-hidden className="text-ink-soft">
+            :
+          </span>
+          <Segment
+            ariaLabel={segLabel("minutes")}
+            display={String(parts.minute).padStart(2, "0")}
+            width="2ch"
+            disabled={disabled}
+            onCommit={(raw) => {
+              const m = parseMinuteSegment(raw);
+              if (m !== null) setPart({ minute: m });
+            }}
+            onStep={(d) => setPart({ minute: mod(parts.minute + d * 5, 60) })}
+          />
+          <Segment
+            ariaLabel={segLabel("AM/PM")}
+            display={parts.period}
+            width="2.75ch"
+            disabled={disabled}
+            readOnly
+            onStep={() => setPart({ period: parts.period === "AM" ? "PM" : "AM" })}
+            onChar={(key) => {
+              const k = key.toLowerCase();
+              if (k === "a") setPart({ period: "AM" });
+              else if (k === "p") setPart({ period: "PM" });
+            }}
+          />
+        </div>
         <button
           type="button"
           disabled={disabled}
           aria-expanded={open}
           aria-label={ariaLabel ? `Open ${ariaLabel} picker` : "Open time picker"}
-          onClick={() => {
-            setEditing(false);
-            setOpen((o) => !o);
-          }}
+          onClick={() => (open ? setOpen(false) : openPicker())}
           className="tp-icon-btn shrink-0"
         >
           <Clock size={16} strokeWidth={1.8} aria-hidden />
         </button>
       </div>
 
-      {open && !disabled ? (
-        <div className="tp-popover" onKeyDown={onPopoverKeyDown}>
-          <WheelColumn
-            label="Hour"
-            options={HOUR_OPTIONS}
-            value={String(parts.hour12)}
-            onChange={(h) => setPart({ hour12: Number(h) })}
-            wrap
-          />
-          <WheelColumn
-            label="Minute"
-            options={MINUTE_OPTIONS}
-            value={String(parts.minute).padStart(2, "0")}
-            onChange={(m) => setPart({ minute: Number(m) })}
-            wrap
-          />
-          <WheelColumn
-            label="AM/PM"
-            options={PERIOD_OPTIONS}
-            value={parts.period}
-            onChange={(p) => setPart({ period: p as "AM" | "PM" })}
-            wrap={false}
-          />
-        </div>
-      ) : null}
+      {open && !disabled && pos
+        ? createPortal(
+            <div
+              ref={popoverRef}
+              className="tp-popover"
+              style={{ position: "fixed", left: pos.left, top: pos.top }}
+              onKeyDown={onPopoverKeyDown}
+            >
+              <WheelColumn
+                label="Hour"
+                options={HOUR_OPTIONS}
+                value={String(parts.hour12)}
+                onChange={(h) => setPart({ hour12: Number(h) })}
+                wrap
+              />
+              <WheelColumn
+                label="Minute"
+                options={MINUTE_OPTIONS}
+                value={String(parts.minute).padStart(2, "0")}
+                onChange={(m) => setPart({ minute: Number(m) })}
+                wrap
+              />
+              <WheelColumn
+                label="AM/PM"
+                options={PERIOD_OPTIONS}
+                value={parts.period}
+                onChange={(p) => setPart({ period: p as "AM" | "PM" })}
+                wrap={false}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

@@ -74,13 +74,17 @@ function DayHoursModalContent({
   const [ranges, setRanges] = useState<RangeDraft[]>(() => draftsFromRules(rules));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Key of the just-added row, so its FROM picker mounts open + focused on the hour.
+  const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
 
   const updateRange = (key: string, patch: Partial<RangeDraft>) => {
     setRanges((prev) => prev.map((range) => (range.key === key ? { ...range, ...patch } : range)));
   };
 
   const addRange = () => {
-    setRanges((prev) => [...prev, { key: nextDraftKey(), from: "09:00", to: "10:00" }]);
+    const key = nextDraftKey();
+    setRanges((prev) => [...prev, { key, from: "09:00", to: "10:00" }]);
+    setAutoOpenKey(key);
   };
 
   const removeRange = (key: string) => {
@@ -145,23 +149,28 @@ function DayHoursModalContent({
   };
 
   return (
-    <div className="p-6">
-      <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">
-        Edit {dayLabel} hours
-      </h2>
-      <p className="mt-1 text-[13px] text-ink-soft">Times shown in {settingsTimezone}.</p>
+    // Cap to the viewport (with a comfortable min height) and split into fixed
+    // header / scrollable body / fixed footer, so a long list of ranges scrolls
+    // inside the modal on any screen size.
+    <div className="flex max-h-[85vh] min-h-[24rem] flex-col p-6">
+      <div className="shrink-0">
+        <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">
+          Edit {dayLabel} hours
+        </h2>
+        <p className="mt-1 text-[13px] text-ink-soft">Times shown in {settingsTimezone}.</p>
 
-      <Alert variant="info" role="status" className="mt-4">
-        Hours that pass midnight should be added to the next day.
-      </Alert>
-
-      {error ? (
-        <Alert variant="error" className="mt-3">
-          {error}
+        <Alert variant="info" role="status" className="mt-4">
+          Hours that pass midnight should be added to the next day.
         </Alert>
-      ) : null}
 
-      <div className="mt-5 space-y-4">
+        {error ? (
+          <Alert variant="error" className="mt-3">
+            {error}
+          </Alert>
+        ) : null}
+      </div>
+
+      <div className="-mr-2 mt-5 flex-1 space-y-4 overflow-y-auto pr-2">
         {ranges.length === 0 ? (
           <p className="text-[13px] text-ink-soft">No hours yet — add a time range below.</p>
         ) : (
@@ -176,6 +185,7 @@ function DayHoursModalContent({
                 <TimePicker
                   aria-label={`Range ${index + 1} from`}
                   value={range.from}
+                  openOnMount={range.key === autoOpenKey}
                   onChange={(next) => updateRange(range.key, { from: next })}
                 />
               </div>
@@ -208,7 +218,7 @@ function DayHoursModalContent({
         </Button>
       </div>
 
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-6 flex shrink-0 justify-end gap-3">
         <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
           Cancel
         </Button>
