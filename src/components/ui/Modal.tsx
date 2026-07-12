@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
 
@@ -69,14 +70,24 @@ export function Modal({
       <div
         className={cn(
           "relative z-[61] w-full rounded-panel bg-card shadow-card",
-          structured && "flex max-h-[85vh] min-h-[min(24rem,80vh)] flex-col overflow-hidden",
+          structured && "flex max-h-[50vh] min-h-[min(24rem,50vh)] flex-col overflow-hidden",
           className,
         )}
       >
         {structured ? (
           <>
+            {/* Explicit close control (top-right) — always dismisses, independent of
+                `dismissOnBackdrop`, as an additional way out beyond backdrop/Escape. */}
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              className="absolute right-4 top-4 z-[62] rounded p-1 text-ink-soft transition-colors hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft"
+            >
+              <X size={18} strokeWidth={1.8} aria-hidden />
+            </button>
             {header !== undefined ? (
-              <div className="shrink-0 border-b border-border p-6">{header}</div>
+              <div className="shrink-0 border-b border-border p-6 pr-14">{header}</div>
             ) : null}
             <div className="flex-1 overflow-y-auto p-6">{children}</div>
             {footer !== undefined ? (

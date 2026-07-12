@@ -132,7 +132,7 @@ describe("Modal", () => {
 
       // Panel: responsive max/min height cap + flex column + still keeps caller's className.
       const panel = screen.getByText("My title").closest(".rounded-panel") as HTMLElement;
-      expect(panel).toHaveClass("flex", "max-h-[85vh]", "min-h-[min(24rem,80vh)]", "flex-col");
+      expect(panel).toHaveClass("flex", "max-h-[50vh]", "min-h-[min(24rem,50vh)]", "flex-col");
       expect(panel).toHaveClass("max-w-lg");
 
       // Header, body, and footer are distinct regions.
@@ -175,6 +175,33 @@ describe("Modal", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders a top-right X close button that dismisses even when backdrop dismiss is off", async () => {
+      const onClose = jest.fn();
+      render(
+        <Modal
+          open
+          onClose={onClose}
+          dismissOnBackdrop={false}
+          header={<h2>Title</h2>}
+          footer={<span>footer</span>}
+        >
+          <p>x</p>
+        </Modal>,
+      );
+
+      await userEvent.click(screen.getByRole("button", { name: "Close" }));
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not render the X close button in fallback mode", () => {
+      render(
+        <Modal open onClose={jest.fn()}>
+          <p>plain</p>
+        </Modal>,
+      );
+      expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
     });
   });
 });
