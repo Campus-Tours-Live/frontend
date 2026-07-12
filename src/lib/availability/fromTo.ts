@@ -14,11 +14,22 @@
  * overlaps, trims, or "net availability"; that is entirely a backend concern (FE-never-recomputes).
  */
 
+/** Plain "HH:mm" clock time, hour 0-23 and minute 0-59 (no seconds, no "24:00" — callers that
+ *  accept the midnight sentinel check for it before calling this). */
+const HHMM_PATTERN = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+
 /** Parse a plain "HH:mm" clock time into minutes-from-midnight. Does not special-case "24:00" —
- *  callers that accept the midnight sentinel check for it before calling this. */
+ *  callers that accept the midnight sentinel check for it before calling this. **Throws** on a
+ *  malformed or out-of-range value (T1 review Minor) instead of the old `Number(...)` coercion,
+ *  which silently produced `NaN` for e.g. `"ab:cd"` — a `NaN` `windowMin` slipped past both
+ *  `toWindowMin` guards below (`NaN <= x` and `x + NaN > 1440` are both `false`) and was returned
+ *  as-is to the caller. */
 function parseHHmm(value: string): number {
-  const [hourStr, minuteStr] = value.split(":");
-  return Number(hourStr) * 60 + Number(minuteStr);
+  const match = HHMM_PATTERN.exec(value);
+  if (!match) {
+    throw new Error(`invalid "HH:mm" time: "${value}"`);
+  }
+  return Number(match[1]) * 60 + Number(match[2]);
 }
 
 /**
@@ -65,6 +76,22 @@ function formatClock12(totalMinutes: number): string {
  */
 export function windowToTo(startLocal: string, windowMin: number): string {
   return formatClock12(parseHHmm(startLocal) + windowMin);
+}
+
+/**
+ * Compute the RAW `"HH:mm"` value for the end ("to") of a start+duration window — for a
+ * controlled `to`-picker's *value*, as opposed to {@link windowToTo}'s 12-hour *display label*
+ * (e.g. `"1:00 PM"`), which cannot round-trip back through {@link toWindowMin}. Returns exactly
+ * `"24:00"` (never `"00:00"`) when `startLocal + windowMin === 1440` (midnight/end-of-day), same
+ * sentinel `toWindowMin` accepts. `windowToRawTo("09:00", 240)` → `"13:00"`;
+ * `windowToRawTo("22:00", 120)` → `"24:00"`.
+ */
+export function windowToRawTo(startLocal: string, windowMin: number): string {
+  const totalMinutes = parseHHmm(startLocal) + windowMin;
+  if (totalMinutes === 1440) return "24:00";
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 /**

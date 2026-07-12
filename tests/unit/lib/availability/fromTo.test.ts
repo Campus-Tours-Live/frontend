@@ -1,4 +1,4 @@
-import { formatFromTo, toWindowMin, windowToTo } from "@/lib/availability/fromTo";
+import { formatFromTo, toWindowMin, windowToRawTo, windowToTo } from "@/lib/availability/fromTo";
 
 describe("toWindowMin", () => {
   it("computes windowMin between two same-day HH:mm times", () => {
@@ -27,6 +27,25 @@ describe("toWindowMin", () => {
     // to<=from guard but must still be rejected — no cross-midnight, ever.
     expect(() => toWindowMin("22:00", "25:00")).toThrow();
   });
+
+  it('throws on a malformed "to" instead of silently returning NaN (T1 review Minor)', () => {
+    // Previously `parseHHmm` did `Number("ab")*60+Number("cd")` → NaN, which slipped through
+    // both numeric guards below (NaN <= x and x + NaN > 1440 are both false) and returned NaN.
+    expect(() => toWindowMin("09:00", "ab:cd")).toThrow();
+  });
+
+  it('throws on a malformed "from" the same way', () => {
+    expect(() => toWindowMin("ab:cd", "10:00")).toThrow();
+  });
+
+  it("throws on an out-of-range HH:mm (hour/minute outside 0-23/0-59)", () => {
+    expect(() => toWindowMin("09:00", "24:61")).toThrow();
+    expect(() => toWindowMin("09:99", "10:00")).toThrow();
+  });
+
+  it('still allows the "24:00" sentinel through unaffected by the hardened parser', () => {
+    expect(toWindowMin("00:00", "24:00")).toBe(1440);
+  });
 });
 
 describe("windowToTo", () => {
@@ -40,6 +59,21 @@ describe("windowToTo", () => {
 
   it("renders noon as 12:00 PM (hour % 12 === 0 case, not the 1440 sentinel)", () => {
     expect(windowToTo("11:00", 60)).toBe("12:00 PM");
+  });
+});
+
+describe("windowToRawTo", () => {
+  it("returns the raw HH:mm end of a window (not a 12-hour label)", () => {
+    expect(windowToRawTo("09:00", 240)).toBe("13:00");
+  });
+
+  it('returns the "24:00" sentinel — not "00:00" — when startLocal + windowMin === 1440', () => {
+    expect(windowToRawTo("22:00", 120)).toBe("24:00");
+  });
+
+  it("round-trips through toWindowMin (the whole point — windowToTo's label cannot)", () => {
+    expect(toWindowMin("09:00", windowToRawTo("09:00", 240))).toBe(240);
+    expect(toWindowMin("22:00", windowToRawTo("22:00", 120))).toBe(120);
   });
 });
 
