@@ -124,50 +124,52 @@ export function WeeklyHoursPanel() {
             <div
               key={dayLabel}
               role="listitem"
-              className="flex flex-col gap-3 border-b border-border px-5 py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4 sm:px-6"
+              className="border-b border-border px-5 py-4 last:border-b-0 sm:px-6"
             >
-              <div className="w-full shrink-0 sm:w-[108px]">
+              {/* Header row: day name (left) + status label & toggle (right) */}
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-[14px] font-semibold text-ink">{dayLabel}</span>
+                <div className="flex shrink-0 items-center gap-5">
+                  <span
+                    className={
+                      "text-[14px] font-bold " + (isAvailable ? "text-primary" : "text-ink-soft")
+                    }
+                  >
+                    {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
+                  </span>
+                  <Toggle
+                    checked={isAvailable}
+                    onChange={(next) => void handleToggle(dayIndex, next)}
+                    disabled={isToggling}
+                    label={`${dayLabel} availability`}
+                  />
+                </div>
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <Toggle
-                  checked={isAvailable}
-                  onChange={(next) => void handleToggle(dayIndex, next)}
-                  disabled={isToggling}
-                  label={`${dayLabel} availability`}
-                />
-                <span
-                  className={
-                    "text-[13px] font-medium " + (isAvailable ? "text-primary" : "text-ink-soft")
-                  }
+              {/* Hours row: from–to ranges (left) + Edit hours (right, aligned to first line) */}
+              <div className="mt-3 flex items-start justify-between gap-4">
+                <div className="flex min-w-0 flex-col gap-1">
+                  {isAvailable ? (
+                    activeRules.map((rule) => (
+                      <span key={rule.id} className="text-[14px] text-ink">
+                        {formatFromTo(rule.startLocal, rule.windowMin)}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[14px] text-ink-soft">No hours set</span>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setModalDay(dayIndex)}
+                  aria-label={`Edit ${dayLabel} hours`}
+                  className="shrink-0"
                 >
-                  {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
-                </span>
+                  Edit
+                </Button>
               </div>
-
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                {isAvailable ? (
-                  activeRules.map((rule) => (
-                    <span key={rule.id} className="text-[14px] text-ink">
-                      {formatFromTo(rule.startLocal, rule.windowMin)}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-[14px] text-ink-soft">No hours set</span>
-                )}
-              </div>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setModalDay(dayIndex)}
-                aria-label={`Edit ${dayLabel} hours`}
-                className="shrink-0"
-              >
-                Edit
-              </Button>
             </div>
           );
         })}
