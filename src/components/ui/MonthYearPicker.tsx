@@ -113,7 +113,6 @@ export function MonthYearPicker({
   id,
 }: MonthYearPickerProps) {
   const [open, setOpen] = useState(false);
-  const [shownYear, setShownYear] = useState(() => value.getFullYear());
   // Captured via a callback ref (not a plain useRef) so Popover — which reads
   // `anchorEl` as a prop — re-renders once the label button mounts.
   const [labelEl, setLabelEl] = useState<HTMLButtonElement | null>(null);
@@ -122,16 +121,18 @@ export function MonthYearPicker({
   const currentMonth = value.getMonth();
   const label = `${MONTH_NAMES_LONG[currentMonth]} ${currentYear}`;
 
-  // No `disabled` guard needed here: a disabled <button> never dispatches click
-  // events (DOM spec), so this only ever runs from the enabled label button.
-  const openPicker = () => {
-    setShownYear(currentYear);
-    setOpen(true);
-  };
   const closePicker = () => setOpen(false);
 
+  // The year controls navigate immediately, exactly like the outer ‹/› month chevrons:
+  // changing the year jumps to the SAME month in the new year via `onChange`, so the
+  // calendar follows at once instead of only moving when a month cell is clicked. The
+  // popover stays open so the guide can still fine-tune the month afterwards. Because the
+  // picker is fully controlled, the shown year is always `value`'s year — there is no
+  // separate draft year to fall out of sync.
+  const goToYear = (nextYear: number) => onChange(monthStart(nextYear, currentMonth));
+
   const pickMonth = (monthIndex: number) => {
-    onChange(monthStart(shownYear, monthIndex));
+    onChange(monthStart(currentYear, monthIndex));
     closePicker();
   };
 
@@ -154,7 +155,7 @@ export function MonthYearPicker({
         disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => (open ? closePicker() : openPicker())}
+        onClick={() => (open ? closePicker() : setOpen(true))}
         className="tp-icon-btn flex items-center gap-1 px-2.5 py-2 text-[14px] font-semibold text-ink"
       >
         {label}
@@ -182,16 +183,16 @@ export function MonthYearPicker({
             <button
               type="button"
               aria-label="Previous year"
-              onClick={() => setShownYear((year) => year - 1)}
+              onClick={() => goToYear(currentYear - 1)}
               className="tp-icon-btn"
             >
               <Icon icon={ChevronLeft} size={16} />
             </button>
-            <YearInput year={shownYear} onCommit={setShownYear} />
+            <YearInput year={currentYear} onCommit={goToYear} />
             <button
               type="button"
               aria-label="Next year"
-              onClick={() => setShownYear((year) => year + 1)}
+              onClick={() => goToYear(currentYear + 1)}
               className="tp-icon-btn"
             >
               <Icon icon={ChevronRight} size={16} />
@@ -200,16 +201,16 @@ export function MonthYearPicker({
 
           <div className="grid grid-cols-3 gap-1">
             {MONTH_NAMES_SHORT.map((monthShort, monthIndex) => {
-              // Highlight follows value's MONTH regardless of the shown year, so
-              // stepping/typing the year keeps the previously-picked month lit up
-              // (e.g. value = Jul 2026 → "Jul" stays highlighted once shownYear = 2027).
+              // Highlight follows value's MONTH, so navigating the year keeps the same
+              // month lit up (e.g. value = Jul 2026 → "Jul" stays highlighted once the
+              // guide steps to 2027, which navigates to Jul 2027).
               const selected = monthIndex === currentMonth;
               return (
                 <button
                   key={monthShort}
                   type="button"
                   aria-pressed={selected}
-                  aria-label={`${MONTH_NAMES_LONG[monthIndex]} ${shownYear}`}
+                  aria-label={`${MONTH_NAMES_LONG[monthIndex]} ${currentYear}`}
                   onClick={() => pickMonth(monthIndex)}
                   className={cn(
                     "rounded px-2 py-1.5 text-[13px] font-medium transition-colors",

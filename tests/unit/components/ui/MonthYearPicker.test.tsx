@@ -128,7 +128,7 @@ describe("MonthYearPicker — grid popover", () => {
     }
   });
 
-  it("the year steppers change the shown year without calling onChange", async () => {
+  it("the next-year stepper navigates to the same month in the next year (onChange) and stays open", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     render(<Harness onChange={onChange} />);
@@ -137,13 +137,20 @@ describe("MonthYearPicker — grid popover", () => {
     const popover = within(screen.getByRole("dialog"));
     await user.click(popover.getByRole("button", { name: /next year/i }));
 
+    // The year control navigates the calendar at once (same month, next year).
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const arg = onChange.mock.calls[0][0] as Date;
+    expect(arg.getFullYear()).toBe(2027);
+    expect(arg.getMonth()).toBe(6); // July (0-based) — month preserved
+    expect(arg.getDate()).toBe(1);
+
+    // Popover stays open, and the field + month buttons reflect the new (controlled) year.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(popover.getByRole("textbox", { name: /year/i })).toHaveValue("2027");
-    expect(onChange).not.toHaveBeenCalled();
-    // Month buttons re-label to the new shown year.
     expect(popover.getByRole("button", { name: "July 2027" })).toBeInTheDocument();
   });
 
-  it("the previous-year stepper steps the shown year back without calling onChange", async () => {
+  it("the previous-year stepper navigates to the same month in the previous year (onChange)", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     render(<Harness onChange={onChange} />);
@@ -152,11 +159,14 @@ describe("MonthYearPicker — grid popover", () => {
     const popover = within(screen.getByRole("dialog"));
     await user.click(popover.getByRole("button", { name: /previous year/i }));
 
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const arg = onChange.mock.calls[0][0] as Date;
+    expect(arg.getFullYear()).toBe(2025);
+    expect(arg.getMonth()).toBe(6); // July preserved
     expect(popover.getByRole("textbox", { name: /year/i })).toHaveValue("2025");
-    expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("resets the shown year to value's year each time it (re)opens", async () => {
+  it("persists the navigated year after closing and reopening (year change is committed)", async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
@@ -165,14 +175,15 @@ describe("MonthYearPicker — grid popover", () => {
     await user.click(popover.getByRole("button", { name: /next year/i }));
     expect(popover.getByRole("textbox", { name: /year/i })).toHaveValue("2027");
 
-    // Close (Escape) without picking a month, then reopen — should be back to 2026.
+    // Close (Escape) without picking a month, then reopen — the navigated year persists,
+    // because stepping the year already moved the calendar (unlike the old draft-only model).
     await user.keyboard("{Escape}");
-    await user.click(screen.getByRole("button", { name: "July 2026" }));
+    await user.click(screen.getByRole("button", { name: "July 2027" }));
     popover = within(screen.getByRole("dialog"));
-    expect(popover.getByRole("textbox", { name: /year/i })).toHaveValue("2026");
+    expect(popover.getByRole("textbox", { name: /year/i })).toHaveValue("2027");
   });
 
-  it("typing a valid year and blurring commits it (without calling onChange)", async () => {
+  it("typing a valid year and blurring navigates to the same month in that year (onChange)", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     render(<Harness onChange={onChange} />);
@@ -185,8 +196,11 @@ describe("MonthYearPicker — grid popover", () => {
     await user.type(yearField, "2031");
     await user.tab(); // blur
 
+    expect(onChange).toHaveBeenCalledTimes(1);
+    const arg = onChange.mock.calls[0][0] as Date;
+    expect(arg.getFullYear()).toBe(2031);
+    expect(arg.getMonth()).toBe(6); // July preserved
     expect(yearField).toHaveValue("2031");
-    expect(onChange).not.toHaveBeenCalled();
     expect(popover.getByRole("button", { name: "July 2031" })).toBeInTheDocument();
   });
 
@@ -264,18 +278,19 @@ describe("MonthYearPicker — grid popover", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("clicking a month calls onChange with the correct {shownYear, month} month-start and closes", async () => {
+  it("clicking a month calls onChange with the shown year's month-start and closes", async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
     render(<Harness onChange={onChange} />);
 
     await user.click(screen.getByRole("button", { name: "July 2026" }));
     const popover = within(screen.getByRole("dialog"));
-    await user.click(popover.getByRole("button", { name: /next year/i })); // shownYear -> 2027
+    await user.click(popover.getByRole("button", { name: /next year/i })); // navigates -> July 2027
     await user.click(popover.getByRole("button", { name: "March 2027" }));
 
-    expect(onChange).toHaveBeenCalledTimes(1);
-    const arg = onChange.mock.calls[0][0] as Date;
+    // The year step navigated once (July 2027), then the month click navigated again (March 2027).
+    expect(onChange).toHaveBeenCalledTimes(2);
+    const arg = onChange.mock.calls[1][0] as Date;
     expect(arg.getFullYear()).toBe(2027);
     expect(arg.getMonth()).toBe(2); // March (0-based)
     expect(arg.getDate()).toBe(1);
