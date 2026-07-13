@@ -3,31 +3,26 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Alert, Button, Modal, TimePicker } from "@/components/ui";
-import {
-  ApiError,
-  useCreateAvailabilityRule,
-  useDeleteAvailabilityRule,
-  useUpdateAvailabilityRule,
-  type AvailabilityRule,
-} from "@/lib/data-access";
+import { ApiError, useReplaceRules, type AvailabilityRule } from "@/lib/data-access";
 import { toWindowMin, windowToRawTo } from "@/lib/availability/fromTo";
 
 export interface DayHoursModalProps {
   open: boolean;
   dayOfWeek: number;
   dayLabel: string;
-  /** All of this weekday's rules (active AND inactive) — Save reconciles create/update/delete
-   *  against this full set, never just the active ones (the toggle, not this modal, owns `active`). */
+  /** All of this weekday's rules (active AND inactive) — seeds the editor's from–to rows. On Save
+   *  the current rows are sent as ONE atomic replace of this weekday's rules; the toggle, not this
+   *  modal, owns `active`. */
   rules: AvailabilityRule[];
   settingsTimezone: string;
   onClose: () => void;
 }
 
-/** One from–to range being edited. `ruleId` is absent for a not-yet-created range. */
+/** One from–to range being edited. The atomic replace sends the desired end-state windows, so a
+ *  range carries no rule id — it is not a 1:1 edit of a specific existing row. */
 interface RangeDraft {
   /** Stable React key — the existing rule id, or a locally-minted "new-N" id for an added range. */
   key: string;
-  ruleId?: string;
   from: string;
   to: string;
 }
@@ -43,7 +38,6 @@ function draftsFromRules(rules: AvailabilityRule[]): RangeDraft[] {
     .sort((a, b) => a.startLocal.localeCompare(b.startLocal))
     .map((rule) => ({
       key: rule.id,
-      ruleId: rule.id,
       from: rule.startLocal,
       // Prefill the controlled `to`-picker value via the RAW helper (not `windowToTo`'s display
       // label, which can't round-trip through `toWindowMin` — see fromTo.ts).
@@ -80,9 +74,7 @@ function DayHoursModalContent({
   settingsTimezone,
   onClose,
 }: Omit<DayHoursModalProps, "open">) {
-  const createRule = useCreateAvailabilityRule();
-  const updateRule = useUpdateAvailabilityRule();
-  const deleteRule = useDeleteAvailabilityRule();
+  const replaceRules = useReplaceRules();
 
   const [ranges, setRanges] = useState<RangeDraft[]>(() => draftsFromRules(rules));
   const [saving, setSaving] = useState(false);
@@ -114,11 +106,10 @@ function DayHoursModalContent({
 
     // Structural validation only (from < to, same-day) — never overlap/trim, which stays entirely
     // backend-owned. A malformed picker pairing (shouldn't happen via the controlled inputs, but
-    // guards against it) surfaces here instead of reaching the mutations below.
-    let windows: { ruleId?: string; startLocal: string; windowMin: number }[];
+    // guards against it) surfaces here instead of reaching the mutation below.
+    let windows: { startLocal: string; windowMin: number }[];
     try {
       windows = ranges.map((range) => ({
-        ruleId: range.ruleId,
         startLocal: range.from,
         windowMin: toWindowMin(range.from, range.to),
       }));
@@ -127,39 +118,17 @@ function DayHoursModalContent({
       return;
     }
 
-    const keptRuleIds = new Set(windows.filter((w) => w.ruleId).map((w) => w.ruleId));
-    const toDelete = rules.filter((rule) => !keptRuleIds.has(rule.id));
-    const toCreate = windows.filter((w) => !w.ruleId);
-    const toUpdate = windows.filter((w) => {
-      if (!w.ruleId) return false;
-      const original = rules.find((rule) => rule.id === w.ruleId);
-      return (
-        !original || original.startLocal !== w.startLocal || original.windowMin !== w.windowMin
-      );
-    });
-
     setSaving(true);
     try {
-      for (const rule of toDelete) {
-        await deleteRule.mutateAsync(rule.id);
-      }
-      for (const w of toUpdate) {
-        await updateRule.mutateAsync({
-          id: w.ruleId as string,
-          body: { startLocal: w.startLocal, windowMin: w.windowMin },
-        });
-      }
-      for (const w of toCreate) {
-        await createRule.mutateAsync({
-          dayOfWeek,
-          startLocal: w.startLocal,
-          windowMin: w.windowMin,
-        });
-      }
+      // ATOMIC REPLACE (CTL-55 v2.1 B2): set this weekday's rules to exactly these windows in ONE
+      // backend transaction — the source of atomicity is the backend, not a FE create/update/delete
+      // reconcile. An EMPTY windows list clears this weekday's rules. A rejection mid-save no longer
+      // leaves the weekday partially reconciled, because there is no delete-then-create.
+      await replaceRules.mutateAsync({ dayOfWeek, windows });
       onClose();
     } catch (err) {
-      // Keep the modal open (do NOT call onClose) and show the backend message in-modal — the
-      // guide fixes the conflicting range without losing their other edits.
+      // Keep the modal open (do NOT call onClose) and do NOT wipe local edits — show the backend
+      // message in-modal so the guide fixes the conflicting range and retries.
       setError(dayHoursErrorMessage(err));
     } finally {
       setSaving(false);
@@ -272,9 +241,11 @@ function DayHoursModalContent({
 
 /**
  * Per-weekday range editor (CTL-55 v2.1) — opened from `WeeklyHoursPanel`'s single Edit button.
- * Lists the weekday's ranges as from–to pickers (＋Add / ×remove); Save reconciles
- * create/update/delete to match, submitting `{dayOfWeek, startLocal, windowMin}` via
- * `toWindowMin`. Never touches `active` — that's the panel's toggle's job (deactivate-preserve).
+ * Lists the weekday's ranges as from–to pickers (＋Add / ×remove); Save sends the current rows as
+ * ONE atomic `useReplaceRules().mutateAsync({dayOfWeek, windows})` (windows via `toWindowMin`;
+ * empty = clear this weekday) — the backend transaction is the only source of atomicity, so a
+ * rejection never partially reconciles. Never touches `active` — that's the panel's toggle's job
+ * (deactivate-preserve).
  */
 export function DayHoursModal({
   open,

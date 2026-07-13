@@ -6,6 +6,7 @@ import {
   ApiError,
   useCreateAvailabilityRule,
   useDeleteAvailabilityRule,
+  useReplaceRules,
   useUpdateAvailabilityRule,
 } from "@/lib/data-access";
 import type { AvailabilityRule } from "@/lib/data-access";
@@ -14,6 +15,7 @@ jest.mock("@/lib/data-access", () => ({
   useCreateAvailabilityRule: jest.fn(),
   useUpdateAvailabilityRule: jest.fn(),
   useDeleteAvailabilityRule: jest.fn(),
+  useReplaceRules: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message?: string) {
@@ -27,6 +29,7 @@ jest.mock("@/lib/data-access", () => ({
 const mockUseCreateAvailabilityRule = useCreateAvailabilityRule as jest.Mock;
 const mockUseUpdateAvailabilityRule = useUpdateAvailabilityRule as jest.Mock;
 const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
+const mockUseReplaceRules = useReplaceRules as jest.Mock;
 
 const mondayRule: AvailabilityRule = {
   id: "rule-mon-1",
@@ -42,15 +45,18 @@ const mondayRule: AvailabilityRule = {
 let createMutate: jest.Mock;
 let updateMutate: jest.Mock;
 let deleteMutate: jest.Mock;
+let replaceMutate: jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
   createMutate = jest.fn().mockResolvedValue(undefined);
   updateMutate = jest.fn().mockResolvedValue(undefined);
   deleteMutate = jest.fn().mockResolvedValue(undefined);
+  replaceMutate = jest.fn().mockResolvedValue(undefined);
   mockUseCreateAvailabilityRule.mockReturnValue({ mutateAsync: createMutate, isPending: false });
   mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
   mockUseDeleteAvailabilityRule.mockReturnValue({ mutateAsync: deleteMutate, isPending: false });
+  mockUseReplaceRules.mockReturnValue({ mutateAsync: replaceMutate, isPending: false });
 });
 
 function renderModal(rules: AvailabilityRule[] = [], onClose = jest.fn()) {
@@ -151,8 +157,8 @@ describe("DayHoursModal — add / remove ranges", () => {
   });
 });
 
-describe("DayHoursModal — Save reconciles create/update/delete", () => {
-  it("adding a range and Save submits {dayOfWeek, startLocal, windowMin} via toWindowMin", async () => {
+describe("DayHoursModal — Save via ONE atomic useReplaceRules call", () => {
+  it("adding a range and Save submits the weekday as ONE {dayOfWeek, windows} replace", async () => {
     const user = userEvent.setup();
     renderModal([]);
     const dialog = screen.getByRole("dialog");
@@ -165,15 +171,18 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     await setPeriod(user, range, "Range 1 to AM/PM", "PM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
-    expect(createMutate).toHaveBeenCalledWith({
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
+    expect(replaceMutate).toHaveBeenCalledWith({
       dayOfWeek: 1,
-      startLocal: "09:00",
-      windowMin: 240,
+      windows: [{ startLocal: "09:00", windowMin: 240 }],
     });
+    // Old per-rule reconcile path is gone.
+    expect(createMutate).not.toHaveBeenCalled();
+    expect(updateMutate).not.toHaveBeenCalled();
+    expect(deleteMutate).not.toHaveBeenCalled();
   });
 
-  it("setting an existing range's To to 12:00 AM (end of day) updates with windowMin 900", async () => {
+  it("editing an existing range's To to 12:00 AM (end of day) replaces with windowMin 900", async () => {
     const user = userEvent.setup();
     renderModal([mondayRule]);
     const dialog = screen.getByRole("dialog");
@@ -184,14 +193,14 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     await setPeriod(user, range, "Range 1 to AM/PM", "AM");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
-    await waitFor(() => expect(updateMutate).toHaveBeenCalledTimes(1));
-    expect(updateMutate).toHaveBeenCalledWith({
-      id: "rule-mon-1",
-      body: { startLocal: "09:00", windowMin: 900 },
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
+    expect(replaceMutate).toHaveBeenCalledWith({
+      dayOfWeek: 1,
+      windows: [{ startLocal: "09:00", windowMin: 900 }],
     });
   });
 
-  it("removing an existing range and Save calls delete with that rule's id", async () => {
+  it("removing every range and Save replaces with EMPTY windows (clears the weekday)", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
     renderModal([mondayRule], onClose);
@@ -200,11 +209,12 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     await user.click(within(dialog).getByRole("button", { name: /remove range 1/i }));
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
-    await waitFor(() => expect(deleteMutate).toHaveBeenCalledWith("rule-mon-1"));
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledWith({ dayOfWeek: 1, windows: [] }));
+    expect(deleteMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("Save with no changes closes without calling any mutation", async () => {
+  it("Save with no edits still replaces the weekday with its current windows, then closes", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
     renderModal([mondayRule], onClose);
@@ -213,6 +223,11 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(replaceMutate).toHaveBeenCalledTimes(1);
+    expect(replaceMutate).toHaveBeenCalledWith({
+      dayOfWeek: 1,
+      windows: [{ startLocal: "09:00", windowMin: 240 }],
+    });
     expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
     expect(deleteMutate).not.toHaveBeenCalled();
@@ -220,10 +235,10 @@ describe("DayHoursModal — Save reconciles create/update/delete", () => {
 });
 
 describe("DayHoursModal — backend 422 keeps the modal open with an in-modal error alert", () => {
-  it("a mocked 422 from create keeps the modal open and shows the backend message", async () => {
+  it("a mocked 422 from replace keeps the modal open and shows the backend message", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
-    createMutate.mockRejectedValue(new ApiError(422, "This range overlaps an existing one."));
+    replaceMutate.mockRejectedValue(new ApiError(422, "This range overlaps an existing one."));
     renderModal([], onClose);
     const dialog = screen.getByRole("dialog");
 
@@ -240,7 +255,7 @@ describe("DayHoursModal — backend 422 keeps the modal open with an in-modal er
   it("a generic (non-ApiError) failure shows a fallback message and keeps the modal open", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
-    createMutate.mockRejectedValue(new Error("network down"));
+    replaceMutate.mockRejectedValue(new Error("network down"));
     renderModal([], onClose);
     const dialog = screen.getByRole("dialog");
 
@@ -270,6 +285,7 @@ describe("DayHoursModal — client-side structural validation (from<to only, nev
     ).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
 
+    expect(replaceMutate).not.toHaveBeenCalled();
     expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
     expect(deleteMutate).not.toHaveBeenCalled();
