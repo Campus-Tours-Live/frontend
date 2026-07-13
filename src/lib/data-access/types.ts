@@ -295,6 +295,11 @@ export interface OverrideMultiPreviewParams {
   dateTo: string;
   kind: AvailabilityExceptionKind;
   windows: OverrideWindow[];
+  /** When `true`, the dry-run shows the day as if this `kind`'s existing overrides are REPLACED
+   *  by exactly `windows` (edits/removals render correctly; an EMPTY `windows` = that kind cleared
+   *  for the day). Makes an editor's preview accurate. When omitted/false the backend treats
+   *  `windows` as additive to whatever already exists. */
+  replaceExisting?: boolean;
 }
 
 export interface UpdateAvailabilitySettingsInput {

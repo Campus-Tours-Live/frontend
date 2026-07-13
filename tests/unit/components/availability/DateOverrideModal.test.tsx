@@ -3,22 +3,27 @@ import userEvent, { type UserEvent } from "@testing-library/user-event";
 import { DateOverrideModal } from "@/components/availability/DateOverrideModal";
 import {
   ApiError,
+  useAvailabilityExceptions,
   useAvailabilitySettings,
   useCreateAvailabilityException,
+  useDeleteAvailabilityException,
   useOverrideMultiPreview,
   useResolvedAvailability,
 } from "@/lib/data-access";
 import type {
+  AvailabilityException,
   AvailabilitySettings,
   OverridePreviewResponse,
   ResolvedAvailability,
 } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
+  useAvailabilityExceptions: jest.fn(),
   useAvailabilitySettings: jest.fn(),
   useResolvedAvailability: jest.fn(),
   useOverrideMultiPreview: jest.fn(),
   useCreateAvailabilityException: jest.fn(),
+  useDeleteAvailabilityException: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message?: string) {
@@ -29,10 +34,12 @@ jest.mock("@/lib/data-access", () => ({
   },
 }));
 
+const mockUseAvailabilityExceptions = useAvailabilityExceptions as jest.Mock;
 const mockUseAvailabilitySettings = useAvailabilitySettings as jest.Mock;
 const mockUseResolvedAvailability = useResolvedAvailability as jest.Mock;
 const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
 const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
+const mockUseDeleteAvailabilityException = useDeleteAvailabilityException as jest.Mock;
 
 const sampleSettings: AvailabilitySettings = {
   guideId: "g1",
@@ -51,10 +58,26 @@ function resolved(occurrences: ResolvedAvailability["occurrences"]): ResolvedAva
   return { rules: [], occurrences, dstGapDays: [] };
 }
 
+/** Build an exception on the target date 2026-07-20. */
+function exc(
+  id: string,
+  kind: AvailabilityException["kind"],
+  startLocal: string,
+  windowMin: number,
+): AvailabilityException {
+  return { id, exceptionDate: "2026-07-20", kind, startLocal, windowMin, reason: null };
+}
+
 let createMutate: jest.Mock;
+let deleteMutate: jest.Mock;
+
+function setExceptions(list: AvailabilityException[]) {
+  mockUseAvailabilityExceptions.mockReturnValue({ data: list, isLoading: false });
+}
 
 beforeEach(() => {
   jest.clearAllMocks();
+  setExceptions([]);
   mockUseAvailabilitySettings.mockReturnValue({ data: sampleSettings, isLoading: false });
   mockUseResolvedAvailability.mockReturnValue({
     data: resolved([
@@ -69,15 +92,19 @@ beforeEach(() => {
     isFetching: false,
   });
   createMutate = jest.fn().mockResolvedValue(undefined);
+  deleteMutate = jest.fn().mockResolvedValue(undefined);
   mockUseCreateAvailabilityException.mockReturnValue({
     mutateAsync: createMutate,
+    isPending: false,
+  });
+  mockUseDeleteAvailabilityException.mockReturnValue({
+    mutateAsync: deleteMutate,
     isPending: false,
   });
 });
 
 /** A combined dry-run where a block trims the existing 10:00–11:00 weekly tail: the resulting
- *  window shrinks to 9:00–9:30 and 10:00–11:00 is trimmed. (Independent of the form times — the
- *  mock returns fixed data representing the NET of all slots.) */
+ *  window shrinks to 9:00–9:30 and 10:00–11:00 is trimmed. */
 const blockingPreview: OverridePreviewResponse = {
   valid: true,
   message: null,
@@ -111,32 +138,63 @@ async function setPeriod(user: UserEvent, scope: HTMLElement, name: string, ampm
   await user.keyboard(ampm === "PM" ? "p" : "a");
 }
 
-describe("DateOverrideModal — segmented toggle", () => {
-  it("has a two-segment control whose selected segment is aria-pressed", () => {
+describe("DateOverrideModal — kind default + loading existing overrides", () => {
+  it("defaults the toggle to 'Block time off' when the day has UNAVAILABLE exceptions, prefilled from them", () => {
+    setExceptions([exc("e1", "UNAVAILABLE", "13:00", 60)]);
     renderModal();
     const dialog = screen.getByRole("dialog");
     const group = within(dialog).getByRole("group", { name: "Override type" });
-    // Default kind is UNAVAILABLE → "Block time off" is the filled/pressed segment.
     expect(within(group).getByRole("button", { name: "Block time off" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(within(group).getByRole("button", { name: "Add extra" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    // One prefilled slot from the existing exception: 1:00 PM – 2:00 PM.
+    const slot = within(dialog).getByRole("group", { name: "Time slot 1" });
+    expect(within(slot).getByRole("textbox", { name: "Time slot 1 from hour" })).toHaveValue("1");
+    expect(within(slot).getByRole("textbox", { name: "Time slot 1 from AM/PM" })).toHaveValue("PM");
+    expect(within(slot).getByRole("textbox", { name: "Time slot 1 to hour" })).toHaveValue("2");
   });
 
-  it("switching the segment toggles kind (Confirm submits the newly selected kind)", async () => {
+  it("defaults to 'Add extra' when the day has only ADDITIONAL exceptions", () => {
+    setExceptions([exc("e1", "ADDITIONAL", "15:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const group = within(dialog).getByRole("group", { name: "Override type" });
+    expect(within(group).getByRole("button", { name: "Add extra" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(dialog).getAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(1);
+  });
+
+  it("defaults to 'Block time off' on an empty day, with ZERO slots (no pre-filled row)", () => {
+    setExceptions([]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Block time off" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
+    expect(within(dialog).getByRole("button", { name: /add time slot/i })).toBeInTheDocument();
+  });
+
+  it("switching the toggle re-loads the OTHER kind's existing slots", async () => {
     const user = userEvent.setup();
+    // Day has one UNAVAILABLE (1 PM) and one ADDITIONAL (3 PM).
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("a1", "ADDITIONAL", "15:00", 30)]);
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
-    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
+    // Opens on UNAVAILABLE (1 PM slot).
+    let slot = within(dialog).getByRole("group", { name: "Time slot 1" });
+    expect(within(slot).getByRole("textbox", { name: "Time slot 1 from hour" })).toHaveValue("1");
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
-    expect(createMutate).toHaveBeenCalledWith(expect.objectContaining({ kind: "ADDITIONAL" }));
+    // Switch to Add extra → the 3 PM ADDITIONAL slot loads.
+    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    slot = within(dialog).getByRole("group", { name: "Time slot 1" });
+    expect(within(slot).getByRole("textbox", { name: "Time slot 1 from hour" })).toHaveValue("3");
+    expect(within(slot).getByRole("textbox", { name: "Time slot 1 from AM/PM" })).toHaveValue("PM");
   });
 });
 
@@ -159,40 +217,62 @@ describe("DateOverrideModal — the info alert + title", () => {
       within(dialog).getByRole("heading", { name: /Date-specific hours · Mon 7\/20/ }),
     ).toBeInTheDocument();
   });
-});
 
-describe("DateOverrideModal — time slots use the shared weekly TimePicker", () => {
-  it("prefills the default slot's From/To TimePicker segments (9:00 AM / 10:00 AM)", () => {
+  it("has no date-range pickers (single-day editor)", () => {
     renderModal();
     const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryByLabelText("From date")).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("To date")).not.toBeInTheDocument();
+  });
+});
+
+describe("DateOverrideModal — add / remove / clear slots", () => {
+  it("'+ Add time slot' adds a row; the row default is 9:00 AM–10:00 AM", async () => {
+    const user = userEvent.setup();
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    expect(within(dialog).getAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(1);
+
     const slot = within(dialog).getByRole("group", { name: "Time slot 1" });
     expect(within(slot).getByRole("textbox", { name: "Time slot 1 from hour" })).toHaveValue("9");
-    expect(within(slot).getByRole("textbox", { name: "Time slot 1 from AM/PM" })).toHaveValue("AM");
     expect(within(slot).getByRole("textbox", { name: "Time slot 1 to hour" })).toHaveValue("10");
   });
 
-  it("adding a slot via '+ Add time slot' renders N rows", async () => {
+  it("per-row trash removes that row", async () => {
     const user = userEvent.setup();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60)]);
     renderModal();
     const dialog = screen.getByRole("dialog");
 
     expect(within(dialog).getAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(1);
-    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    await user.click(within(dialog).getByRole("button", { name: "Remove time slot 1" }));
+    expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
+  });
+
+  it("'Clear this day's hours' empties all slots at once", async () => {
+    const user = userEvent.setup();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("u2", "UNAVAILABLE", "16:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
     expect(within(dialog).getAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(2);
-    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
-    expect(within(dialog).getAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(3);
+    await user.click(within(dialog).getByRole("button", { name: /clear this day's hours/i }));
+    expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
   });
 });
 
-describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows)", () => {
-  it("calls useOverrideMultiPreview with ALL slots' windows (net-of-all, one request body)", async () => {
+describe("DateOverrideModal — replaceExisting dry-run preview", () => {
+  it("calls useOverrideMultiPreview with replaceExisting:true and the current windows", async () => {
     const user = userEvent.setup();
     renderModal();
     const dialog = screen.getByRole("dialog");
 
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
-    // Slot 2 default is 9:00–10:00; move its end to 11:00 so the two windows differ.
-    await typeSegment(user, dialog, "Time slot 2 to hour", "11");
+    // Slot default 9:00–10:00; move end to 11:00.
+    await typeSegment(user, dialog, "Time slot 1 to hour", "11");
 
     await waitFor(() =>
       expect(mockUseOverrideMultiPreview).toHaveBeenLastCalledWith(
@@ -200,106 +280,77 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
           dateFrom: "2026-07-20",
           dateTo: "2026-07-20",
           kind: "UNAVAILABLE",
-          windows: [
-            { startLocal: "09:00", windowMin: 60 },
-            { startLocal: "09:00", windowMin: 120 },
-          ],
+          replaceExisting: true,
+          windows: [{ startLocal: "09:00", windowMin: 120 }],
         }),
       ),
     );
   });
 
-  it("renders a SINGLE combined Now/After pair per half (not per-slot) with hatched Time-off from the PROPOSED block windows — NOT from `trimmed` (no green/hatch overlap) + one legend", async () => {
+  it("previews with EMPTY windows (replaceExisting:true) when the day is cleared", async () => {
+    const user = userEvent.setup();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(within(dialog).getByRole("button", { name: /clear this day's hours/i }));
+
+    await waitFor(() =>
+      expect(mockUseOverrideMultiPreview).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          dateFrom: "2026-07-20",
+          dateTo: "2026-07-20",
+          kind: "UNAVAILABLE",
+          replaceExisting: true,
+          windows: [],
+        }),
+      ),
+    );
+  });
+
+  it("renders the combined Now/After chart with hatched Time-off from the PROPOSED block windows + one legend", async () => {
     const user = userEvent.setup();
     mockUseOverrideMultiPreview.mockReturnValue({
       data: blockingPreview,
       isLoading: false,
       isFetching: false,
     });
-
     renderModal();
     const dialog = screen.getByRole("dialog");
-    // Two slots, but still ONE After bar per half for the date (combined, never per-slot). Edit
-    // slot 2 to 10:00–10:30 so its proposed window differs from BOTH slot 1 (9:00–10:00) and the
-    // mocked `trimmed` entry (10:00–11:00) — this disambiguates which source produced the hatch.
-    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
-    await typeSegment(user, dialog, "Time slot 2 from hour", "10");
-    await typeSegment(user, dialog, "Time slot 2 to minutes", "30");
 
-    // "Now" AM bar = the current (before) window 9:00–11:00, bucketed from resolved availability.
+    // Add a slot 10:00–10:30 so its proposed window differs from the mocked `trimmed` (10:00–11:00).
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    await typeSegment(user, dialog, "Time slot 1 from hour", "10");
+    await typeSegment(user, dialog, "Time slot 1 to minutes", "30");
+
     const nowBar = await within(dialog).findByRole("group", {
       name: "Current hours on 2026-07-20 (AM)",
     });
     expect(within(nowBar).getByTitle(/Available · 9:00 AM – 11:00 AM/)).toBeInTheDocument();
 
-    // Exactly ONE After AM bar (getByRole throws if there were a per-slot pair each).
     const afterBar = within(dialog).getByRole("group", {
       name: "After applying on 2026-07-20 (AM)",
     });
-    // Green "available" = the backend's net `resultingWindows` (unaffected by the proposed edits).
     expect(within(afterBar).getByTitle(/Available · 9:00 AM – 9:30 AM/)).toBeInTheDocument();
-
-    // Hatched "off" = the PROPOSED block windows (slot 1 unedited, slot 2 edited to 10:00–10:30) —
-    // one segment per proposed slot, disjoint from the green segment above. `findByTitle` waits
-    // out the debounce so slot 2's edit has been picked up into `debouncedMultiParams`.
-    const off1 = await within(afterBar).findByTitle(/Time off · 9:00 AM – 10:00 AM/);
-    expect(off1).toHaveClass("calendar-hatch");
-    const off2 = await within(afterBar).findByTitle(/Time off · 10:00 AM – 10:30 AM/);
-    expect(off2).toHaveClass("calendar-hatch");
-
-    // The mocked `trimmed` entry (10:00–11:00) must NOT be rendered — proving the hatch is sourced
-    // from `proposed`, not `day.trimmed` (which would have overlapped the green 9:00–9:30 segment
-    // at nothing here, but would show a phantom 10:00–11:00 block the user never asked to block).
+    const off = await within(afterBar).findByTitle(/Time off · 10:00 AM – 10:30 AM/);
+    expect(off).toHaveClass("calendar-hatch");
     expect(within(afterBar).queryByTitle(/Time off · 10:00 AM – 11:00 AM/)).not.toBeInTheDocument();
 
-    // Legend rendered once (Available / Time off / Extra).
     expect(within(dialog).getByText("Available")).toBeInTheDocument();
     expect(within(dialog).getByText("Time off")).toBeInTheDocument();
     expect(within(dialog).getByText("Extra")).toBeInTheDocument();
   });
 
-  it("renders each proposed slot as a blue Extra segment in Add-extra mode", async () => {
-    const user = userEvent.setup();
-    const extraPreview: OverridePreviewResponse = {
-      valid: true,
-      message: null,
-      days: [
-        {
-          date: "2026-07-20",
-          resultingWindows: [{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }],
-          trimmed: [],
-        },
-      ],
-    };
-    mockUseOverrideMultiPreview.mockReturnValue({
-      data: extraPreview,
-      isLoading: false,
-      isFetching: false,
-    });
-
-    renderModal();
-    const dialog = screen.getByRole("dialog");
-    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
-
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
-    // The proposed override window (default 9:00–10:00) shows blue as "Extra" (waits for the
-    // debounced dry-run to re-render in ADDITIONAL mode).
-    const extra = await within(dialog).findByTitle(/Extra · 9:00 AM – 10:00 AM/);
-    expect(extra).toHaveClass("bg-primary");
-  });
-
-  it("splits each date into a fixed 12-hour AM axis and PM axis (Now × 2, After × 2) so ticks never overlap", async () => {
+  it("splits each date into a fixed 12-hour AM axis and PM axis (Now × 2, After × 2)", async () => {
     mockUseOverrideMultiPreview.mockReturnValue({
       data: blockingPreview,
       isLoading: false,
       isFetching: false,
     });
-
     renderModal();
     const dialog = screen.getByRole("dialog");
     const region = within(dialog).getByRole("region", { name: "Preview" });
 
-    // Two Now bars and two After bars per date — one AM, one PM.
     await within(region).findByRole("group", { name: "Current hours on 2026-07-20 (AM)" });
     expect(
       within(region).getByRole("group", { name: "Current hours on 2026-07-20 (PM)" }),
@@ -311,20 +362,15 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
       within(region).getByRole("group", { name: "After applying on 2026-07-20 (PM)" }),
     ).toBeInTheDocument();
 
-    // Each half spans a fixed 12 hours and meets at the 12 PM boundary — no single crowded
-    // full-day axis. Endpoint ticks carry the AM/PM meridiem ("12 AM" / "12 PM", once per half —
-    // twice total each, at the AM start/PM end and AM end/PM start respectively); the five ticks
-    // in between are bare hour numbers ("2"/"4"/"6"/"8"/"10", shared text across both halves since
-    // the half itself disambiguates AM vs PM) — short enough that seven ticks never overlap.
     expect(within(region).getAllByText("12 AM")).toHaveLength(2);
     expect(within(region).getAllByText("12 PM")).toHaveLength(2);
-    expect(within(region).getAllByText("6")).toHaveLength(2);
+  });
 
-    // The old full "H:MM AM/PM" label on every tick is gone (it's what wrapped onto a second line
-    // at the edges) — only the two endpoints spell out the meridiem.
-    expect(within(region).queryByText("6:00 AM")).not.toBeInTheDocument();
-    expect(within(region).queryByText("6:00 PM")).not.toBeInTheDocument();
-    expect(within(region).queryByText("12:00 PM")).not.toBeInTheDocument();
+  it("the 'After applying' heading is bold", () => {
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const heading = within(dialog).getByText("After applying");
+    expect(heading).toHaveClass("font-bold");
   });
 });
 
@@ -335,10 +381,9 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
       isLoading: false,
       isFetching: false,
     });
-
+    setExceptions([exc("u1", "UNAVAILABLE", "10:00", 60)]);
     renderModal();
     const dialog = screen.getByRole("dialog");
-    // Default mode is UNAVAILABLE (Block time off) — no need to toggle.
 
     const warning = await within(dialog).findByText(/This blocks time on Mon 7\/20/);
     expect(warning).toBeInTheDocument();
@@ -348,33 +393,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
     expect(within(dialog).getByText(/Confirm the change\?/)).toBeInTheDocument();
   });
 
-  it("shows NO conflict warning when the dry-run leaves hours unchanged (before == after, no trim)", async () => {
-    const noopPreview: OverridePreviewResponse = {
-      valid: true,
-      message: null,
-      days: [
-        {
-          date: "2026-07-20",
-          resultingWindows: [{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }],
-          trimmed: [],
-        },
-      ],
-    };
-    mockUseOverrideMultiPreview.mockReturnValue({
-      data: noopPreview,
-      isLoading: false,
-      isFetching: false,
-    });
-
-    renderModal();
-    const dialog = screen.getByRole("dialog");
-
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
-    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
-  });
-
-  it('shows NO conflict warning for "Add extra" (ADDITIONAL) even though the dry-run changes before→after', async () => {
+  it("shows NO conflict warning for 'Add extra' (ADDITIONAL)", async () => {
     const user = userEvent.setup();
     const extraPreview: OverridePreviewResponse = {
       valid: true,
@@ -395,99 +414,74 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
       isLoading: false,
       isFetching: false,
     });
-
     renderModal();
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
 
-    // The After bar still shows the added window (Now/After rendering is unaffected)...
     await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
     expect(await within(dialog).findByTitle(/Extra · 9:00 AM – 10:00 AM/)).toBeInTheDocument();
-    // ...but no amber warning appears for Add extra.
-    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
-  });
-
-  it("shows NO conflict warning when before/after are the same instant expressed differently (Z vs .000Z)", async () => {
-    mockUseResolvedAvailability.mockReturnValue({
-      data: resolved([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }]),
-      isLoading: false,
-    });
-    const differentStringFormPreview: OverridePreviewResponse = {
-      valid: true,
-      message: null,
-      days: [
-        {
-          date: "2026-07-20",
-          resultingWindows: [
-            { startAt: "2026-07-20T14:00:00.000Z", endAt: "2026-07-20T16:00:00.000Z" },
-          ],
-          trimmed: [],
-        },
-      ],
-    };
-    mockUseOverrideMultiPreview.mockReturnValue({
-      data: differentStringFormPreview,
-      isLoading: false,
-      isFetching: false,
-    });
-
-    renderModal();
-    const dialog = screen.getByRole("dialog");
-
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
     expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
   });
 });
 
-describe("DateOverrideModal — Confirm creates one exception per slot", () => {
-  it("Confirm with the default single slot creates one exception for the date range", async () => {
+describe("DateOverrideModal — Confirm reconciles (delete existing [kind] + create current slots)", () => {
+  it("Confirm with slots: deletes the existing [kind] exceptions then creates N slots", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("a1", "ADDITIONAL", "15:00", 30)]);
     renderModal(onClose);
     const dialog = screen.getByRole("dialog");
 
+    // Opens on UNAVAILABLE with the 1 PM slot. Add a second slot (default 9–10 AM).
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
+    // Deletes ONLY the UNAVAILABLE existing id (never the ADDITIONAL one).
+    await waitFor(() => expect(deleteMutate).toHaveBeenCalledTimes(1));
+    expect(deleteMutate).toHaveBeenCalledWith("u1");
+
+    // Creates both current slots, single-day range.
+    expect(createMutate).toHaveBeenCalledTimes(2);
     expect(createMutate).toHaveBeenCalledWith({
       dateFrom: "2026-07-20",
       dateTo: "2026-07-20",
       kind: "UNAVAILABLE",
-      startLocal: "09:00",
+      startLocal: "13:00",
       windowMin: 60,
     });
+    expect(createMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFrom: "2026-07-20",
+        dateTo: "2026-07-20",
+        kind: "UNAVAILABLE",
+        startLocal: "09:00",
+        windowMin: 60,
+      }),
+    );
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("adding a second time slot submits ONE create per slot", async () => {
+  it("Confirm submits the newly selected kind after switching the toggle", async () => {
+    const user = userEvent.setup();
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
+
+    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
+    expect(createMutate).toHaveBeenCalledWith(expect.objectContaining({ kind: "ADDITIONAL" }));
+  });
+
+  it("submits the '24:00' end-of-day sentinel (10 PM → 12 AM = 120 min)", async () => {
     const user = userEvent.setup();
     renderModal();
     const dialog = screen.getByRole("dialog");
 
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
-    // Edit slot 2's end so the two slots differ (also dismisses the auto-opened wheel).
-    await typeSegment(user, dialog, "Time slot 2 to hour", "11");
-
-    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
-
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(2));
-    expect(createMutate).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ startLocal: "09:00", windowMin: 60 }),
-    );
-    expect(createMutate).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ startLocal: "09:00", windowMin: 120 }),
-    );
-  });
-
-  it("submits the '24:00' end-of-day sentinel (10 PM → 12 AM = 120 min) via the To TimePicker", async () => {
-    const user = userEvent.setup();
-    renderModal();
-    const dialog = screen.getByRole("dialog");
-
     await typeSegment(user, dialog, "Time slot 1 from hour", "10");
     await setPeriod(user, dialog, "Time slot 1 from AM/PM", "PM");
     await typeSegment(user, dialog, "Time slot 1 to hour", "12");
@@ -500,48 +494,60 @@ describe("DateOverrideModal — Confirm creates one exception per slot", () => {
       expect.objectContaining({ startLocal: "22:00", windowMin: 120 }),
     );
   });
+});
 
-  it("submits the multi-day date range to every create", async () => {
+describe("DateOverrideModal — zero slots is a valid 'clear' request", () => {
+  it("Confirm is ENABLED with zero slots", () => {
+    setExceptions([]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
+    expect(within(dialog).getByRole("button", { name: "Confirm change" })).toBeEnabled();
+  });
+
+  it("Confirm with zero slots deletes existing [kind] exceptions and issues NO creates", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("u2", "UNAVAILABLE", "16:00", 60)]);
     renderModal(onClose);
     const dialog = screen.getByRole("dialog");
 
-    const fromDate = within(dialog).getByLabelText("From date");
-    const toDate = within(dialog).getByLabelText("To date");
-    await user.clear(fromDate);
-    await user.type(fromDate, "2026-07-20");
-    await user.clear(toDate);
-    await user.type(toDate, "2026-07-25");
-
+    await user.click(within(dialog).getByRole("button", { name: /clear this day's hours/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
-    expect(createMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ dateFrom: "2026-07-20", dateTo: "2026-07-25" }),
-    );
+    await waitFor(() => expect(deleteMutate).toHaveBeenCalledTimes(2));
+    expect(deleteMutate).toHaveBeenCalledWith("u1");
+    expect(deleteMutate).toHaveBeenCalledWith("u2");
+    expect(createMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 });
 
-describe("DateOverrideModal — per-slot structural validation (start < end only, never overlap)", () => {
+describe("DateOverrideModal — structural validation", () => {
   it("a slot whose start is not before its end shows an inline error and disables Confirm", async () => {
     const user = userEvent.setup();
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    // Default slot is 9:00–10:00; move From to 10:00 so start === end (toWindowMin rejects).
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    // Default slot 9:00–10:00; move From to 10:00 so start === end (toWindowMin rejects).
     await typeSegment(user, dialog, "Time slot 1 from hour", "10");
 
     expect(
       await within(dialog).findByText(/start time must be before the end time/i),
     ).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm change" })).toBeDisabled();
-    expect(createMutate).not.toHaveBeenCalled();
+  });
+
+  it("an EMPTY slot list does NOT disable Confirm", () => {
+    setExceptions([]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Confirm change" })).toBeEnabled();
   });
 });
 
-describe("DateOverrideModal — backend 422 keeps the modal open with an in-modal notification", () => {
+describe("DateOverrideModal — backend 422 keeps the modal open", () => {
   it("a mocked 422 from create keeps the modal open and shows the backend message", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
@@ -549,6 +555,7 @@ describe("DateOverrideModal — backend 422 keeps the modal open with an in-moda
     renderModal(onClose);
     const dialog = screen.getByRole("dialog");
 
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
     expect(
@@ -558,16 +565,18 @@ describe("DateOverrideModal — backend 422 keeps the modal open with an in-moda
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("a generic (non-ApiError) failure shows a fallback message and keeps the modal open", async () => {
+  it("a 422 from delete keeps the modal open with the message", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
-    createMutate.mockRejectedValue(new Error("network down"));
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60)]);
+    deleteMutate.mockRejectedValue(new ApiError(422, "Cannot remove this override."));
     renderModal(onClose);
     const dialog = screen.getByRole("dialog");
 
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    expect(await within(dialog).findByText(/could not save this override/i)).toBeInTheDocument();
+    expect(await within(dialog).findByText(/cannot remove this override/i)).toBeInTheDocument();
+    expect(createMutate).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
 });

@@ -11,8 +11,10 @@ import type { OverrideMultiPreviewParams, OverridePreviewResponse } from "../typ
  * POST helper and returns data (no mutation/invalidation).
  *
  * Disabled (no fetch) when `params` is null OR carries no windows — e.g. the override modal has no
- * structurally-valid slot yet. The FE only renders this response; it never merges the windows or
- * recomputes overlaps/trims itself (FE-never-recomputes).
+ * structurally-valid slot yet. The one exception is `replaceExisting: true` (the day editor): an
+ * EMPTY `windows` under replace-mode is a MEANINGFUL request — "show the day with this kind cleared"
+ * — so the query stays ENABLED even with zero windows in that case. The FE only renders this
+ * response; it never merges the windows or recomputes overlaps/trims itself (FE-never-recomputes).
  */
 export const overrideMultiPreviewOptions = (params: OverrideMultiPreviewParams | null) =>
   queryOptions({
@@ -24,7 +26,8 @@ export const overrideMultiPreviewOptions = (params: OverrideMultiPreviewParams |
         dateTo: p.dateTo,
         kind: p.kind,
         windows: p.windows,
+        ...(p.replaceExisting !== undefined ? { replaceExisting: p.replaceExisting } : {}),
       });
     },
-    enabled: params !== null && params.windows.length > 0,
+    enabled: params !== null && (params.windows.length > 0 || params.replaceExisting === true),
   });

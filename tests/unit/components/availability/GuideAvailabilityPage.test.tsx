@@ -8,6 +8,7 @@ import {
   useAvailabilitySettings,
   useCreateAvailabilityException,
   useCreateAvailabilityRule,
+  useDeleteAvailabilityException,
   useDeleteAvailabilityRule,
   useOverrideMultiPreview,
   useOverridePreview,
@@ -36,6 +37,7 @@ jest.mock("@/lib/data-access", () => ({
   useOverridePreview: jest.fn(),
   useOverrideMultiPreview: jest.fn(),
   useCreateAvailabilityException: jest.fn(),
+  useDeleteAvailabilityException: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message?: string) {
@@ -56,6 +58,7 @@ const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
 const mockUseOverridePreview = useOverridePreview as jest.Mock;
 const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
 const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
+const mockUseDeleteAvailabilityException = useDeleteAvailabilityException as jest.Mock;
 
 const mondayRule: AvailabilityRule = {
   id: "rule-mon-1",
@@ -148,6 +151,10 @@ beforeEach(() => {
     mutateAsync: jest.fn().mockResolvedValue(undefined),
     isPending: false,
   });
+  mockUseDeleteAvailabilityException.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    isPending: false,
+  });
 });
 
 afterEach(() => {
@@ -216,8 +223,9 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
       "aria-pressed",
       "true",
     );
-    expect(within(dialog).getByLabelText("From date")).toHaveValue("2026-07-22");
-    expect(within(dialog).getByLabelText("To date")).toHaveValue("2026-07-22");
+    // Single-day editor — no date-range pickers.
+    expect(within(dialog).queryByLabelText("From date")).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("To date")).not.toBeInTheDocument();
   });
 
   it("closes the override modal via its own Cancel button", async () => {
@@ -247,6 +255,8 @@ describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notificat
     await user.click(screen.getByTestId("calendar-day-2026-07-22"));
     const dialog = await screen.findByRole("dialog");
 
+    // 2026-07-22 has no existing override → empty editor; add a slot so Confirm issues a create.
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
     await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));

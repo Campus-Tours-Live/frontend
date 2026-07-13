@@ -2,20 +2,28 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Button, Modal, TextField, TimePicker } from "@/components/ui";
+import { Alert, Button, Modal, TimePicker } from "@/components/ui";
 import {
   ApiError,
+  useAvailabilityExceptions,
   useAvailabilitySettings,
   useCreateAvailabilityException,
+  useDeleteAvailabilityException,
   useOverrideMultiPreview,
   useResolvedAvailability,
+  type AvailabilityException,
   type AvailabilityExceptionKind,
   type AvailabilityOccurrence,
   type OverrideMultiPreviewParams,
   type OverridePreviewDay,
   type OverrideWindow,
 } from "@/lib/data-access";
-import { formatFromTo, minutesFromHHmm, toWindowMin } from "@/lib/availability/fromTo";
+import {
+  formatFromTo,
+  minutesFromHHmm,
+  toWindowMin,
+  windowToRawTo,
+} from "@/lib/availability/fromTo";
 import { bucketOccurrencesByDate } from "@/lib/availability/bucketByDate";
 import {
   TimeAxis,
@@ -49,8 +57,9 @@ export interface DateOverrideModalProps {
 
 /** One from–to time slot being edited. Mirrors `DayHoursModal`'s per-range draft so a
  *  date-specific override supports multiple slots on the same date the way weekly hours do.
- *  `key` is a stable React key; there is no `ruleId` because each slot is created fresh
- *  (a date override is a create, not a reconcile of existing rows). */
+ *  `key` is a stable React key. On Confirm the whole list is reconciled (delete the day's existing
+ *  [kind] exceptions, then create these slots), so a slot carries no `id` — it's the desired end
+ *  state, not a 1:1 edit of a specific existing row. */
 interface SlotDraft {
   key: string;
   from: string;
@@ -61,6 +70,37 @@ let draftSeq = 0;
 function nextSlotKey(): string {
   draftSeq += 1;
   return `slot-${draftSeq}`;
+}
+
+/** The day's exceptions of one kind, oldest-first, so the editor's rows keep a stable order. */
+function exceptionsForKind(
+  dayExceptions: AvailabilityException[],
+  kind: AvailabilityExceptionKind,
+): AvailabilityException[] {
+  return dayExceptions.filter((exc) => exc.kind === kind);
+}
+
+/** Seed the editable slot list from a day's existing [kind] exceptions — one row per exception,
+ *  prefilled from `startLocal` + `windowMin` (the `to` value round-trips through `windowToRawTo`,
+ *  which yields the `"24:00"` sentinel for an end-of-day window). An empty list when the day has no
+ *  override of this kind — the editor deliberately does NOT auto-populate a default row on open. */
+function slotsFromExceptions(
+  dayExceptions: AvailabilityException[],
+  kind: AvailabilityExceptionKind,
+): SlotDraft[] {
+  return exceptionsForKind(dayExceptions, kind).map((exc) => ({
+    key: nextSlotKey(),
+    from: exc.startLocal,
+    to: windowToRawTo(exc.startLocal, exc.windowMin),
+  }));
+}
+
+/** Which kind's editor to open on: prefer the kind the day already has an override for (UNAVAILABLE
+ *  wins if it has both), otherwise default to UNAVAILABLE ("Block time off"). */
+function defaultKindForDay(dayExceptions: AvailabilityException[]): AvailabilityExceptionKind {
+  if (dayExceptions.some((exc) => exc.kind === "UNAVAILABLE")) return "UNAVAILABLE";
+  if (dayExceptions.some((exc) => exc.kind === "ADDITIONAL")) return "ADDITIONAL";
+  return "UNAVAILABLE";
 }
 
 function safeWindowMin(from: string, to: string): number | null {
@@ -308,23 +348,45 @@ export function dateOverrideErrorMessage(err: unknown): string {
   return "Could not save this override. Please try again.";
 }
 
-function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideModalProps, "open">) {
+interface DateOverrideModalContentProps {
+  /** The single day this editor manages (already resolved to a concrete ISO date). */
+  date: string;
+  /** The day's existing exceptions (both kinds) — seeds the editor and, on Confirm, tells the
+   *  reconcile which [kind] rows to delete. The OTHER kind is never touched. */
+  dayExceptions: AvailabilityException[];
+  onClose: () => void;
+}
+
+function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverrideModalContentProps) {
   const settingsQuery = useAvailabilitySettings();
   const resolvedQuery = useResolvedAvailability();
   const createException = useCreateAvailabilityException();
+  const deleteException = useDeleteAvailabilityException();
 
   const settingsTimezone = settingsQuery.data?.timezone ?? FALLBACK_TIMEZONE;
 
-  const [mode, setMode] = useState<AvailabilityExceptionKind>("UNAVAILABLE");
-  const [dateFrom, setDateFrom] = useState(initialDate ?? todayIsoDate());
-  const [dateTo, setDateTo] = useState(initialDate ?? todayIsoDate());
-  const [slots, setSlots] = useState<SlotDraft[]>(() => [
-    { key: nextSlotKey(), from: "09:00", to: "10:00" },
-  ]);
+  // Seed the default kind + its existing slots synchronously from the (already-loaded) day
+  // exceptions. The parent loader remounts this component via `key` once the exceptions query
+  // resolves, so this lazy state always seeds from loaded data — no state-syncing effect needed.
+  const [mode, setMode] = useState<AvailabilityExceptionKind>(() =>
+    defaultKindForDay(dayExceptions),
+  );
+  const [slots, setSlots] = useState<SlotDraft[]>(() =>
+    slotsFromExceptions(dayExceptions, defaultKindForDay(dayExceptions)),
+  );
   // Key of the just-added slot, so its FROM picker mounts open (mirrors DayHoursModal).
   const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Switching the toggle re-loads THAT kind's existing slots (an empty list when the day has none).
+  const selectMode = (next: AvailabilityExceptionKind) => {
+    if (next === mode) return;
+    setMode(next);
+    setSlots(slotsFromExceptions(dayExceptions, next));
+    setAutoOpenKey(null);
+    setError(null);
+  };
 
   const updateSlot = (key: string, patch: Partial<SlotDraft>) =>
     setSlots((prev) => prev.map((slot) => (slot.key === key ? { ...slot, ...patch } : slot)));
@@ -334,31 +396,39 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
     setAutoOpenKey(key);
   };
   const removeSlot = (key: string) => setSlots((prev) => prev.filter((slot) => slot.key !== key));
+  // "Clear this day's hours" — empties every slot of the selected kind at once. Confirm then just
+  // deletes the day's existing [kind] exceptions (zero creates).
+  const clearAllSlots = () => {
+    setSlots([]);
+    setAutoOpenKey(null);
+    setError(null);
+  };
 
   // Per-slot STRUCTURAL validity (start < end) — shown inline + blocks Confirm. Overlap/trim is
   // never pre-checked here (backend-authoritative → surfaced via the 422 alert or the dry-run).
   const slotErrors = slots.map((slot) => slotStructuralError(slot.from, slot.to));
   const hasStructuralError = slotErrors.some(Boolean);
-  const canConfirm = slots.length > 0 && !hasStructuralError;
+  // Save is blocked ONLY by a structurally-invalid slot — an EMPTY list is a valid request
+  // (clear this day's [kind]), so zero slots does NOT disable Confirm.
+  const canConfirm = !hasStructuralError;
 
   const occurrencesByDate = useMemo(
     () => bucketOccurrencesByDate(resolvedQuery.data?.occurrences ?? [], settingsTimezone),
     [resolvedQuery.data?.occurrences, settingsTimezone],
   );
 
-  // ONE combined dry-run for ALL structurally-valid slots. The query stays disabled (no fetch)
-  // until at least one valid window exists; debounced so filling the form doesn't fire per
-  // keystroke. The backend returns the NET result of every window applied together.
-  const rawMultiParams: OverrideMultiPreviewParams | null = useMemo(() => {
-    if (!dateFrom || !dateTo) return null;
+  // ONE combined dry-run in REPLACE mode — the backend shows the day as if this kind's overrides are
+  // replaced by exactly these windows. `replaceExisting: true` keeps the query enabled even with
+  // ZERO windows (that = "show the day with this kind cleared"), so edits/removals/clears all
+  // preview accurately. Debounced so editing doesn't fire per keystroke.
+  const rawMultiParams: OverrideMultiPreviewParams = useMemo(() => {
     const windows: OverrideWindow[] = [];
     for (const slot of slots) {
       const win = safeWindowMin(slot.from, slot.to);
       if (win !== null) windows.push({ startLocal: slot.from, windowMin: win });
     }
-    if (windows.length === 0) return null;
-    return { dateFrom, dateTo, kind: mode, windows };
-  }, [dateFrom, dateTo, mode, slots]);
+    return { dateFrom: date, dateTo: date, kind: mode, windows, replaceExisting: true };
+  }, [date, mode, slots]);
   const debouncedMultiParams = useDebounced(rawMultiParams, PREVIEW_DEBOUNCE_MS);
   const previewQuery = useOverrideMultiPreview(debouncedMultiParams);
 
@@ -367,7 +437,6 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
   // Per-affected-date view models — ONE Now/After pair per date (net of all slots), built from the
   // debounced params so the rendered kind/proposed windows match the response they produced.
   const dayViews = useMemo<DayView[]>(() => {
-    if (debouncedMultiParams === null) return [];
     return (previewDays ?? []).map((day) =>
       buildDayView(
         day,
@@ -398,20 +467,21 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
       setError("Enter a valid from–to range for every slot.");
       return;
     }
-    if (windows.length === 0) {
-      setError("Add at least one time slot.");
-      return;
-    }
 
     setSubmitting(true);
     try {
-      // One create per slot over the date range — the create endpoint takes a single window, so
-      // multiple slots are multiple creates (mirrors DayHoursModal's per-range loop). Core
-      // validates each; a per-slot 422 stops here and surfaces below (the modal stays open).
+      // RECONCILE: set the day's [kind] to exactly these slots. First delete every existing [kind]
+      // exception for this date (by id), then create one per current slot. Zero slots = delete only.
+      // The OTHER kind's exceptions are never touched. This is sequential delete-then-create — a
+      // partial failure mid-way is possible (same class as the former per-slot save); it's
+      // backend-authoritative and the modal stays open on any 422 to surface the message.
+      for (const exc of exceptionsForKind(dayExceptions, mode)) {
+        await deleteException.mutateAsync(exc.id);
+      }
       for (const win of windows) {
         await createException.mutateAsync({
-          dateFrom,
-          dateTo,
+          dateFrom: date,
+          dateTo: date,
           kind: mode,
           startLocal: win.startLocal,
           windowMin: win.windowMin,
@@ -420,7 +490,7 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
       onClose();
     } catch (err) {
       // Keep the modal open (do NOT call onClose) and show the backend message in-modal — Core
-      // decides validity/trim; the FE never pre-emptively blocks on overlap/trim/date-range size.
+      // decides validity/trim; the FE never pre-emptively blocks on overlap/trim.
       setError(dateOverrideErrorMessage(err));
     } finally {
       setSubmitting(false);
@@ -436,7 +506,7 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
         id="date-override-modal-title"
         className="mt-1 font-display text-[22px] font-bold text-ink"
       >
-        Date-specific hours · {formatWeekdayMonthDay(dateFrom)}
+        Date-specific hours · {formatWeekdayMonthDay(date)}
       </h2>
     </div>
   );
@@ -486,7 +556,7 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
                 key={key}
                 type="button"
                 aria-pressed={selected}
-                onClick={() => setMode(key)}
+                onClick={() => selectMode(key)}
                 className={
                   selected
                     ? "rounded-full bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground"
@@ -500,27 +570,22 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
         </div>
 
         <div className="space-y-2">
-          <p className="text-[13px] font-medium text-ink">Dates (range allowed)</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label="From date"
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-            />
-            <TextField
-              label="To date"
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-            />
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[13px] font-medium text-ink">Time slots for this day</p>
+            {slots.length > 0 ? (
+              <button
+                type="button"
+                onClick={clearAllSlots}
+                className="text-[12px] font-semibold text-ink-soft hover:text-ink"
+              >
+                Clear this day&apos;s hours
+              </button>
+            ) : null}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-[13px] font-medium text-ink">Time slots (add as many as you need)</p>
           {slots.length === 0 ? (
-            <p className="text-[13px] text-ink-soft">No time slots yet — add one below.</p>
+            <p className="text-[13px] text-ink-soft">
+              No {SEGMENT_LABELS[mode].toLowerCase()} slots for this day — add one below.
+            </p>
           ) : (
             slots.map((slot, index) => (
               <div key={slot.key}>
@@ -576,12 +641,8 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
           aria-label="Preview"
           className="rounded-md border border-border bg-card p-3"
         >
-          <p className="text-[13px] font-medium text-ink">After applying</p>
-          {debouncedMultiParams === null ? (
-            <p className="mt-2 text-[13px] text-ink-soft">
-              Add at least one valid from–to time slot to see a preview.
-            </p>
-          ) : previewLoading ? (
+          <p className="text-[13px] font-bold text-ink">After applying</p>
+          {previewLoading ? (
             <p className="mt-2 text-[13px] text-ink-soft">Loading preview…</p>
           ) : dayViews.length === 0 ? (
             <p className="mt-2 text-[13px] text-ink-soft">No affected dates yet.</p>
@@ -643,32 +704,56 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
 }
 
 /**
- * Shared date-specific override modal (CTL-55) — a two-segment control picks the kind
- * (Add extra = `ADDITIONAL` / Block time off = `UNAVAILABLE`); a multi-day date range and one or
- * more same-day from–to time slots (add/remove rows with the shared `TimePicker`, like weekly
- * hours) drive a debounced COMBINED backend dry-run (`useOverrideMultiPreview`, POST of all
- * windows). The preview is rendered per affected date as ONE time-axis Now/After pair — the NET of
- * every slot (green = Available, hatched = Time off, blue = Extra) on an auto-ranged axis that
- * covers the full extent of the current windows, the resulting windows, and every proposed slot —
- * plus an amber conflict warning when the block changes existing hours. All are pure presentation
- * of Core's before/after (FE-never-recomputes). "Before" windows come from
- * `useResolvedAvailability` bucketed via the shared `bucketOccurrencesByDate`; the green "after"
- * segments come straight from the dry-run's `resultingWindows`, while the hatched/blue segments are
- * derived from the user's own `proposed` windows (never `day.trimmed`, which overlaps
- * `resultingWindows` spatially and would render as green+hatched overlaid). Confirm creates one
- * exception per slot over the date range (the
- * create endpoint takes a single window, so multiple slots are multiple creates); on a backend 422
- * the modal stays open and shows the backend message.
+ * Date-specific override EDITOR for a SINGLE day (CTL-55) — the modal opens on the clicked
+ * `initialDate` and manages exactly that day's overrides (no date range). A two-segment control
+ * picks the kind (Add extra = `ADDITIONAL` / Block time off = `UNAVAILABLE`), defaulting to the kind
+ * the day already has an override for (UNAVAILABLE wins if both, else UNAVAILABLE). The editable
+ * slot list is SEEDED from the day's existing [kind] exceptions (via `useAvailabilityExceptions`),
+ * one from–to row per exception — or an EMPTY list when the day has none (no auto-populated default
+ * row). Switching the toggle re-loads the other kind's existing slots. Rows are edited/added/removed
+ * with the shared `TimePicker`, and "Clear this day's hours" empties them all at once.
+ *
+ * A debounced COMBINED dry-run (`useOverrideMultiPreview`, `replaceExisting: true`) renders the day
+ * as ONE time-axis Now/After pair — the NET result if this kind were replaced by exactly the current
+ * windows (green = Available, hatched = Time off, blue = Extra), enabled even with ZERO windows (the
+ * "After" then shows the day with this kind cleared) — plus an amber conflict warning when a block
+ * changes existing hours. All pure presentation of Core's before/after (FE-never-recomputes):
+ * "Before" windows come from `useResolvedAvailability` bucketed via `bucketOccurrencesByDate`; the
+ * green "after" segments straight from the dry-run's `resultingWindows`; the hatched/blue segments
+ * from the user's own `proposed` windows (never `day.trimmed`).
+ *
+ * Confirm RECONCILES the day's [kind] to exactly these slots: delete every existing [kind] exception
+ * for the date (by id), then create one per current slot — zero slots = delete only. The OTHER
+ * kind's exceptions are never touched. This is a sequential delete-then-create; a partial failure
+ * mid-way is possible (backend-authoritative), and on any 422 the modal stays open with the message.
  *
  * The `key` remount ties the form's seed to `initialDate`; the whole modal (Modal shell + form
  * state) lives in `DateOverrideModalContent` so the structured header/footer share that state.
  */
 export function DateOverrideModal({ open, initialDate, onClose }: DateOverrideModalProps) {
   if (!open) return null;
+  return <DateOverrideModalLoader initialDate={initialDate} onClose={onClose} />;
+}
+
+/**
+ * Loads the day's exceptions and hands them to the editor as a plain prop. Remounting the editor
+ * (via `key`) when the date changes OR when the exceptions query finishes loading lets the editor
+ * seed its `mode`/`slots` synchronously from loaded data — the idiomatic "reset state with key"
+ * pattern, so no state-syncing effect is needed inside the editor.
+ */
+function DateOverrideModalLoader({ initialDate, onClose }: Omit<DateOverrideModalProps, "open">) {
+  const exceptionsQuery = useAvailabilityExceptions();
+  const date = initialDate ?? todayIsoDate();
+  const dayExceptions = useMemo(
+    () => (exceptionsQuery.data ?? []).filter((exc) => exc.exceptionDate === date),
+    [exceptionsQuery.data, date],
+  );
+  const seedKey = `${date}::${exceptionsQuery.data === undefined ? "loading" : "loaded"}`;
   return (
     <DateOverrideModalContent
-      key={initialDate ?? "new"}
-      initialDate={initialDate}
+      key={seedKey}
+      date={date}
+      dayExceptions={dayExceptions}
       onClose={onClose}
     />
   );

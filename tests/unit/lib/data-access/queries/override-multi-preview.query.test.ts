@@ -48,6 +48,34 @@ describe("overrideMultiPreviewOptions", () => {
     expect(overrideMultiPreviewOptions(params).enabled).toBe(true);
   });
 
+  it("is ENABLED with empty windows when replaceExisting is true (day-editor 'clear this kind')", () => {
+    const cleared = { ...params, windows: [], replaceExisting: true };
+    expect(overrideMultiPreviewOptions(cleared).enabled).toBe(true);
+  });
+
+  it("stays disabled with empty windows when replaceExisting is false", () => {
+    const empty = { ...params, windows: [], replaceExisting: false };
+    expect(overrideMultiPreviewOptions(empty).enabled).toBe(false);
+  });
+
+  it("forwards replaceExisting in the POST body when set", async () => {
+    mockedPostJson.mockResolvedValue({ days: [], valid: true, message: null } as never);
+    const queryFn = overrideMultiPreviewOptions({
+      ...params,
+      windows: [],
+      replaceExisting: true,
+    }).queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedPostJson).toHaveBeenCalledWith("/v1/availability/preview", {
+      dateFrom: "2026-08-01",
+      dateTo: "2026-08-03",
+      kind: "UNAVAILABLE",
+      windows: [],
+      replaceExisting: true,
+    });
+  });
+
   it("queryFn POSTs the {dateFrom,dateTo,kind,windows} body to /v1/availability/preview", async () => {
     const payload = {
       days: [
