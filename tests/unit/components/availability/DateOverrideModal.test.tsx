@@ -8,6 +8,7 @@ import {
   useCreateAvailabilityException,
   useDeleteAvailabilityException,
   useOverrideMultiPreview,
+  useReplaceOverrides,
   useResolvedAvailability,
 } from "@/lib/data-access";
 import type {
@@ -24,6 +25,7 @@ jest.mock("@/lib/data-access", () => ({
   useOverrideMultiPreview: jest.fn(),
   useCreateAvailabilityException: jest.fn(),
   useDeleteAvailabilityException: jest.fn(),
+  useReplaceOverrides: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message?: string) {
@@ -40,6 +42,7 @@ const mockUseResolvedAvailability = useResolvedAvailability as jest.Mock;
 const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
 const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
 const mockUseDeleteAvailabilityException = useDeleteAvailabilityException as jest.Mock;
+const mockUseReplaceOverrides = useReplaceOverrides as jest.Mock;
 
 const sampleSettings: AvailabilitySettings = {
   guideId: "g1",
@@ -70,6 +73,7 @@ function exc(
 
 let createMutate: jest.Mock;
 let deleteMutate: jest.Mock;
+let replaceMutate: jest.Mock;
 
 function setExceptions(list: AvailabilityException[]) {
   mockUseAvailabilityExceptions.mockReturnValue({ data: list, isLoading: false });
@@ -93,12 +97,17 @@ beforeEach(() => {
   });
   createMutate = jest.fn().mockResolvedValue(undefined);
   deleteMutate = jest.fn().mockResolvedValue(undefined);
+  replaceMutate = jest.fn().mockResolvedValue(undefined);
   mockUseCreateAvailabilityException.mockReturnValue({
     mutateAsync: createMutate,
     isPending: false,
   });
   mockUseDeleteAvailabilityException.mockReturnValue({
     mutateAsync: deleteMutate,
+    isPending: false,
+  });
+  mockUseReplaceOverrides.mockReturnValue({
+    mutateAsync: replaceMutate,
     isPending: false,
   });
 });
@@ -428,8 +437,8 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
   });
 });
 
-describe("DateOverrideModal — Confirm reconciles (delete existing [kind] + create current slots)", () => {
-  it("Confirm with slots: deletes the existing [kind] exceptions then creates N slots", async () => {
+describe("DateOverrideModal — Confirm saves the day as ONE atomic replace", () => {
+  it("saves the day as ONE atomic replace call, not delete-then-create", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
     setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("a1", "ADDITIONAL", "15:00", 30)]);
@@ -440,28 +449,19 @@ describe("DateOverrideModal — Confirm reconciles (delete existing [kind] + cre
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    // Deletes ONLY the UNAVAILABLE existing id (never the ADDITIONAL one).
-    await waitFor(() => expect(deleteMutate).toHaveBeenCalledTimes(1));
-    expect(deleteMutate).toHaveBeenCalledWith("u1");
-
-    // Creates both current slots, single-day range.
-    expect(createMutate).toHaveBeenCalledTimes(2);
-    expect(createMutate).toHaveBeenCalledWith({
-      dateFrom: "2026-07-20",
-      dateTo: "2026-07-20",
+    // ONE atomic replace with the full desired set for this kind — no per-id delete, no per-slot create.
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
+    expect(replaceMutate).toHaveBeenCalledWith({
+      date: "2026-07-20",
       kind: "UNAVAILABLE",
-      startLocal: "13:00",
-      windowMin: 60,
+      windows: [
+        { startLocal: "13:00", windowMin: 60 },
+        { startLocal: "09:00", windowMin: 60 },
+      ],
     });
-    expect(createMutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        dateFrom: "2026-07-20",
-        dateTo: "2026-07-20",
-        kind: "UNAVAILABLE",
-        startLocal: "09:00",
-        windowMin: 60,
-      }),
-    );
+    // Old reconcile path is gone.
+    expect(deleteMutate).not.toHaveBeenCalled();
+    expect(createMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -474,8 +474,8 @@ describe("DateOverrideModal — Confirm reconciles (delete existing [kind] + cre
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
-    expect(createMutate).toHaveBeenCalledWith(expect.objectContaining({ kind: "ADDITIONAL" }));
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
+    expect(replaceMutate).toHaveBeenCalledWith(expect.objectContaining({ kind: "ADDITIONAL" }));
   });
 
   it("submits the '24:00' end-of-day sentinel (10 PM → 12 AM = 120 min)", async () => {
@@ -491,9 +491,11 @@ describe("DateOverrideModal — Confirm reconciles (delete existing [kind] + cre
 
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
-    expect(createMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ startLocal: "22:00", windowMin: 120 }),
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
+    expect(replaceMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        windows: [{ startLocal: "22:00", windowMin: 120 }],
+      }),
     );
   });
 });
@@ -507,7 +509,7 @@ describe("DateOverrideModal — zero slots is a valid 'clear' request", () => {
     expect(within(dialog).getByRole("button", { name: "Confirm change" })).toBeEnabled();
   });
 
-  it("Confirm with zero slots deletes existing [kind] exceptions and issues NO creates", async () => {
+  it("Confirm with zero slots replaces the day's [kind] with EMPTY windows (clear)", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
     setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("u2", "UNAVAILABLE", "16:00", 60)]);
@@ -517,9 +519,13 @@ describe("DateOverrideModal — zero slots is a valid 'clear' request", () => {
     await user.click(within(dialog).getByRole("button", { name: /clear all time slots/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    await waitFor(() => expect(deleteMutate).toHaveBeenCalledTimes(2));
-    expect(deleteMutate).toHaveBeenCalledWith("u1");
-    expect(deleteMutate).toHaveBeenCalledWith("u2");
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
+    expect(replaceMutate).toHaveBeenCalledWith({
+      date: "2026-07-20",
+      kind: "UNAVAILABLE",
+      windows: [],
+    });
+    expect(deleteMutate).not.toHaveBeenCalled();
     expect(createMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
@@ -549,36 +555,26 @@ describe("DateOverrideModal — structural validation", () => {
   });
 });
 
-describe("DateOverrideModal — backend 422 keeps the modal open", () => {
-  it("a mocked 422 from create keeps the modal open and shows the backend message", async () => {
-    const user = userEvent.setup();
-    const onClose = jest.fn();
-    createMutate.mockRejectedValue(new ApiError(422, "This override conflicts with a booking."));
-    renderModal(onClose);
-    const dialog = screen.getByRole("dialog");
-
-    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
-    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
-
-    expect(
-      await within(dialog).findByText(/this override conflicts with a booking/i),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(onClose).not.toHaveBeenCalled();
-  });
-
-  it("a 422 from delete keeps the modal open with the message", async () => {
+describe("DateOverrideModal — a replace 422 keeps the modal open", () => {
+  it("a replace 422 keeps the modal open and surfaces the message (no partial local wipe)", async () => {
     const user = userEvent.setup();
     const onClose = jest.fn();
     setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60)]);
-    deleteMutate.mockRejectedValue(new ApiError(422, "Cannot remove this override."));
+    replaceMutate.mockRejectedValue(
+      new ApiError(422, "This time is outside the guide's availability"),
+    );
     renderModal(onClose);
     const dialog = screen.getByRole("dialog");
 
+    // Seeded with the 1 PM slot; Confirm rejects.
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    expect(await within(dialog).findByText(/cannot remove this override/i)).toBeInTheDocument();
-    expect(createMutate).not.toHaveBeenCalled();
+    expect(
+      await within(dialog).findByText(/outside the guide's availability/i),
+    ).toBeInTheDocument();
+    // Dialog stays open and the edited slot is NOT wiped.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(within(dialog).getByRole("group", { name: "Time slot 1" })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });

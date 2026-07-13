@@ -7,9 +7,8 @@ import {
   ApiError,
   useAvailabilityExceptions,
   useAvailabilitySettings,
-  useCreateAvailabilityException,
-  useDeleteAvailabilityException,
   useOverrideMultiPreview,
+  useReplaceOverrides,
   useResolvedAvailability,
   type AvailabilityException,
   type AvailabilityExceptionKind,
@@ -57,9 +56,9 @@ export interface DateOverrideModalProps {
 
 /** One from–to time slot being edited. Mirrors `DayHoursModal`'s per-range draft so a
  *  date-specific override supports multiple slots on the same date the way weekly hours do.
- *  `key` is a stable React key. On Confirm the whole list is reconciled (delete the day's existing
- *  [kind] exceptions, then create these slots), so a slot carries no `id` — it's the desired end
- *  state, not a 1:1 edit of a specific existing row. */
+ *  `key` is a stable React key. On Confirm the whole list is sent as ONE atomic replace of the
+ *  day's [kind] windows, so a slot carries no `id` — it's the desired end state, not a 1:1 edit of
+ *  a specific existing row. */
 interface SlotDraft {
   key: string;
   from: string;
@@ -351,8 +350,8 @@ export function dateOverrideErrorMessage(err: unknown): string {
 interface DateOverrideModalContentProps {
   /** The single day this editor manages (already resolved to a concrete ISO date). */
   date: string;
-  /** The day's existing exceptions (both kinds) — seeds the editor and, on Confirm, tells the
-   *  reconcile which [kind] rows to delete. The OTHER kind is never touched. */
+  /** The day's existing exceptions (both kinds) — seeds the editor's slots. The atomic replace on
+   *  Confirm sends only the current [kind] windows, so the OTHER kind is never touched. */
   dayExceptions: AvailabilityException[];
   onClose: () => void;
 }
@@ -360,8 +359,7 @@ interface DateOverrideModalContentProps {
 function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverrideModalContentProps) {
   const settingsQuery = useAvailabilitySettings();
   const resolvedQuery = useResolvedAvailability();
-  const createException = useCreateAvailabilityException();
-  const deleteException = useDeleteAvailabilityException();
+  const replaceOverrides = useReplaceOverrides();
 
   const settingsTimezone = settingsQuery.data?.timezone ?? FALLBACK_TIMEZONE;
 
@@ -470,27 +468,16 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
 
     setSubmitting(true);
     try {
-      // RECONCILE: set the day's [kind] to exactly these slots. First delete every existing [kind]
-      // exception for this date (by id), then create one per current slot. Zero slots = delete only.
-      // The OTHER kind's exceptions are never touched. This is sequential delete-then-create — a
-      // partial failure mid-way is possible (same class as the former per-slot save); it's
-      // backend-authoritative and the modal stays open on any 422 to surface the message.
-      for (const exc of exceptionsForKind(dayExceptions, mode)) {
-        await deleteException.mutateAsync(exc.id);
-      }
-      for (const win of windows) {
-        await createException.mutateAsync({
-          dateFrom: date,
-          dateTo: date,
-          kind: mode,
-          startLocal: win.startLocal,
-          windowMin: win.windowMin,
-        });
-      }
+      // ATOMIC REPLACE (CTL-55 v2.1 B2): set the day's [kind] to exactly these windows in ONE
+      // backend transaction — the source of atomicity is now the backend, not a FE reconcile.
+      // Zero windows = clear this day's same-kind override. The OTHER kind is never touched. A
+      // create-time rejection no longer wipes prior overrides, because there is no delete-then-create.
+      await replaceOverrides.mutateAsync({ date, kind: mode, windows });
       onClose();
     } catch (err) {
-      // Keep the modal open (do NOT call onClose) and show the backend message in-modal — Core
-      // decides validity/trim; the FE never pre-emptively blocks on overlap/trim.
+      // Keep the modal open (do NOT call onClose) and do NOT wipe local state — show the backend
+      // message in-modal so the guide can adjust and retry. Core decides validity/trim; the FE
+      // never pre-emptively blocks on overlap/trim.
       setError(dateOverrideErrorMessage(err));
     } finally {
       setSubmitting(false);
@@ -718,10 +705,11 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
  * green "after" segments straight from the dry-run's `resultingWindows`; the hatched/blue segments
  * from the user's own `proposed` windows (never `day.trimmed`).
  *
- * Confirm RECONCILES the day's [kind] to exactly these slots: delete every existing [kind] exception
- * for the date (by id), then create one per current slot — zero slots = delete only. The OTHER
- * kind's exceptions are never touched. This is a sequential delete-then-create; a partial failure
- * mid-way is possible (backend-authoritative), and on any 422 the modal stays open with the message.
+ * Confirm sends the day's [kind] to exactly these slots as ONE atomic replace
+ * (`useReplaceOverrides`, `{date, kind, windows}`) — zero slots = clear this kind for the day. The
+ * OTHER kind's exceptions are never touched. The backend transaction is the only source of
+ * atomicity (no FE delete-then-create, so a rejection never wipes prior overrides); on any 422 the
+ * modal stays open with the message and local edits intact.
  *
  * The `key` remount ties the form's seed to `initialDate`; the whole modal (Modal shell + form
  * state) lives in `DateOverrideModalContent` so the structured header/footer share that state.
