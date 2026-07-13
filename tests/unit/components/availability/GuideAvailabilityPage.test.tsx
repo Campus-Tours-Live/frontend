@@ -185,7 +185,6 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
 
     expect(screen.getByRole("list", { name: /weekly hours by day/i })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /actual availability/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /upcoming changes/i })).toBeInTheDocument();
   });
 
   it("renders BookingRulesPanel from useAvailabilitySettings", () => {

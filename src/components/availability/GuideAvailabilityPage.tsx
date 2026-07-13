@@ -11,17 +11,16 @@ import {
 import { BookingRulesPanel } from "./BookingRulesPanel";
 import { DateOverrideModal } from "./DateOverrideModal";
 import { MonthAvailabilityView } from "./MonthAvailabilityView";
-import { UpcomingChangesList } from "./UpcomingChangesList";
 import { WeeklyHoursPanel } from "./WeeklyHoursPanel";
 
 /**
  * Guide availability workspace (CTL-55 v2.1) — assembles the 7-day inline weekly editor
  * (`WeeklyHoursPanel`, Task 2), the month-density "actual availability" view (`MonthAvailabilityView`,
- * Task 3) + its `UpcomingChangesList` sibling, the shared date-specific override modal
+ * Task 3), the shared date-specific override modal
  * (`DateOverrideModal`, Task 4), and the read-only `BookingRulesPanel`.
  *
  * Each panel/modal is self-contained — it owns its own data-access hooks and mutations rather than
- * taking them as props (see `WeeklyHoursPanel`/`MonthAvailabilityView`/`UpcomingChangesList`/
+ * taking them as props (see `WeeklyHoursPanel`/`MonthAvailabilityView`/
  * `DateOverrideModal`, all of which call `useAvailabilitySettings()` etc. directly). So this page
  * only owns:
  *  - the month-click → override-modal wiring: `MonthAvailabilityView`'s `onOpenOverride(isoDate)`
@@ -83,7 +82,6 @@ export function GuideAvailabilityPage() {
           <div className="space-y-6">
             <WeeklyHoursPanel />
             <MonthAvailabilityView onOpenOverride={openOverride} />
-            <UpcomingChangesList />
           </div>
 
           <aside className="space-y-4 lg:sticky lg:top-6">
