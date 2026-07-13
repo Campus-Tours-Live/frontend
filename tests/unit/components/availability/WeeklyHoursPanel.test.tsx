@@ -7,6 +7,8 @@ import {
   useAvailabilitySettings,
   useCreateAvailabilityRule,
   useDeleteAvailabilityRule,
+  useReplaceOverrides,
+  useReplaceRules,
   useUpdateAvailabilityRule,
 } from "@/lib/data-access";
 import type { AvailabilityRule, AvailabilitySettings } from "@/lib/data-access";
@@ -17,6 +19,8 @@ jest.mock("@/lib/data-access", () => ({
   useCreateAvailabilityRule: jest.fn(),
   useUpdateAvailabilityRule: jest.fn(),
   useDeleteAvailabilityRule: jest.fn(),
+  useReplaceRules: jest.fn(),
+  useReplaceOverrides: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message?: string) {
@@ -32,6 +36,8 @@ const mockUseAvailabilitySettings = useAvailabilitySettings as jest.Mock;
 const mockUseCreateAvailabilityRule = useCreateAvailabilityRule as jest.Mock;
 const mockUseUpdateAvailabilityRule = useUpdateAvailabilityRule as jest.Mock;
 const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
+const mockUseReplaceRules = useReplaceRules as jest.Mock;
+const mockUseReplaceOverrides = useReplaceOverrides as jest.Mock;
 
 // Monday: two active ranges (9-11am, 1-2pm). Tuesday: one INACTIVE rule (day toggled off).
 const mondayRuleA: AvailabilityRule = {
@@ -103,6 +109,14 @@ beforeEach(() => {
   mockUseCreateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   mockUseDeleteAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
+  mockUseReplaceRules.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    isPending: false,
+  });
+  mockUseReplaceOverrides.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    isPending: false,
+  });
 });
 
 describe("WeeklyHoursPanel — display (from–to, no per-pill edit/delete)", () => {

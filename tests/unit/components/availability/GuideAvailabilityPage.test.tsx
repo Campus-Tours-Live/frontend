@@ -12,6 +12,8 @@ import {
   useDeleteAvailabilityRule,
   useOverrideMultiPreview,
   useOverridePreview,
+  useReplaceOverrides,
+  useReplaceRules,
   useResolvedAvailability,
   useUpdateAvailabilityRule,
 } from "@/lib/data-access";
@@ -38,6 +40,8 @@ jest.mock("@/lib/data-access", () => ({
   useOverrideMultiPreview: jest.fn(),
   useCreateAvailabilityException: jest.fn(),
   useDeleteAvailabilityException: jest.fn(),
+  useReplaceRules: jest.fn(),
+  useReplaceOverrides: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message?: string) {
@@ -59,6 +63,8 @@ const mockUseOverridePreview = useOverridePreview as jest.Mock;
 const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
 const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
 const mockUseDeleteAvailabilityException = useDeleteAvailabilityException as jest.Mock;
+const mockUseReplaceRules = useReplaceRules as jest.Mock;
+const mockUseReplaceOverrides = useReplaceOverrides as jest.Mock;
 
 const mondayRule: AvailabilityRule = {
   id: "rule-mon-1",
@@ -154,6 +160,14 @@ beforeEach(() => {
     isPending: false,
   });
   mockUseDeleteAvailabilityException.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    isPending: false,
+  });
+  mockUseReplaceRules.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    isPending: false,
+  });
+  mockUseReplaceOverrides.mockReturnValue({
     mutateAsync: jest.fn().mockResolvedValue(undefined),
     isPending: false,
   });
@@ -257,13 +271,13 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
 });
 
 describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notification", () => {
-  it("a create 422 from the override modal's Confirm keeps it open and shows the backend message", async () => {
+  it("a replace-overrides 422 from the override modal's Confirm keeps it open and shows the backend message", async () => {
     const user = setupUser();
-    const createMutate = jest
+    const replaceMutate = jest
       .fn()
       .mockRejectedValue(new ApiError(422, "This override conflicts with an existing booking."));
-    mockUseCreateAvailabilityException.mockReturnValue({
-      mutateAsync: createMutate,
+    mockUseReplaceOverrides.mockReturnValue({
+      mutateAsync: replaceMutate,
       isPending: false,
     });
     render(<GuideAvailabilityPage />);
@@ -271,11 +285,13 @@ describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notificat
     await user.click(screen.getByTestId("calendar-day-2026-07-22"));
     const dialog = await screen.findByRole("dialog");
 
-    // 2026-07-22 has no existing override → empty editor; add a slot so Confirm issues a create.
+    // 2026-07-22 has no existing override → empty editor; add a slot so Confirm issues an atomic
+    // replace (DateOverrideModal's save now goes through useReplaceOverrides, not
+    // useCreateAvailabilityException).
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
-    await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(replaceMutate).toHaveBeenCalledTimes(1));
     expect(
       await within(dialog).findByText(/this override conflicts with an existing booking/i),
     ).toBeInTheDocument();
