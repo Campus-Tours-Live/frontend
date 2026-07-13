@@ -15,12 +15,7 @@ import {
   type OverridePreviewDay,
   type OverrideWindow,
 } from "@/lib/data-access";
-import {
-  formatClockLabel,
-  formatFromTo,
-  minutesFromHHmm,
-  toWindowMin,
-} from "@/lib/availability/fromTo";
+import { formatFromTo, minutesFromHHmm, toWindowMin } from "@/lib/availability/fromTo";
 import { bucketOccurrencesByDate } from "@/lib/availability/bucketByDate";
 import {
   TimeAxis,
@@ -66,10 +61,6 @@ let draftSeq = 0;
 function nextSlotKey(): string {
   draftSeq += 1;
   return `slot-${draftSeq}`;
-}
-
-function pad2(value: number): string {
-  return String(value).padStart(2, "0");
 }
 
 function safeWindowMin(from: string, to: string): number | null {
@@ -154,15 +145,11 @@ function windowsEqual(a: AvailabilityOccurrence[], b: AvailabilityOccurrence[]):
   );
 }
 
-function minutesToHHmm(min: number): string {
-  if (min >= 1440) return "24:00";
-  return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
-}
-
 /** A per-affected-date view model for the ONE combined dry-run visual. Pure presentation of
  *  backend data — before windows (bucketed resolved occurrences), after windows (the net
- *  `resultingWindows`), the blocked band (`trimmed`) or extra band (the proposed slots), the shared
- *  auto-ranged axis domain/ticks, and whether this date is a conflict. */
+ *  `resultingWindows`) plus the blocked band or extra band (both derived from `proposed`, the
+ *  user's own input windows — never `day.trimmed`, which spatially overlaps `resultingWindows`),
+ *  the shared auto-ranged axis domain/ticks, and whether this date is a conflict. */
 interface DayView {
   date: string;
   before: AvailabilityOccurrence[];
@@ -189,12 +176,28 @@ const DAY_HALVES: DayHalf[] = [
   { key: "pm", startMin: NOON_MIN, endMin: DAY_END_MIN },
 ];
 
-/** Fixed 2-hour tick marks for one 12-hour half (AM: 12 AM, 2 AM … 12 PM). Seven labels across the
- *  half never collide in the modal, unlike the old full-day auto-ranged axis. */
+/** Label one 2-hour tick: the two ENDPOINT ticks (first/last of the half) carry the AM/PM
+ *  meridiem (e.g. "12 AM", "12 PM") since they anchor the half; the five ticks in between are
+ *  BARE hour numbers ("2", "4", "6", "8", "10") — the half's AM/PM is already unambiguous from its
+ *  endpoints, and a bare number is narrow enough that seven ticks never crowd the modal's width.
+ *  Spelling out "12:00 PM" et al. on every tick (the old behaviour) was wide enough that the
+ *  endpoint labels — centered on ticks that sit at the container's 0%/100% edge — wrapped onto a
+ *  second line; shortening the middle labels frees the room the endpoints need to stay on one
+ *  line (paired with edge alignment in `TimeAxis`). All ticks land on exact hours (2-hour step
+ *  from a whole-hour start), so no minutes component is ever needed. */
+function halfTickLabel(min: number, isEndpoint: boolean): string {
+  const hour24 = Math.floor(min / 60) % 24;
+  const hour12 = hour24 % 12 || 12;
+  if (!isEndpoint) return String(hour12);
+  return `${hour12} ${hour24 < 12 ? "AM" : "PM"}`;
+}
+
+/** Fixed 2-hour tick marks for one 12-hour half (AM: 12 AM, 2, 4, 6, 8, 10, 12 PM). Seven ticks
+ *  across the half never collide in the modal, unlike the old full-day auto-ranged axis. */
 function halfTicks(startMin: number, endMin: number): TimeAxisTick[] {
   const ticks: TimeAxisTick[] = [];
   for (let m = startMin; m <= endMin; m += HALF_TICK_STEP_MIN) {
-    ticks.push({ min: m, label: formatClockLabel(minutesToHHmm(m)) });
+    ticks.push({ min: m, label: halfTickLabel(m, m === startMin || m === endMin) });
   }
   return ticks;
 }
@@ -207,11 +210,14 @@ function segmentsInHalf(segments: TimeAxisSegment[], half: DayHalf): TimeAxisSeg
 
 /**
  * Build the presentation view model for ONE affected date from the COMBINED (multi-window) dry-run.
- * All windows/trims come straight from the backend (resolved occurrences + the dry-run response's
- * single `resultingWindows`/`trimmed` for this date, net of ALL slots). The only computation here
- * is mapping those windows to time-axis segments and an instant equality check for the conflict
- * flag — never availability math (FE-never-recomputes). The fixed AM/PM axis split happens at
- * render time.
+ * The green "available" segments come straight from the backend's `resultingWindows` (net of ALL
+ * slots for this date). The hatched "off" (Block time off) / blue "extra" (Add extra) segments are
+ * built from `proposed` — the user's own input windows — NOT from `day.trimmed`: `trimmed` is the
+ * clipped EXISTING windows, which spatially overlaps `resultingWindows`, so rendering it would show
+ * green and hatched overlaid at the blocked time. Using `proposed` keeps the hatched band disjoint
+ * from the green band. The only computation here is mapping those windows to time-axis segments and
+ * an instant equality check for the conflict flag — never availability math (FE-never-recomputes).
+ * The fixed AM/PM axis split happens at render time.
  */
 function buildDayView(
   day: OverridePreviewDay,
@@ -235,15 +241,20 @@ function buildDayView(
   }));
 
   if (kind === "UNAVAILABLE") {
-    // The blocked part = the weekly windows Core says these overrides trim (accurate to the
-    // dry-run), rendered hatched as "Time off".
-    for (const trim of day.trimmed) {
-      const startMin = minutesFromHHmm(trim.startLocal);
+    // The blocked part = the PROPOSED block windows (the user's own input, same source the
+    // ADDITIONAL branch below uses for "extra"), rendered hatched as "Time off". `day.trimmed`
+    // is the CLIPPED EXISTING windows, which spatially overlaps `resultingWindows` (the green
+    // net-available result) — rendering it here made the blocked time show green AND hatched at
+    // once. `proposed` is disjoint from `resultingWindows` by construction (Core nets the block
+    // out of the resulting windows), so green/hatched never overlap. Still pure presentation of
+    // the user's own input — no availability recompute.
+    for (const win of proposed) {
+      const startMin = minutesFromHHmm(win.startLocal);
       afterSegments.push({
         startMin,
-        endMin: startMin + trim.windowMin,
+        endMin: startMin + win.windowMin,
         kind: "off",
-        label: formatFromTo(trim.startLocal, trim.windowMin),
+        label: formatFromTo(win.startLocal, win.windowMin),
       });
     }
   } else {
@@ -565,9 +576,7 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
           aria-label="Preview"
           className="rounded-md border border-border bg-card p-3"
         >
-          <p className="text-[13px] font-medium text-ink">
-            After applying (backend dry-run preview)
-          </p>
+          <p className="text-[13px] font-medium text-ink">After applying</p>
           {debouncedMultiParams === null ? (
             <p className="mt-2 text-[13px] text-ink-soft">
               Add at least one valid from–to time slot to see a preview.
@@ -642,9 +651,12 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
  * every slot (green = Available, hatched = Time off, blue = Extra) on an auto-ranged axis that
  * covers the full extent of the current windows, the resulting windows, and every proposed slot —
  * plus an amber conflict warning when the block changes existing hours. All are pure presentation
- * of Core's before/after/trimmed (FE-never-recomputes). "Before" windows come from
- * `useResolvedAvailability` bucketed via the shared `bucketOccurrencesByDate`; "after"/"trimmed"
- * come straight from the dry-run. Confirm creates one exception per slot over the date range (the
+ * of Core's before/after (FE-never-recomputes). "Before" windows come from
+ * `useResolvedAvailability` bucketed via the shared `bucketOccurrencesByDate`; the green "after"
+ * segments come straight from the dry-run's `resultingWindows`, while the hatched/blue segments are
+ * derived from the user's own `proposed` windows (never `day.trimmed`, which overlaps
+ * `resultingWindows` spatially and would render as green+hatched overlaid). Confirm creates one
+ * exception per slot over the date range (the
  * create endpoint takes a single window, so multiple slots are multiple creates); on a backend 422
  * the modal stays open and shows the backend message.
  *

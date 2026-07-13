@@ -116,6 +116,43 @@ describe("TimeAxis", () => {
     expect(screen.getByText("9:00 AM")).toBeInTheDocument();
     expect(screen.getByText("12:00 PM")).toBeInTheDocument();
   });
+
+  it("left-aligns the first tick, right-aligns the last tick, and centers every tick in between — so edge labels never wrap past the container", () => {
+    render(
+      <TimeAxis
+        ticks={[
+          { min: 0, label: "12:00 AM" },
+          { min: 360, label: "6:00 AM" },
+          { min: 720, label: "12:00 PM" },
+        ]}
+        rangeStartMin={0}
+        rangeEndMin={720}
+      />,
+    );
+    const first = screen.getByText("12:00 AM");
+    const middle = screen.getByText("6:00 AM");
+    const last = screen.getByText("12:00 PM");
+
+    // Every tick label must stay on one line — a wrapped label is the bug this guards against.
+    expect(first).toHaveClass("whitespace-nowrap");
+    expect(middle).toHaveClass("whitespace-nowrap");
+    expect(last).toHaveClass("whitespace-nowrap");
+
+    // First tick (left ≈ 0%): left-aligned — no negative translate that would push it off-edge.
+    expect(first).toHaveClass("translate-x-0");
+    expect(first).not.toHaveClass("-translate-x-1/2");
+    expect(first).not.toHaveClass("-translate-x-full");
+
+    // Middle tick: still centered on its mark, same as before this fix.
+    expect(middle).toHaveClass("-translate-x-1/2");
+    expect(middle).not.toHaveClass("translate-x-0");
+    expect(middle).not.toHaveClass("-translate-x-full");
+
+    // Last tick (left ≈ 100%): right-aligned so it sits inside the right edge.
+    expect(last).toHaveClass("-translate-x-full");
+    expect(last).not.toHaveClass("-translate-x-1/2");
+    expect(last).not.toHaveClass("translate-x-0");
+  });
 });
 
 describe("TimeAxisLegend", () => {

@@ -136,6 +136,17 @@ export interface TimeAxisProps {
   rangeEndMin: number;
 }
 
+/** Horizontal alignment for one tick label, keyed off its position in the range: the first tick
+ *  (left ≈ 0%) left-aligns so it sits inside the left edge, the last tick (left ≈ 100%)
+ *  right-aligns so it sits inside the right edge, and every tick in between stays centered on its
+ *  mark. Centering EVERY label (the old behaviour) pushed half of the first/last label past the
+ *  container's edge, wrapping it onto a second line (e.g. "12:00 PM" / "12:00 AM"). */
+function tickTranslateClass(min: number, rangeStartMin: number, rangeEndMin: number): string {
+  if (min <= rangeStartMin) return "translate-x-0";
+  if (min >= rangeEndMin) return "-translate-x-full";
+  return "-translate-x-1/2";
+}
+
 /** The shared hour-tick label row under a Now/After bar pair. Decorative (aria-hidden) —
  *  the bars themselves carry the accessible segment titles. */
 export function TimeAxis({ ticks, rangeStartMin, rangeEndMin }: TimeAxisProps) {
@@ -144,7 +155,10 @@ export function TimeAxis({ ticks, rangeStartMin, rangeEndMin }: TimeAxisProps) {
       {ticks.map((tick) => (
         <span
           key={tick.min}
-          className="absolute -translate-x-1/2 text-[10px] text-ink-soft"
+          className={cn(
+            "absolute whitespace-nowrap text-[10px] text-ink-soft",
+            tickTranslateClass(tick.min, rangeStartMin, rangeEndMin),
+          )}
           style={{ left: `${minToPercent(tick.min, rangeStartMin, rangeEndMin)}%` }}
         >
           {tick.label}

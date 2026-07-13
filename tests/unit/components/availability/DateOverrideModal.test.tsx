@@ -209,7 +209,7 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
     );
   });
 
-  it("renders a SINGLE combined Now/After pair per half (not per-slot) reflecting net resultingWindows + one legend", async () => {
+  it("renders a SINGLE combined Now/After pair per half (not per-slot) with hatched Time-off from the PROPOSED block windows — NOT from `trimmed` (no green/hatch overlap) + one legend", async () => {
     const user = userEvent.setup();
     mockUseOverrideMultiPreview.mockReturnValue({
       data: blockingPreview,
@@ -219,8 +219,12 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
 
     renderModal();
     const dialog = screen.getByRole("dialog");
-    // Two slots, but still ONE After bar per half for the date (combined, never per-slot).
+    // Two slots, but still ONE After bar per half for the date (combined, never per-slot). Edit
+    // slot 2 to 10:00–10:30 so its proposed window differs from BOTH slot 1 (9:00–10:00) and the
+    // mocked `trimmed` entry (10:00–11:00) — this disambiguates which source produced the hatch.
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    await typeSegment(user, dialog, "Time slot 2 from hour", "10");
+    await typeSegment(user, dialog, "Time slot 2 to minutes", "30");
 
     // "Now" AM bar = the current (before) window 9:00–11:00, bucketed from resolved availability.
     const nowBar = await within(dialog).findByRole("group", {
@@ -232,9 +236,21 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
     const afterBar = within(dialog).getByRole("group", {
       name: "After applying on 2026-07-20 (AM)",
     });
+    // Green "available" = the backend's net `resultingWindows` (unaffected by the proposed edits).
     expect(within(afterBar).getByTitle(/Available · 9:00 AM – 9:30 AM/)).toBeInTheDocument();
-    const timeOff = within(afterBar).getByTitle(/Time off · 10:00 AM – 11:00 AM/);
-    expect(timeOff).toHaveClass("calendar-hatch");
+
+    // Hatched "off" = the PROPOSED block windows (slot 1 unedited, slot 2 edited to 10:00–10:30) —
+    // one segment per proposed slot, disjoint from the green segment above. `findByTitle` waits
+    // out the debounce so slot 2's edit has been picked up into `debouncedMultiParams`.
+    const off1 = await within(afterBar).findByTitle(/Time off · 9:00 AM – 10:00 AM/);
+    expect(off1).toHaveClass("calendar-hatch");
+    const off2 = await within(afterBar).findByTitle(/Time off · 10:00 AM – 10:30 AM/);
+    expect(off2).toHaveClass("calendar-hatch");
+
+    // The mocked `trimmed` entry (10:00–11:00) must NOT be rendered — proving the hatch is sourced
+    // from `proposed`, not `day.trimmed` (which would have overlapped the green 9:00–9:30 segment
+    // at nothing here, but would show a phantom 10:00–11:00 block the user never asked to block).
+    expect(within(afterBar).queryByTitle(/Time off · 10:00 AM – 11:00 AM/)).not.toBeInTheDocument();
 
     // Legend rendered once (Available / Time off / Extra).
     expect(within(dialog).getByText("Available")).toBeInTheDocument();
@@ -295,11 +311,20 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
       within(region).getByRole("group", { name: "After applying on 2026-07-20 (PM)" }),
     ).toBeInTheDocument();
 
-    // Each half spans a fixed 12 hours: the AM axis carries a morning tick, the PM axis an
-    // afternoon one, and both meet at the 12:00 PM boundary — no single crowded full-day axis.
-    expect(within(region).getByText("6:00 AM")).toBeInTheDocument();
-    expect(within(region).getByText("6:00 PM")).toBeInTheDocument();
-    expect(within(region).getAllByText("12:00 PM").length).toBeGreaterThan(0);
+    // Each half spans a fixed 12 hours and meets at the 12 PM boundary — no single crowded
+    // full-day axis. Endpoint ticks carry the AM/PM meridiem ("12 AM" / "12 PM", once per half —
+    // twice total each, at the AM start/PM end and AM end/PM start respectively); the five ticks
+    // in between are bare hour numbers ("2"/"4"/"6"/"8"/"10", shared text across both halves since
+    // the half itself disambiguates AM vs PM) — short enough that seven ticks never overlap.
+    expect(within(region).getAllByText("12 AM")).toHaveLength(2);
+    expect(within(region).getAllByText("12 PM")).toHaveLength(2);
+    expect(within(region).getAllByText("6")).toHaveLength(2);
+
+    // The old full "H:MM AM/PM" label on every tick is gone (it's what wrapped onto a second line
+    // at the edges) — only the two endpoints spell out the meridiem.
+    expect(within(region).queryByText("6:00 AM")).not.toBeInTheDocument();
+    expect(within(region).queryByText("6:00 PM")).not.toBeInTheDocument();
+    expect(within(region).queryByText("12:00 PM")).not.toBeInTheDocument();
   });
 });
 
