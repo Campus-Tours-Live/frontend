@@ -219,14 +219,20 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
 
   const hoveredCell = hovered ? cells.find((cell) => cell.iso === hovered.iso) : undefined;
 
-  const calendarDays: CalendarDay[] = cells.map((cell) => ({
-    date: cell.iso,
-    day: cell.day,
-    isToday: cell.isToday,
-    muted: cell.totalMinutes <= 0,
-    ariaLabel: `${cell.iso}${cell.isToday ? ", today" : ""}`,
-    content: <DensityBar cell={cell} timeZone={settingsTimezone} />,
-  }));
+  const calendarDays: CalendarDay[] = cells.map((cell) => {
+    // Announce the day's booking status (backend-resolved, never recomputed) in the accessible name
+    // so screen-reader users hear "…, Available/Unavailable" instead of a bare ISO date. "Extra"
+    // days are still Available — the blue accent is a sighted-only refinement.
+    const status = cell.totalMinutes > 0 ? "Available" : "Unavailable";
+    return {
+      date: cell.iso,
+      day: cell.day,
+      isToday: cell.isToday,
+      muted: cell.totalMinutes <= 0,
+      ariaLabel: `${cell.iso}, ${status}${cell.isToday ? ", today" : ""}`,
+      content: <DensityBar cell={cell} timeZone={settingsTimezone} />,
+    };
+  });
 
   return (
     <Card

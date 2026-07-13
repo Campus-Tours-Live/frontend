@@ -117,6 +117,34 @@ describe("MonthAvailabilityView — density bar + hatch", () => {
     expect(screen.getByTestId("calendar-day-2026-07-17")).toHaveAttribute("data-muted", "false");
   });
 
+  it("announces each day's availability status in its accessible name (a11y)", () => {
+    setResolved([{ startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T15:00:00Z" }]);
+
+    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+
+    // The accessible name carries the status, not just the raw ISO date, so screen readers
+    // announce whether the day is bookable.
+    expect(screen.getByTestId("calendar-day-2026-07-10")).toHaveAccessibleName(
+      /2026-07-10, available/i,
+    );
+    expect(screen.getByTestId("calendar-day-2026-07-25")).toHaveAccessibleName(
+      /2026-07-25, unavailable/i,
+    );
+  });
+
+  it("opens the day summary tooltip when a day cell receives keyboard focus (a11y)", async () => {
+    setResolved([{ startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T15:00:00Z" }]);
+
+    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+
+    // Keyboard users reach the summary by focusing the day button (Tab), not only by mouse hover.
+    screen.getByTestId("calendar-day-2026-07-10").focus();
+
+    expect(
+      await screen.findByRole("tooltip", { name: /availability for 2026-07-10/i }),
+    ).toBeInTheDocument();
+  });
+
   it("outlines today's cell", () => {
     render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
     // System time 2026-07-15T18:00Z -> 13:00 America/Chicago on 2026-07-15.
