@@ -46,3 +46,4 @@ export { Drawer, type DrawerProps } from "./Drawer";
 export { TimePicker, type TimePickerProps, type TimeParts } from "./TimePicker";
 export { Calendar, type CalendarProps, type CalendarDay, type Weekday } from "./Calendar";
 export { Popover, type PopoverProps } from "./Popover";
+export { MonthYearPicker, type MonthYearPickerProps } from "./MonthYearPicker";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Calendar, Card, Popover, type CalendarDay } from "@/components/ui";
+import { Calendar, Card, MonthYearPicker, Popover, type CalendarDay } from "@/components/ui";
 import {
   useAvailabilityExceptions,
   useAvailabilitySettings,
@@ -17,21 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
 
 /** The daily window the density bar spans, in minutes-of-day (00:00–24:00 = the
  *  full day, so every backend window fits without clipping). Labelled in the legend. */
@@ -124,11 +109,13 @@ function formatDayHeader(iso: string): string {
   return `${weekday} ${m}/${d}`;
 }
 
-function addMonths(cursor: MonthCursor, delta: number): MonthCursor {
-  const zeroBased = cursor.month - 1 + delta;
-  const year = cursor.year + Math.floor(zeroBased / 12);
-  const month = ((zeroBased % 12) + 12) % 12;
-  return { year, month: month + 1 };
+/** `MonthCursor` <-> a month-start `Date`, for `MonthYearPicker` (which is date-based,
+ *  not year/month-number based). */
+function cursorToDate(cursor: MonthCursor): Date {
+  return new Date(cursor.year, cursor.month - 1, 1);
+}
+function dateToCursor(date: Date): MonthCursor {
+  return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
 
 /**
@@ -217,7 +204,6 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
     return result;
   }, [cursor, occurrencesByDate, additionalStartsByDate, settingsTimezone, todayIso]);
 
-  const monthLabel = `${MONTH_NAMES[cursor.month - 1]} ${cursor.year}`;
   const hoveredCell = hovered ? cells.find((cell) => cell.iso === hovered.iso) : undefined;
 
   const calendarDays: CalendarDay[] = cells.map((cell) => ({
@@ -244,28 +230,12 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
             to add a one-off override.
           </p>
         </div>
-        <div className="flex shrink-0 items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Previous month"
-            onClick={() => setCursor((prev) => addMonths(prev, -1))}
-          >
-            ‹
-          </Button>
-          <span className="min-w-[8rem] text-center text-[14px] font-semibold text-ink">
-            {monthLabel}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label="Next month"
-            onClick={() => setCursor((prev) => addMonths(prev, 1))}
-          >
-            ›
-          </Button>
+        <div className="flex shrink-0 items-center justify-end">
+          <MonthYearPicker
+            value={cursorToDate(cursor)}
+            onChange={(next) => setCursor(dateToCursor(next))}
+            aria-label="Month"
+          />
         </div>
       </div>
 
