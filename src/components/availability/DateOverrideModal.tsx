@@ -221,6 +221,11 @@ interface DayView {
   nowSegments: TimeAxisSegment[];
   afterSegments: TimeAxisSegment[];
   conflict: boolean;
+  /** Core flagged this date as outside the materialization horizon (`OverridePreviewDay.inert`):
+   *  no occurrences exist yet, so `resultingWindows` is empty NOT because the day is genuinely
+   *  empty but because it hasn't materialized. Rendered as a distinct "activates later" notice
+   *  instead of empty Now/After bars, which would read identically to a truly-empty day. */
+  inert: boolean;
 }
 
 /** The preview renders each affected date split into a fixed AM half (12 AM–12 PM) and PM half
@@ -350,7 +355,7 @@ function buildDayView(
   // warns. Presentation of the backend before/after windows — no availability recompute.
   const conflict = kind === "UNAVAILABLE" && !coversAvailability(before, day.resultingWindows);
 
-  return { date: day.date, before, nowSegments, afterSegments, conflict };
+  return { date: day.date, before, nowSegments, afterSegments, conflict, inert: day.inert };
 }
 
 /** Compose the amber conflict-warning body from the combined dry-run — pure PRESENTATION of Core's
@@ -700,32 +705,43 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
                     <p className="text-[12px] font-semibold text-ink">
                       {formatWeekdayMonthDay(view.date)}
                     </p>
-                    {DAY_HALVES.map((half) => {
-                      const label = half.key.toUpperCase();
-                      return (
-                        <div key={half.key} className="mt-2 space-y-1">
-                          <TimeAxisBar
-                            barLabel="Now"
-                            ariaLabel={`Current hours on ${view.date} (${label})`}
-                            segments={segmentsInHalf(view.nowSegments, half)}
-                            domainStartMin={half.startMin}
-                            domainEndMin={half.endMin}
-                          />
-                          <TimeAxisBar
-                            barLabel="After"
-                            ariaLabel={`After applying on ${view.date} (${label})`}
-                            segments={segmentsInHalf(view.afterSegments, half)}
-                            domainStartMin={half.startMin}
-                            domainEndMin={half.endMin}
-                          />
-                          <TimeAxis
-                            ticks={halfTicks(half.startMin, half.endMin)}
-                            rangeStartMin={half.startMin}
-                            rangeEndMin={half.endMin}
-                          />
-                        </div>
-                      );
-                    })}
+                    {view.inert ? (
+                      // Beyond the materialization horizon: Core hasn't generated occurrences for
+                      // this date yet, so a Now/After timeline would be empty and read exactly like
+                      // a truly-empty day. Show why instead — the change is saved and takes effect
+                      // once the horizon rolls forward to cover this date.
+                      <p role="status" className="mt-2 text-[12px] text-ink-soft">
+                        Beyond your booking horizon — this change is saved now and activates as the
+                        horizon rolls forward to this date.
+                      </p>
+                    ) : (
+                      DAY_HALVES.map((half) => {
+                        const label = half.key.toUpperCase();
+                        return (
+                          <div key={half.key} className="mt-2 space-y-1">
+                            <TimeAxisBar
+                              barLabel="Now"
+                              ariaLabel={`Current hours on ${view.date} (${label})`}
+                              segments={segmentsInHalf(view.nowSegments, half)}
+                              domainStartMin={half.startMin}
+                              domainEndMin={half.endMin}
+                            />
+                            <TimeAxisBar
+                              barLabel="After"
+                              ariaLabel={`After applying on ${view.date} (${label})`}
+                              segments={segmentsInHalf(view.afterSegments, half)}
+                              domainStartMin={half.startMin}
+                              domainEndMin={half.endMin}
+                            />
+                            <TimeAxis
+                              ticks={halfTicks(half.startMin, half.endMin)}
+                              rangeStartMin={half.startMin}
+                              rangeEndMin={half.endMin}
+                            />
+                          </div>
+                        );
+                      })
+                    )}
                   </li>
                 ))}
               </ul>

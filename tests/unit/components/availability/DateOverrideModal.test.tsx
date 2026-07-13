@@ -406,6 +406,35 @@ describe("DateOverrideModal — replaceExisting dry-run preview", () => {
     const heading = within(dialog).getByText("After applying");
     expect(heading).toHaveClass("font-bold");
   });
+
+  it("renders an out-of-horizon (inert) date as an 'activates later' notice, not empty Now/After bars", async () => {
+    // A far-future date (reachable now that the calendar's year picker navigates freely): Core can't
+    // materialize occurrences yet, so it returns empty windows flagged inert. Without this branch the
+    // day would render as empty Now/After bars, indistinguishable from a genuinely-empty day.
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: {
+        valid: true,
+        message: null,
+        days: [{ date: "2026-07-20", resultingWindows: [], trimmed: [], inert: true }],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const region = within(dialog).getByRole("region", { name: "Preview" });
+
+    // The notice explains WHY there is no timeline.
+    await within(region).findByText(/Beyond your booking horizon/i);
+
+    // The Now/After AM/PM bars are suppressed for an inert date.
+    expect(
+      within(region).queryByRole("group", { name: "After applying on 2026-07-20 (AM)" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(region).queryByRole("group", { name: "Current hours on 2026-07-20 (AM)" }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe("DateOverrideModal — conflict warning (block-only, from the combined dry-run)", () => {
