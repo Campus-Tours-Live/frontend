@@ -119,6 +119,14 @@ function dateToCursor(date: Date): MonthCursor {
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
 
+/** The current {year, month} as seen in `timeZone` — the cursor's seed while the guide hasn't
+ *  navigated yet. Derived at render time (not frozen at mount) so it stays correct even if the
+ *  settings tz resolves after the first render. */
+function currentMonthInTimeZone(timeZone: string): MonthCursor {
+  const { year, month } = partsInTimeZone(new Date(), timeZone);
+  return { year, month };
+}
+
 /**
  * Calendar-centric "Availability calendar" month view (CTL-55 v2). Built on the generic
  * `Calendar` + `Popover` UI primitives. Everything shown is derived from the
@@ -140,10 +148,13 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
   const exceptionsQuery = useAvailabilityExceptions();
   const settingsTimezone = settingsQuery.data?.timezone ?? FALLBACK_TIMEZONE;
 
-  const [cursor, setCursor] = useState<MonthCursor>(() => {
-    const { year, month } = partsInTimeZone(new Date(), settingsTimezone);
-    return { year, month };
-  });
+  // Null until the guide navigates: the displayed month is DERIVED from the settings tz each render
+  // while `cursor` is null, so it's correct regardless of render order — if settings resolve after
+  // the first render (e.g. rendered outside the page's loaded-gate), the "current month" follows the
+  // real tz instead of freezing on the fallback tz at mount. Once the guide picks a month, `cursor`
+  // holds it and navigation sticks.
+  const [cursor, setCursor] = useState<MonthCursor | null>(null);
+  const activeCursor: MonthCursor = cursor ?? currentMonthInTimeZone(settingsTimezone);
   const [hovered, setHovered] = useState<{ iso: string; anchorEl: HTMLElement } | null>(null);
 
   const resolvedOccurrences = resolvedQuery.data?.occurrences;
@@ -179,10 +190,10 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
   );
 
   const cells: DayCell[] = useMemo(() => {
-    const total = daysInMonth(cursor.year, cursor.month);
+    const total = daysInMonth(activeCursor.year, activeCursor.month);
     const result: DayCell[] = [];
     for (let day = 1; day <= total; day++) {
-      const iso = `${cursor.year}-${pad2(cursor.month)}-${pad2(day)}`;
+      const iso = `${activeCursor.year}-${pad2(activeCursor.month)}-${pad2(day)}`;
       const rawWindows = occurrencesByDate.get(iso) ?? [];
       const additionalIntervals = additionalIntervalsByDate.get(iso);
       let totalMinutes = 0;
@@ -204,7 +215,7 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
       });
     }
     return result;
-  }, [cursor, occurrencesByDate, additionalIntervalsByDate, settingsTimezone, todayIso]);
+  }, [activeCursor, occurrencesByDate, additionalIntervalsByDate, settingsTimezone, todayIso]);
 
   const hoveredCell = hovered ? cells.find((cell) => cell.iso === hovered.iso) : undefined;
 
@@ -234,7 +245,7 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
         </div>
         <div className="flex shrink-0 items-center justify-end">
           <MonthYearPicker
-            value={cursorToDate(cursor)}
+            value={cursorToDate(activeCursor)}
             onChange={(next) => setCursor(dateToCursor(next))}
             aria-label="Month"
           />
@@ -243,8 +254,8 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
 
       <div className="px-5 py-4 sm:px-6">
         <Calendar
-          year={cursor.year}
-          month={cursor.month}
+          year={activeCursor.year}
+          month={activeCursor.month}
           days={calendarDays}
           weekStartsOn={0}
           hoveredDate={hovered?.iso ?? null}

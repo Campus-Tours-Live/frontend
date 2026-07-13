@@ -273,6 +273,29 @@ describe("MonthAvailabilityView — Sunday-first week", () => {
   });
 });
 
+describe("MonthAvailabilityView — self-sufficient month cursor", () => {
+  it("seeds the current month from the settings tz even when settings resolve after first render", () => {
+    // Render order without the page gate: settings is still loading on the first render, so the
+    // fallback tz (America/Los_Angeles) is in effect, then the real settings tz resolves. At this
+    // instant LA is still 2026-07-31 but Pacific/Kiritimati (UTC+14) is already 2026-08-01, so a
+    // cursor frozen at mount-time from the fallback tz would wrongly stick on July.
+    jest.setSystemTime(new Date("2026-07-31T12:00:00Z"));
+    mockUseAvailabilitySettings.mockReset();
+    mockUseAvailabilitySettings
+      .mockReturnValueOnce({ data: undefined, isLoading: true, isError: false })
+      .mockReturnValue({
+        data: { ...sampleSettings, timezone: "Pacific/Kiritimati" },
+        isLoading: false,
+        isError: false,
+      });
+
+    const { rerender } = render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    rerender(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+
+    expect(screen.getByText("August 2026")).toBeInTheDocument();
+  });
+});
+
 describe("MonthAvailabilityView — month navigation", () => {
   it("moves to the next/previous month and keeps rendering day cells", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
