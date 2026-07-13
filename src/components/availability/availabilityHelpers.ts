@@ -15,5 +15,3 @@ export const DAY_LABELS = [
   "Friday",
   "Saturday",
 ] as const;
-
-export { todayIsoDate } from "@/lib/availability/formatDate";

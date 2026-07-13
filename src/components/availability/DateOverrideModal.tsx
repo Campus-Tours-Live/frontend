@@ -32,7 +32,6 @@ import {
   type TimeAxisTick,
 } from "./TimeAxisBar";
 import { useDebounced } from "@/hooks";
-import { todayIsoDate } from "./availabilityHelpers";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
 
@@ -49,8 +48,9 @@ const SEGMENT_LABELS: Record<AvailabilityExceptionKind, string> = {
 export interface DateOverrideModalProps {
   open: boolean;
   onClose: () => void;
-  /** Prefills `dateFrom`/`dateTo` — e.g. the ISO date clicked in `MonthAvailabilityView`'s
-   *  `onOpenOverride`. Defaults to today when omitted. */
+  /** The day being edited — e.g. the ISO date clicked in `MonthAvailabilityView`'s
+   *  `onOpenOverride`. Required in practice: the modal renders nothing while it's null/undefined
+   *  (the page sets a concrete date before opening). */
   initialDate?: string | null;
 }
 
@@ -760,8 +760,11 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
  * state) lives in `DateOverrideModalContent` so the structured header/footer share that state.
  */
 export function DateOverrideModal({ open, initialDate, onClose }: DateOverrideModalProps) {
-  if (!open) return null;
-  return <DateOverrideModalLoader initialDate={initialDate} onClose={onClose} />;
+  // The modal is always opened FOR a concrete day (the page sets `initialDate` before flipping
+  // `open`). Guard on a missing date instead of silently defaulting to "today": a today fallback
+  // would open the editor on the wrong day, and the tz-derived "today" is never actually needed.
+  if (!open || initialDate == null) return null;
+  return <DateOverrideModalLoader date={initialDate} onClose={onClose} />;
 }
 
 /**
@@ -770,9 +773,8 @@ export function DateOverrideModal({ open, initialDate, onClose }: DateOverrideMo
  * seed its `mode`/`slots` synchronously from loaded data — the idiomatic "reset state with key"
  * pattern, so no state-syncing effect is needed inside the editor.
  */
-function DateOverrideModalLoader({ initialDate, onClose }: Omit<DateOverrideModalProps, "open">) {
+function DateOverrideModalLoader({ date, onClose }: { date: string; onClose: () => void }) {
   const exceptionsQuery = useAvailabilityExceptions();
-  const date = initialDate ?? todayIsoDate();
   const dayExceptions = useMemo(
     () => (exceptionsQuery.data ?? []).filter((exc) => exc.exceptionDate === date),
     [exceptionsQuery.data, date],

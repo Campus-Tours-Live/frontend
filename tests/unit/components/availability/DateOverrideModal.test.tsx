@@ -130,6 +130,18 @@ async function setPeriod(user: UserEvent, scope: HTMLElement, name: string, ampm
   await user.keyboard(ampm === "PM" ? "p" : "a");
 }
 
+describe("DateOverrideModal — open guard", () => {
+  it("renders nothing when opened without a concrete date (no silent today fallback)", () => {
+    render(<DateOverrideModal open initialDate={null} onClose={jest.fn()} />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("still renders the editor for a concrete initialDate", () => {
+    render(<DateOverrideModal open initialDate="2026-07-20" onClose={jest.fn()} />);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
 describe("DateOverrideModal — kind default + loading existing overrides", () => {
   it("defaults the toggle to 'Block time off' when the day has UNAVAILABLE exceptions, prefilled from them", () => {
     setExceptions([exc("e1", "UNAVAILABLE", "13:00", 60)]);
