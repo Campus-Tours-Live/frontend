@@ -23,6 +23,9 @@ export {
   type MemberRole,
 } from "./MemberCard";
 export { SectionHeading, type SectionHeadingProps } from "./SectionHeading";
+export { PageContainer, type PageContainerProps, type PageWidth } from "./PageContainer";
+export { PageHeader, type PageHeaderProps } from "./PageHeader";
+export { InlineLoading, type InlineLoadingProps } from "./InlineLoading";
 export { Chip, type ChipProps } from "./Chip";
 export { Toggle, type ToggleProps } from "./Toggle";
 export {

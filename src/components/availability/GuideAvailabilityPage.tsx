@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, SectionHeading, Spinner } from "@/components/ui";
+import { Alert, InlineLoading, PageContainer, PageHeader } from "@/components/ui";
 import {
   useAvailabilityExceptions,
   useAvailabilityRules,
@@ -60,22 +60,16 @@ export function GuideAvailabilityPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[960px] space-y-8">
-      {/* No "Guide" eyebrow here: the left nav already scopes this to the guide area, and the
-          page's own Step 1 / Step 2 section eyebrows below would make a top eyebrow read as noise.
-          "Availability" stays the page's real <h1> (title position), not demoted to an eyebrow. */}
-      <SectionHeading
+    <PageContainer width="prose">
+      {/* No "Guide" eyebrow (PageHeader omits eyebrows by design): the left nav already scopes this
+          to the guide area, and the page's own Step 1 / Step 2 section eyebrows below would make a
+          top eyebrow read as noise. "Availability" stays the page's real <h1>. */}
+      <PageHeader
         title="Availability"
         lead="Manage when participants can book you — weekly hours, date overrides, and booking limits."
-        level={1}
       />
 
-      {isLoading ? (
-        <div className="flex items-center gap-2 text-ink-soft">
-          <Spinner />
-          Loading availability…
-        </div>
-      ) : null}
+      {isLoading ? <InlineLoading label="Loading availability…" /> : null}
 
       {isError ? <Alert variant="error">Failed to load your availability.</Alert> : null}
 
@@ -105,6 +99,6 @@ export function GuideAvailabilityPage() {
       ) : null}
 
       <DateOverrideModal open={overrideOpen} initialDate={overrideDate} onClose={closeOverride} />
-    </div>
+    </PageContainer>
   );
 }
