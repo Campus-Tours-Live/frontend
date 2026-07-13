@@ -132,7 +132,7 @@ describe("Modal", () => {
 
       // Panel: responsive max/min height cap + flex column + still keeps caller's className.
       const panel = screen.getByText("My title").closest(".rounded-panel") as HTMLElement;
-      expect(panel).toHaveClass("flex", "max-h-[50vh]", "min-h-[min(24rem,50vh)]", "flex-col");
+      expect(panel).toHaveClass("flex", "max-h-[85vh]", "min-h-[min(22rem,80vh)]", "flex-col");
       expect(panel).toHaveClass("max-w-lg");
 
       // Header, body, and footer are distinct regions.

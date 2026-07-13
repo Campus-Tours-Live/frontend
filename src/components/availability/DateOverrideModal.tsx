@@ -396,7 +396,7 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
     setAutoOpenKey(key);
   };
   const removeSlot = (key: string) => setSlots((prev) => prev.filter((slot) => slot.key !== key));
-  // "Clear this day's hours" — empties every slot of the selected kind at once. Confirm then just
+  // "Clear all time slots" — empties every slot of the selected kind at once. Confirm then just
   // deletes the day's existing [kind] exceptions (zero creates).
   const clearAllSlots = () => {
     setSlots([]);
@@ -532,7 +532,7 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
       open
       onClose={onClose}
       labelledBy="date-override-modal-title"
-      className="max-w-lg"
+      className="w-full max-w-[min(92vw,40rem)]"
       header={header}
       footer={footer}
     >
@@ -569,19 +569,8 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
           })}
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-[13px] font-medium text-ink">Time slots for this day</p>
-            {slots.length > 0 ? (
-              <button
-                type="button"
-                onClick={clearAllSlots}
-                className="text-[12px] font-semibold text-ink-soft hover:text-ink"
-              >
-                Clear this day&apos;s hours
-              </button>
-            ) : null}
-          </div>
+        <div className="space-y-2 rounded-md border border-border bg-card p-3">
+          <p className="text-[13px] font-bold text-ink">Time slots for this day</p>
           {slots.length === 0 ? (
             <p className="text-[13px] text-ink-soft">
               No {SEGMENT_LABELS[mode].toLowerCase()} slots for this day — add one below.
@@ -630,10 +619,18 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
               </div>
             ))
           )}
-          <Button type="button" variant="ghost" size="sm" onClick={addSlot}>
-            <Plus size={15} strokeWidth={2} aria-hidden />
-            Add time slot
-          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={addSlot}>
+              <Plus size={15} strokeWidth={2} aria-hidden />
+              Add time slot
+            </Button>
+            {slots.length > 0 ? (
+              <Button type="button" variant="ghost" size="sm" onClick={clearAllSlots}>
+                <Trash2 size={15} strokeWidth={2} aria-hidden />
+                Clear all time slots
+              </Button>
+            ) : null}
+          </div>
         </div>
 
         <div
@@ -648,6 +645,16 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
             <p className="mt-2 text-[13px] text-ink-soft">No affected dates yet.</p>
           ) : (
             <>
+              {conflictMessages.length > 0 ? (
+                <Alert variant="warning" role="status" className="mt-3">
+                  <ul className="space-y-1">
+                    {conflictMessages.map((message, index) => (
+                      <li key={index}>{message}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-1 font-medium">Confirm the change?</p>
+                </Alert>
+              ) : null}
               <ul className="mt-3 space-y-4">
                 {dayViews.map((view) => (
                   <li key={view.date} aria-label={`Timeline for ${view.date}`}>
@@ -686,16 +693,6 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
               <TimeAxisLegend />
             </>
           )}
-          {conflictMessages.length > 0 ? (
-            <Alert variant="warning" role="status" className="mt-3">
-              <ul className="space-y-1">
-                {conflictMessages.map((message, index) => (
-                  <li key={index}>{message}</li>
-                ))}
-              </ul>
-              <p className="mt-1 font-medium">Confirm the change?</p>
-            </Alert>
-          ) : null}
         </div>
       </div>
     </Modal>
@@ -710,7 +707,7 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
  * slot list is SEEDED from the day's existing [kind] exceptions (via `useAvailabilityExceptions`),
  * one from–to row per exception — or an EMPTY list when the day has none (no auto-populated default
  * row). Switching the toggle re-loads the other kind's existing slots. Rows are edited/added/removed
- * with the shared `TimePicker`, and "Clear this day's hours" empties them all at once.
+ * with the shared `TimePicker`, and "Clear all time slots" empties them all at once.
  *
  * A debounced COMBINED dry-run (`useOverrideMultiPreview`, `replaceExisting: true`) renders the day
  * as ONE time-axis Now/After pair — the NET result if this kind were replaced by exactly the current

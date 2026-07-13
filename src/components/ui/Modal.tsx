@@ -70,7 +70,7 @@ export function Modal({
       <div
         className={cn(
           "relative z-[61] w-full rounded-panel bg-card shadow-card",
-          structured && "flex max-h-[50vh] min-h-[min(24rem,50vh)] flex-col overflow-hidden",
+          structured && "flex max-h-[85vh] min-h-[min(22rem,80vh)] flex-col overflow-hidden",
           className,
         )}
       >

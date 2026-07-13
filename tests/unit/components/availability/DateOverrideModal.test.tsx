@@ -252,14 +252,14 @@ describe("DateOverrideModal — add / remove / clear slots", () => {
     expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
   });
 
-  it("'Clear this day's hours' empties all slots at once", async () => {
+  it("'Clear all time slots' empties all slots at once", async () => {
     const user = userEvent.setup();
     setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("u2", "UNAVAILABLE", "16:00", 60)]);
     renderModal();
     const dialog = screen.getByRole("dialog");
 
     expect(within(dialog).getAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(2);
-    await user.click(within(dialog).getByRole("button", { name: /clear this day's hours/i }));
+    await user.click(within(dialog).getByRole("button", { name: /clear all time slots/i }));
     expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
   });
 });
@@ -293,7 +293,7 @@ describe("DateOverrideModal — replaceExisting dry-run preview", () => {
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: /clear this day's hours/i }));
+    await user.click(within(dialog).getByRole("button", { name: /clear all time slots/i }));
 
     await waitFor(() =>
       expect(mockUseOverrideMultiPreview).toHaveBeenLastCalledWith(
@@ -512,7 +512,7 @@ describe("DateOverrideModal — zero slots is a valid 'clear' request", () => {
     renderModal(onClose);
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: /clear this day's hours/i }));
+    await user.click(within(dialog).getByRole("button", { name: /clear all time slots/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
     await waitFor(() => expect(deleteMutate).toHaveBeenCalledTimes(2));
