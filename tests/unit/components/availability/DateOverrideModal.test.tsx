@@ -232,7 +232,7 @@ describe("DateOverrideModal — dry-run preview: time-axis Now/After bars + lege
 });
 
 describe("DateOverrideModal — conflict warning", () => {
-  it("shows the amber conflict warning with a templated before→after message when a block trims", async () => {
+  it("shows the amber conflict warning with a block-framed before→after message when a block trims (UNAVAILABLE)", async () => {
     const user = userEvent.setup();
     mockUseOverridePreview.mockReturnValue({
       data: blockingPreview,
@@ -242,17 +242,20 @@ describe("DateOverrideModal — conflict warning", () => {
 
     renderModal();
     const dialog = screen.getByRole("dialog");
+    // Default mode is UNAVAILABLE (Block time off) — no need to toggle.
 
     await user.clear(within(dialog).getByLabelText("From"));
     await user.type(within(dialog).getByLabelText("From"), "09:30");
     await user.selectOptions(within(dialog).getByLabelText("To"), "11:00");
 
-    const warning = await within(dialog).findByText(
-      /This overrides the current hours for Mon 7\/20/,
-    );
+    const warning = await within(dialog).findByText(/This blocks time on Mon 7\/20/);
     expect(warning).toBeInTheDocument();
-    expect(within(dialog).getByText(/it currently has 9:00 AM – 11:00 AM/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/the overlapping part becomes Time off/)).toBeInTheDocument();
+    // Block-framed: names the overlap and what it becomes — never the old "overrides"/"Extra" prose.
+    expect(
+      within(dialog).getByText(/that overlaps your current hours — 9:00 AM – 11:00 AM becomes/),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/becomes Extra/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/This overrides the current hours/)).not.toBeInTheDocument();
     expect(within(dialog).getByText(/Confirm the change\?/)).toBeInTheDocument();
   });
 
@@ -280,7 +283,86 @@ describe("DateOverrideModal — conflict warning", () => {
 
     // Give the preview a beat to render.
     await within(dialog).findByRole("group", { name: "After applying on 2026-07-20" });
-    expect(within(dialog).queryByText(/This overrides the current hours/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
+  });
+
+  it('shows NO conflict warning for "Add extra" (ADDITIONAL) even though the dry-run changes before→after', async () => {
+    const user = userEvent.setup();
+    // Same shape as the "Extra" bar test above: no trims, but resultingWindows differ from before
+    // (a window is added to an otherwise-unchanged day) — ADDITIONAL must never warn on this.
+    const extraPreview: OverridePreviewResponse = {
+      valid: true,
+      message: null,
+      days: [
+        {
+          date: "2026-07-20",
+          resultingWindows: [
+            { startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" },
+            { startAt: "2026-07-20T18:00:00Z", endAt: "2026-07-20T19:00:00Z" },
+          ],
+          trimmed: [],
+        },
+      ],
+    };
+    mockUseOverridePreview.mockReturnValue({
+      data: extraPreview,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    await user.clear(within(dialog).getByLabelText("From"));
+    await user.type(within(dialog).getByLabelText("From"), "13:00");
+    await user.selectOptions(within(dialog).getByLabelText("To"), "14:00");
+
+    // The After bar still shows the added window (Now/After dry-run rendering is unaffected)...
+    const afterBar = await within(dialog).findByRole("group", {
+      name: "After applying on 2026-07-20",
+    });
+    expect(within(afterBar).getByTitle(/Extra · 1:00 PM – 2:00 PM/)).toBeInTheDocument();
+    // ...but no amber warning appears for Add extra — only the persistent info alert
+    // ("single-day override") remains, never the conflict warning's "This blocks time on" text.
+    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
+  });
+
+  it("shows NO conflict warning when before/after are the same instant expressed with different string forms (Z vs .000Z)", async () => {
+    // Guards the instant-based windowsEqual fix: the resolved-availability "before" window ends
+    // with a bare "Z" while the dry-run's "after" resultingWindows ends with ".000Z" — same
+    // instant, different serialization. A raw-string compare would wrongly flag this as a
+    // conflict; the instant-based compare must not.
+    mockUseResolvedAvailability.mockReturnValue({
+      data: resolved([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }]),
+      isLoading: false,
+    });
+    const differentStringFormPreview: OverridePreviewResponse = {
+      valid: true,
+      message: null,
+      days: [
+        {
+          date: "2026-07-20",
+          resultingWindows: [
+            { startAt: "2026-07-20T14:00:00.000Z", endAt: "2026-07-20T16:00:00.000Z" },
+          ],
+          trimmed: [],
+        },
+      ],
+    };
+    mockUseOverridePreview.mockReturnValue({
+      data: differentStringFormPreview,
+      isLoading: false,
+      isFetching: false,
+    });
+
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20" });
+    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
   });
 });

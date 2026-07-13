@@ -43,12 +43,6 @@ const SEGMENT_LABELS: Record<AvailabilityExceptionKind, string> = {
   UNAVAILABLE: "Block time off",
 };
 
-/** How a kind reads in prose / the legend (ADDITIONAL → "Extra", UNAVAILABLE → "Time off"). */
-const KIND_NOUN: Record<AvailabilityExceptionKind, string> = {
-  ADDITIONAL: "Extra",
-  UNAVAILABLE: "Time off",
-};
-
 export interface DateOverrideModalProps {
   open: boolean;
   onClose: () => void;
@@ -123,10 +117,18 @@ function windowEndMin(window: AvailabilityOccurrence, timeZone: string): number 
 }
 
 /** Same start/end instants, in order — presentation comparison of two backend-provided window
- *  lists (before vs after), NOT a recompute of availability. */
+ *  lists (before vs after), NOT a recompute of availability. Compares by INSTANT VALUE
+ *  (`Date#getTime`), not raw string equality: `useResolvedAvailability` (before) and
+ *  `useOverridePreview` (after) are two different endpoints, and a genuinely equal instant can
+ *  serialize differently between them (e.g. `…:00Z` vs `…:00.000Z`) — a raw-string compare would
+ *  misreport a no-op as a conflict. */
 function windowsEqual(a: AvailabilityOccurrence[], b: AvailabilityOccurrence[]): boolean {
   if (a.length !== b.length) return false;
-  return a.every((win, i) => win.startAt === b[i].startAt && win.endAt === b[i].endAt);
+  return a.every(
+    (win, i) =>
+      new Date(win.startAt).getTime() === new Date(b[i].startAt).getTime() &&
+      new Date(win.endAt).getTime() === new Date(b[i].endAt).getTime(),
+  );
 }
 
 function minutesToHHmm(min: number): string {
@@ -220,7 +222,12 @@ function buildDayView(
     .sort((a, b) => a - b)
     .map((m) => ({ min: m, label: formatClockLabel(minutesToHHmm(m)) }));
 
-  const conflict = day.trimmed.length > 0 || !windowsEqual(before, day.resultingWindows);
+  // The amber conflict warning is block-framed prose ("this blocks time that overlaps your
+  // current hours") — it only makes sense for a Block time off (UNAVAILABLE) override that
+  // actually changes the day's hours. Add extra (ADDITIONAL) is additive/non-destructive — the
+  // Now/After bars already show the addition, so it never raises this warning, even when it
+  // changes before→after (e.g. adding to an empty day).
+  const conflict = kind === "UNAVAILABLE" && !windowsEqual(before, day.resultingWindows);
 
   return {
     date: day.date,
@@ -235,14 +242,10 @@ function buildDayView(
 }
 
 /** Compose the amber conflict-warning body from the dry-run — pure PRESENTATION of Core's
- *  before/after, never a recompute. Names what each affected date currently has and what it
- *  becomes after applying. */
-function conflictSentences(
-  conflictDays: DayView[],
-  kind: AvailabilityExceptionKind,
-  timeZone: string,
-): string[] {
-  const noun = KIND_NOUN[kind];
+ *  before/after, never a recompute. Only ever called for Block time off (UNAVAILABLE) days whose
+ *  override changes the day's current hours (see `conflict` in `buildDayView`), so the message is
+ *  block-framed: it names the current windows and what they become once the block is applied. */
+function conflictSentences(conflictDays: DayView[], timeZone: string): string[] {
   return conflictDays.map((view) => {
     const currently =
       view.before.length > 0
@@ -253,7 +256,7 @@ function conflictSentences(
       .map((segment) => segment.label);
     const after = availableLabels.length > 0 ? availableLabels.join(", ") : "no hours";
     const day = formatWeekdayMonthDay(view.date);
-    return `This overrides the current hours for ${day}: it currently has ${currently}. After applying, the overlapping part becomes ${noun} and the rest stays as-is (becomes ${after}).`;
+    return `This blocks time on ${day} that overlaps your current hours — ${currently} becomes ${after}.`;
   });
 }
 
@@ -318,7 +321,7 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
 
   const conflictDays = dayViews.filter((view) => view.conflict);
   const conflictMessages =
-    conflictDays.length > 0 ? conflictSentences(conflictDays, mode, settingsTimezone) : [];
+    conflictDays.length > 0 ? conflictSentences(conflictDays, settingsTimezone) : [];
 
   const previewLoading = previewQuery.isLoading || previewQuery.isFetching;
 
