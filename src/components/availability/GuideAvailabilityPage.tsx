@@ -50,6 +50,18 @@ export function GuideAvailabilityPage() {
   const isError =
     rulesQuery.isError || exceptionsQuery.isError || settingsQuery.isError || resolvedQuery.isError;
 
+  // Readiness notice (CTL-55 B1) — pure presentation of the two backend-derived readiness signals
+  // on the resolved-availability read (`bookable`, `hasWeeklyHours`); the FE never recomputes
+  // availability, so this only chooses copy based on the flags, never derives them.
+  const bookable = resolvedQuery.data?.bookable;
+  const hasWeeklyHours = resolvedQuery.data?.hasWeeklyHours;
+  const readinessMessage =
+    bookable === false
+      ? hasWeeklyHours
+        ? "Your weekly hours have no upcoming openings — check your date overrides or blocks so participants can book you."
+        : "You haven't set any availability yet, so participants can't book you. Add weekly hours to start taking bookings."
+      : null;
+
   const openOverride = (date: string) => {
     setOverrideDate(date);
     setOverrideOpen(true);
@@ -72,6 +84,12 @@ export function GuideAvailabilityPage() {
       {isLoading ? <InlineLoading label="Loading availability…" /> : null}
 
       {isError ? <Alert variant="error">Failed to load your availability.</Alert> : null}
+
+      {!isLoading && !isError && readinessMessage ? (
+        <Alert variant="warning" role="status">
+          {readinessMessage}
+        </Alert>
+      ) : null}
 
       {!isLoading && !isError ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">

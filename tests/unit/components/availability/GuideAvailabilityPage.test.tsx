@@ -270,6 +270,38 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
   });
 });
 
+describe("GuideAvailabilityPage — readiness notice (B1, two-signal)", () => {
+  it("shows no readiness notice when bookable is true", () => {
+    setHooks({ resolved: { data: { ...resolved, bookable: true, hasWeeklyHours: true } } });
+    render(<GuideAvailabilityPage />);
+
+    expect(screen.queryByText(/can't book you/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no upcoming openings/i)).not.toBeInTheDocument();
+  });
+
+  it("nudges to add weekly hours when not bookable and no weekly hours are set", () => {
+    setHooks({ resolved: { data: { ...resolved, bookable: false, hasWeeklyHours: false } } });
+    render(<GuideAvailabilityPage />);
+
+    expect(
+      screen.getByText(
+        /you haven't set any availability yet, so participants can't book you\. add weekly hours to start taking bookings\./i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("points to overrides/blocks when weekly hours exist but there are no upcoming openings", () => {
+    setHooks({ resolved: { data: { ...resolved, bookable: false, hasWeeklyHours: true } } });
+    render(<GuideAvailabilityPage />);
+
+    expect(
+      screen.getByText(
+        /your weekly hours have no upcoming openings — check your date overrides or blocks so participants can book you\./i,
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
 describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notification", () => {
   it("a replace-overrides 422 from the override modal's Confirm keeps it open and shows the backend message", async () => {
     const user = setupUser();
