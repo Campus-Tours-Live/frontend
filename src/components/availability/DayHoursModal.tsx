@@ -176,6 +176,9 @@ function DayHoursModalContent({
       onClose={onClose}
       labelledBy="day-hours-modal-title"
       className="max-w-lg overflow-hidden"
+      // Tighter cap than the 85vh default: the range list can grow long, so hold the
+      // panel to 600px (still ≤85vh on short viewports) and scroll the list inside.
+      maxHeightClassName="max-h-[min(600px,85vh)]"
       header={
         <>
           <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">

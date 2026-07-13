@@ -32,6 +32,9 @@ export interface ModalProps {
   header?: ReactNode;
   /** Fixed bottom region (e.g. Cancel/Save actions). See `header`. */
   footer?: ReactNode;
+  /** Structured-mode max-height cap (Tailwind class). Defaults to `max-h-[85vh]`; pass a
+   *  tighter cap (e.g. `max-h-[min(600px,85vh)]`) for modals whose body can grow long. */
+  maxHeightClassName?: string;
 }
 
 export function Modal({
@@ -43,6 +46,7 @@ export function Modal({
   dismissOnBackdrop = true,
   header,
   footer,
+  maxHeightClassName = "max-h-[85vh]",
 }: ModalProps) {
   useScrollLock(open);
   useDismiss({ enabled: open, onDismiss: onClose });
@@ -70,7 +74,8 @@ export function Modal({
       <div
         className={cn(
           "relative z-[61] w-full rounded-panel bg-card shadow-card",
-          structured && "flex max-h-[85vh] min-h-[min(22rem,80vh)] flex-col overflow-hidden",
+          structured && "flex min-h-[min(22rem,80vh)] flex-col overflow-hidden",
+          structured && maxHeightClassName,
           className,
         )}
       >

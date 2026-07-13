@@ -144,6 +144,25 @@ describe("Modal", () => {
       expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument();
     });
 
+    it("uses a custom max-height cap when `maxHeightClassName` is provided", () => {
+      render(
+        <Modal
+          open
+          onClose={jest.fn()}
+          header={<h2>Capped</h2>}
+          footer={<button type="button">Done</button>}
+          maxHeightClassName="max-h-[min(600px,85vh)]"
+        >
+          body content
+        </Modal>,
+      );
+
+      const panel = screen.getByText("Capped").closest(".rounded-panel") as HTMLElement;
+      // The custom cap wins; the 85vh default is not applied.
+      expect(panel).toHaveClass("max-h-[min(600px,85vh)]");
+      expect(panel).not.toHaveClass("max-h-[85vh]");
+    });
+
     it("renders in structured mode when only `header` is provided (no footer)", () => {
       render(
         <Modal open onClose={jest.fn()} header={<h2>Header only</h2>}>
