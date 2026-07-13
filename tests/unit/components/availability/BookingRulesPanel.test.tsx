@@ -101,5 +101,27 @@ describe("BookingRulesPanel", () => {
       // The mobile summary/toggle wrapper is hidden once expanded.
       expect(screen.getByTestId("booking-rules-summary")).toHaveClass("hidden");
     });
+
+    it("collapses back to the summary when 'Show less' is clicked", async () => {
+      const user = userEvent.setup();
+      render(<BookingRulesPanel settings={settings} />);
+
+      await user.click(screen.getByRole("button", { name: /view all rules/i }));
+      const showLess = screen.getByRole("button", { name: /show less/i });
+      // Visible once expanded (mobile-only collapse control), hidden from `lg` up.
+      expect(showLess).toHaveClass("block", "lg:hidden");
+
+      await user.click(showLess);
+
+      // Back to the collapsed state: summary visible, full policy hidden on mobile again,
+      // and the "Show less" control is CSS-hidden.
+      expect(screen.getByTestId("booking-rules-summary")).toHaveClass("block");
+      expect(screen.getByTestId("booking-rules-full")).toHaveClass("hidden");
+      expect(screen.getByRole("button", { name: /view all rules/i })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      expect(screen.getByRole("button", { name: /show less/i })).toHaveClass("hidden");
+    });
   });
 });

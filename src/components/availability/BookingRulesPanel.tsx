@@ -90,6 +90,18 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
         <RuleRow label="Buffer after tour" value={formatMinutesLabel(settings.bufferAfterMin)} />
         <RuleRow label="Tour lengths offered" value={durationsLabel} />
       </dl>
+
+      {/* Mobile-only collapse control; shown only while expanded, hidden from `lg` up. */}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded(false)}
+        className={`mt-4 text-[13px] font-semibold text-primary hover:underline ${
+          expanded ? "block lg:hidden" : "hidden"
+        }`}
+      >
+        Show less
+      </button>
     </Card>
   );
 }
