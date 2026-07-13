@@ -160,7 +160,7 @@ describe("DateOverrideModal — kind default + loading existing overrides", () =
     renderModal();
     const dialog = screen.getByRole("dialog");
     const group = within(dialog).getByRole("group", { name: "Override type" });
-    expect(within(group).getByRole("button", { name: "Add extra" })).toHaveAttribute(
+    expect(within(group).getByRole("button", { name: "Add extra time" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -191,7 +191,7 @@ describe("DateOverrideModal — kind default + loading existing overrides", () =
     expect(within(slot).getByRole("textbox", { name: "Time slot 1 from hour" })).toHaveValue("1");
 
     // Switch to Add extra → the 3 PM ADDITIONAL slot loads.
-    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add extra time" }));
     slot = within(dialog).getByRole("group", { name: "Time slot 1" });
     expect(within(slot).getByRole("textbox", { name: "Time slot 1 from hour" })).toHaveValue("3");
     expect(within(slot).getByRole("textbox", { name: "Time slot 1 from AM/PM" })).toHaveValue("PM");
@@ -416,7 +416,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
     });
     renderModal();
     const dialog = screen.getByRole("dialog");
-    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add extra time" }));
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
 
     await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
@@ -468,7 +468,7 @@ describe("DateOverrideModal — Confirm reconciles (delete existing [kind] + cre
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add extra time" }));
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 

@@ -43,7 +43,7 @@ const PREVIEW_DEBOUNCE_MS = 400;
 
 /** Two-segment control labels. `kind` = ADDITIONAL/UNAVAILABLE drives the whole modal. */
 const SEGMENT_LABELS: Record<AvailabilityExceptionKind, string> = {
-  ADDITIONAL: "Add extra",
+  ADDITIONAL: "Add extra time",
   UNAVAILABLE: "Block time off",
 };
 
@@ -686,18 +686,17 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
               <TimeAxisLegend />
             </>
           )}
+          {conflictMessages.length > 0 ? (
+            <Alert variant="warning" role="status" className="mt-3">
+              <ul className="space-y-1">
+                {conflictMessages.map((message, index) => (
+                  <li key={index}>{message}</li>
+                ))}
+              </ul>
+              <p className="mt-1 font-medium">Confirm the change?</p>
+            </Alert>
+          ) : null}
         </div>
-
-        {conflictMessages.length > 0 ? (
-          <Alert variant="warning" role="status">
-            <ul className="space-y-1">
-              {conflictMessages.map((message, index) => (
-                <li key={index}>{message}</li>
-              ))}
-            </ul>
-            <p className="mt-1 font-medium">Confirm the change?</p>
-          </Alert>
-        ) : null}
       </div>
     </Modal>
   );
