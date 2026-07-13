@@ -7,10 +7,12 @@ import {
   useAvailabilityRules,
   useAvailabilitySettings,
   useUpdateAvailabilityRule,
+  type AffectedBooking,
   type AvailabilityRule,
 } from "@/lib/data-access";
 import { formatFromTo } from "@/lib/availability/fromTo";
 import { DAY_LABELS } from "./availabilityHelpers";
+import { AffectedBookingsNotice } from "./AffectedBookingsNotice";
 import { DayHoursModal } from "./DayHoursModal";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
@@ -28,6 +30,20 @@ function groupRulesByDay(rules: AvailabilityRule[]): Map<number, AvailabilityRul
     list.sort((a, b) => a.startLocal.localeCompare(b.startLocal));
   }
   return grouped;
+}
+
+/** Dedupe affected bookings by id — deactivating a multi-rule day fires one write per rule, and a
+ *  booking that spans two of the day's ranges would otherwise be listed once per rule. */
+function dedupeBookings(bookings: AffectedBooking[]): AffectedBooking[] {
+  const seen = new Set<string>();
+  const out: AffectedBooking[] = [];
+  for (const booking of bookings) {
+    if (!seen.has(booking.bookingId)) {
+      seen.add(booking.bookingId);
+      out.push(booking);
+    }
+  }
+  return out;
 }
 
 function toggleErrorMessage(err: unknown): string {
@@ -58,6 +74,12 @@ export function WeeklyHoursPanel() {
   const [modalDay, setModalDay] = useState<number | null>(null);
   const [togglingDay, setTogglingDay] = useState<number | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
+  // Bookings the last toggle overlapped, bound to the day it happened on (allow+notify). Shown
+  // under that day's row until the next toggle. Deactivating a whole weekday is the highest-impact
+  // availability write (it can strand several existing bookings at once), so it must notify too.
+  const [affected, setAffected] = useState<{ day: number; bookings: AffectedBooking[] } | null>(
+    null,
+  );
 
   const rules = rulesQuery.data ?? [];
   const settingsTimezone = settingsQuery.data?.timezone ?? FALLBACK_TIMEZONE;
@@ -65,6 +87,7 @@ export function WeeklyHoursPanel() {
 
   const handleToggle = async (dayOfWeek: number, nextAvailable: boolean) => {
     setToggleError(null);
+    setAffected(null);
     const dayRules = rulesByDay.get(dayOfWeek) ?? [];
 
     if (nextAvailable && dayRules.length === 0) {
@@ -82,11 +105,17 @@ export function WeeklyHoursPanel() {
       // no bulk endpoint); if a multi-rule day partially fails mid-Promise.all, the ones that
       // already resolved stay flipped. The tested/expected scenario (re-activating a single-rule
       // day) can't partially succeed, and any 422 still surfaces here rather than being swallowed.
-      await Promise.all(
+      const envelopes = await Promise.all(
         rulesToFlip.map((rule) =>
           updateRule.mutateAsync({ id: rule.id, body: { active: nextAvailable } }),
         ),
       );
+      // Allow + notify: the flip is saved. If turning this day off overlapped existing bookings,
+      // surface them under the day's row (they are never auto-cancelled) so the guide can follow up.
+      const bookings = dedupeBookings(envelopes.flatMap((envelope) => envelope.affectedBookings));
+      if (bookings.length > 0) {
+        setAffected({ day: dayOfWeek, bookings });
+      }
     } catch (err) {
       // Leave the day Unavailable: the failed mutation never invalidates the rules query, so
       // `rulesQuery.data` (and therefore `isAvailable` below) stays exactly as it was — no silent
@@ -170,6 +199,15 @@ export function WeeklyHoursPanel() {
                   Edit
                 </Button>
               </div>
+
+              {affected?.day === dayIndex ? (
+                <div className="mt-3">
+                  <AffectedBookingsNotice
+                    bookings={affected.bookings}
+                    timeZone={settingsTimezone}
+                  />
+                </div>
+              ) : null}
             </div>
           );
         })}

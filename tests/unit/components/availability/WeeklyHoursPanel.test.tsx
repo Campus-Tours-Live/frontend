@@ -100,7 +100,10 @@ beforeEach(() => {
     isLoading: false,
     isError: false,
   });
-  mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
+  mockUseUpdateAvailabilityRule.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue({ data: {}, affectedBookings: [] }),
+    isPending: false,
+  });
   mockUseReplaceRules.mockReturnValue({
     mutateAsync: jest.fn().mockResolvedValue({ data: [], affectedBookings: [] }),
     isPending: false,
@@ -144,7 +147,7 @@ describe("WeeklyHoursPanel — display (from–to, no per-pill edit/delete)", ()
 describe("WeeklyHoursPanel — toggle drives rule `active` (deactivate-preserve)", () => {
   it("toggling an Available day to Unavailable calls update with active:false for every active rule", async () => {
     const user = userEvent.setup();
-    const updateMutate = jest.fn().mockResolvedValue(undefined);
+    const updateMutate = jest.fn().mockResolvedValue({ data: {}, affectedBookings: [] });
     mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
     render(<WeeklyHoursPanel />);
 
@@ -155,9 +158,36 @@ describe("WeeklyHoursPanel — toggle drives rule `active` (deactivate-preserve)
     expect(updateMutate).toHaveBeenCalledWith({ id: "rule-mon-2", body: { active: false } });
   });
 
+  it("surfaces affected bookings under the day's row when turning a day off overlaps a booking", async () => {
+    const user = userEvent.setup();
+    // Monday has two active rules → two flips; both resolve the SAME booking, so the notice must
+    // dedupe it to one line (dedupeBookings).
+    const updateMutate = jest.fn().mockResolvedValue({
+      data: {},
+      affectedBookings: [
+        {
+          bookingId: "bk1",
+          bookingNumber: "BK-99",
+          status: "CONFIRMED",
+          scheduledStartAt: "2026-07-20T15:00:00Z",
+          scheduledEndAt: "2026-07-20T16:00:00Z",
+        },
+      ],
+    });
+    mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(mondayRow()).getByRole("switch", { name: /monday availability/i }));
+
+    // Notice is bound to the Monday row (not Tuesday), and the doubly-returned booking appears once.
+    await within(mondayRow()).findByText(/existing booking/i);
+    expect(within(mondayRow()).getByText("BK-99")).toBeInTheDocument(); // getByText throws if deduped wrongly
+    expect(within(tuesdayRow()).queryByText("BK-99")).not.toBeInTheDocument();
+  });
+
   it("toggling an Unavailable day (with existing inactive rules) to Available re-activates them", async () => {
     const user = userEvent.setup();
-    const updateMutate = jest.fn().mockResolvedValue(undefined);
+    const updateMutate = jest.fn().mockResolvedValue({ data: {}, affectedBookings: [] });
     mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
     render(<WeeklyHoursPanel />);
 
