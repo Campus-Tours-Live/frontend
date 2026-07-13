@@ -29,7 +29,6 @@ export function TourOfferingsPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <SectionHeading
-          eyebrow="Guide"
           title="Tour offerings"
           lead="Manage the public tour products participants can discover and book."
           level={1}
