@@ -184,7 +184,7 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
     render(<GuideAvailabilityPage />);
 
     expect(screen.getByRole("list", { name: /weekly hours by day/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /actual availability/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /availability calendar/i })).toBeInTheDocument();
   });
 
   it("renders BookingRulesPanel from useAvailabilitySettings", () => {
@@ -197,7 +197,7 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
     render(<GuideAvailabilityPage />);
 
     expect(screen.getByText(/set your weekly hours/i)).toBeInTheDocument();
-    expect(screen.getByText(/review your bookable calendar/i)).toBeInTheDocument();
+    expect(screen.getByText(/review your availability calendar/i)).toBeInTheDocument();
     expect(screen.getByText(/booking policy/i)).toBeInTheDocument();
   });
 

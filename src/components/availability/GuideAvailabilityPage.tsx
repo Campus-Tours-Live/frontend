@@ -63,7 +63,7 @@ export function GuideAvailabilityPage() {
     <div className="mx-auto max-w-[960px] space-y-8">
       <SectionHeading
         eyebrow="Guide"
-        title="Schedules"
+        title="Availability"
         lead="Manage when participants can book you — weekly hours, date overrides, and booking limits."
         level={1}
       />
@@ -95,7 +95,7 @@ export function GuideAvailabilityPage() {
 
           <div className="space-y-2 lg:col-start-2 lg:row-start-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-              Step 2 · Review your bookable calendar
+              Step 2 · Review your availability calendar
             </p>
             <MonthAvailabilityView onOpenOverride={openOverride} />
           </div>

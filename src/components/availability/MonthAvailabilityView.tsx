@@ -119,7 +119,7 @@ function dateToCursor(date: Date): MonthCursor {
 }
 
 /**
- * Calendar-centric "actual availability" month view (CTL-55 v2). Built on the generic
+ * Calendar-centric "Availability calendar" month view (CTL-55 v2). Built on the generic
  * `Calendar` + `Popover` UI primitives. Everything shown is derived from the
  * backend-resolved read (`occurrences`) and the exceptions list — the FE only buckets
  * occurrences by settings-tz date, maps window times to pixel/percentage positions, and
@@ -218,13 +218,13 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
   return (
     <Card
       role="region"
-      aria-label="Actual availability"
+      aria-label="Availability calendar"
       padded={false}
       className="overflow-visible"
     >
       <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h2 className="font-display text-[20px] font-bold text-ink">Actual availability</h2>
+          <h2 className="font-display text-[20px] font-bold text-ink">Availability calendar</h2>
           <p className="text-[13px] text-ink-soft">
             What participants can actually book, shown by day. Hover a day for details, click a day
             to add a one-off override.
