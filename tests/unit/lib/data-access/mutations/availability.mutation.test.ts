@@ -1,6 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
 import {
-  updateAvailabilityExceptionMutation,
   updateAvailabilityRuleMutation,
   updateAvailabilitySettingsMutation,
 } from "@/lib/data-access/mutations/availability.mutation";
@@ -50,28 +49,6 @@ describe("updateAvailabilityRuleMutation", () => {
 
     const keys = invalidatedKeys(qc);
     expect(keys).toContainEqual(queryKeys.availabilityRules());
-    expect(keys).toContainEqual(queryKeys.availabilityResolved());
-  });
-});
-
-describe("updateAvailabilityExceptionMutation", () => {
-  it("mutationFn PATCHes /v1/availability/exceptions/:id with the body", async () => {
-    const qc = makeQc();
-    const { mutationFn } = updateAvailabilityExceptionMutation(qc);
-
-    await mutationFn({ id: "e1", body: { reason: "Holiday" } });
-
-    expect(mockedPatchJsonRaw).toHaveBeenCalledWith("/v1/availability/exceptions/e1", {
-      reason: "Holiday",
-    });
-  });
-
-  it("onSuccess invalidates availability-exceptions and availability-resolved", () => {
-    const qc = makeQc();
-    updateAvailabilityExceptionMutation(qc).onSuccess();
-
-    const keys = invalidatedKeys(qc);
-    expect(keys).toContainEqual(queryKeys.availabilityExceptions());
     expect(keys).toContainEqual(queryKeys.availabilityResolved());
   });
 });

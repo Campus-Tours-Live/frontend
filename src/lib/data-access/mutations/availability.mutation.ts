@@ -8,7 +8,6 @@ import type {
   AvailabilityWriteEnvelope,
   OverrideReplaceInput,
   RulesReplaceInput,
-  UpdateAvailabilityExceptionInput,
   UpdateAvailabilityRuleInput,
   UpdateAvailabilitySettingsInput,
 } from "../types";
@@ -23,11 +22,6 @@ import type {
 
 function invalidateRules(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.availabilityRules() });
-  qc.invalidateQueries({ queryKey: queryKeys.availabilityResolved() });
-}
-
-function invalidateExceptions(qc: QueryClient) {
-  qc.invalidateQueries({ queryKey: queryKeys.availabilityExceptions() });
   qc.invalidateQueries({ queryKey: queryKeys.availabilityResolved() });
 }
 
@@ -52,15 +46,6 @@ export const updateAvailabilityRuleMutation = (qc: QueryClient) => ({
   mutationFn: ({ id, body }: { id: string; body: UpdateAvailabilityRuleInput }) =>
     patchJsonRaw<AvailabilityWriteEnvelope<AvailabilityRule>>(`/v1/availability/rules/${id}`, body),
   onSuccess: () => invalidateRules(qc),
-});
-
-export const updateAvailabilityExceptionMutation = (qc: QueryClient) => ({
-  mutationFn: ({ id, body }: { id: string; body: UpdateAvailabilityExceptionInput }) =>
-    patchJsonRaw<AvailabilityWriteEnvelope<AvailabilityException>>(
-      `/v1/availability/exceptions/${id}`,
-      body,
-    ),
-  onSuccess: () => invalidateExceptions(qc),
 });
 
 /**

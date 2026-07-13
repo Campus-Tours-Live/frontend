@@ -9,7 +9,6 @@ import {
   useReplaceOverrides,
   useReplaceRules,
   useResolvedAvailability,
-  useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
   useUpdateAvailabilitySettings,
 } from "@/lib/data-access/hooks/use-guide-availability";
@@ -172,30 +171,6 @@ describe("useUpdateAvailabilityRule", () => {
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ windowMin: 120 }),
-      }),
-    );
-  });
-});
-
-describe("useUpdateAvailabilityException", () => {
-  it("PATCHes /v1/availability/exceptions/:id with the body", async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse(200, { data: { id: "e1", reason: "Holiday" }, affectedBookings: [] }),
-    );
-
-    const { result } = renderHook(() => useUpdateAvailabilityException(), {
-      wrapper: wrapperFor(makeClient()),
-    });
-
-    result.current.mutate({ id: "e1", body: { reason: "Holiday" } });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/availability/exceptions/e1",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ reason: "Holiday" }),
       }),
     );
   });

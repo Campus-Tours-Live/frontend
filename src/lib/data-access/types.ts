@@ -254,8 +254,6 @@ export interface CreateAvailabilityExceptionInput {
   dateTo?: string;
 }
 
-export type UpdateAvailabilityExceptionInput = Partial<CreateAvailabilityExceptionInput>;
-
 /** One affected date's dry-run result from `GET /v1/availability/preview` (CTL-55 v2.1). */
 export interface OverridePreviewDay {
   date: string;

@@ -27,7 +27,6 @@ export {
   useReplaceOverrides,
   useReplaceRules,
   useResolvedAvailability,
-  useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
   useUpdateAvailabilitySettings,
 } from "./hooks/use-guide-availability";
@@ -60,7 +59,6 @@ export type {
   CreateAvailabilityRuleInput,
   UpdateAvailabilityRuleInput,
   CreateAvailabilityExceptionInput,
-  UpdateAvailabilityExceptionInput,
   UpdateAvailabilitySettingsInput,
   OfferingSlot,
   OverridePreviewDay,

@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   replaceOverridesMutation,
   replaceRulesMutation,
-  updateAvailabilityExceptionMutation,
   updateAvailabilityRuleMutation,
   updateAvailabilitySettingsMutation,
 } from "../mutations/availability.mutation";
@@ -29,11 +28,6 @@ export function useUpdateAvailabilityRule() {
 /** List one-off exceptions (UNAVAILABLE / ADDITIONAL) to the weekly rules. */
 export function useAvailabilityExceptions() {
   return useQuery(availabilityExceptionsOptions());
-}
-
-export function useUpdateAvailabilityException() {
-  const qc = useQueryClient();
-  return useMutation(updateAvailabilityExceptionMutation(qc));
 }
 
 /**
@@ -69,8 +63,9 @@ export function useUpdateAvailabilitySettings() {
 }
 
 /**
- * The backend-resolved (coalesced) availability: `{ rules, occurrences, dstGapDays }`. Read-only —
- * used for the "actual availability" preview and the DST notice; never re-coalesced on the client.
+ * The backend-resolved (coalesced) availability: `{ rules, occurrences, dstGapDays, bookable,
+ * hasWeeklyHours }`. Read-only — used for the "actual availability" preview and the DST notice;
+ * never re-coalesced on the client.
  */
 export function useResolvedAvailability() {
   return useQuery(resolvedAvailabilityOptions());
