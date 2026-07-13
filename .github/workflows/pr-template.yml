@@ -2,7 +2,8 @@ name: PR template
 
 on:
   pull_request:
-    branches: [main]
+    # No `branches:` filter: run on PRs targeting ANY base branch so the gate can't be
+    # skipped by branch naming.
     types: [opened, edited, reopened, synchronize]
 
 permissions:
