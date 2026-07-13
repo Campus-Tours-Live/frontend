@@ -61,8 +61,10 @@ export function GuideAvailabilityPage() {
 
   return (
     <div className="mx-auto max-w-[960px] space-y-8">
+      {/* No "Guide" eyebrow here: the left nav already scopes this to the guide area, and the
+          page's own Step 1 / Step 2 section eyebrows below would make a top eyebrow read as noise.
+          "Availability" stays the page's real <h1> (title position), not demoted to an eyebrow. */}
       <SectionHeading
-        eyebrow="Guide"
         title="Availability"
         lead="Manage when participants can book you — weekly hours, date overrides, and booking limits."
         level={1}
