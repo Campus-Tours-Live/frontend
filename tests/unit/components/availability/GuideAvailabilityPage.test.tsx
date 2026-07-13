@@ -9,6 +9,7 @@ import {
   useCreateAvailabilityException,
   useCreateAvailabilityRule,
   useDeleteAvailabilityRule,
+  useOverrideMultiPreview,
   useOverridePreview,
   useResolvedAvailability,
   useUpdateAvailabilityRule,
@@ -33,6 +34,7 @@ jest.mock("@/lib/data-access", () => ({
   useCreateAvailabilityRule: jest.fn(),
   useDeleteAvailabilityRule: jest.fn(),
   useOverridePreview: jest.fn(),
+  useOverrideMultiPreview: jest.fn(),
   useCreateAvailabilityException: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
@@ -52,6 +54,7 @@ const mockUseUpdateAvailabilityRule = useUpdateAvailabilityRule as jest.Mock;
 const mockUseCreateAvailabilityRule = useCreateAvailabilityRule as jest.Mock;
 const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
 const mockUseOverridePreview = useOverridePreview as jest.Mock;
+const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
 const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
 
 const mondayRule: AvailabilityRule = {
@@ -136,6 +139,11 @@ beforeEach(() => {
   mockUseCreateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   mockUseDeleteAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   mockUseOverridePreview.mockReturnValue({ data: undefined, isLoading: false, isFetching: false });
+  mockUseOverrideMultiPreview.mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isFetching: false,
+  });
   mockUseCreateAvailabilityException.mockReturnValue({
     mutateAsync: jest.fn().mockResolvedValue(undefined),
     isPending: false,

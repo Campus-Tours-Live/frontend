@@ -14,9 +14,10 @@ import { availabilityExceptionsOptions } from "../queries/availability-exception
 import { availabilityRulesOptions } from "../queries/availability-rules.query";
 import { availabilitySettingsOptions } from "../queries/availability-settings.query";
 import { offeringSlotsOptions } from "../queries/offering-slots.query";
+import { overrideMultiPreviewOptions } from "../queries/override-multi-preview.query";
 import { overridePreviewOptions } from "../queries/override-preview.query";
 import { resolvedAvailabilityOptions } from "../queries/resolved-availability.query";
-import type { OverridePreviewParams } from "../types";
+import type { OverrideMultiPreviewParams, OverridePreviewParams } from "../types";
 
 /** List the guide's recurring start+duration availability rules. */
 export function useAvailabilityRules() {
@@ -91,4 +92,15 @@ export function useOfferingSlots(offeringId: string, options?: { enabled?: boole
  */
 export function useOverridePreview(params: OverridePreviewParams | null) {
   return useQuery(overridePreviewOptions(params));
+}
+
+/**
+ * Multi-slot date-specific override dry-run — `POST /v1/availability/preview`. Given N proposed
+ * `windows`, returns the NET result of all of them applied together (one combined
+ * {@link OverridePreviewResponse}). Disabled (no fetch) when `params` is null or has no windows,
+ * e.g. the override modal has no structurally-valid slot yet. Read-only: the FE renders the
+ * returned before/after windows + trimmed entries, never recomputing or merging them.
+ */
+export function useOverrideMultiPreview(params: OverrideMultiPreviewParams | null) {
+  return useQuery(overrideMultiPreviewOptions(params));
 }

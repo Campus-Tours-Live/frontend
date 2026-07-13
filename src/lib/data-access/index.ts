@@ -27,6 +27,7 @@ export {
   useDeleteAvailabilityException,
   useDeleteAvailabilityRule,
   useOfferingSlots,
+  useOverrideMultiPreview,
   useOverridePreview,
   useResolvedAvailability,
   useUpdateAvailabilityException,
@@ -68,4 +69,6 @@ export type {
   OverridePreviewDay,
   OverridePreviewParams,
   OverridePreviewResponse,
+  OverrideWindow,
+  OverrideMultiPreviewParams,
 } from "./types";

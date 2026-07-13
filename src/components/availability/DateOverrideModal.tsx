@@ -1,20 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Alert, Button, Modal, SelectField, TextField } from "@/components/ui";
+import { Plus, Trash2 } from "lucide-react";
+import { Alert, Button, Modal, TextField, TimePicker } from "@/components/ui";
 import {
   ApiError,
   useAvailabilitySettings,
   useCreateAvailabilityException,
-  useOverridePreview,
+  useOverrideMultiPreview,
   useResolvedAvailability,
   type AvailabilityExceptionKind,
   type AvailabilityOccurrence,
+  type OverrideMultiPreviewParams,
   type OverridePreviewDay,
-  type OverridePreviewParams,
+  type OverrideWindow,
 } from "@/lib/data-access";
 import {
-  buildToOptions,
   formatClockLabel,
   formatFromTo,
   minutesFromHHmm,
@@ -51,6 +52,22 @@ export interface DateOverrideModalProps {
   initialDate?: string | null;
 }
 
+/** One from–to time slot being edited. Mirrors `DayHoursModal`'s per-range draft so a
+ *  date-specific override supports multiple slots on the same date the way weekly hours do.
+ *  `key` is a stable React key; there is no `ruleId` because each slot is created fresh
+ *  (a date override is a create, not a reconcile of existing rows). */
+interface SlotDraft {
+  key: string;
+  from: string;
+  to: string;
+}
+
+let draftSeq = 0;
+function nextSlotKey(): string {
+  draftSeq += 1;
+  return `slot-${draftSeq}`;
+}
+
 function pad2(value: number): string {
   return String(value).padStart(2, "0");
 }
@@ -61,6 +78,12 @@ function safeWindowMin(from: string, to: string): number | null {
   } catch {
     return null;
   }
+}
+
+/** STRUCTURAL-only per-slot check (start before end / same-day) via `toWindowMin` — never
+ *  overlap/trim, which stays backend-owned. Mirrors `DayHoursModal.structuralRangeError`. */
+export function slotStructuralError(from: string, to: string): string | null {
+  return safeWindowMin(from, to) === null ? "Start time must be before the end time." : null;
 }
 
 function formatClockTime(iso: string, timeZone: string): string {
@@ -118,10 +141,10 @@ function windowEndMin(window: AvailabilityOccurrence, timeZone: string): number 
 
 /** Same start/end instants, in order — presentation comparison of two backend-provided window
  *  lists (before vs after), NOT a recompute of availability. Compares by INSTANT VALUE
- *  (`Date#getTime`), not raw string equality: `useResolvedAvailability` (before) and
- *  `useOverridePreview` (after) are two different endpoints, and a genuinely equal instant can
- *  serialize differently between them (e.g. `…:00Z` vs `…:00.000Z`) — a raw-string compare would
- *  misreport a no-op as a conflict. */
+ *  (`Date#getTime`), not raw string equality: `useResolvedAvailability` (before) and the dry-run
+ *  (after) are two different endpoints, and a genuinely equal instant can serialize differently
+ *  between them (e.g. `…:00Z` vs `…:00.000Z`) — a raw-string compare would misreport a no-op as a
+ *  conflict. */
 function windowsEqual(a: AvailabilityOccurrence[], b: AvailabilityOccurrence[]): boolean {
   if (a.length !== b.length) return false;
   return a.every(
@@ -136,30 +159,33 @@ function minutesToHHmm(min: number): string {
   return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`;
 }
 
-/** A per-affected-date view model for the dry-run visual. Pure presentation of backend data —
- *  before windows (bucketed resolved occurrences), after windows (`resultingWindows`), the
- *  blocked/extra band (`trimmed` for a block, the proposed override for extra), the shared axis
- *  range/ticks, and whether this date is a conflict. */
+/** A per-affected-date view model for the ONE combined dry-run visual. Pure presentation of
+ *  backend data — before windows (bucketed resolved occurrences), after windows (the net
+ *  `resultingWindows`), the blocked band (`trimmed`) or extra band (the proposed slots), the shared
+ *  auto-ranged axis domain/ticks, and whether this date is a conflict. */
 interface DayView {
   date: string;
   before: AvailabilityOccurrence[];
   nowSegments: TimeAxisSegment[];
   afterSegments: TimeAxisSegment[];
-  rangeStartMin: number;
-  rangeEndMin: number;
+  domainStartMin: number;
+  domainEndMin: number;
   ticks: TimeAxisTick[];
   conflict: boolean;
 }
 
-/** Build the presentation view model for one affected date. All windows/trims come straight
- *  from the backend (resolved occurrences + the dry-run response); the only computation here is
- *  time→x range/tick math and an equality check for the conflict flag (never availability math). */
+/**
+ * Build the presentation view model for ONE affected date from the COMBINED (multi-window) dry-run.
+ * All windows/trims come straight from the backend (resolved occurrences + the dry-run response's
+ * single `resultingWindows`/`trimmed` for this date, net of ALL slots). The only computation here
+ * is time→x domain/tick math and an instant equality check for the conflict flag — never
+ * availability math (FE-never-recomputes).
+ */
 function buildDayView(
   day: OverridePreviewDay,
   before: AvailabilityOccurrence[],
   kind: AvailabilityExceptionKind,
-  from: string,
-  windowMin: number,
+  proposed: OverrideWindow[],
   timeZone: string,
 ): DayView {
   const nowSegments: TimeAxisSegment[] = before.map((win) => ({
@@ -177,7 +203,7 @@ function buildDayView(
   }));
 
   if (kind === "UNAVAILABLE") {
-    // The blocked part = the weekly windows Core says this override trims (accurate to the
+    // The blocked part = the weekly windows Core says these overrides trim (accurate to the
     // dry-run), rendered hatched as "Time off".
     for (const trim of day.trimmed) {
       const startMin = minutesFromHHmm(trim.startLocal);
@@ -189,44 +215,57 @@ function buildDayView(
       });
     }
   } else {
-    // Extra availability: the proposed override window itself, rendered blue as "Extra".
-    const startMin = minutesFromHHmm(from);
-    afterSegments.push({
-      startMin,
-      endMin: startMin + windowMin,
-      kind: "extra",
-      label: formatFromTo(from, windowMin),
-    });
+    // Extra availability: each proposed slot window, rendered blue as "Extra".
+    for (const win of proposed) {
+      const startMin = minutesFromHHmm(win.startLocal);
+      afterSegments.push({
+        startMin,
+        endMin: startMin + win.windowMin,
+        kind: "extra",
+        label: formatFromTo(win.startLocal, win.windowMin),
+      });
+    }
   }
 
-  // Axis range: earliest start → latest end across both bars, padded to whole hours.
-  const allMins = [...nowSegments, ...afterSegments].flatMap((s) => [s.startMin, s.endMin]);
-  let rangeStartMin = 0;
-  let rangeEndMin = 1440;
+  // AUTO-RANGED axis (the reported-bug fix): the domain must cover the FULL extent of everything on
+  // screen — the date's current windows, the net resulting windows, AND every proposed slot window
+  // (a block on empty time leaves no segment yet still needs to be visible, e.g. a slot to 7 PM
+  // must not be cut off by a fixed morning axis). Earliest start → latest end, padded to whole
+  // hours (floor(min)→hour, ceil(max)→hour).
+  const proposedMins = proposed.flatMap((win) => {
+    const startMin = minutesFromHHmm(win.startLocal);
+    return [startMin, startMin + win.windowMin];
+  });
+  const allMins = [...nowSegments, ...afterSegments]
+    .flatMap((segment) => [segment.startMin, segment.endMin])
+    .concat(proposedMins);
+  let domainStartMin = 0;
+  let domainEndMin = 1440;
   if (allMins.length > 0) {
-    rangeStartMin = Math.floor(Math.min(...allMins) / 60) * 60;
-    rangeEndMin = Math.ceil(Math.max(...allMins) / 60) * 60;
-    if (rangeEndMin <= rangeStartMin) rangeEndMin = rangeStartMin + 60;
+    domainStartMin = Math.floor(Math.min(...allMins) / 60) * 60;
+    domainEndMin = Math.ceil(Math.max(...allMins) / 60) * 60;
+    if (domainEndMin <= domainStartMin) domainEndMin = domainStartMin + 60;
   }
 
-  // Ticks: whole-hour marks (coarser over a wide span) plus the proposed override's start/end.
-  const step = rangeEndMin - rangeStartMin > 480 ? 120 : 60;
+  // Ticks: whole-hour marks (coarser over a wide span) plus each proposed slot's start/end.
+  const step = domainEndMin - domainStartMin > 480 ? 120 : 60;
   const tickMins = new Set<number>();
-  for (let m = rangeStartMin; m <= rangeEndMin; m += step) tickMins.add(m);
-  tickMins.add(rangeEndMin);
-  const overrideStart = minutesFromHHmm(from);
-  tickMins.add(overrideStart);
-  tickMins.add(overrideStart + windowMin);
+  for (let m = domainStartMin; m <= domainEndMin; m += step) tickMins.add(m);
+  tickMins.add(domainEndMin);
+  for (const win of proposed) {
+    const startMin = minutesFromHHmm(win.startLocal);
+    tickMins.add(startMin);
+    tickMins.add(startMin + win.windowMin);
+  }
   const ticks: TimeAxisTick[] = Array.from(tickMins)
-    .filter((m) => m >= rangeStartMin && m <= rangeEndMin)
+    .filter((m) => m >= domainStartMin && m <= domainEndMin)
     .sort((a, b) => a - b)
     .map((m) => ({ min: m, label: formatClockLabel(minutesToHHmm(m)) }));
 
-  // The amber conflict warning is block-framed prose ("this blocks time that overlaps your
-  // current hours") — it only makes sense for a Block time off (UNAVAILABLE) override that
-  // actually changes the day's hours. Add extra (ADDITIONAL) is additive/non-destructive — the
-  // Now/After bars already show the addition, so it never raises this warning, even when it
-  // changes before→after (e.g. adding to an empty day).
+  // The amber conflict warning is block-framed prose ("this blocks time that overlaps your current
+  // hours") — it only makes sense for a Block time off (UNAVAILABLE) override that actually changes
+  // the day's hours. Add extra (ADDITIONAL) is additive/non-destructive — the Now/After bars
+  // already show the addition, so it never raises this warning, even when it changes before→after.
   const conflict = kind === "UNAVAILABLE" && !windowsEqual(before, day.resultingWindows);
 
   return {
@@ -234,14 +273,14 @@ function buildDayView(
     before,
     nowSegments,
     afterSegments,
-    rangeStartMin,
-    rangeEndMin,
+    domainStartMin,
+    domainEndMin,
     ticks,
     conflict,
   };
 }
 
-/** Compose the amber conflict-warning body from the dry-run — pure PRESENTATION of Core's
+/** Compose the amber conflict-warning body from the combined dry-run — pure PRESENTATION of Core's
  *  before/after, never a recompute. Only ever called for Block time off (UNAVAILABLE) days whose
  *  override changes the day's current hours (see `conflict` in `buildDayView`), so the message is
  *  block-framed: it names the current windows and what they become once the block is applied. */
@@ -280,44 +319,66 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
   const [mode, setMode] = useState<AvailabilityExceptionKind>("UNAVAILABLE");
   const [dateFrom, setDateFrom] = useState(initialDate ?? todayIsoDate());
   const [dateTo, setDateTo] = useState(initialDate ?? todayIsoDate());
-  const [from, setFrom] = useState("09:00");
-  const [to, setTo] = useState("10:00");
+  const [slots, setSlots] = useState<SlotDraft[]>(() => [
+    { key: nextSlotKey(), from: "09:00", to: "10:00" },
+  ]);
+  // Key of the just-added slot, so its FROM picker mounts open (mirrors DayHoursModal).
+  const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const windowMin = useMemo(() => safeWindowMin(from, to), [from, to]);
+  const updateSlot = (key: string, patch: Partial<SlotDraft>) =>
+    setSlots((prev) => prev.map((slot) => (slot.key === key ? { ...slot, ...patch } : slot)));
+  const addSlot = () => {
+    const key = nextSlotKey();
+    setSlots((prev) => [...prev, { key, from: "09:00", to: "10:00" }]);
+    setAutoOpenKey(key);
+  };
+  const removeSlot = (key: string) => setSlots((prev) => prev.filter((slot) => slot.key !== key));
 
-  // Only a fully-formed, structurally valid form produces preview params — the query stays
-  // disabled (no fetch) until then. Debounced so the guide filling in the form doesn't fire a
-  // preview request per keystroke.
-  const rawPreviewParams: OverridePreviewParams | null = useMemo(() => {
-    if (!dateFrom || !dateTo || windowMin === null) return null;
-    return { dateFrom, dateTo, kind: mode, startLocal: from, windowMin };
-  }, [dateFrom, dateTo, mode, from, windowMin]);
-  const debouncedPreviewParams = useDebounced(rawPreviewParams, PREVIEW_DEBOUNCE_MS);
-  const previewQuery = useOverridePreview(debouncedPreviewParams);
+  // Per-slot STRUCTURAL validity (start < end) — shown inline + blocks Confirm. Overlap/trim is
+  // never pre-checked here (backend-authoritative → surfaced via the 422 alert or the dry-run).
+  const slotErrors = slots.map((slot) => slotStructuralError(slot.from, slot.to));
+  const hasStructuralError = slotErrors.some(Boolean);
+  const canConfirm = slots.length > 0 && !hasStructuralError;
 
   const occurrencesByDate = useMemo(
     () => bucketOccurrencesByDate(resolvedQuery.data?.occurrences ?? [], settingsTimezone),
     [resolvedQuery.data?.occurrences, settingsTimezone],
   );
 
+  // ONE combined dry-run for ALL structurally-valid slots. The query stays disabled (no fetch)
+  // until at least one valid window exists; debounced so filling the form doesn't fire per
+  // keystroke. The backend returns the NET result of every window applied together.
+  const rawMultiParams: OverrideMultiPreviewParams | null = useMemo(() => {
+    if (!dateFrom || !dateTo) return null;
+    const windows: OverrideWindow[] = [];
+    for (const slot of slots) {
+      const win = safeWindowMin(slot.from, slot.to);
+      if (win !== null) windows.push({ startLocal: slot.from, windowMin: win });
+    }
+    if (windows.length === 0) return null;
+    return { dateFrom, dateTo, kind: mode, windows };
+  }, [dateFrom, dateTo, mode, slots]);
+  const debouncedMultiParams = useDebounced(rawMultiParams, PREVIEW_DEBOUNCE_MS);
+  const previewQuery = useOverrideMultiPreview(debouncedMultiParams);
+
   const previewDays = previewQuery.data?.days;
 
-  // Per-affected-date view models (bars + conflict flag). Only built when the window is valid.
+  // Per-affected-date view models — ONE Now/After pair per date (net of all slots), built from the
+  // debounced params so the rendered kind/proposed windows match the response they produced.
   const dayViews = useMemo<DayView[]>(() => {
-    if (windowMin === null) return [];
+    if (debouncedMultiParams === null) return [];
     return (previewDays ?? []).map((day) =>
       buildDayView(
         day,
         occurrencesByDate.get(day.date) ?? [],
-        mode,
-        from,
-        windowMin,
+        debouncedMultiParams.kind,
+        debouncedMultiParams.windows,
         settingsTimezone,
       ),
     );
-  }, [previewDays, occurrencesByDate, mode, from, windowMin, settingsTimezone]);
+  }, [previewDays, occurrencesByDate, debouncedMultiParams, settingsTimezone]);
 
   const conflictDays = dayViews.filter((view) => view.conflict);
   const conflictMessages =
@@ -327,21 +388,36 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
 
   const handleConfirm = async () => {
     setError(null);
-    const win = safeWindowMin(from, to);
-    if (win === null) {
-      setError("Enter a valid from–to range.");
+
+    let windows: OverrideWindow[];
+    try {
+      windows = slots.map((slot) => ({
+        startLocal: slot.from,
+        windowMin: toWindowMin(slot.from, slot.to),
+      }));
+    } catch {
+      setError("Enter a valid from–to range for every slot.");
+      return;
+    }
+    if (windows.length === 0) {
+      setError("Add at least one time slot.");
       return;
     }
 
     setSubmitting(true);
     try {
-      await createException.mutateAsync({
-        dateFrom,
-        dateTo,
-        kind: mode,
-        startLocal: from,
-        windowMin: win,
-      });
+      // One create per slot over the date range — the create endpoint takes a single window, so
+      // multiple slots are multiple creates (mirrors DayHoursModal's per-range loop). Core
+      // validates each; a per-slot 422 stops here and surfaces below (the modal stays open).
+      for (const win of windows) {
+        await createException.mutateAsync({
+          dateFrom,
+          dateTo,
+          kind: mode,
+          startLocal: win.startLocal,
+          windowMin: win.windowMin,
+        });
+      }
       onClose();
     } catch (err) {
       // Keep the modal open (do NOT call onClose) and show the backend message in-modal — Core
@@ -375,7 +451,7 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
         type="button"
         variant="primary"
         onClick={() => void handleConfirm()}
-        disabled={submitting}
+        disabled={submitting || !canConfirm}
       >
         {submitting ? "Saving…" : "Confirm change"}
       </Button>
@@ -454,22 +530,57 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
         </div>
 
         <div className="space-y-2">
-          <p className="text-[13px] font-medium text-ink">Time</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField
-              label="From"
-              type="time"
-              value={from}
-              onChange={(event) => setFrom(event.target.value)}
-            />
-            <SelectField label="To" value={to} onChange={(event) => setTo(event.target.value)}>
-              {buildToOptions(to).map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </SelectField>
-          </div>
+          <p className="text-[13px] font-medium text-ink">Time slots (add as many as you need)</p>
+          {slots.length === 0 ? (
+            <p className="text-[13px] text-ink-soft">No time slots yet — add one below.</p>
+          ) : (
+            slots.map((slot, index) => (
+              <div key={slot.key}>
+                <div
+                  role="group"
+                  aria-label={`Time slot ${index + 1}`}
+                  className="flex items-center gap-2"
+                >
+                  <div className="flex-1">
+                    <TimePicker
+                      aria-label={`Time slot ${index + 1} from`}
+                      value={slot.from}
+                      openOnMount={slot.key === autoOpenKey}
+                      onChange={(next) => updateSlot(slot.key, { from: next })}
+                    />
+                  </div>
+                  <span aria-hidden className="text-ink-soft">
+                    –
+                  </span>
+                  <div className="flex-1">
+                    <TimePicker
+                      midnightIsEndOfDay
+                      aria-label={`Time slot ${index + 1} to`}
+                      value={slot.to}
+                      onChange={(next) => updateSlot(slot.key, { to: next })}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeSlot(slot.key)}
+                    aria-label={`Remove time slot ${index + 1}`}
+                    className="tp-icon-btn"
+                  >
+                    <Trash2 size={16} strokeWidth={1.8} aria-hidden />
+                  </button>
+                </div>
+                {slotErrors[index] ? (
+                  <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
+                    {slotErrors[index]}
+                  </p>
+                ) : null}
+              </div>
+            ))
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={addSlot}>
+            <Plus size={15} strokeWidth={2} aria-hidden />
+            Add time slot
+          </Button>
         </div>
 
         <div
@@ -480,9 +591,9 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
           <p className="text-[13px] font-medium text-ink">
             After applying (backend dry-run preview)
           </p>
-          {debouncedPreviewParams === null ? (
+          {debouncedMultiParams === null ? (
             <p className="mt-2 text-[13px] text-ink-soft">
-              Enter a valid date range and from–to time to see a preview.
+              Add at least one valid from–to time slot to see a preview.
             </p>
           ) : previewLoading ? (
             <p className="mt-2 text-[13px] text-ink-soft">Loading preview…</p>
@@ -501,20 +612,20 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
                         barLabel="Now"
                         ariaLabel={`Current hours on ${view.date}`}
                         segments={view.nowSegments}
-                        rangeStartMin={view.rangeStartMin}
-                        rangeEndMin={view.rangeEndMin}
+                        domainStartMin={view.domainStartMin}
+                        domainEndMin={view.domainEndMin}
                       />
                       <TimeAxisBar
                         barLabel="After"
                         ariaLabel={`After applying on ${view.date}`}
                         segments={view.afterSegments}
-                        rangeStartMin={view.rangeStartMin}
-                        rangeEndMin={view.rangeEndMin}
+                        domainStartMin={view.domainStartMin}
+                        domainEndMin={view.domainEndMin}
                       />
                       <TimeAxis
                         ticks={view.ticks}
-                        rangeStartMin={view.rangeStartMin}
-                        rangeEndMin={view.rangeEndMin}
+                        rangeStartMin={view.domainStartMin}
+                        rangeEndMin={view.domainEndMin}
                       />
                     </div>
                   </li>
@@ -531,14 +642,18 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
 
 /**
  * Shared date-specific override modal (CTL-55) — a two-segment control picks the kind
- * (Add extra = `ADDITIONAL` / Block time off = `UNAVAILABLE`); a multi-day date range and a
- * same-day from–to time drive a debounced backend dry-run (`useOverridePreview`). The preview is
- * rendered as a per-date time-axis Now/After visual (green = Available, hatched = Time off,
- * blue = Extra) plus an amber conflict warning when the override changes existing hours — both
- * are pure presentation of Core's before/after/trimmed (FE-never-recomputes). "Before" windows
- * come from `useResolvedAvailability` bucketed via the shared `bucketOccurrencesByDate`; "after"
- * and "trimmed" come straight from the dry-run. Confirm calls `useCreateAvailabilityException`
- * with the multi-day input; on a backend 422 the modal stays open and shows the backend message.
+ * (Add extra = `ADDITIONAL` / Block time off = `UNAVAILABLE`); a multi-day date range and one or
+ * more same-day from–to time slots (add/remove rows with the shared `TimePicker`, like weekly
+ * hours) drive a debounced COMBINED backend dry-run (`useOverrideMultiPreview`, POST of all
+ * windows). The preview is rendered per affected date as ONE time-axis Now/After pair — the NET of
+ * every slot (green = Available, hatched = Time off, blue = Extra) on an auto-ranged axis that
+ * covers the full extent of the current windows, the resulting windows, and every proposed slot —
+ * plus an amber conflict warning when the block changes existing hours. All are pure presentation
+ * of Core's before/after/trimmed (FE-never-recomputes). "Before" windows come from
+ * `useResolvedAvailability` bucketed via the shared `bucketOccurrencesByDate`; "after"/"trimmed"
+ * come straight from the dry-run. Confirm creates one exception per slot over the date range (the
+ * create endpoint takes a single window, so multiple slots are multiple creates); on a backend 422
+ * the modal stays open and shows the backend message.
  *
  * The `key` remount ties the form's seed to `initialDate`; the whole modal (Modal shell + form
  * state) lives in `DateOverrideModalContent` so the structured header/footer share that state.

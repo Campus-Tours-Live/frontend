@@ -280,6 +280,23 @@ export interface OverridePreviewParams {
   windowMin: number;
 }
 
+/** One proposed time window (start + duration) inside a multi-slot override preview/create. */
+export interface OverrideWindow {
+  startLocal: string;
+  windowMin: number;
+}
+
+/** Body for the multi-window dry-run `POST /v1/availability/preview` (CTL-55 multi-slot). Unlike
+ *  {@link OverridePreviewParams} (a single window on the querystring), this posts N windows and the
+ *  backend returns the NET result of ALL of them applied together — same {@link OverridePreviewResponse}
+ *  shape. The FE renders that net result; it never merges the windows itself. */
+export interface OverrideMultiPreviewParams {
+  dateFrom: string;
+  dateTo: string;
+  kind: AvailabilityExceptionKind;
+  windows: OverrideWindow[];
+}
+
 export interface UpdateAvailabilitySettingsInput {
   acceptanceMode?: "AUTO" | "MANUAL";
   responseDeadlineMin?: number;

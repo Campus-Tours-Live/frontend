@@ -52,14 +52,44 @@ export function minToPercent(min: number, startMin: number, endMin: number): num
   return Math.min(100, Math.max(0, pct));
 }
 
+/**
+ * Resolve the axis domain [start, end] for a bar. An explicit caller-supplied domain
+ * (`domainStartMin`/`domainEndMin`, falling back to the legacy `rangeStartMin`/`rangeEndMin`)
+ * always wins so a Now/After pair can share ONE range that covers every slot; when none is given
+ * the bar self-derives its range from its own segments (padded to whole hours) so it stays usable
+ * standalone (backward-compatible). Pure presentation math — never availability logic.
+ */
+export function resolveAxisDomain(
+  segments: TimeAxisSegment[],
+  domainStartMin: number | undefined,
+  domainEndMin: number | undefined,
+): { startMin: number; endMin: number } {
+  if (domainStartMin !== undefined && domainEndMin !== undefined) {
+    return { startMin: domainStartMin, endMin: domainEndMin };
+  }
+  const mins = segments.flatMap((s) => [s.startMin, s.endMin]);
+  if (mins.length === 0) return { startMin: 0, endMin: 1440 };
+  const startMin = Math.floor(Math.min(...mins) / 60) * 60;
+  let endMin = Math.ceil(Math.max(...mins) / 60) * 60;
+  if (endMin <= startMin) endMin = startMin + 60;
+  return { startMin, endMin };
+}
+
 export interface TimeAxisBarProps {
   /** Left-column label, e.g. "Now" / "After". */
   barLabel: string;
   /** Accessible name for the whole bar (e.g. "Current hours on 2026-07-20"). */
   ariaLabel: string;
   segments: TimeAxisSegment[];
-  rangeStartMin: number;
-  rangeEndMin: number;
+  /** Explicit axis domain (minutes-of-day) — the CALLER's shared range across a Now/After pair.
+   *  Preferred over the legacy `rangeStartMin`/`rangeEndMin`; when both are absent the bar
+   *  self-derives its range from its own segments. */
+  domainStartMin?: number;
+  domainEndMin?: number;
+  /** @deprecated legacy alias for `domainStartMin`/`domainEndMin` — kept so existing callers/tests
+   *  keep working. */
+  rangeStartMin?: number;
+  rangeEndMin?: number;
 }
 
 /** One labelled bar (Now / After) of positioned segments. */
@@ -67,16 +97,23 @@ export function TimeAxisBar({
   barLabel,
   ariaLabel,
   segments,
+  domainStartMin,
+  domainEndMin,
   rangeStartMin,
   rangeEndMin,
 }: TimeAxisBarProps) {
+  const { startMin, endMin } = resolveAxisDomain(
+    segments,
+    domainStartMin ?? rangeStartMin,
+    domainEndMin ?? rangeEndMin,
+  );
   return (
     <div role="group" aria-label={ariaLabel} className="flex items-center gap-2">
       <span className="w-12 shrink-0 text-[11px] font-medium text-ink-soft">{barLabel}</span>
       <div className="relative h-4 flex-1 overflow-hidden rounded bg-border/30">
         {segments.map((segment, index) => {
-          const left = minToPercent(segment.startMin, rangeStartMin, rangeEndMin);
-          const right = minToPercent(segment.endMin, rangeStartMin, rangeEndMin);
+          const left = minToPercent(segment.startMin, startMin, endMin);
+          const right = minToPercent(segment.endMin, startMin, endMin);
           const width = Math.max(1.5, right - left);
           return (
             <span

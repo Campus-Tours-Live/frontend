@@ -1,4 +1,4 @@
-import type { OverridePreviewParams } from "./types";
+import type { OverrideMultiPreviewParams, OverridePreviewParams } from "./types";
 
 /**
  * Central React Query key factory. Every key lives here (no scattered constants),
@@ -22,4 +22,7 @@ export const queryKeys = {
   // Availability v2.1 (CTL-55) — date-specific override dry-run preview.
   availabilityPreview: (params: OverridePreviewParams | null) =>
     ["availability-preview", params] as const,
+  // Multi-slot date-specific override dry-run (POST — net of ALL windows applied together).
+  availabilityPreviewMulti: (params: OverrideMultiPreviewParams | null) =>
+    ["availability-preview-multi", params] as const,
 };
