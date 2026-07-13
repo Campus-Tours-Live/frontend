@@ -46,30 +46,38 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
 
   return (
     <Card>
-      <h3 className="font-display text-[18px] font-bold text-ink">Booking rules</h3>
-      <p className="mt-1 text-[13px] text-ink-soft">
-        These limits apply when participants choose a time from your schedule.
-      </p>
-
-      {/* Mobile-only condensed summary + toggle; hidden once expanded and always from `lg` up. */}
-      <div data-testid="booking-rules-summary" className={expanded ? "hidden" : "block lg:hidden"}>
-        <dl className="mt-4 space-y-3 border-t border-border pt-4 text-[14px]">
-          <RuleRow label="Timezone" value={formatTimezoneLabel(settings.timezone)} />
-          <RuleRow
-            label="Response deadline"
-            value={formatMinutesLabel(settings.responseDeadlineMin)}
-          />
-          <RuleRow label="Minimum notice" value={formatMinutesLabel(settings.minNoticeMin)} />
-        </dl>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="font-display text-[18px] font-bold text-ink">Booking rules</h3>
+          <p className="mt-1 text-[13px] text-ink-soft">
+            These limits apply when participants choose a time from your schedule.
+          </p>
+        </div>
+        {/* Mobile-only disclosure toggle, top-right beside the title; hidden from `lg` up. */}
         <button
           type="button"
           aria-expanded={expanded}
-          onClick={() => setExpanded(true)}
-          className="mt-4 text-[13px] font-semibold text-primary hover:underline"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-primary hover:underline lg:hidden"
         >
-          View all rules
+          {expanded ? "Show less" : "View all rules"}
         </button>
       </div>
+
+      {/* Mobile-only condensed summary; hidden once expanded and always from `lg` up. */}
+      <dl
+        data-testid="booking-rules-summary"
+        className={`mt-4 space-y-3 border-t border-border pt-4 text-[14px] ${
+          expanded ? "hidden" : "block lg:hidden"
+        }`}
+      >
+        <RuleRow label="Timezone" value={formatTimezoneLabel(settings.timezone)} />
+        <RuleRow
+          label="Response deadline"
+          value={formatMinutesLabel(settings.responseDeadlineMin)}
+        />
+        <RuleRow label="Minimum notice" value={formatMinutesLabel(settings.minNoticeMin)} />
+      </dl>
 
       {/* Full policy: shown when expanded (mobile) or always from `lg` up. */}
       <dl
@@ -90,18 +98,6 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
         <RuleRow label="Buffer after tour" value={formatMinutesLabel(settings.bufferAfterMin)} />
         <RuleRow label="Tour lengths offered" value={durationsLabel} />
       </dl>
-
-      {/* Mobile-only collapse control; shown only while expanded, hidden from `lg` up. */}
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded(false)}
-        className={`mt-4 text-[13px] font-semibold text-primary hover:underline ${
-          expanded ? "block lg:hidden" : "hidden"
-        }`}
-      >
-        Show less
-      </button>
     </Card>
   );
 }
