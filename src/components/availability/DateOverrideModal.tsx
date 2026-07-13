@@ -268,7 +268,14 @@ function halfTicks(startMin: number, endMin: number): TimeAxisTick[] {
 }
 
 /** Segments that intersect a given half-day window. `TimeAxisBar`'s clamping draws only the visible
- *  portion, so a segment that straddles noon appears (clipped) in both halves. */
+ *  portion, so a segment that straddles noon appears (clipped) in both halves.
+ *
+ *  Cross-midnight (post-midnight sliver) is intentionally OUT OF SCOPE: the same-day model (option A,
+ *  `toWindowMin` in `lib/availability/fromTo`) caps every window at `startMin + windowMin <= 1440`,
+ *  and backend windows map through `windowEndMin` (≤ 1440, midnight reads as 1440), so no segment
+ *  ever has `endMin > 1440`. A window can therefore never spill past midnight into the next axis day
+ *  — the sliver is unreachable here, not merely clamped. Cross-midnight availability is expressed as
+ *  two adjacent-day overrides instead. See the "same-day model" test in DateOverrideModal.test.tsx. */
 function segmentsInHalf(segments: TimeAxisSegment[], half: DayHalf): TimeAxisSegment[] {
   return segments.filter((s) => s.startMin < half.endMin && s.endMin > half.startMin);
 }

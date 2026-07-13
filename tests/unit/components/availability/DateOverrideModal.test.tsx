@@ -345,6 +345,36 @@ describe("DateOverrideModal — replaceExisting dry-run preview", () => {
     expect(within(dialog).getByText("Extra")).toBeInTheDocument();
   });
 
+  it("renders a midnight-ending window fully in the PM half with no post-midnight sliver (same-day model)", async () => {
+    // The same-day model (option A, `toWindowMin`) caps every window at start+windowMin <= 1440, so a
+    // window can never cross midnight into the next axis day. 10:00 PM – 12:00 AM (22:00 + 120min) is
+    // the latest a window can run: it ends exactly at 1440 and draws entirely inside the PM half, with
+    // nothing spilling into the AM half. This is why the "post-midnight sliver" is out of scope — it is
+    // unreachable in this render path, not merely clamped away.
+    setExceptions([exc("a1", "ADDITIONAL", "22:00", 120)]);
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: {
+        valid: true,
+        message: null,
+        days: [{ date: "2026-07-20", resultingWindows: [], trimmed: [], inert: false }],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    const afterPm = await within(dialog).findByRole("group", {
+      name: "After applying on 2026-07-20 (PM)",
+    });
+    expect(within(afterPm).getByTitle(/Extra · 10:00 PM – 12:00 AM/)).toBeInTheDocument();
+
+    const afterAm = within(dialog).getByRole("group", {
+      name: "After applying on 2026-07-20 (AM)",
+    });
+    expect(within(afterAm).queryByTitle(/Extra · 10:00 PM – 12:00 AM/)).not.toBeInTheDocument();
+  });
+
   it("splits each date into a fixed 12-hour AM axis and PM axis (Now × 2, After × 2)", async () => {
     mockUseOverrideMultiPreview.mockReturnValue({
       data: blockingPreview,
