@@ -138,7 +138,9 @@ describe("Modal", () => {
       // Header, body, and footer are distinct regions.
       expect(screen.getByText("My title")).toBeInTheDocument();
       const body = screen.getByText("body content").parentElement as HTMLElement;
-      expect(body).toHaveClass("flex-1", "overflow-y-auto");
+      // `min-h-0` is required alongside `flex-1 overflow-y-auto` so the body actually
+      // scrolls at the panel's max-height cap instead of growing it past the viewport.
+      expect(body).toHaveClass("min-h-0", "flex-1", "overflow-y-auto");
       expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument();
     });
 

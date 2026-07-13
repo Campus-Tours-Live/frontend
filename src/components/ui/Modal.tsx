@@ -89,7 +89,10 @@ export function Modal({
             {header !== undefined ? (
               <div className="shrink-0 border-b border-border p-6 pr-14">{header}</div>
             ) : null}
-            <div className="flex-1 overflow-y-auto p-6">{children}</div>
+            {/* `min-h-0` lets this flex child shrink below its content so it actually
+                scrolls at the panel's max-height cap, instead of growing the panel past
+                the viewport (classic flexbox min-height:auto trap). */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
             {footer !== undefined ? (
               <div className="shrink-0 border-t border-border p-6">{footer}</div>
             ) : null}
