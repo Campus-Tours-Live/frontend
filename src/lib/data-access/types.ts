@@ -240,20 +240,6 @@ export interface CreateAvailabilityRuleInput {
 
 export type UpdateAvailabilityRuleInput = Partial<CreateAvailabilityRuleInput>;
 
-export interface CreateAvailabilityExceptionInput {
-  /** Single-day override date. Omit in favor of `dateFrom`/`dateTo` for a multi-day range. */
-  exceptionDate?: string;
-  kind: AvailabilityExceptionKind;
-  startLocal: string;
-  windowMin: number;
-  reason?: string | null;
-  /** Multi-day override range (CTL-55 v2.1, date-specific override modal) — when present, sent
-   *  to the BFF as-is. Core expands the range into per-date exceptions server-side; the FE never
-   *  recomputes per-day occurrences itself. Capped at 366 days by Core (422 if exceeded). */
-  dateFrom?: string;
-  dateTo?: string;
-}
-
 /** One affected date's dry-run result from `GET /v1/availability/preview` (CTL-55 v2.1). */
 export interface OverridePreviewDay {
   date: string;

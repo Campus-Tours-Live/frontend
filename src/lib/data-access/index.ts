@@ -58,7 +58,6 @@ export type {
   AvailabilityWriteEnvelope,
   CreateAvailabilityRuleInput,
   UpdateAvailabilityRuleInput,
-  CreateAvailabilityExceptionInput,
   UpdateAvailabilitySettingsInput,
   OfferingSlot,
   OverridePreviewDay,
