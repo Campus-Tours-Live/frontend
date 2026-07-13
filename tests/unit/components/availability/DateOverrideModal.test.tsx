@@ -419,6 +419,69 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
   });
 });
 
+describe("DateOverrideModal — conflict warning fires only when availability SHRINKS (S7)", () => {
+  /** Set a combined dry-run whose only day's resulting windows are `resultingWindows`. */
+  function setPreview(resultingWindows: { startAt: string; endAt: string }[]) {
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: {
+        valid: true,
+        message: null,
+        days: [{ date: "2026-07-20", resultingWindows, trimmed: [], inert: false }],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+  }
+
+  it("does NOT warn when a removal only INCREASES availability (before ⊆ after)", async () => {
+    // UNAVAILABLE override, but the resulting hours GROW: before is a small 9:00–9:30 window and
+    // after is 9:00–11:00 (a previously-set block was removed). Nothing was taken away → no
+    // block-framed warning even though before ≠ after.
+    mockUseResolvedAvailability.mockReturnValue({
+      data: resolved([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T14:30:00Z" }]),
+      isLoading: false,
+    });
+    setPreview([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }]);
+    setExceptions([exc("u1", "UNAVAILABLE", "10:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
+    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
+  });
+
+  it("WARNS when a block TAKES availability away (before ⊄ after)", async () => {
+    // before 9:00–11:00, after shrinks to 9:00–9:30 → a minute available before is gone → warn.
+    mockUseResolvedAvailability.mockReturnValue({
+      data: resolved([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }]),
+      isLoading: false,
+    });
+    setPreview([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T14:30:00Z" }]);
+    setExceptions([exc("u1", "UNAVAILABLE", "10:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    expect(await within(dialog).findByText(/This blocks time on Mon 7\/20/)).toBeInTheDocument();
+  });
+
+  it("WARNS on a same-size block swap (equal total minutes, different windows)", async () => {
+    // before = 3:00–4:00 PM (60 min available); after = 9:00–10:00 AM (also 60 min). Total minutes
+    // are UNCHANGED, but 3:00–4:00 PM was available before and is not after → !(before ⊆ after) →
+    // must still warn. A strict-subset / minute-count fix would miss this.
+    mockUseResolvedAvailability.mockReturnValue({
+      data: resolved([{ startAt: "2026-07-20T20:00:00Z", endAt: "2026-07-20T21:00:00Z" }]),
+      isLoading: false,
+    });
+    setPreview([{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T15:00:00Z" }]);
+    setExceptions([exc("u1", "UNAVAILABLE", "15:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    expect(await within(dialog).findByText(/This blocks time on Mon 7\/20/)).toBeInTheDocument();
+  });
+});
+
 describe("DateOverrideModal — Confirm saves the day as ONE atomic replace", () => {
   it("saves the day as ONE atomic replace call, not delete-then-create", async () => {
     const user = userEvent.setup();

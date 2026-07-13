@@ -169,18 +169,44 @@ function windowEndMin(window: AvailabilityOccurrence, timeZone: string): number 
   return localMinutesOfDay(window.startAt, timeZone) + minutesBetween(window.startAt, window.endAt);
 }
 
-/** Same start/end instants, in order — presentation comparison of two backend-provided window
- *  lists (before vs after), NOT a recompute of availability. Compares by INSTANT VALUE
- *  (`Date#getTime`), not raw string equality: `useResolvedAvailability` (before) and the dry-run
- *  (after) are two different endpoints, and a genuinely equal instant can serialize differently
- *  between them (e.g. `…:00Z` vs `…:00.000Z`) — a raw-string compare would misreport a no-op as a
- *  conflict. */
-function windowsEqual(a: AvailabilityOccurrence[], b: AvailabilityOccurrence[]): boolean {
-  if (a.length !== b.length) return false;
-  return a.every(
-    (win, i) =>
-      new Date(win.startAt).getTime() === new Date(b[i].startAt).getTime() &&
-      new Date(win.endAt).getTime() === new Date(b[i].endAt).getTime(),
+/** One backend window as a half-open instant interval `[start, end)` in epoch ms — the unit the
+ *  coverage check compares in. Uses INSTANT VALUE (`Date#getTime`), not raw strings: the before
+ *  (`useResolvedAvailability`) and after (dry-run) come from two endpoints, and an equal instant can
+ *  serialize differently (e.g. `…:00Z` vs `…:00.000Z`). */
+interface InstantInterval {
+  start: number;
+  end: number;
+}
+function toInstantIntervals(windows: AvailabilityOccurrence[]): InstantInterval[] {
+  return windows
+    .map((win) => ({ start: new Date(win.startAt).getTime(), end: new Date(win.endAt).getTime() }))
+    .filter((iv) => iv.end > iv.start);
+}
+
+/** Merge a set of instant intervals into disjoint, ascending coverage spans. */
+function mergeInstantIntervals(intervals: InstantInterval[]): InstantInterval[] {
+  const sorted = [...intervals].sort((a, b) => a.start - b.start);
+  const merged: InstantInterval[] = [];
+  for (const iv of sorted) {
+    const last = merged[merged.length - 1];
+    if (last && iv.start <= last.end) last.end = Math.max(last.end, iv.end);
+    else merged.push({ ...iv });
+  }
+  return merged;
+}
+
+/** Does `after` still cover every minute that was available in `before`? (i.e. `before ⊆ after` by
+ *  instant coverage). Pure PRESENTATION comparison of two backend-provided window lists — NOT a
+ *  recompute of availability. Compares by covered instant RANGE, not by window-array equality: the
+ *  backend may split/merge windows, so a same-size swap (drop one span, add an equal-length one
+ *  elsewhere) has equal total minutes yet fails this — the swapped-out span is no longer covered. */
+function coversAvailability(
+  before: AvailabilityOccurrence[],
+  after: AvailabilityOccurrence[],
+): boolean {
+  const coverage = mergeInstantIntervals(toInstantIntervals(after));
+  return toInstantIntervals(before).every((iv) =>
+    coverage.some((span) => span.start <= iv.start && span.end >= iv.end),
   );
 }
 
@@ -310,10 +336,12 @@ function buildDayView(
   }
 
   // The amber conflict warning is block-framed prose ("this blocks time that overlaps your current
-  // hours") — it only makes sense for a Block time off (UNAVAILABLE) override that actually changes
-  // the day's hours. Add extra (ADDITIONAL) is additive/non-destructive — the Now/After bars
-  // already show the addition, so it never raises this warning, even when it changes before→after.
-  const conflict = kind === "UNAVAILABLE" && !windowsEqual(before, day.resultingWindows);
+  // hours") — it only makes sense for a Block time off (UNAVAILABLE) override that actually TAKES
+  // availability away. Gate it on `!(before ⊆ after)`: warn only when some minute available in
+  // `before` is no longer available in `after`. Removing a previously-set block (before ⊆ after)
+  // only INCREASES availability, so it must not warn; Add extra (ADDITIONAL) is additive and never
+  // warns. Presentation of the backend before/after windows — no availability recompute.
+  const conflict = kind === "UNAVAILABLE" && !coversAvailability(before, day.resultingWindows);
 
   return { date: day.date, before, nowSegments, afterSegments, conflict };
 }
