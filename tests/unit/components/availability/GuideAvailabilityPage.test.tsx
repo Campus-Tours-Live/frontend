@@ -200,7 +200,7 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
     expect(screen.getByText(/review your bookable calendar/i)).toBeInTheDocument();
     expect(screen.getByText(/booking policy/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/these weekly hours build the bookable calendar below/i),
+      screen.getByText(/these weekly hours build your bookable calendar/i),
     ).toBeInTheDocument();
   });
 

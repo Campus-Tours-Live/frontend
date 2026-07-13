@@ -78,27 +78,25 @@ export function GuideAvailabilityPage() {
       {isError ? <Alert variant="error">Failed to load your availability.</Alert> : null}
 
       {!isLoading && !isError ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,30%)] lg:items-start">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-                Step 1 · Set your weekly hours
-              </p>
-              <WeeklyHoursPanel />
-              <p className="text-[13px] text-ink-soft">
-                These weekly hours build the bookable calendar below.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-                Step 2 · Review your bookable calendar
-              </p>
-              <MonthAvailabilityView onOpenOverride={openOverride} />
-            </div>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+          <div className="space-y-2 lg:col-start-1 lg:row-start-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+              Step 1 · Set your weekly hours
+            </p>
+            <WeeklyHoursPanel />
+            <p className="text-[13px] text-ink-soft">
+              These weekly hours build your bookable calendar.
+            </p>
           </div>
 
-          <aside className="space-y-2">
+          <div className="space-y-2 lg:col-start-2 lg:row-start-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+              Step 2 · Review your bookable calendar
+            </p>
+            <MonthAvailabilityView onOpenOverride={openOverride} />
+          </div>
+
+          <aside className="space-y-2 lg:col-span-2 lg:row-start-1">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
               For reference · Booking policy
             </p>
