@@ -199,8 +199,15 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
     await user.click(screen.getByTestId("calendar-day-2026-07-22"));
 
     const dialog = await screen.findByRole("dialog");
-    // DateOverrideModal defaults to "Block time off" (UNAVAILABLE) mode.
-    expect(within(dialog).getByRole("heading", { name: /block time off/i })).toBeInTheDocument();
+    // 2026-07-22 is a Wednesday; the title carries the weekday + M/D.
+    expect(
+      within(dialog).getByRole("heading", { name: /Date-specific hours · Wed 7\/22/ }),
+    ).toBeInTheDocument();
+    // DateOverrideModal defaults to "Block time off" (UNAVAILABLE) — that segment is filled.
+    expect(within(dialog).getByRole("button", { name: "Block time off" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(within(dialog).getByLabelText("From date")).toHaveValue("2026-07-22");
     expect(within(dialog).getByLabelText("To date")).toHaveValue("2026-07-22");
   });
@@ -232,7 +239,7 @@ describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notificat
     await user.click(screen.getByTestId("calendar-day-2026-07-22"));
     const dialog = await screen.findByRole("dialog");
 
-    await user.click(within(dialog).getByRole("button", { name: "Confirm" }));
+    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
     await waitFor(() => expect(createMutate).toHaveBeenCalledTimes(1));
     expect(
