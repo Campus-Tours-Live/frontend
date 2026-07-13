@@ -38,7 +38,7 @@ let replaceMutate: jest.Mock;
 beforeEach(() => {
   jest.clearAllMocks();
   updateMutate = jest.fn().mockResolvedValue(undefined);
-  replaceMutate = jest.fn().mockResolvedValue(undefined);
+  replaceMutate = jest.fn().mockResolvedValue({ data: [], affectedBookings: [] });
   mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
   mockUseReplaceRules.mockReturnValue({ mutateAsync: replaceMutate, isPending: false });
 });
@@ -162,6 +162,34 @@ describe("DayHoursModal — Save via ONE atomic useReplaceRules call", () => {
     });
     // Old per-rule reconcile path is gone.
     expect(updateMutate).not.toHaveBeenCalled();
+  });
+
+  it("keeps the modal open with an affected-bookings notice when the save overlaps a booking", async () => {
+    const user = userEvent.setup();
+    replaceMutate.mockResolvedValue({
+      data: [],
+      affectedBookings: [
+        {
+          bookingId: "bk1",
+          bookingNumber: "BK-88",
+          status: "CONFIRMED",
+          scheduledStartAt: "2026-07-20T15:00:00Z",
+          scheduledEndAt: "2026-07-20T16:00:00Z",
+        },
+      ],
+    });
+    const { onClose } = renderModal([mondayRule]);
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    // Allow + notify: the save succeeded, but the modal stays open to surface the affected booking.
+    await within(dialog).findByText(/existing booking/i);
+    expect(within(dialog).getByText("BK-88")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    // Footer collapses to a single Done that closes.
+    expect(within(dialog).queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it("editing an existing range's To to 12:00 AM (end of day) replaces with windowMin 900", async () => {

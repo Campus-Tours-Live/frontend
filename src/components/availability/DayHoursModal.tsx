@@ -3,8 +3,14 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Alert, Button, Modal, TimePicker } from "@/components/ui";
-import { ApiError, useReplaceRules, type AvailabilityRule } from "@/lib/data-access";
+import {
+  ApiError,
+  useReplaceRules,
+  type AffectedBooking,
+  type AvailabilityRule,
+} from "@/lib/data-access";
 import { toWindowMin, windowToRawTo } from "@/lib/availability/fromTo";
+import { AffectedBookingsNotice } from "./AffectedBookingsNotice";
 
 export interface DayHoursModalProps {
   open: boolean;
@@ -79,6 +85,9 @@ function DayHoursModalContent({
   const [ranges, setRanges] = useState<RangeDraft[]>(() => draftsFromRules(rules));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bookings the last successful save overlapped (allow+notify). Non-empty ⇒ keep the modal open
+  // and show the notice instead of closing, so the guide is told the change touched real bookings.
+  const [affectedBookings, setAffectedBookings] = useState<AffectedBooking[]>([]);
   // Key of the just-added row, so its FROM picker mounts open + focused on the hour.
   const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
 
@@ -103,6 +112,7 @@ function DayHoursModalContent({
 
   const handleSave = async () => {
     setError(null);
+    setAffectedBookings([]);
 
     // Structural validation only (from < to, same-day) — never overlap/trim, which stays entirely
     // backend-owned. A malformed picker pairing (shouldn't happen via the controlled inputs, but
@@ -124,8 +134,14 @@ function DayHoursModalContent({
       // backend transaction — the source of atomicity is the backend, not a FE create/update/delete
       // reconcile. An EMPTY windows list clears this weekday's rules. A rejection mid-save no longer
       // leaves the weekday partially reconciled, because there is no delete-then-create.
-      await replaceRules.mutateAsync({ dayOfWeek, windows });
-      onClose();
+      const { affectedBookings: affected } = await replaceRules.mutateAsync({ dayOfWeek, windows });
+      // Allow + notify: the change is already saved. If reducing these hours overlapped existing
+      // bookings, keep the modal open and surface them (never auto-cancelled); otherwise close.
+      if (affected.length > 0) {
+        setAffectedBookings(affected);
+      } else {
+        onClose();
+      }
     } catch (err) {
       // Keep the modal open (do NOT call onClose) and do NOT wipe local edits — show the backend
       // message in-modal so the guide fixes the conflicting range and retries.
@@ -157,19 +173,29 @@ function DayHoursModalContent({
         </>
       }
       footer={
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={() => void handleSave()}
-            disabled={saving || hasStructuralError}
-          >
-            {saving ? "Saving…" : "Save"}
-          </Button>
-        </div>
+        affectedBookings.length > 0 ? (
+          // Post-save notify state: the change is already persisted; the only action left is to
+          // acknowledge the affected-bookings notice and close.
+          <div className="flex justify-end">
+            <Button type="button" variant="primary" onClick={onClose}>
+              Done
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => void handleSave()}
+              disabled={saving || hasStructuralError}
+            >
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        )
       }
     >
       <Alert variant="info" role="status">
@@ -180,6 +206,12 @@ function DayHoursModalContent({
         <Alert variant="error" className="mt-3">
           {error}
         </Alert>
+      ) : null}
+
+      {affectedBookings.length > 0 ? (
+        <div className="mt-3">
+          <AffectedBookingsNotice bookings={affectedBookings} timeZone={settingsTimezone} />
+        </div>
       ) : null}
 
       <div className="mt-4 space-y-4">

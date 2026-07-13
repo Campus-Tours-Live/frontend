@@ -87,7 +87,7 @@ beforeEach(() => {
     isLoading: false,
     isFetching: false,
   });
-  replaceMutate = jest.fn().mockResolvedValue(undefined);
+  replaceMutate = jest.fn().mockResolvedValue({ data: [], affectedBookings: [] });
   mockUseReplaceOverrides.mockReturnValue({
     mutateAsync: replaceMutate,
     isPending: false,
@@ -639,6 +639,38 @@ describe("DateOverrideModal — zero slots is a valid 'clear' request", () => {
       windows: [],
     });
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("keeps the modal open with an affected-bookings notice when the save overlaps a booking", async () => {
+    const user = userEvent.setup();
+    replaceMutate.mockResolvedValue({
+      data: [],
+      affectedBookings: [
+        {
+          bookingId: "bk1",
+          bookingNumber: "BK-77",
+          status: "CONFIRMED",
+          scheduledStartAt: "2026-07-20T15:00:00Z",
+          scheduledEndAt: "2026-07-20T16:00:00Z",
+        },
+      ],
+    });
+    const onClose = jest.fn();
+    renderModal(onClose);
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
+
+    // Allow + notify: saved, but the modal stays open to surface the affected booking.
+    await within(dialog).findByText(/existing booking/i);
+    expect(within(dialog).getByText("BK-77")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(
+      within(dialog).queryByRole("button", { name: "Confirm change" }),
+    ).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -10,6 +10,7 @@ import {
   useOverrideMultiPreview,
   useReplaceOverrides,
   useResolvedAvailability,
+  type AffectedBooking,
   type AvailabilityException,
   type AvailabilityExceptionKind,
   type AvailabilityOccurrence,
@@ -24,6 +25,7 @@ import {
   windowToRawTo,
 } from "@/lib/availability/fromTo";
 import { bucketOccurrencesByDate } from "@/lib/availability/bucketByDate";
+import { AffectedBookingsNotice } from "./AffectedBookingsNotice";
 import {
   TimeAxis,
   TimeAxisBar,
@@ -428,6 +430,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
   const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Bookings the last successful save overlapped (allow+notify). Non-empty ⇒ keep the modal open
+  // and show the notice instead of closing, so the guide is told the change touched real bookings.
+  const [affectedBookings, setAffectedBookings] = useState<AffectedBooking[]>([]);
 
   // Switching the toggle re-loads THAT kind's existing slots (an empty list when the day has none).
   const selectMode = (next: AvailabilityExceptionKind) => {
@@ -482,6 +487,13 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
   const debouncedMultiParams = useDebounced(rawMultiParams, PREVIEW_DEBOUNCE_MS);
   const previewQuery = useOverrideMultiPreview(debouncedMultiParams);
 
+  // We consume only the preview's per-day `days` here. Two other advisory fields on the response are
+  // intentionally NOT surfaced raw: `days[].trimmed` (the clipped EXISTING windows) is deliberately
+  // not drawn — it spatially overlaps `resultingWindows`, and its user-facing purpose ("this reduces
+  // your current hours") is delivered by the FE-computed conflict warning below; and the dry-run's
+  // top-level `valid`/`message` verdict is not read either — an actually-invalid write is caught and
+  // its message surfaced verbatim by the write-time 422 (see `handleConfirm`'s catch), so reading the
+  // dry-run verdict too would just duplicate that. (Render-completeness note, CTL-55.)
   const previewDays = previewQuery.data?.days;
 
   // Per-affected-date view models — ONE Now/After pair per date (net of all slots), built from the
@@ -507,6 +519,7 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
 
   const handleConfirm = async () => {
     setError(null);
+    setAffectedBookings([]);
 
     let windows: OverrideWindow[];
     try {
@@ -525,8 +538,19 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
       // backend transaction — the source of atomicity is now the backend, not a FE reconcile.
       // Zero windows = clear this day's same-kind override. The OTHER kind is never touched. A
       // create-time rejection no longer wipes prior overrides, because there is no delete-then-create.
-      await replaceOverrides.mutateAsync({ date, kind: mode, windows });
-      onClose();
+      const { affectedBookings: affected } = await replaceOverrides.mutateAsync({
+        date,
+        kind: mode,
+        windows,
+      });
+      // Allow + notify: the change is already saved. If it overlapped existing bookings, keep the
+      // modal open and surface them (they are never auto-cancelled) so the guide can follow up;
+      // otherwise close as normal.
+      if (affected.length > 0) {
+        setAffectedBookings(affected);
+      } else {
+        onClose();
+      }
     } catch (err) {
       // Keep the modal open (do NOT call onClose) and do NOT wipe local state — show the backend
       // message in-modal so the guide can adjust and retry. Core decides validity/trim; the FE
@@ -551,21 +575,30 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
     </div>
   );
 
-  const footer = (
-    <div className="flex justify-end gap-3">
-      <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>
-        Cancel
-      </Button>
-      <Button
-        type="button"
-        variant="primary"
-        onClick={() => void handleConfirm()}
-        disabled={submitting || !canConfirm}
-      >
-        {submitting ? "Saving…" : "Confirm change"}
-      </Button>
-    </div>
-  );
+  const footer =
+    affectedBookings.length > 0 ? (
+      // Post-save notify state: the change is already persisted; the only action left is to
+      // acknowledge the affected-bookings notice and close.
+      <div className="flex justify-end">
+        <Button type="button" variant="primary" onClick={onClose}>
+          Done
+        </Button>
+      </div>
+    ) : (
+      <div className="flex justify-end gap-3">
+        <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          onClick={() => void handleConfirm()}
+          disabled={submitting || !canConfirm}
+        >
+          {submitting ? "Saving…" : "Confirm change"}
+        </Button>
+      </div>
+    );
 
   return (
     <Modal
@@ -583,6 +616,8 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
         </Alert>
 
         {error ? <Alert variant="error">{error}</Alert> : null}
+
+        <AffectedBookingsNotice bookings={affectedBookings} timeZone={settingsTimezone} />
 
         <div
           role="group"

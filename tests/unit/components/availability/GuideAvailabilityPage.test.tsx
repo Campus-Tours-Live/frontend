@@ -138,11 +138,11 @@ beforeEach(() => {
     isFetching: false,
   });
   mockUseReplaceRules.mockReturnValue({
-    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    mutateAsync: jest.fn().mockResolvedValue({ data: [], affectedBookings: [] }),
     isPending: false,
   });
   mockUseReplaceOverrides.mockReturnValue({
-    mutateAsync: jest.fn().mockResolvedValue(undefined),
+    mutateAsync: jest.fn().mockResolvedValue({ data: [], affectedBookings: [] }),
     isPending: false,
   });
 });
