@@ -5,8 +5,6 @@ import {
   ApiError,
   useAvailabilityRules,
   useAvailabilitySettings,
-  useCreateAvailabilityRule,
-  useDeleteAvailabilityRule,
   useReplaceOverrides,
   useReplaceRules,
   useUpdateAvailabilityRule,
@@ -16,9 +14,7 @@ import type { AvailabilityRule, AvailabilitySettings } from "@/lib/data-access";
 jest.mock("@/lib/data-access", () => ({
   useAvailabilityRules: jest.fn(),
   useAvailabilitySettings: jest.fn(),
-  useCreateAvailabilityRule: jest.fn(),
   useUpdateAvailabilityRule: jest.fn(),
-  useDeleteAvailabilityRule: jest.fn(),
   useReplaceRules: jest.fn(),
   useReplaceOverrides: jest.fn(),
   ApiError: class ApiError extends Error {
@@ -33,9 +29,7 @@ jest.mock("@/lib/data-access", () => ({
 
 const mockUseAvailabilityRules = useAvailabilityRules as jest.Mock;
 const mockUseAvailabilitySettings = useAvailabilitySettings as jest.Mock;
-const mockUseCreateAvailabilityRule = useCreateAvailabilityRule as jest.Mock;
 const mockUseUpdateAvailabilityRule = useUpdateAvailabilityRule as jest.Mock;
-const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
 const mockUseReplaceRules = useReplaceRules as jest.Mock;
 const mockUseReplaceOverrides = useReplaceOverrides as jest.Mock;
 
@@ -106,9 +100,7 @@ beforeEach(() => {
     isLoading: false,
     isError: false,
   });
-  mockUseCreateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
-  mockUseDeleteAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
   mockUseReplaceRules.mockReturnValue({
     mutateAsync: jest.fn().mockResolvedValue(undefined),
     isPending: false,

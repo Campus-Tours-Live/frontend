@@ -1,49 +1,4 @@
-import {
-  CUSTOM_DURATION_VALUE,
-  DURATION_PRESETS,
-  formatDuration,
-  formatWindow,
-  isValidWindowMin,
-  minutesToPresetValue,
-  presetValueToMinutes,
-} from "@/lib/availability/duration";
-
-describe("duration presets", () => {
-  it("round-trips every preset between its id and windowMin", () => {
-    for (const preset of DURATION_PRESETS) {
-      expect(minutesToPresetValue(preset.minutes)).toBe(preset.value);
-      expect(presetValueToMinutes(preset.value)).toBe(preset.minutes);
-    }
-  });
-
-  it("maps a 4h preset to windowMin 240 and back", () => {
-    expect(presetValueToMinutes("240")).toBe(240);
-    expect(minutesToPresetValue(240)).toBe("240");
-  });
-
-  it("falls back to 'custom' for a windowMin that isn't a preset", () => {
-    expect(minutesToPresetValue(75)).toBe(CUSTOM_DURATION_VALUE);
-    expect(minutesToPresetValue(1)).toBe(CUSTOM_DURATION_VALUE);
-  });
-
-  it("resolves custom minutes from the picker's free-text input", () => {
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, "75")).toBe(75);
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, 45)).toBe(45);
-  });
-
-  it("rejects invalid custom minutes instead of coercing them", () => {
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE)).toBeNull();
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, "")).toBeNull();
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, "0")).toBeNull();
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, "-30")).toBeNull();
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, "abc")).toBeNull();
-    expect(presetValueToMinutes(CUSTOM_DURATION_VALUE, "12.5")).toBeNull();
-  });
-
-  it("rejects an unknown preset id", () => {
-    expect(presetValueToMinutes("not-a-real-preset")).toBeNull();
-  });
-});
+import { formatDuration, formatWindow, isValidWindowMin } from "@/lib/availability/duration";
 
 describe("isValidWindowMin", () => {
   it("accepts only positive integers", () => {
@@ -70,14 +25,6 @@ describe("formatDuration", () => {
     expect(formatDuration(30)).toBe("30m");
     expect(formatDuration(90)).toBe("1h 30m");
     expect(formatDuration(75)).toBe("1h 15m");
-  });
-
-  it("round-trips formatDuration(minutesToPresetValue(x) -> preset.minutes) for every preset", () => {
-    for (const preset of DURATION_PRESETS) {
-      expect(formatDuration(preset.minutes)).toBe(
-        formatDuration(presetValueToMinutes(preset.value)!),
-      );
-    }
   });
 
   it("returns an empty string for invalid input", () => {

@@ -78,51 +78,6 @@ export function minutesFromHHmm(value: string): number {
   return hour * 60 + minute;
 }
 
-/** Format a plain "HH:mm" clock time directly as a 12-hour label, e.g. `"13:00"` -> `"1:00 PM"`.
- *  Used for the `to`-picker grid's option labels; replaces the former
- *  `windowToTo("00:00", minutesFromHHmm(value))` indirection, which piggybacked on the
- *  start+duration-window formatter to label a plain clock value (CTL-55 v2.1 polish review M8) -
- *  `windowToTo` is for `startLocal + windowMin`, not for labelling a bare clock time. */
-export function formatClockLabel(hhmm: string): string {
-  return formatClock12(minutesFromHHmm(hhmm));
-}
-
-/** The `to`-picker grid's minute marks within each hour. */
-export const TO_OPTION_MINUTES = [0, 15, 30, 45];
-
-/**
- * The `to`-picker's options: a 15-minute grid across the day, PLUS the midnight sentinel
- * `"24:00"` (required - otherwise a guide can never reach end-of-day), labelled
- * `"12:00 AM (midnight)"` so it doesn't read as the ambiguous start-of-day `"00:00"`. `current` is
- * folded into the grid so an existing (possibly off-grid) rule's `to` always has a matching
- * `<option>` to prefill against.
- *
- * The grid deliberately **excludes** `"00:00"` (CTL-55 v2.1 polish review N1): an end time of
- * `00:00` is never valid (`toWindowMin` rejects `to <= from`), so offering it alongside the
- * correct `"24:00"` end-of-day option was a confusing duplicate that only ever produced an error.
- * The grid's earliest option is therefore `"00:15"`; the sole midnight/end-of-day choice is the
- * `"24:00"` sentinel appended at the end.
- *
- * Shared by both `DayHoursModal` (weekly) and `DateOverrideModal` (date-specific) - previously
- * each had a byte-identical copy of this function (CTL-55 v2.1 polish review M3).
- */
-export function buildToOptions(current: string): { value: string; label: string }[] {
-  const gridValues = new Set<string>();
-  for (let hour = 0; hour < 24; hour++) {
-    for (const minute of TO_OPTION_MINUTES) {
-      if (hour === 0 && minute === 0) continue; // N1: "00:00" is never a valid end time - "24:00" covers midnight/end-of-day.
-      gridValues.add(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-    }
-  }
-  if (current !== "24:00" && current !== "00:00") gridValues.add(current);
-
-  const options = Array.from(gridValues)
-    .sort()
-    .map((value) => ({ value, label: formatClockLabel(value) }));
-  options.push({ value: "24:00", label: "12:00 AM (midnight)" });
-  return options;
-}
-
 /**
  * Compute the display label for the end ("to") of a start+duration window, e.g.
  * `windowToTo("09:00", 240)` → `"1:00 PM"`. Returns the `"12:00 AM"` label when

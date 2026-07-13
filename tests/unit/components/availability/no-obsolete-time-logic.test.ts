@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from "fs";
 import path from "path";
-import { presetValueToMinutes } from "@/lib/availability/duration";
 
 /**
  * CTL-55 Task 2 replaces the old start+END time-range picker (PR #32) with start+duration. This
@@ -38,7 +37,6 @@ const MODALS_UNDER_TEST = [
   "src/components/availability/DayHoursModal.tsx",
   "src/components/availability/DateOverrideModal.tsx",
   "src/components/availability/WeeklyHoursPanel.tsx",
-  "src/components/availability/DurationField.tsx",
   "src/lib/availability/duration.ts",
   "src/lib/availability/fromTo.ts",
 ];
@@ -57,11 +55,5 @@ describe("no obsolete end-time / sentinel / snap-to-grid code path", () => {
         expect(source).not.toContain(token);
       }
     }
-  });
-
-  it("windowMin has no 24:00-style sentinel: minutes map straight through, unmodified", () => {
-    // A window that runs past midnight (22:00 start + 4h) is just 240 minutes — never rewritten
-    // to a sentinel or clamped to end-of-day.
-    expect(presetValueToMinutes("240")).toBe(240);
   });
 });

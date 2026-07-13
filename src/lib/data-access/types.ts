@@ -283,25 +283,15 @@ export interface OverridePreviewResponse {
   message: string | null;
 }
 
-/** Params for `GET /v1/availability/preview` (the dry-run query key + querystring). */
-export interface OverridePreviewParams {
-  dateFrom: string;
-  dateTo: string;
-  kind: AvailabilityExceptionKind;
-  startLocal: string;
-  windowMin: number;
-}
-
 /** One proposed time window (start + duration) inside a multi-slot override preview/create. */
 export interface OverrideWindow {
   startLocal: string;
   windowMin: number;
 }
 
-/** Body for the multi-window dry-run `POST /v1/availability/preview` (CTL-55 multi-slot). Unlike
- *  {@link OverridePreviewParams} (a single window on the querystring), this posts N windows and the
- *  backend returns the NET result of ALL of them applied together — same {@link OverridePreviewResponse}
- *  shape. The FE renders that net result; it never merges the windows itself. */
+/** Body for the multi-window dry-run `POST /v1/availability/preview` (CTL-55 multi-slot). Posts N
+ *  windows and the backend returns the NET result of ALL of them applied together — an
+ *  {@link OverridePreviewResponse}. The FE renders that net result; it never merges the windows itself. */
 export interface OverrideMultiPreviewParams {
   dateFrom: string;
   dateTo: string;

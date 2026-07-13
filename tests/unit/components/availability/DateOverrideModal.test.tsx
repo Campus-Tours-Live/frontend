@@ -5,8 +5,6 @@ import {
   ApiError,
   useAvailabilityExceptions,
   useAvailabilitySettings,
-  useCreateAvailabilityException,
-  useDeleteAvailabilityException,
   useOverrideMultiPreview,
   useReplaceOverrides,
   useResolvedAvailability,
@@ -23,8 +21,6 @@ jest.mock("@/lib/data-access", () => ({
   useAvailabilitySettings: jest.fn(),
   useResolvedAvailability: jest.fn(),
   useOverrideMultiPreview: jest.fn(),
-  useCreateAvailabilityException: jest.fn(),
-  useDeleteAvailabilityException: jest.fn(),
   useReplaceOverrides: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
@@ -40,8 +36,6 @@ const mockUseAvailabilityExceptions = useAvailabilityExceptions as jest.Mock;
 const mockUseAvailabilitySettings = useAvailabilitySettings as jest.Mock;
 const mockUseResolvedAvailability = useResolvedAvailability as jest.Mock;
 const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
-const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
-const mockUseDeleteAvailabilityException = useDeleteAvailabilityException as jest.Mock;
 const mockUseReplaceOverrides = useReplaceOverrides as jest.Mock;
 
 const sampleSettings: AvailabilitySettings = {
@@ -71,8 +65,6 @@ function exc(
   return { id, exceptionDate: "2026-07-20", kind, startLocal, windowMin, reason: null };
 }
 
-let createMutate: jest.Mock;
-let deleteMutate: jest.Mock;
 let replaceMutate: jest.Mock;
 
 function setExceptions(list: AvailabilityException[]) {
@@ -95,17 +87,7 @@ beforeEach(() => {
     isLoading: false,
     isFetching: false,
   });
-  createMutate = jest.fn().mockResolvedValue(undefined);
-  deleteMutate = jest.fn().mockResolvedValue(undefined);
   replaceMutate = jest.fn().mockResolvedValue(undefined);
-  mockUseCreateAvailabilityException.mockReturnValue({
-    mutateAsync: createMutate,
-    isPending: false,
-  });
-  mockUseDeleteAvailabilityException.mockReturnValue({
-    mutateAsync: deleteMutate,
-    isPending: false,
-  });
   mockUseReplaceOverrides.mockReturnValue({
     mutateAsync: replaceMutate,
     isPending: false,
@@ -459,9 +441,6 @@ describe("DateOverrideModal — Confirm saves the day as ONE atomic replace", ()
         { startLocal: "09:00", windowMin: 60 },
       ],
     });
-    // Old reconcile path is gone.
-    expect(deleteMutate).not.toHaveBeenCalled();
-    expect(createMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -525,8 +504,6 @@ describe("DateOverrideModal — zero slots is a valid 'clear' request", () => {
       kind: "UNAVAILABLE",
       windows: [],
     });
-    expect(deleteMutate).not.toHaveBeenCalled();
-    expect(createMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 });

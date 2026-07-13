@@ -2,19 +2,11 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
 import { DayHoursModal } from "@/components/availability/DayHoursModal";
-import {
-  ApiError,
-  useCreateAvailabilityRule,
-  useDeleteAvailabilityRule,
-  useReplaceRules,
-  useUpdateAvailabilityRule,
-} from "@/lib/data-access";
+import { ApiError, useReplaceRules, useUpdateAvailabilityRule } from "@/lib/data-access";
 import type { AvailabilityRule } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
-  useCreateAvailabilityRule: jest.fn(),
   useUpdateAvailabilityRule: jest.fn(),
-  useDeleteAvailabilityRule: jest.fn(),
   useReplaceRules: jest.fn(),
   ApiError: class ApiError extends Error {
     status: number;
@@ -26,9 +18,7 @@ jest.mock("@/lib/data-access", () => ({
   },
 }));
 
-const mockUseCreateAvailabilityRule = useCreateAvailabilityRule as jest.Mock;
 const mockUseUpdateAvailabilityRule = useUpdateAvailabilityRule as jest.Mock;
-const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
 const mockUseReplaceRules = useReplaceRules as jest.Mock;
 
 const mondayRule: AvailabilityRule = {
@@ -42,20 +32,14 @@ const mondayRule: AvailabilityRule = {
   active: true,
 };
 
-let createMutate: jest.Mock;
 let updateMutate: jest.Mock;
-let deleteMutate: jest.Mock;
 let replaceMutate: jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
-  createMutate = jest.fn().mockResolvedValue(undefined);
   updateMutate = jest.fn().mockResolvedValue(undefined);
-  deleteMutate = jest.fn().mockResolvedValue(undefined);
   replaceMutate = jest.fn().mockResolvedValue(undefined);
-  mockUseCreateAvailabilityRule.mockReturnValue({ mutateAsync: createMutate, isPending: false });
   mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
-  mockUseDeleteAvailabilityRule.mockReturnValue({ mutateAsync: deleteMutate, isPending: false });
   mockUseReplaceRules.mockReturnValue({ mutateAsync: replaceMutate, isPending: false });
 });
 
@@ -177,9 +161,7 @@ describe("DayHoursModal — Save via ONE atomic useReplaceRules call", () => {
       windows: [{ startLocal: "09:00", windowMin: 240 }],
     });
     // Old per-rule reconcile path is gone.
-    expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
-    expect(deleteMutate).not.toHaveBeenCalled();
   });
 
   it("editing an existing range's To to 12:00 AM (end of day) replaces with windowMin 900", async () => {
@@ -210,7 +192,7 @@ describe("DayHoursModal — Save via ONE atomic useReplaceRules call", () => {
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(replaceMutate).toHaveBeenCalledWith({ dayOfWeek: 1, windows: [] }));
-    expect(deleteMutate).not.toHaveBeenCalled();
+    expect(updateMutate).not.toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -228,9 +210,7 @@ describe("DayHoursModal — Save via ONE atomic useReplaceRules call", () => {
       dayOfWeek: 1,
       windows: [{ startLocal: "09:00", windowMin: 240 }],
     });
-    expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
-    expect(deleteMutate).not.toHaveBeenCalled();
   });
 });
 
@@ -286,9 +266,7 @@ describe("DayHoursModal — client-side structural validation (from<to only, nev
     expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
 
     expect(replaceMutate).not.toHaveBeenCalled();
-    expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
-    expect(deleteMutate).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
 });
@@ -303,7 +281,6 @@ describe("DayHoursModal — Cancel", () => {
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
     expect(onClose).toHaveBeenCalled();
-    expect(createMutate).not.toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
   });
 });

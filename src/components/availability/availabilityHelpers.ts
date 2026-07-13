@@ -17,15 +17,3 @@ export const DAY_LABELS = [
 ] as const;
 
 export { todayIsoDate } from "@/lib/availability/formatDate";
-
-/** Render an exception's ISO date (yyyy-mm-dd) for display, e.g. "Tue, Mar 10, 2026". */
-export function formatExceptionDate(isoDate: string): string {
-  const date = new Date(`${isoDate}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return isoDate;
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}

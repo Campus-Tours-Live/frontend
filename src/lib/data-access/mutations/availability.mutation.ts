@@ -1,13 +1,11 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { deleteJsonRaw, patchJsonRaw, postJsonRaw } from "../http";
+import { patchJsonRaw, postJsonRaw } from "../http";
 import { queryKeys } from "../keys";
 import type {
   AvailabilityException,
   AvailabilityRule,
   AvailabilitySettings,
   AvailabilityWriteEnvelope,
-  CreateAvailabilityExceptionInput,
-  CreateAvailabilityRuleInput,
   OverrideReplaceInput,
   RulesReplaceInput,
   UpdateAvailabilityExceptionInput,
@@ -50,32 +48,10 @@ function invalidateRulesAndExceptions(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.availabilityResolved() });
 }
 
-export const createAvailabilityRuleMutation = (qc: QueryClient) => ({
-  mutationFn: (body: CreateAvailabilityRuleInput) =>
-    postJsonRaw<AvailabilityWriteEnvelope<AvailabilityRule>>("/v1/availability/rules", body),
-  onSuccess: () => invalidateRules(qc),
-});
-
 export const updateAvailabilityRuleMutation = (qc: QueryClient) => ({
   mutationFn: ({ id, body }: { id: string; body: UpdateAvailabilityRuleInput }) =>
     patchJsonRaw<AvailabilityWriteEnvelope<AvailabilityRule>>(`/v1/availability/rules/${id}`, body),
   onSuccess: () => invalidateRules(qc),
-});
-
-/** DELETE returns the remaining Rule[] in `data`. */
-export const deleteAvailabilityRuleMutation = (qc: QueryClient) => ({
-  mutationFn: (id: string) =>
-    deleteJsonRaw<AvailabilityWriteEnvelope<AvailabilityRule[]>>(`/v1/availability/rules/${id}`),
-  onSuccess: () => invalidateRules(qc),
-});
-
-export const createAvailabilityExceptionMutation = (qc: QueryClient) => ({
-  mutationFn: (body: CreateAvailabilityExceptionInput) =>
-    postJsonRaw<AvailabilityWriteEnvelope<AvailabilityException>>(
-      "/v1/availability/exceptions",
-      body,
-    ),
-  onSuccess: () => invalidateExceptions(qc),
 });
 
 export const updateAvailabilityExceptionMutation = (qc: QueryClient) => ({
@@ -83,15 +59,6 @@ export const updateAvailabilityExceptionMutation = (qc: QueryClient) => ({
     patchJsonRaw<AvailabilityWriteEnvelope<AvailabilityException>>(
       `/v1/availability/exceptions/${id}`,
       body,
-    ),
-  onSuccess: () => invalidateExceptions(qc),
-});
-
-/** DELETE returns the remaining Exception[] in `data`. */
-export const deleteAvailabilityExceptionMutation = (qc: QueryClient) => ({
-  mutationFn: (id: string) =>
-    deleteJsonRaw<AvailabilityWriteEnvelope<AvailabilityException[]>>(
-      `/v1/availability/exceptions/${id}`,
     ),
   onSuccess: () => invalidateExceptions(qc),
 });

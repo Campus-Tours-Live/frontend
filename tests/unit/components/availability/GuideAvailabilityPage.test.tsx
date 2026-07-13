@@ -6,12 +6,7 @@ import {
   useAvailabilityExceptions,
   useAvailabilityRules,
   useAvailabilitySettings,
-  useCreateAvailabilityException,
-  useCreateAvailabilityRule,
-  useDeleteAvailabilityException,
-  useDeleteAvailabilityRule,
   useOverrideMultiPreview,
-  useOverridePreview,
   useReplaceOverrides,
   useReplaceRules,
   useResolvedAvailability,
@@ -34,12 +29,7 @@ jest.mock("@/lib/data-access", () => ({
   useAvailabilitySettings: jest.fn(),
   useResolvedAvailability: jest.fn(),
   useUpdateAvailabilityRule: jest.fn(),
-  useCreateAvailabilityRule: jest.fn(),
-  useDeleteAvailabilityRule: jest.fn(),
-  useOverridePreview: jest.fn(),
   useOverrideMultiPreview: jest.fn(),
-  useCreateAvailabilityException: jest.fn(),
-  useDeleteAvailabilityException: jest.fn(),
   useReplaceRules: jest.fn(),
   useReplaceOverrides: jest.fn(),
   ApiError: class ApiError extends Error {
@@ -57,12 +47,7 @@ const mockUseAvailabilityExceptions = useAvailabilityExceptions as jest.Mock;
 const mockUseAvailabilitySettings = useAvailabilitySettings as jest.Mock;
 const mockUseResolvedAvailability = useResolvedAvailability as jest.Mock;
 const mockUseUpdateAvailabilityRule = useUpdateAvailabilityRule as jest.Mock;
-const mockUseCreateAvailabilityRule = useCreateAvailabilityRule as jest.Mock;
-const mockUseDeleteAvailabilityRule = useDeleteAvailabilityRule as jest.Mock;
-const mockUseOverridePreview = useOverridePreview as jest.Mock;
 const mockUseOverrideMultiPreview = useOverrideMultiPreview as jest.Mock;
-const mockUseCreateAvailabilityException = useCreateAvailabilityException as jest.Mock;
-const mockUseDeleteAvailabilityException = useDeleteAvailabilityException as jest.Mock;
 const mockUseReplaceRules = useReplaceRules as jest.Mock;
 const mockUseReplaceOverrides = useReplaceOverrides as jest.Mock;
 
@@ -147,21 +132,10 @@ beforeEach(() => {
   jest.setSystemTime(new Date("2026-07-15T18:00:00Z"));
   setHooks();
   mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
-  mockUseCreateAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
-  mockUseDeleteAvailabilityRule.mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
-  mockUseOverridePreview.mockReturnValue({ data: undefined, isLoading: false, isFetching: false });
   mockUseOverrideMultiPreview.mockReturnValue({
     data: undefined,
     isLoading: false,
     isFetching: false,
-  });
-  mockUseCreateAvailabilityException.mockReturnValue({
-    mutateAsync: jest.fn().mockResolvedValue(undefined),
-    isPending: false,
-  });
-  mockUseDeleteAvailabilityException.mockReturnValue({
-    mutateAsync: jest.fn().mockResolvedValue(undefined),
-    isPending: false,
   });
   mockUseReplaceRules.mockReturnValue({
     mutateAsync: jest.fn().mockResolvedValue(undefined),
@@ -318,8 +292,7 @@ describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notificat
     const dialog = await screen.findByRole("dialog");
 
     // 2026-07-22 has no existing override → empty editor; add a slot so Confirm issues an atomic
-    // replace (DateOverrideModal's save now goes through useReplaceOverrides, not
-    // useCreateAvailabilityException).
+    // replace (DateOverrideModal's save goes through useReplaceOverrides).
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
     await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
 
