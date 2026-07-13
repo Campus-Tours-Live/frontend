@@ -231,6 +231,25 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
     expect(popover).toHaveTextContent("Extra");
   });
 
+  it("does not attach global pointer/key listeners for the hover tooltip", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const docSpy = jest.spyOn(document, "addEventListener");
+    const winSpy = jest.spyOn(window, "addEventListener");
+    setResolved([{ startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T15:00:00Z" }]);
+
+    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    await user.hover(screen.getByTestId("calendar-day-2026-07-10"));
+    await screen.findByRole("tooltip", { name: /availability for 2026-07-10/i });
+
+    // The tooltip dismisses on mouse-leave/blur, so it must NOT register the outside-pointer /
+    // Escape global listeners (those belong to dismissible dialogs, not a passive hover summary).
+    expect(docSpy).not.toHaveBeenCalledWith("pointerdown", expect.any(Function));
+    expect(winSpy).not.toHaveBeenCalledWith("keydown", expect.any(Function));
+
+    docSpy.mockRestore();
+    winSpy.mockRestore();
+  });
+
   it("shows 'No hours' / 'Unavailable' for a hovered zero-availability day", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);

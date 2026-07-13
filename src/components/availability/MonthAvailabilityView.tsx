@@ -272,10 +272,12 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
         <Legend />
       </div>
 
+      {/* No `onClose`: this is a passive hover/focus summary that dismisses when the day cell's
+          mouse-leave/blur clears `hovered` — so it must not register the Popover's outside-pointer /
+          Escape GLOBAL listeners (those are for dismissible dialogs, not a tooltip). */}
       <Popover
         open={Boolean(hoveredCell)}
         anchorEl={hovered?.anchorEl ?? null}
-        onClose={() => setHovered(null)}
         role="tooltip"
         aria-label={hoveredCell ? `Availability for ${hoveredCell.iso}` : undefined}
         className="w-64"
