@@ -27,6 +27,27 @@ describe("queryKeys", () => {
     });
   });
 
+  describe("tourCatalog(filters)", () => {
+    it("returns ['tour-catalog', filters]", () => {
+      const filters = { sort: "RECOMMENDED" as const };
+      expect(queryKeys.tourCatalog(filters)).toEqual(["tour-catalog", filters]);
+    });
+
+    it("varies by filters", () => {
+      expect(queryKeys.tourCatalog({ q: "a" })).not.toEqual(queryKeys.tourCatalog({ q: "b" }));
+    });
+  });
+
+  describe("tourDetail(id)", () => {
+    it("returns ['tour-detail', id]", () => {
+      expect(queryKeys.tourDetail("abc")).toEqual(["tour-detail", "abc"]);
+    });
+
+    it("varies by id", () => {
+      expect(queryKeys.tourDetail("a")).not.toEqual(queryKeys.tourDetail("b"));
+    });
+  });
+
   describe("universitySearch(q)", () => {
     it("returns ['university-search', q]", () => {
       expect(queryKeys.universitySearch("mit")).toEqual(["university-search", "mit"]);
@@ -68,6 +89,8 @@ describe("queryKeys", () => {
       ["participantProfile", () => queryKeys.participantProfile()],
       ["guideProfile", () => queryKeys.guideProfile()],
       ["tourTopics", () => queryKeys.tourTopics()],
+      ["tourCatalog", () => queryKeys.tourCatalog({})],
+      ["tourDetail", () => queryKeys.tourDetail("x")],
       ["dashboard", () => queryKeys.dashboard()],
       ["guideOfferings", () => queryKeys.guideOfferings()],
       ["universitySearch", () => queryKeys.universitySearch("x")],
@@ -89,6 +112,8 @@ describe("queryKeys", () => {
         queryKeys.participantProfile(),
         queryKeys.guideProfile(),
         queryKeys.tourTopics(),
+        queryKeys.tourCatalog({}),
+        queryKeys.tourDetail("x"),
         queryKeys.dashboard(),
         queryKeys.guideOfferings(),
         queryKeys.universitySearch("x"),

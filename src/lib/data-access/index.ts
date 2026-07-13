@@ -9,6 +9,8 @@ export { useMe } from "./hooks/use-me";
 export { useParticipantProfile } from "./hooks/use-participant-profile";
 export { useGuideProfile } from "./hooks/use-guide-profile";
 export { useTourTopics } from "./hooks/use-tour-topics";
+export { useTourCatalog } from "./hooks/use-tour-catalog";
+export { useTourDetail } from "./hooks/use-tour-detail";
 export { useUniversitySearch } from "./hooks/use-university-search";
 export { useUpdateParticipantProfile } from "./hooks/use-update-participant-profile";
 export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
@@ -28,6 +30,10 @@ export type {
   GuideProfileUpdate,
   University,
   TourTopic,
+  TourSummary,
+  TourDetail,
+  TourCatalogFilters,
+  TourCatalogSort,
   Offering,
   OfferingStatus,
   CreateOfferingInput,
