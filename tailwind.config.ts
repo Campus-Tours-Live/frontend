@@ -2,11 +2,7 @@ import type { Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
-  content: [
-    "./src/app/**/*.{ts,tsx}",
-    "./src/components/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-  ],
+  content: ["./src/app/**/*.{ts,tsx}", "./src/components/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,
@@ -20,12 +16,24 @@ export default {
       },
       fontSize: {
         // CampusToursLive type scale (design system)
-        display: ["clamp(42px,6vw,76px)", { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" }],
-        h1: ["clamp(42px,6vw,76px)", { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" }],
-        h2: ["clamp(30px,4vw,48px)", { lineHeight: "1.08", letterSpacing: "-0.035em", fontWeight: "700" }],
-        h3: ["21px", { lineHeight: "1.3", fontWeight: "700" }],
-        h4: ["18px", { lineHeight: "1.3", fontWeight: "700" }],
-        lead: ["19px", { lineHeight: "1.6", fontWeight: "500" }],
+        // `display` = hero / marketing scale (stays large). `h1` = app page-title scale, tuned
+        // smaller than the hero so content pages don't shout on desktop, while staying above `h2`
+        // to preserve hierarchy. Both fluid: they scale down for mobile.
+        display: [
+          "clamp(42px,6vw,76px)",
+          { lineHeight: "1.02", letterSpacing: "-0.045em", fontWeight: "700" },
+        ],
+        h1: [
+          "clamp(28px,3.6vw,44px)",
+          { lineHeight: "1.08", letterSpacing: "-0.03em", fontWeight: "700" },
+        ],
+        h2: [
+          "clamp(24px,3vw,36px)",
+          { lineHeight: "1.12", letterSpacing: "-0.03em", fontWeight: "700" },
+        ],
+        h3: ["19px", { lineHeight: "1.3", fontWeight: "700" }],
+        h4: ["16px", { lineHeight: "1.35", fontWeight: "700" }],
+        lead: ["clamp(16px,1vw,18px)", { lineHeight: "1.6", fontWeight: "500" }],
         body: ["15.5px", { lineHeight: "1.55" }],
         caption: ["13px", { lineHeight: "1.4" }],
         eyebrow: ["13px", { lineHeight: "1.2", letterSpacing: "0.08em", fontWeight: "700" }],

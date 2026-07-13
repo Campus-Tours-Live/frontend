@@ -184,34 +184,37 @@ export interface TourCatalogFilters {
   limit?: number;
 }
 
-export type AvailabilityExceptionType = "UNAVAILABLE_ALL_DAY" | "UNAVAILABLE_RANGE" | "ADDITIONAL";
+// --- Availability v2 (CTL-55) — start + duration, BFF Contract A (/v1/availability*) --------------
+// Supersedes the old (day_of_week, start_local, end_local, tz) shape: no `endLocal`, no 24:00
+// sentinel, no wraparound. A rule/exception carries `windowMin` (minutes) instead of an end time.
 
-/** Recurring weekly availability block (Core AvailabilityRuleResponse). */
+export type AvailabilityExceptionKind = "UNAVAILABLE" | "ADDITIONAL";
+
+/** Recurring weekly availability block (BFF AvailabilityRuleResponse — start + duration). */
 export interface AvailabilityRule {
   id: string;
-  dayOfWeek: number;
-  startLocal: string;
-  endLocal: string;
+  dayOfWeek: number; // 0-6
+  startLocal: string; // "HH:mm"
+  windowMin: number;
   timezone: string;
-  effectiveFrom: string;
+  effectiveFrom: string | null;
   effectiveTo: string | null;
   active: boolean;
-  createdAt: string | null;
 }
 
-/** One-off override to weekly availability (Core AvailabilityExceptionResponse). */
+/** One-off override to weekly availability (BFF AvailabilityExceptionResponse). */
 export interface AvailabilityException {
   id: string;
   exceptionDate: string;
-  type: AvailabilityExceptionType;
-  startLocal: string | null;
-  endLocal: string | null;
+  kind: AvailabilityExceptionKind;
+  startLocal: string;
+  windowMin: number;
   reason: string | null;
-  createdAt: string | null;
 }
 
-/** Per-guide booking policy (Core BookingSettingsResponse). */
-export interface BookingSettings {
+/** Per-guide booking policy (BFF AvailabilitySettingsResponse). */
+export interface AvailabilitySettings {
+  guideId: string;
   acceptanceMode: "AUTO" | "MANUAL";
   responseDeadlineMin: number;
   minNoticeMin: number;
@@ -220,52 +223,131 @@ export interface BookingSettings {
   bufferAfterMin: number;
   durationsOffered: number[];
   timezone: string;
+  updatedAt: string;
 }
 
-/** GET /v1/guide/availability */
-export interface AvailabilitySummary {
+/** A materialized, absolute-instant availability span (UTC, `Z`-suffixed) or a bookable slot. */
+export interface AvailabilityOccurrence {
+  startAt: string;
+  endAt: string;
+}
+
+/** GET /v1/availability — the backend-resolved (coalesced) read; the FE renders it, never
+ *  re-coalesces rules itself. */
+export interface ResolvedAvailability {
   rules: AvailabilityRule[];
-  exceptions: AvailabilityException[];
-  bookingSettings: BookingSettings;
+  occurrences: AvailabilityOccurrence[];
+  /** ISO dates where a DST spring-forward gap moved/skipped an occurrence — surfaced to the guide. */
+  dstGapDays: string[];
+  /** Derived readiness signal, passed through verbatim from backend (no recompute): true iff the
+   *  guide has at least one materialized occurrence that has not yet ended, i.e. a participant
+   *  could book right now. */
+  bookable: boolean;
+  /** Derived readiness signal, passed through verbatim from backend (no recompute): true iff the
+   *  guide has at least one active weekly rule (an expired-but-active rule still counts; a
+   *  soft-deleted/inactive rule does not). */
+  hasWeeklyHours: boolean;
+}
+
+/** A booking whose scheduled window is covered by a rule/exception change — surfaced so the guide
+ *  sees what a reduction in availability affects (the booking itself is never retroactively cancelled). */
+export interface AffectedBooking {
+  bookingId: string;
+  bookingNumber: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+}
+
+/** Shape returned by every availability write (POST/PATCH/DELETE): the mutated resource (or, for
+ *  DELETE, the remaining list) plus any bookings the change affects. */
+export interface AvailabilityWriteEnvelope<T> {
+  data: T;
+  affectedBookings: AffectedBooking[];
+  meta?: Record<string, unknown>;
 }
 
 export interface CreateAvailabilityRuleInput {
   dayOfWeek: number;
   startLocal: string;
-  endLocal: string;
-  timezone?: string;
-  effectiveFrom?: string;
+  windowMin: number;
+  effectiveFrom?: string | null;
   effectiveTo?: string | null;
   active?: boolean;
 }
 
-export interface UpdateAvailabilityRuleInput {
-  dayOfWeek?: number;
-  startLocal?: string;
-  endLocal?: string;
-  timezone?: string;
-  effectiveFrom?: string;
-  effectiveTo?: string | null;
-  active?: boolean;
+export type UpdateAvailabilityRuleInput = Partial<CreateAvailabilityRuleInput>;
+
+/** One affected date's dry-run result from `GET /v1/availability/preview` (CTL-55 v2.1). */
+export interface OverridePreviewDay {
+  date: string;
+  /** The "after" net-available windows for this date, in the same absolute-instant shape as
+   *  {@link AvailabilityOccurrence} (reused — the FE never recomputes these, only renders them). */
+  resultingWindows: AvailabilityOccurrence[];
+  /** Weekly-rule windows this override would trim/replace on this date. */
+  trimmed: {
+    kind: AvailabilityExceptionKind;
+    startLocal: string;
+    windowMin: number;
+  }[];
+  /** True when saving the proposed override won't materialize this date — it falls outside the
+   *  bookable horizon or is in the past (bff `OverridePreviewDaySchema.inert`). Passed through
+   *  verbatim; the FE never recomputes it. */
+  inert: boolean;
 }
 
-export interface CreateAvailabilityExceptionInput {
-  exceptionDate: string;
-  type: AvailabilityExceptionType;
-  startLocal?: string;
-  endLocal?: string;
-  reason?: string;
+/** GET /v1/availability/preview — a date-specific override dry-run (Block/Add-extra), returned
+ *  before the guide confirms a create. `valid`/`message` surface a would-be-422 without writing
+ *  anything; the FE renders this as-is (before/after + trimmed), never recomputing it. */
+export interface OverridePreviewResponse {
+  days: OverridePreviewDay[];
+  valid: boolean;
+  message: string | null;
 }
 
-export interface UpdateAvailabilityExceptionInput {
-  exceptionDate?: string;
-  type?: AvailabilityExceptionType;
-  startLocal?: string;
-  endLocal?: string;
-  reason?: string;
+/** One proposed time window (start + duration) inside a multi-slot override preview/create. */
+export interface OverrideWindow {
+  startLocal: string;
+  windowMin: number;
 }
 
-export interface UpdateBookingSettingsInput {
+/** Body for the multi-window dry-run `POST /v1/availability/preview` (CTL-55 multi-slot). Posts N
+ *  windows and the backend returns the NET result of ALL of them applied together — an
+ *  {@link OverridePreviewResponse}. The FE renders that net result; it never merges the windows itself. */
+export interface OverrideMultiPreviewParams {
+  dateFrom: string;
+  dateTo: string;
+  kind: AvailabilityExceptionKind;
+  windows: OverrideWindow[];
+  /** When `true`, the dry-run shows the day as if this `kind`'s existing overrides are REPLACED
+   *  by exactly `windows` (edits/removals render correctly; an EMPTY `windows` = that kind cleared
+   *  for the day). Makes an editor's preview accurate. When omitted/false the backend treats
+   *  `windows` as additive to whatever already exists. */
+  replaceExisting?: boolean;
+}
+
+/** Body for `POST /v1/availability/overrides/replace` (CTL-55 v2.1 B2) — an ATOMIC single-day
+ *  replace of ONE kind's date-specific overrides. The guide's existing same-kind exceptions for
+ *  `date` are dropped and replaced by exactly `windows` in one backend transaction; an EMPTY
+ *  `windows` list clears this kind for the day. Name-for-name with bff Contract A
+ *  (`OverrideReplaceRequestSchema`): a single `date` (NOT `dateFrom`/`dateTo`). */
+export interface OverrideReplaceInput {
+  date: string;
+  kind: AvailabilityExceptionKind;
+  windows: OverrideWindow[];
+}
+
+/** Body for `POST /v1/availability/rules/replace` (CTL-55 v2.1 B2) — an ATOMIC replace of ONE
+ *  weekday's recurring availability rules. The guide's existing ACTIVE rules for `dayOfWeek` are
+ *  dropped and replaced by exactly `windows` in one backend transaction; an EMPTY `windows` list
+ *  clears this weekday's rules. Name-for-name with bff Contract A (`RulesReplaceRequestSchema`):
+ *  deliberately no `timezone`/`effectiveFrom`/`effectiveTo`/`kind` field. */
+export interface RulesReplaceInput {
+  dayOfWeek: number;
+  windows: OverrideWindow[];
+}
+
+export interface UpdateAvailabilitySettingsInput {
   acceptanceMode?: "AUTO" | "MANUAL";
   responseDeadlineMin?: number;
   minNoticeMin?: number;
@@ -275,3 +357,6 @@ export interface UpdateBookingSettingsInput {
   durationsOffered?: number[];
   timezone?: string;
 }
+
+/** GET /v1/offerings/{id}/slots — participant-facing bookable slots for an offering. */
+export type OfferingSlot = AvailabilityOccurrence;

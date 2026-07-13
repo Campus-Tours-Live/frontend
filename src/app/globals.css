@@ -18,71 +18,71 @@
 @layer base {
   :root {
     /* ---- shadcn-style semantic tokens (re-skinned to brand) ---- */
-    --background: 40 100% 98.8%;          /* page surface — ivory-50 #FFFDF9 */
-    --foreground: 202.5 7.8% 20%;         /* charcoal #2F3437 */
+    --background: 40 100% 98.8%; /* page surface — ivory-50 #FFFDF9 */
+    --foreground: 202.5 7.8% 20%; /* charcoal #2F3437 */
 
-    --card: 0 0% 100%;                    /* #FFFFFF */
+    --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 202.5 7.8% 20%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 202.5 7.8% 20%;
 
-    --primary: 210 28.8% 43.5%;           /* blue-500 #4F6F8F */
+    --primary: 210 28.8% 43.5%; /* blue-500 #4F6F8F */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 109.3 17.9% 69.4%;       /* sage-400 #A8BFA3 */
-    --secondary-foreground: 112 16% 20%;  /* dark sage #2C3A2A */
+    --secondary: 109.3 17.9% 69.4%; /* sage-400 #A8BFA3 */
+    --secondary-foreground: 112 16% 20%; /* dark sage #2C3A2A */
 
     --muted: 40 30% 94%;
     --muted-foreground: 207.7 5.8% 43.7%; /* gray-600 #697076 */
 
     /* shadcn `accent` is a UI hover token — soft primary tint, not brand coral */
-    --accent: 207.7 33.3% 92.4%;          /* primary-soft #E5ECF2 */
+    --accent: 207.7 33.3% 92.4%; /* primary-soft #E5ECF2 */
     --accent-foreground: 208.9 30.1% 36.5%;
 
-    --destructive: 5.5 53.4% 68%;         /* #D98A82 */
+    --destructive: 5.5 53.4% 68%; /* #D98A82 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 37.5 24.2% 87.1%;           /* beige-200 #E6E0D6 */
+    --border: 37.5 24.2% 87.1%; /* beige-200 #E6E0D6 */
     --input: 37.5 24.2% 87.1%;
     --ring: 210 28.8% 43.5%;
 
-    --radius: 1rem;                       /* 16px → card radius (r-md) */
+    --radius: 1rem; /* 16px → card radius (r-md) */
 
     /* ================= Extended brand tokens ================= */
-    --brand-primary: 210 28.8% 43.5%;         /* #4F6F8F */
-    --brand-primary-dark: 208.9 30.1% 36.5%;  /* blue-600 #415E79 */
-    --brand-primary-soft: 207.7 33.3% 92.4%;  /* #E5ECF2 */
+    --brand-primary: 210 28.8% 43.5%; /* #4F6F8F */
+    --brand-primary-dark: 208.9 30.1% 36.5%; /* blue-600 #415E79 */
+    --brand-primary-soft: 207.7 33.3% 92.4%; /* #E5ECF2 */
 
-    --brand-sage: 109.3 17.9% 69.4%;          /* sage-400 #A8BFA3 */
-    --brand-sage-deep: 110 14.7% 60%;         /* sage-500 #8FA88A (trust dots) */
-    --brand-sage-soft: 100 23.1% 92.4%;       /* #EAF0E7 */
+    --brand-sage: 109.3 17.9% 69.4%; /* sage-400 #A8BFA3 */
+    --brand-sage-deep: 110 14.7% 60%; /* sage-500 #8FA88A (trust dots) */
+    --brand-sage-soft: 100 23.1% 92.4%; /* #EAF0E7 */
     --brand-sage-foreground: 106.5 15.7% 38.6%; /* #5A7253 */
 
-    --brand-coral: 10.3 61.4% 77.6%;          /* #E9AFA3 */
-    --brand-coral-soft: 12.6 57.6% 93.5%;     /* #F8E9E5 */
-    --brand-coral-foreground: 8.6 37.1% 48%;  /* #A85A4D */
+    --brand-coral: 10.3 61.4% 77.6%; /* #E9AFA3 */
+    --brand-coral-soft: 12.6 57.6% 93.5%; /* #F8E9E5 */
+    --brand-coral-foreground: 8.6 37.1% 48%; /* #A85A4D */
 
-    --brand-success: 135.7 19.6% 58%;         /* #7FA98A */
-    --brand-success-soft: 132 25% 92.2%;      /* #E6F0E8 */
+    --brand-success: 135.7 19.6% 58%; /* #7FA98A */
+    --brand-success-soft: 132 25% 92.2%; /* #E6F0E8 */
     --brand-success-foreground: 137.3 22.6% 39%; /* #4D7A5A */
-    --brand-warning: 35.6 65.6% 64.7%;        /* #E0B06A */
-    --brand-warning-soft: 37.8 65.9% 92%;     /* #F8EEDD */
+    --brand-warning: 35.6 65.6% 64.7%; /* #E0B06A */
+    --brand-warning-soft: 37.8 65.9% 92%; /* #F8EEDD */
     --brand-warning-foreground: 36.1 54% 39.2%; /* #9A6F2E */
-    --brand-error: 5.5 53.4% 68%;             /* #D98A82 */
-    --brand-error-soft: 7.8 62.2% 92.7%;      /* #F8E4E1 */
-    --brand-error-foreground: 8.6 37.1% 48%;  /* #A85A4D */
-    --brand-amber: 35.6 65.6% 64.7%;          /* #E0B06A — stars */
+    --brand-error: 5.5 53.4% 68%; /* #D98A82 */
+    --brand-error-soft: 7.8 62.2% 92.7%; /* #F8E4E1 */
+    --brand-error-foreground: 8.6 37.1% 48%; /* #A85A4D */
+    --brand-amber: 35.6 65.6% 64.7%; /* #E0B06A — stars */
 
-    --brand-ink: 202.5 7.8% 20%;              /* text primary #2F3437 */
-    --brand-ink-soft: 207.7 5.8% 43.7%;       /* text secondary #697076 */
-    --brand-ivory: 42 50% 96.1%;              /* ivory-100 #FAF7F0 */
-    --brand-canvas: 40 34.9% 91.6%;           /* canvas #F1ECE2 */
+    --brand-ink: 202.5 7.8% 20%; /* text primary #2F3437 */
+    --brand-ink-soft: 207.7 5.8% 43.7%; /* text secondary #697076 */
+    --brand-ivory: 42 50% 96.1%; /* ivory-100 #FAF7F0 */
+    --brand-canvas: 40 34.9% 91.6%; /* canvas #F1ECE2 */
 
     /* ---- Purple base (new — member guardian accent) ---- */
-    --brand-purple: 253 42% 63%;              /* #8A78C8 */
-    --brand-purple-soft: 255 67% 95%;         /* #EFEBFB */
-    --brand-purple-foreground: 254 36% 46%;   /* #5F4BA0 */
+    --brand-purple: 253 42% 63%; /* #8A78C8 */
+    --brand-purple-soft: 255 67% 95%; /* #EFEBFB */
+    --brand-purple-foreground: 254 36% 46%; /* #5F4BA0 */
 
     /* ---- Member role accent tokens (participant / guide / guardian) ----
        Semantic aliases so any role-coloured surface reuses one source. */
@@ -106,7 +106,7 @@
     /* ---- Elevation ---- */
     --shadow-sm: 0 2px 8px rgba(47, 52, 55, 0.05);
     --shadow-md: 0 8px 24px rgba(47, 52, 55, 0.07);
-    --shadow-lg: 0 16px 48px rgba(47, 52, 55, 0.10);
+    --shadow-lg: 0 16px 48px rgba(47, 52, 55, 0.1);
     --shadow-card: 0 8px 24px rgba(47, 52, 55, 0.06);
 
     /* ---- Typography (font CSS vars are injected by next/font in layout.tsx) ---- */
@@ -169,15 +169,33 @@
    ========================================================================= */
 @layer components {
   /* ---------- Typography ---------- */
-  .h1      { @apply font-display text-h1 text-ink; }
-  .h2      { @apply font-display text-h2 text-ink; }
-  .h3      { @apply font-display text-h3 text-ink; }
-  .h4      { @apply font-display text-h4 text-ink; }
-  .lead    { @apply text-lead text-ink-soft; }
-  .body    { @apply text-body text-ink; }
-  .caption { @apply text-caption text-ink-soft; }
-  .muted   { @apply text-ink-soft; }
-  .eyebrow { @apply text-eyebrow uppercase text-primary-dark; }
+  .h1 {
+    @apply font-display text-h1 text-ink;
+  }
+  .h2 {
+    @apply font-display text-h2 text-ink;
+  }
+  .h3 {
+    @apply font-display text-h3 text-ink;
+  }
+  .h4 {
+    @apply font-display text-h4 text-ink;
+  }
+  .lead {
+    @apply text-lead text-ink-soft;
+  }
+  .body {
+    @apply text-body text-ink;
+  }
+  .caption {
+    @apply text-caption text-ink-soft;
+  }
+  .muted {
+    @apply text-ink-soft;
+  }
+  .eyebrow {
+    @apply text-eyebrow uppercase text-primary-dark;
+  }
 
   /* ---------- Buttons ---------- */
   .btn {
@@ -205,18 +223,34 @@
     @apply bg-transparent border-transparent text-ink-soft underline underline-offset-2
            hover:text-ink hover:no-underline hover:bg-transparent;
   }
-  .btn-sm    { @apply px-4 py-[9px] text-[13.5px]; }
-  .btn-lg    { @apply px-[30px] py-4 text-[16.5px]; }
-  .btn-block { @apply w-full; }
+  .btn-sm {
+    @apply px-4 py-[9px] text-[13.5px];
+  }
+  .btn-lg {
+    @apply px-[30px] py-4 text-[16.5px];
+  }
+  .btn-block {
+    @apply w-full;
+  }
 
   /* ---------- Card ---------- */
-  .card     { @apply bg-card border border-border rounded-card shadow-card; }
-  .card-pad { @apply p-[18px]; }
+  .card {
+    @apply bg-card border border-border rounded-card shadow-card;
+  }
+  .card-pad {
+    @apply p-[18px];
+  }
 
   /* ---------- Inputs ---------- */
-  .field label { @apply block text-[13px] font-bold mb-1.5 text-ink; }
-  .field-error { @apply mt-1 text-[13px] font-semibold text-error-foreground; }
-  .field-hint  { @apply mt-1 text-[12px] text-ink-soft; }
+  .field label {
+    @apply block text-[13px] font-bold mb-1.5 text-ink;
+  }
+  .field-error {
+    @apply mt-1 text-[13px] font-semibold text-error-foreground;
+  }
+  .field-hint {
+    @apply mt-1 text-[12px] text-ink-soft;
+  }
   .input {
     @apply w-full px-[15px] py-3 border-[1.5px] border-border rounded-field
            bg-white text-ink text-[14.5px] font-sans transition-all duration-150
@@ -245,12 +279,24 @@
     @apply inline-flex items-center gap-1.5 text-[12px] font-bold
            px-[11px] py-1 rounded-pill;
   }
-  .badge-primary  { @apply bg-primary-soft text-primary-dark; }
-  .badge-sage     { @apply bg-sage-soft text-sage-foreground; }
-  .badge-coral    { @apply bg-coral-soft text-coral-foreground; }
-  .badge-success  { @apply bg-success-soft text-success-foreground; }
-  .badge-warn     { @apply bg-warning-soft text-warning-foreground; }
-  .badge-verified { @apply bg-sage-soft text-success-foreground; }
+  .badge-primary {
+    @apply bg-primary-soft text-primary-dark;
+  }
+  .badge-sage {
+    @apply bg-sage-soft text-sage-foreground;
+  }
+  .badge-coral {
+    @apply bg-coral-soft text-coral-foreground;
+  }
+  .badge-success {
+    @apply bg-success-soft text-success-foreground;
+  }
+  .badge-warn {
+    @apply bg-warning-soft text-warning-foreground;
+  }
+  .badge-verified {
+    @apply bg-sage-soft text-success-foreground;
+  }
 
   /* Status pill with a leading dot (mirrors design_new .status). Pair with a
      variant: status-info / status-warning / status-success / status-error. */
@@ -262,17 +308,35 @@
     content: "";
     @apply h-2 w-2 rounded-pill bg-current;
   }
-  .status-info    { @apply bg-[#EDF2F6] text-[#4F6F8F]; }
-  .status-warning { @apply bg-[#FBF1E6] text-[#A86E35]; }
-  .status-success { @apply bg-[#EEF5EE] text-[#5F7E62]; }
-  .status-error   { @apply bg-[#F9ECEA] text-[#A85C58]; }
+  .status-info {
+    @apply bg-[#EDF2F6] text-[#4F6F8F];
+  }
+  .status-warning {
+    @apply bg-[#FBF1E6] text-[#A86E35];
+  }
+  .status-success {
+    @apply bg-[#EEF5EE] text-[#5F7E62];
+  }
+  .status-error {
+    @apply bg-[#F9ECEA] text-[#A85C58];
+  }
 
   /* ---------- Alerts (block messages / banners) ---------- */
-  .alert         { @apply rounded-card border px-4 py-3 text-[13px]; }
-  .alert-info    { @apply border-[#D8E2EB] bg-[#EDF2F6] text-[#4F6F8F]; }
-  .alert-warning { @apply border-[#EAD9C0] bg-[#FBF1E6] text-[#A86E35]; }
-  .alert-success { @apply border-[#D2E0D2] bg-[#EEF5EE] text-[#5F7E62]; }
-  .alert-error   { @apply border-[#E9C9C4] bg-[#F9ECEA] text-[#A85C58]; }
+  .alert {
+    @apply rounded-card border px-4 py-3 text-[13px];
+  }
+  .alert-info {
+    @apply border-[#D8E2EB] bg-[#EDF2F6] text-[#4F6F8F];
+  }
+  .alert-warning {
+    @apply border-[#EAD9C0] bg-[#FBF1E6] text-[#A86E35];
+  }
+  .alert-success {
+    @apply border-[#D2E0D2] bg-[#EEF5EE] text-[#5F7E62];
+  }
+  .alert-error {
+    @apply border-[#E9C9C4] bg-[#F9ECEA] text-[#A85C58];
+  }
 
   /* ---------- Chips ---------- */
   .chip {
@@ -280,9 +344,106 @@
            px-3.5 py-[7px] rounded-pill border-[1.5px] border-border
            bg-white text-ink-soft cursor-pointer transition-colors;
   }
-  .chip.active { @apply bg-primary text-primary-foreground border-primary; }
-  .chip-sm     { @apply px-2.5 py-1 text-[11.5px]; }
+  .chip.active {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  .chip-sm {
+    @apply px-2.5 py-1 text-[11.5px];
+  }
+
+  /* ---------- Switch (Toggle) ---------- */
+  .switch {
+    @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill
+           border border-transparent bg-border cursor-pointer transition-colors
+           duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-[3px]
+           focus-visible:ring-primary-soft disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .switch-checked {
+    @apply bg-success;
+  }
+  .switch-knob {
+    @apply pointer-events-none inline-block h-5 w-5 translate-x-0.5 rounded-pill
+           bg-white shadow-sm transition-transform duration-200 ease-in-out;
+  }
+  .switch-checked .switch-knob {
+    @apply translate-x-[22px];
+  }
+
+  /* ---------- TimePicker (CTL-55) ---------- */
+  /* Closed field — mirrors `.input`'s bordered surface so it reads as native. */
+  .tp-field {
+    @apply w-full px-[15px] py-3 border-[1.5px] border-border rounded-field
+           bg-white text-ink transition-all duration-150
+           focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary-soft;
+  }
+  /* One editable time segment (hour / minute / AM-PM) — plain-text look, fixed
+     width so the field never resizes; focused segment gets a soft highlight. */
+  .tp-seg {
+    @apply cursor-text bg-transparent p-0 text-center text-[14.5px] text-ink outline-none tabular-nums
+           disabled:cursor-not-allowed;
+  }
+  .tp-seg:focus {
+    @apply rounded bg-primary-soft text-primary-dark;
+  }
+  /* Clock / icon button — same ghost hover as menu items (bg tint + colour shift). */
+  .tp-icon-btn {
+    @apply rounded p-1 text-ink-soft transition-colors
+           hover:bg-primary-soft hover:text-primary
+           focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft
+           disabled:pointer-events-none;
+  }
+  /* Dropdown popover — portaled to <body> and fixed-positioned in JS, so no
+     scrolling/overflow ancestor (the modal) can clip it. */
+  .tp-popover {
+    @apply z-[80] flex gap-1 rounded-card border border-border bg-popover p-2 shadow-lg;
+  }
+  /* One scroll-wheel column. */
+  .tp-wheel {
+    @apply w-[68px] overflow-hidden;
+  }
+  .tp-col {
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+  }
+  .tp-col::-webkit-scrollbar {
+    display: none;
+  }
+  .tp-item {
+    scroll-snap-align: center;
+  }
+  /* Centre selection band. */
+  .tp-band {
+    @apply pointer-events-none absolute inset-x-1 top-1/2 z-0 -translate-y-1/2
+           rounded-[8px] border-y border-border bg-primary-soft/40;
+  }
+  /* Top/bottom fades toward the popover surface (iPhone-Clock look). */
+  .tp-fade-top,
+  .tp-fade-bottom {
+    @apply pointer-events-none absolute inset-x-0 z-10 h-[68px];
+  }
+  .tp-fade-top {
+    @apply top-0;
+    background: linear-gradient(to bottom, hsl(var(--popover)), hsl(var(--popover) / 0));
+  }
+  .tp-fade-bottom {
+    @apply bottom-0;
+    background: linear-gradient(to top, hsl(var(--popover)), hsl(var(--popover) / 0));
+  }
+
+  /* Hatched "fully unavailable" day cell (Calendar `muted`) — a subtle grey
+     diagonal fill so a day off reads distinctly from an empty low-density day. */
+  .calendar-hatch {
+    background-image: repeating-linear-gradient(
+      135deg,
+      hsl(var(--border)) 0,
+      hsl(var(--border)) 1.5px,
+      transparent 1.5px,
+      transparent 6px
+    );
+  }
 
   /* ---------- Misc ---------- */
-  .divider { @apply h-px bg-border border-0 my-[18px]; }
+  .divider {
+    @apply h-px bg-border border-0 my-[18px];
+  }
 }
