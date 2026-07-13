@@ -14,6 +14,7 @@ import {
   isoDateInTimeZone,
   partsInTimeZone,
 } from "@/lib/availability/bucketByDate";
+import { minutesFromHHmm } from "@/lib/availability/fromTo";
 import { cn } from "@/lib/utils";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
@@ -153,16 +154,21 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
     [resolvedOccurrences, settingsTimezone],
   );
 
-  /** Per-date set of ADDITIONAL exception start times ("HH:mm", settings-local) — used only
-   *  to flag which resolved windows get the blue "Extra" accent; the occurrences already
-   *  reflect the net result (FE-never-recomputes). */
-  const additionalStartsByDate = useMemo(() => {
-    const map = new Map<string, Set<string>>();
+  /** Per-date ADDITIONAL exception coverage intervals (settings-local minutes-of-day) — used only
+   *  to flag which resolved windows get the blue "Extra" accent; the occurrences already reflect the
+   *  net result (FE-never-recomputes). Kept as intervals (not raw start times) so the accent survives
+   *  a backend-TRIMMED ADDITIONAL start: when Core clips an extra window's start (e.g. because its
+   *  first minutes were already covered by weekly hours), the resolved window starts LATER than the
+   *  exception's `startLocal`, so a start-string match would silently drop the accent — but the start
+   *  still falls inside the exception's original [start, start+windowMin) interval. */
+  const additionalIntervalsByDate = useMemo(() => {
+    const map = new Map<string, { startMin: number; endMin: number }[]>();
     for (const exc of exceptions ?? ([] as AvailabilityException[])) {
       if (exc.kind !== "ADDITIONAL") continue;
-      const set = map.get(exc.exceptionDate) ?? new Set<string>();
-      set.add(exc.startLocal);
-      map.set(exc.exceptionDate, set);
+      const startMin = minutesFromHHmm(exc.startLocal);
+      const list = map.get(exc.exceptionDate) ?? [];
+      list.push({ startMin, endMin: startMin + exc.windowMin });
+      map.set(exc.exceptionDate, list);
     }
     return map;
   }, [exceptions]);
@@ -178,31 +184,27 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
     for (let day = 1; day <= total; day++) {
       const iso = `${cursor.year}-${pad2(cursor.month)}-${pad2(day)}`;
       const rawWindows = occurrencesByDate.get(iso) ?? [];
-      const additionalStarts = additionalStartsByDate.get(iso);
+      const additionalIntervals = additionalIntervalsByDate.get(iso);
       let totalMinutes = 0;
       const windows: DayWindow[] = rawWindows.map((window) => {
         totalMinutes += minutesBetween(window.startAt, window.endAt);
-        const startHHmm = new Intl.DateTimeFormat("en-GB", {
-          timeZone: settingsTimezone,
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-          .format(new Date(window.startAt))
-          .replace(/^24:/, "00:");
-        return { window, additional: additionalStarts?.has(startHHmm) ?? false };
+        const startMin = localMinutesOfDay(window.startAt, settingsTimezone);
+        const additional =
+          additionalIntervals?.some((iv) => startMin >= iv.startMin && startMin < iv.endMin) ??
+          false;
+        return { window, additional };
       });
       result.push({
         iso,
         day,
         windows,
         totalMinutes,
-        hasAdditional: (additionalStarts?.size ?? 0) > 0,
+        hasAdditional: (additionalIntervals?.length ?? 0) > 0,
         isToday: iso === todayIso,
       });
     }
     return result;
-  }, [cursor, occurrencesByDate, additionalStartsByDate, settingsTimezone, todayIso]);
+  }, [cursor, occurrencesByDate, additionalIntervalsByDate, settingsTimezone, todayIso]);
 
   const hoveredCell = hovered ? cells.find((cell) => cell.iso === hovered.iso) : undefined;
 

@@ -176,6 +176,33 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
     expect(popover).toHaveTextContent("9:00 AM – 10:00 AM");
   });
 
+  it("still labels a trimmed ADDITIONAL window 'Extra' when its start no longer matches the exception", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    // The ADDITIONAL exception is 14:00–16:00 CDT, but the backend trimmed its start to 14:30 because
+    // 14:00–14:30 was already covered by weekly hours. The resolved window (14:30–16:00) no longer
+    // starts at the exception's 14:00 startLocal — a raw start-time match would silently drop the
+    // "Extra" accent. The accent must survive the trim (derived from interval coverage, not equality).
+    setResolved([{ startAt: "2026-07-17T19:30:00Z", endAt: "2026-07-17T21:00:00Z" }]); // 14:30–16:00 CDT
+    setExceptions([
+      {
+        id: "e1",
+        exceptionDate: "2026-07-17",
+        kind: "ADDITIONAL",
+        startLocal: "14:00",
+        windowMin: 120,
+        reason: null,
+      },
+    ]);
+
+    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+
+    await user.hover(screen.getByTestId("calendar-day-2026-07-17"));
+    const popover = await screen.findByRole("tooltip", { name: /availability for 2026-07-17/i });
+
+    expect(popover).toHaveTextContent("2:30 PM – 4:00 PM");
+    expect(popover).toHaveTextContent("Extra");
+  });
+
   it("shows 'No hours' / 'Unavailable' for a hovered zero-availability day", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
