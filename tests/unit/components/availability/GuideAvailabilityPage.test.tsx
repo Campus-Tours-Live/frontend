@@ -97,6 +97,8 @@ const resolved: ResolvedAvailability = {
   rules: [mondayRule],
   occurrences: [{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }],
   dstGapDays: [],
+  bookable: true,
+  hasWeeklyHours: true,
 };
 
 function setHooks(

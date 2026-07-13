@@ -8,6 +8,8 @@ import type {
   AvailabilityWriteEnvelope,
   CreateAvailabilityExceptionInput,
   CreateAvailabilityRuleInput,
+  OverrideReplaceInput,
+  RulesReplaceInput,
   UpdateAvailabilityExceptionInput,
   UpdateAvailabilityRuleInput,
   UpdateAvailabilitySettingsInput,
@@ -33,6 +35,18 @@ function invalidateExceptions(qc: QueryClient) {
 
 function invalidateSettings(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: queryKeys.availabilitySettings() });
+  qc.invalidateQueries({ queryKey: queryKeys.availabilityResolved() });
+}
+
+/**
+ * The atomic replace endpoints (CTL-55 v2.1 B2) touch a single day's overrides or a single
+ * weekday's rules, but the calendar view renders rules + exceptions + the resolved read
+ * together — invalidate all three so every consumer re-fetches, not just the resource the
+ * replace directly wrote.
+ */
+function invalidateRulesAndExceptions(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: queryKeys.availabilityRules() });
+  qc.invalidateQueries({ queryKey: queryKeys.availabilityExceptions() });
   qc.invalidateQueries({ queryKey: queryKeys.availabilityResolved() });
 }
 
@@ -80,6 +94,36 @@ export const deleteAvailabilityExceptionMutation = (qc: QueryClient) => ({
       `/v1/availability/exceptions/${id}`,
     ),
   onSuccess: () => invalidateExceptions(qc),
+});
+
+/**
+ * Atomic single-day replace of one kind's date-specific overrides (`POST
+ * /v1/availability/overrides/replace`, CTL-55 v2.1 B2) — the backend transaction is the only
+ * source of atomicity; the FE sends the raw `{date, kind, windows}` and never reconciles by
+ * delete-then-create. Resolves with the day's remaining same-kind exceptions in `data`.
+ */
+export const replaceOverridesMutation = (qc: QueryClient) => ({
+  mutationFn: (body: OverrideReplaceInput) =>
+    postJsonRaw<AvailabilityWriteEnvelope<AvailabilityException[]>>(
+      "/v1/availability/overrides/replace",
+      body,
+    ),
+  onSuccess: () => invalidateRulesAndExceptions(qc),
+});
+
+/**
+ * Atomic replace of one weekday's recurring rules (`POST /v1/availability/rules/replace`,
+ * CTL-55 v2.1 B2) — the backend transaction is the only source of atomicity; the FE sends the
+ * raw `{dayOfWeek, windows}` and never reconciles by create/update/delete. Resolves with the
+ * weekday's remaining rules in `data`.
+ */
+export const replaceRulesMutation = (qc: QueryClient) => ({
+  mutationFn: (body: RulesReplaceInput) =>
+    postJsonRaw<AvailabilityWriteEnvelope<AvailabilityRule[]>>(
+      "/v1/availability/rules/replace",
+      body,
+    ),
+  onSuccess: () => invalidateRulesAndExceptions(qc),
 });
 
 export const updateAvailabilitySettingsMutation = (qc: QueryClient) => ({

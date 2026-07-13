@@ -11,6 +11,8 @@ import {
   useDeleteAvailabilityRule,
   useOfferingSlots,
   useOverridePreview,
+  useReplaceOverrides,
+  useReplaceRules,
   useResolvedAvailability,
   useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
@@ -373,6 +375,67 @@ describe("useDeleteAvailabilityException", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
     expect(result.current.data).toEqual({ data: remaining, affectedBookings: [] });
+  });
+});
+
+describe("useReplaceOverrides", () => {
+  it("POSTs /v1/availability/overrides/replace with {date,kind,windows} and invalidates rules/exceptions/resolved", async () => {
+    const body = {
+      date: "2026-07-20",
+      kind: "UNAVAILABLE" as const,
+      windows: [{ startLocal: "09:00", windowMin: 60 }],
+    };
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { data: { exceptionDate: body.date }, affectedBookings: [] }),
+    );
+
+    const client = makeClient();
+    const invalidateSpy = jest.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useReplaceOverrides(), {
+      wrapper: wrapperFor(client),
+    });
+
+    await result.current.mutateAsync(body);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/v1/availability/overrides/replace",
+      expect.objectContaining({ method: "POST", body: JSON.stringify(body) }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["availability-rules"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["availability-exceptions"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["availability-resolved"] });
+  });
+});
+
+describe("useReplaceRules", () => {
+  it("POSTs /v1/availability/rules/replace with {dayOfWeek,windows} and invalidates rules/exceptions/resolved", async () => {
+    const body = {
+      dayOfWeek: 2,
+      windows: [{ startLocal: "10:00", windowMin: 120 }],
+    };
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { data: [{ id: "r1", dayOfWeek: 2 }], affectedBookings: [] }),
+    );
+
+    const client = makeClient();
+    const invalidateSpy = jest.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useReplaceRules(), {
+      wrapper: wrapperFor(client),
+    });
+
+    await result.current.mutateAsync(body);
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/v1/availability/rules/replace",
+      expect.objectContaining({ method: "POST", body: JSON.stringify(body) }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["availability-rules"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["availability-exceptions"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["availability-resolved"] });
   });
 });
 

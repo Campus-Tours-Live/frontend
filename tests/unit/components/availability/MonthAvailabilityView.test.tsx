@@ -39,7 +39,7 @@ const sampleSettings: AvailabilitySettings = {
 // UTC-5 in July) calendar date — chosen mid-day so no DST/tz edge shifts the bucket,
 // except the explicitly-labelled boundary case.
 function resolved(occurrences: ResolvedAvailability["occurrences"]): ResolvedAvailability {
-  return { rules: [], occurrences, dstGapDays: [] };
+  return { rules: [], occurrences, dstGapDays: [], bookable: true, hasWeeklyHours: true };
 }
 
 function setResolved(occurrences: ResolvedAvailability["occurrences"]) {

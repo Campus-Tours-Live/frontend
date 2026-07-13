@@ -55,7 +55,7 @@ const sampleSettings: AvailabilitySettings = {
 };
 
 function resolved(occurrences: ResolvedAvailability["occurrences"]): ResolvedAvailability {
-  return { rules: [], occurrences, dstGapDays: [] };
+  return { rules: [], occurrences, dstGapDays: [], bookable: true, hasWeeklyHours: true };
 }
 
 /** Build an exception on the target date 2026-07-20. */
@@ -113,6 +113,7 @@ const blockingPreview: OverridePreviewResponse = {
       date: "2026-07-20",
       resultingWindows: [{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T14:30:00Z" }],
       trimmed: [{ kind: "UNAVAILABLE", startLocal: "10:00", windowMin: 60 }],
+      inert: false,
     },
   ],
 };
@@ -406,6 +407,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
             { startAt: "2026-07-20T18:00:00Z", endAt: "2026-07-20T19:00:00Z" },
           ],
           trimmed: [],
+          inert: false,
         },
       ],
     };

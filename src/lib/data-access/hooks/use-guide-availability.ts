@@ -6,6 +6,8 @@ import {
   createAvailabilityRuleMutation,
   deleteAvailabilityExceptionMutation,
   deleteAvailabilityRuleMutation,
+  replaceOverridesMutation,
+  replaceRulesMutation,
   updateAvailabilityExceptionMutation,
   updateAvailabilityRuleMutation,
   updateAvailabilitySettingsMutation,
@@ -60,6 +62,28 @@ export function useUpdateAvailabilityException() {
 export function useDeleteAvailabilityException() {
   const qc = useQueryClient();
   return useMutation(deleteAvailabilityExceptionMutation(qc));
+}
+
+/**
+ * Atomic single-day replace of one kind's date-specific overrides — `POST
+ * /v1/availability/overrides/replace` (CTL-55 v2.1 B2). Sends `{date, kind, windows}` as-is; the
+ * backend transaction is the only source of atomicity (the FE never reconciles by
+ * delete-then-create). Invalidates rules, exceptions, and the resolved read on success.
+ */
+export function useReplaceOverrides() {
+  const qc = useQueryClient();
+  return useMutation(replaceOverridesMutation(qc));
+}
+
+/**
+ * Atomic replace of one weekday's recurring rules — `POST /v1/availability/rules/replace`
+ * (CTL-55 v2.1 B2). Sends `{dayOfWeek, windows}` as-is; the backend transaction is the only
+ * source of atomicity (the FE never reconciles by create/update/delete). Invalidates rules,
+ * exceptions, and the resolved read on success.
+ */
+export function useReplaceRules() {
+  const qc = useQueryClient();
+  return useMutation(replaceRulesMutation(qc));
 }
 
 /** The guide's booking policy (acceptance mode, buffers, durations offered, timezone). */

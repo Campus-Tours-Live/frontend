@@ -29,6 +29,8 @@ export {
   useOfferingSlots,
   useOverrideMultiPreview,
   useOverridePreview,
+  useReplaceOverrides,
+  useReplaceRules,
   useResolvedAvailability,
   useUpdateAvailabilityException,
   useUpdateAvailabilityRule,
@@ -71,4 +73,6 @@ export type {
   OverridePreviewResponse,
   OverrideWindow,
   OverrideMultiPreviewParams,
+  OverrideReplaceInput,
+  RulesReplaceInput,
 } from "./types";

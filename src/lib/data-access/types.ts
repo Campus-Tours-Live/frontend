@@ -201,6 +201,14 @@ export interface ResolvedAvailability {
   occurrences: AvailabilityOccurrence[];
   /** ISO dates where a DST spring-forward gap moved/skipped an occurrence — surfaced to the guide. */
   dstGapDays: string[];
+  /** Derived readiness signal, passed through verbatim from backend (no recompute): true iff the
+   *  guide has at least one materialized occurrence that has not yet ended, i.e. a participant
+   *  could book right now. */
+  bookable: boolean;
+  /** Derived readiness signal, passed through verbatim from backend (no recompute): true iff the
+   *  guide has at least one active weekly rule (an expired-but-active rule still counts; a
+   *  soft-deleted/inactive rule does not). */
+  hasWeeklyHours: boolean;
 }
 
 /** A booking whose scheduled window is covered by a rule/exception change — surfaced so the guide
@@ -260,6 +268,10 @@ export interface OverridePreviewDay {
     startLocal: string;
     windowMin: number;
   }[];
+  /** True when saving the proposed override won't materialize this date — it falls outside the
+   *  bookable horizon or is in the past (bff `OverridePreviewDaySchema.inert`). Passed through
+   *  verbatim; the FE never recomputes it. */
+  inert: boolean;
 }
 
 /** GET /v1/availability/preview — a date-specific override dry-run (Block/Add-extra), returned
@@ -300,6 +312,27 @@ export interface OverrideMultiPreviewParams {
    *  for the day). Makes an editor's preview accurate. When omitted/false the backend treats
    *  `windows` as additive to whatever already exists. */
   replaceExisting?: boolean;
+}
+
+/** Body for `POST /v1/availability/overrides/replace` (CTL-55 v2.1 B2) — an ATOMIC single-day
+ *  replace of ONE kind's date-specific overrides. The guide's existing same-kind exceptions for
+ *  `date` are dropped and replaced by exactly `windows` in one backend transaction; an EMPTY
+ *  `windows` list clears this kind for the day. Name-for-name with bff Contract A
+ *  (`OverrideReplaceRequestSchema`): a single `date` (NOT `dateFrom`/`dateTo`). */
+export interface OverrideReplaceInput {
+  date: string;
+  kind: AvailabilityExceptionKind;
+  windows: OverrideWindow[];
+}
+
+/** Body for `POST /v1/availability/rules/replace` (CTL-55 v2.1 B2) — an ATOMIC replace of ONE
+ *  weekday's recurring availability rules. The guide's existing ACTIVE rules for `dayOfWeek` are
+ *  dropped and replaced by exactly `windows` in one backend transaction; an EMPTY `windows` list
+ *  clears this weekday's rules. Name-for-name with bff Contract A (`RulesReplaceRequestSchema`):
+ *  deliberately no `timezone`/`effectiveFrom`/`effectiveTo`/`kind` field. */
+export interface RulesReplaceInput {
+  dayOfWeek: number;
+  windows: OverrideWindow[];
 }
 
 export interface UpdateAvailabilitySettingsInput {
