@@ -168,18 +168,50 @@ interface DayView {
   before: AvailabilityOccurrence[];
   nowSegments: TimeAxisSegment[];
   afterSegments: TimeAxisSegment[];
-  domainStartMin: number;
-  domainEndMin: number;
-  ticks: TimeAxisTick[];
   conflict: boolean;
+}
+
+/** The preview renders each affected date split into a fixed AM half (12 AM–12 PM) and PM half
+ *  (12 PM–12 AM), each its own 12-hour axis — a single auto-ranged full-day axis crowded its hour
+ *  labels into an unreadable overlap in the narrow modal. Every date shows Now × 2 (AM + PM) and
+ *  After × 2 (AM + PM). */
+const NOON_MIN = 720;
+const DAY_END_MIN = 1440;
+const HALF_TICK_STEP_MIN = 120;
+
+interface DayHalf {
+  key: "am" | "pm";
+  startMin: number;
+  endMin: number;
+}
+const DAY_HALVES: DayHalf[] = [
+  { key: "am", startMin: 0, endMin: NOON_MIN },
+  { key: "pm", startMin: NOON_MIN, endMin: DAY_END_MIN },
+];
+
+/** Fixed 2-hour tick marks for one 12-hour half (AM: 12 AM, 2 AM … 12 PM). Seven labels across the
+ *  half never collide in the modal, unlike the old full-day auto-ranged axis. */
+function halfTicks(startMin: number, endMin: number): TimeAxisTick[] {
+  const ticks: TimeAxisTick[] = [];
+  for (let m = startMin; m <= endMin; m += HALF_TICK_STEP_MIN) {
+    ticks.push({ min: m, label: formatClockLabel(minutesToHHmm(m)) });
+  }
+  return ticks;
+}
+
+/** Segments that intersect a given half-day window. `TimeAxisBar`'s clamping draws only the visible
+ *  portion, so a segment that straddles noon appears (clipped) in both halves. */
+function segmentsInHalf(segments: TimeAxisSegment[], half: DayHalf): TimeAxisSegment[] {
+  return segments.filter((s) => s.startMin < half.endMin && s.endMin > half.startMin);
 }
 
 /**
  * Build the presentation view model for ONE affected date from the COMBINED (multi-window) dry-run.
  * All windows/trims come straight from the backend (resolved occurrences + the dry-run response's
  * single `resultingWindows`/`trimmed` for this date, net of ALL slots). The only computation here
- * is time→x domain/tick math and an instant equality check for the conflict flag — never
- * availability math (FE-never-recomputes).
+ * is mapping those windows to time-axis segments and an instant equality check for the conflict
+ * flag — never availability math (FE-never-recomputes). The fixed AM/PM axis split happens at
+ * render time.
  */
 function buildDayView(
   day: OverridePreviewDay,
@@ -227,57 +259,13 @@ function buildDayView(
     }
   }
 
-  // AUTO-RANGED axis (the reported-bug fix): the domain must cover the FULL extent of everything on
-  // screen — the date's current windows, the net resulting windows, AND every proposed slot window
-  // (a block on empty time leaves no segment yet still needs to be visible, e.g. a slot to 7 PM
-  // must not be cut off by a fixed morning axis). Earliest start → latest end, padded to whole
-  // hours (floor(min)→hour, ceil(max)→hour).
-  const proposedMins = proposed.flatMap((win) => {
-    const startMin = minutesFromHHmm(win.startLocal);
-    return [startMin, startMin + win.windowMin];
-  });
-  const allMins = [...nowSegments, ...afterSegments]
-    .flatMap((segment) => [segment.startMin, segment.endMin])
-    .concat(proposedMins);
-  let domainStartMin = 0;
-  let domainEndMin = 1440;
-  if (allMins.length > 0) {
-    domainStartMin = Math.floor(Math.min(...allMins) / 60) * 60;
-    domainEndMin = Math.ceil(Math.max(...allMins) / 60) * 60;
-    if (domainEndMin <= domainStartMin) domainEndMin = domainStartMin + 60;
-  }
-
-  // Ticks: whole-hour marks (coarser over a wide span) plus each proposed slot's start/end.
-  const step = domainEndMin - domainStartMin > 480 ? 120 : 60;
-  const tickMins = new Set<number>();
-  for (let m = domainStartMin; m <= domainEndMin; m += step) tickMins.add(m);
-  tickMins.add(domainEndMin);
-  for (const win of proposed) {
-    const startMin = minutesFromHHmm(win.startLocal);
-    tickMins.add(startMin);
-    tickMins.add(startMin + win.windowMin);
-  }
-  const ticks: TimeAxisTick[] = Array.from(tickMins)
-    .filter((m) => m >= domainStartMin && m <= domainEndMin)
-    .sort((a, b) => a - b)
-    .map((m) => ({ min: m, label: formatClockLabel(minutesToHHmm(m)) }));
-
   // The amber conflict warning is block-framed prose ("this blocks time that overlaps your current
   // hours") — it only makes sense for a Block time off (UNAVAILABLE) override that actually changes
   // the day's hours. Add extra (ADDITIONAL) is additive/non-destructive — the Now/After bars
   // already show the addition, so it never raises this warning, even when it changes before→after.
   const conflict = kind === "UNAVAILABLE" && !windowsEqual(before, day.resultingWindows);
 
-  return {
-    date: day.date,
-    before,
-    nowSegments,
-    afterSegments,
-    domainStartMin,
-    domainEndMin,
-    ticks,
-    conflict,
-  };
+  return { date: day.date, before, nowSegments, afterSegments, conflict };
 }
 
 /** Compose the amber conflict-warning body from the combined dry-run — pure PRESENTATION of Core's
@@ -475,17 +463,6 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
-        {conflictMessages.length > 0 ? (
-          <Alert variant="warning" role="status">
-            <ul className="space-y-1">
-              {conflictMessages.map((message, index) => (
-                <li key={index}>{message}</li>
-              ))}
-            </ul>
-            <p className="mt-1 font-medium">Confirm the change?</p>
-          </Alert>
-        ) : null}
-
         <div
           role="group"
           aria-label="Override type"
@@ -607,27 +584,32 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
                     <p className="text-[12px] font-semibold text-ink">
                       {formatWeekdayMonthDay(view.date)}
                     </p>
-                    <div className="mt-2 space-y-1">
-                      <TimeAxisBar
-                        barLabel="Now"
-                        ariaLabel={`Current hours on ${view.date}`}
-                        segments={view.nowSegments}
-                        domainStartMin={view.domainStartMin}
-                        domainEndMin={view.domainEndMin}
-                      />
-                      <TimeAxisBar
-                        barLabel="After"
-                        ariaLabel={`After applying on ${view.date}`}
-                        segments={view.afterSegments}
-                        domainStartMin={view.domainStartMin}
-                        domainEndMin={view.domainEndMin}
-                      />
-                      <TimeAxis
-                        ticks={view.ticks}
-                        rangeStartMin={view.domainStartMin}
-                        rangeEndMin={view.domainEndMin}
-                      />
-                    </div>
+                    {DAY_HALVES.map((half) => {
+                      const label = half.key.toUpperCase();
+                      return (
+                        <div key={half.key} className="mt-2 space-y-1">
+                          <TimeAxisBar
+                            barLabel="Now"
+                            ariaLabel={`Current hours on ${view.date} (${label})`}
+                            segments={segmentsInHalf(view.nowSegments, half)}
+                            domainStartMin={half.startMin}
+                            domainEndMin={half.endMin}
+                          />
+                          <TimeAxisBar
+                            barLabel="After"
+                            ariaLabel={`After applying on ${view.date} (${label})`}
+                            segments={segmentsInHalf(view.afterSegments, half)}
+                            domainStartMin={half.startMin}
+                            domainEndMin={half.endMin}
+                          />
+                          <TimeAxis
+                            ticks={halfTicks(half.startMin, half.endMin)}
+                            rangeStartMin={half.startMin}
+                            rangeEndMin={half.endMin}
+                          />
+                        </div>
+                      );
+                    })}
                   </li>
                 ))}
               </ul>
@@ -635,6 +617,17 @@ function DateOverrideModalContent({ initialDate, onClose }: Omit<DateOverrideMod
             </>
           )}
         </div>
+
+        {conflictMessages.length > 0 ? (
+          <Alert variant="warning" role="status">
+            <ul className="space-y-1">
+              {conflictMessages.map((message, index) => (
+                <li key={index}>{message}</li>
+              ))}
+            </ul>
+            <p className="mt-1 font-medium">Confirm the change?</p>
+          </Alert>
+        ) : null}
       </div>
     </Modal>
   );

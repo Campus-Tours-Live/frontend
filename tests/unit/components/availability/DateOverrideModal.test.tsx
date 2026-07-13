@@ -209,7 +209,7 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
     );
   });
 
-  it("renders a SINGLE combined Now/After pair per date (not per-slot) reflecting net resultingWindows + one legend", async () => {
+  it("renders a SINGLE combined Now/After pair per half (not per-slot) reflecting net resultingWindows + one legend", async () => {
     const user = userEvent.setup();
     mockUseOverrideMultiPreview.mockReturnValue({
       data: blockingPreview,
@@ -219,17 +219,19 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
 
     renderModal();
     const dialog = screen.getByRole("dialog");
-    // Two slots, but still ONE After bar for the date (combined, never per-slot).
+    // Two slots, but still ONE After bar per half for the date (combined, never per-slot).
     await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
 
-    // "Now" bar = the current (before) window 9:00–11:00, bucketed from resolved availability.
+    // "Now" AM bar = the current (before) window 9:00–11:00, bucketed from resolved availability.
     const nowBar = await within(dialog).findByRole("group", {
-      name: "Current hours on 2026-07-20",
+      name: "Current hours on 2026-07-20 (AM)",
     });
     expect(within(nowBar).getByTitle(/Available · 9:00 AM – 11:00 AM/)).toBeInTheDocument();
 
-    // Exactly ONE After bar (getByRole throws if there were a per-slot pair each).
-    const afterBar = within(dialog).getByRole("group", { name: "After applying on 2026-07-20" });
+    // Exactly ONE After AM bar (getByRole throws if there were a per-slot pair each).
+    const afterBar = within(dialog).getByRole("group", {
+      name: "After applying on 2026-07-20 (AM)",
+    });
     expect(within(afterBar).getByTitle(/Available · 9:00 AM – 9:30 AM/)).toBeInTheDocument();
     const timeOff = within(afterBar).getByTitle(/Time off · 10:00 AM – 11:00 AM/);
     expect(timeOff).toHaveClass("calendar-hatch");
@@ -263,46 +265,41 @@ describe("DateOverrideModal — ONE combined dry-run preview (all slots' windows
     const dialog = screen.getByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
 
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20" });
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
     // The proposed override window (default 9:00–10:00) shows blue as "Extra" (waits for the
     // debounced dry-run to re-render in ADDITIONAL mode).
     const extra = await within(dialog).findByTitle(/Extra · 9:00 AM – 10:00 AM/);
     expect(extra).toHaveClass("bg-primary");
   });
 
-  it("AUTO-RANGES the axis to cover a late slot even when it trims/changes nothing (bug fix)", async () => {
-    const user = userEvent.setup();
-    // A block on an empty 5–7 PM: the morning window is unchanged and nothing is trimmed, so the
-    // late slot appears in NO segment. The axis must still extend to 7 PM (old bug: fixed ~8–11 AM
-    // cut it off) — proven by a "7:00 PM" tick appearing in the preview.
-    const unchangedPreview: OverridePreviewResponse = {
-      valid: true,
-      message: null,
-      days: [
-        {
-          date: "2026-07-20",
-          resultingWindows: [{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T16:00:00Z" }],
-          trimmed: [],
-        },
-      ],
-    };
+  it("splits each date into a fixed 12-hour AM axis and PM axis (Now × 2, After × 2) so ticks never overlap", async () => {
     mockUseOverrideMultiPreview.mockReturnValue({
-      data: unchangedPreview,
+      data: blockingPreview,
       isLoading: false,
       isFetching: false,
     });
 
     renderModal();
     const dialog = screen.getByRole("dialog");
-    // Move the single slot to 5:00 PM – 7:00 PM.
-    await typeSegment(user, dialog, "Time slot 1 from hour", "5");
-    await setPeriod(user, dialog, "Time slot 1 from AM/PM", "PM");
-    await typeSegment(user, dialog, "Time slot 1 to hour", "7");
-    await setPeriod(user, dialog, "Time slot 1 to AM/PM", "PM");
-
     const region = within(dialog).getByRole("region", { name: "Preview" });
-    // The axis domain reaches 7 PM — a tick past 11 AM that the old fixed axis would have dropped.
-    expect(await within(region).findByText("7:00 PM")).toBeInTheDocument();
+
+    // Two Now bars and two After bars per date — one AM, one PM.
+    await within(region).findByRole("group", { name: "Current hours on 2026-07-20 (AM)" });
+    expect(
+      within(region).getByRole("group", { name: "Current hours on 2026-07-20 (PM)" }),
+    ).toBeInTheDocument();
+    expect(
+      within(region).getByRole("group", { name: "After applying on 2026-07-20 (AM)" }),
+    ).toBeInTheDocument();
+    expect(
+      within(region).getByRole("group", { name: "After applying on 2026-07-20 (PM)" }),
+    ).toBeInTheDocument();
+
+    // Each half spans a fixed 12 hours: the AM axis carries a morning tick, the PM axis an
+    // afternoon one, and both meet at the 12:00 PM boundary — no single crowded full-day axis.
+    expect(within(region).getByText("6:00 AM")).toBeInTheDocument();
+    expect(within(region).getByText("6:00 PM")).toBeInTheDocument();
+    expect(within(region).getAllByText("12:00 PM").length).toBeGreaterThan(0);
   });
 });
 
@@ -347,7 +344,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20" });
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
     expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
   });
@@ -379,7 +376,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
     await user.click(within(dialog).getByRole("button", { name: "Add extra" }));
 
     // The After bar still shows the added window (Now/After rendering is unaffected)...
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20" });
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
     expect(await within(dialog).findByTitle(/Extra · 9:00 AM – 10:00 AM/)).toBeInTheDocument();
     // ...but no amber warning appears for Add extra.
     expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
@@ -413,7 +410,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20" });
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
     expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
   });
