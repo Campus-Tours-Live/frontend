@@ -196,7 +196,7 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
     const user = setupUser();
     render(<GuideAvailabilityPage />);
 
-    await user.click(screen.getByTestId("month-day-2026-07-22"));
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
 
     const dialog = await screen.findByRole("dialog");
     // DateOverrideModal defaults to "Block time off" (UNAVAILABLE) mode.
@@ -209,7 +209,7 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
     const user = setupUser();
     render(<GuideAvailabilityPage />);
 
-    await user.click(screen.getByTestId("month-day-2026-07-22"));
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
@@ -229,7 +229,7 @@ describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notificat
     });
     render(<GuideAvailabilityPage />);
 
-    await user.click(screen.getByTestId("month-day-2026-07-22"));
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
     const dialog = await screen.findByRole("dialog");
 
     await user.click(within(dialog).getByRole("button", { name: "Confirm" }));

@@ -430,6 +430,18 @@
     background: linear-gradient(to top, hsl(var(--popover)), hsl(var(--popover) / 0));
   }
 
+  /* Hatched "fully unavailable" day cell (Calendar `muted`) — a subtle grey
+     diagonal fill so a day off reads distinctly from an empty low-density day. */
+  .calendar-hatch {
+    background-image: repeating-linear-gradient(
+      135deg,
+      hsl(var(--border)) 0,
+      hsl(var(--border)) 1.5px,
+      transparent 1.5px,
+      transparent 6px
+    );
+  }
+
   /* ---------- Misc ---------- */
   .divider {
     @apply h-px bg-border border-0 my-[18px];
