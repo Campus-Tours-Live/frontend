@@ -239,35 +239,12 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
       <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h2 className="font-display text-[20px] font-bold text-ink">Actual availability</h2>
-          {/* <div className="flex shrink-0 items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label="Previous month"
-              onClick={() => setCursor((prev) => addMonths(prev, -1))}
-            >
-              ‹
-            </Button>
-            <span className="min-w-[8rem] text-center text-[14px] font-semibold text-ink">
-              {monthLabel}
-            </span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              aria-label="Next month"
-              onClick={() => setCursor((prev) => addMonths(prev, 1))}
-            >
-              ›
-            </Button>
-          </div> */}
           <p className="text-[13px] text-ink-soft">
             What participants can actually book, shown by day. Hover a day for details, click a day
             to add a one-off override.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -290,10 +267,6 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
             ›
           </Button>
         </div>
-        {/* <p className="text-[13px] text-ink-soft">
-          What participants can actually book, shown by day. Hover a day for details, click a day to
-          add a one-off override.
-        </p> */}
       </div>
 
       <div className="px-5 py-4 sm:px-6">
@@ -406,7 +379,7 @@ function Legend() {
     { className: "ring-2 ring-ink", label: "Today" },
   ];
   return (
-    <div className="mt-3 flex flex-col gap-2 text-[11px] text-ink-soft">
+    <div className="mt-7 flex flex-col gap-2 text-[11px] text-ink-soft">
       <span>Density bar spans 12:00 AM – 12:00 AM (full day):</span>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {items.map((item) => (
