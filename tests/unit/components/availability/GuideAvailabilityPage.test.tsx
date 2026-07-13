@@ -193,15 +193,12 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
     expect(screen.getByText("AUTO")).toBeInTheDocument();
   });
 
-  it("renders the three section-guidance eyebrows and the weekly→calendar bridge line", () => {
+  it("renders the three section-guidance eyebrows", () => {
     render(<GuideAvailabilityPage />);
 
     expect(screen.getByText(/set your weekly hours/i)).toBeInTheDocument();
     expect(screen.getByText(/review your bookable calendar/i)).toBeInTheDocument();
     expect(screen.getByText(/booking policy/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/these weekly hours build your bookable calendar/i),
-    ).toBeInTheDocument();
   });
 
   it("keeps the booking-rules aside in normal flow (not sticky)", () => {

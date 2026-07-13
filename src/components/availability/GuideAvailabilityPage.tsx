@@ -79,7 +79,7 @@ export function GuideAvailabilityPage() {
 
       {!isLoading && !isError ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-          <aside className="space-y-2 lg:col-span-2 lg:row-start-1">
+          <aside className="mb-4 space-y-2 lg:col-span-2 lg:row-start-1 lg:mb-6">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
               For reference · Booking policy
             </p>
@@ -91,9 +91,6 @@ export function GuideAvailabilityPage() {
               Step 1 · Set your weekly hours
             </p>
             <WeeklyHoursPanel />
-            <p className="text-[13px] text-ink-soft">
-              These weekly hours build your bookable calendar.
-            </p>
           </div>
 
           <div className="space-y-2 lg:col-start-2 lg:row-start-2">
