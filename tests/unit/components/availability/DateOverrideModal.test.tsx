@@ -555,6 +555,39 @@ describe("DateOverrideModal — structural validation", () => {
   });
 });
 
+describe("DateOverrideModal — preview error surfaced in the preview region (B3)", () => {
+  it("shows the preview error reason instead of a blank chart", async () => {
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: true,
+      error: new ApiError(422, "Windows cross midnight"),
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const region = within(dialog).getByRole("region", { name: "Preview" });
+
+    expect(await within(region).findByText(/cross midnight/i)).toBeInTheDocument();
+    expect(within(region).queryByText(/no affected dates yet/i)).not.toBeInTheDocument();
+  });
+
+  it("falls back to a generic notice when the preview error has no message", async () => {
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isFetching: false,
+      isError: true,
+      error: new ApiError(500, ""),
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const region = within(dialog).getByRole("region", { name: "Preview" });
+
+    expect(await within(region).findByText(/couldn.t preview this change/i)).toBeInTheDocument();
+  });
+});
+
 describe("DateOverrideModal — a replace 422 keeps the modal open", () => {
   it("a replace 422 keeps the modal open and surfaces the message (no partial local wipe)", async () => {
     const user = userEvent.setup();

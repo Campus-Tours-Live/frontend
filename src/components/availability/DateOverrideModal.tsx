@@ -347,6 +347,18 @@ export function dateOverrideErrorMessage(err: unknown): string {
   return "Could not save this override. Please try again.";
 }
 
+/** Surfaces the dry-run preview's rejection reason (B3 — FE half) instead of leaving the preview
+ *  region blank when `useOverrideMultiPreview` errors. Prefers the relayed backend message — any
+ *  status, not just 422, since the bff now relays the reason verbatim on the preview endpoint too
+ *  — and falls back to a generic notice when the error carries none (e.g. a network failure).
+ *  Pure presentation of `previewQuery.error`; never a recompute. */
+export function previewErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.message) {
+    return err.message;
+  }
+  return "Couldn't preview this change. Please try again.";
+}
+
 interface DateOverrideModalContentProps {
   /** The single day this editor manages (already resolved to a concrete ISO date). */
   date: string;
@@ -451,6 +463,7 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
     conflictDays.length > 0 ? conflictSentences(conflictDays, settingsTimezone) : [];
 
   const previewLoading = previewQuery.isLoading || previewQuery.isFetching;
+  const previewError = previewQuery.isError ? previewErrorMessage(previewQuery.error) : null;
 
   const handleConfirm = async () => {
     setError(null);
@@ -628,6 +641,10 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
           <p className="text-[13px] font-bold text-ink">After applying</p>
           {previewLoading ? (
             <p className="mt-2 text-[13px] text-ink-soft">Loading preview…</p>
+          ) : previewError ? (
+            <Alert variant="error" className="mt-3">
+              {previewError}
+            </Alert>
           ) : dayViews.length === 0 ? (
             <p className="mt-2 text-[13px] text-ink-soft">No affected dates yet.</p>
           ) : (
