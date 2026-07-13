@@ -125,7 +125,9 @@ export function Calendar({
             >
               <span className="text-[12px] leading-none tabular-nums">{d.day}</span>
               {!d.muted ? (
-                <span className="min-h-0 flex-1">{renderDay ? renderDay(d) : d.content}</span>
+                <span className="mt-auto min-h-0 w-full">
+                  {renderDay ? renderDay(d) : d.content}
+                </span>
               ) : null}
             </button>
           );

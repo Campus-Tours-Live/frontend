@@ -238,6 +238,14 @@ describe("MonthAvailabilityView — click invokes onOpenOverride", () => {
   });
 });
 
+describe("MonthAvailabilityView — Sunday-first week", () => {
+  it("renders the weekday header row Sunday-first (SUN … SAT)", () => {
+    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    const heads = screen.getAllByRole("columnheader").map((el) => el.textContent);
+    expect(heads).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+  });
+});
+
 describe("MonthAvailabilityView — month navigation", () => {
   it("moves to the next/previous month and keeps rendering day cells", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

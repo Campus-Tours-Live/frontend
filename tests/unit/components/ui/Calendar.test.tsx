@@ -79,4 +79,10 @@ describe("Calendar", () => {
     const heads = screen.getAllByRole("columnheader").map((el) => el.textContent);
     expect(heads).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
   });
+
+  it("renders weekday heads Sunday-first when weekStartsOn=0", () => {
+    render(<Calendar year={2026} month={7} days={julyDays()} weekStartsOn={0} />);
+    const heads = screen.getAllByRole("columnheader").map((el) => el.textContent);
+    expect(heads).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
+  });
 });
