@@ -22,12 +22,12 @@ export function Hero() {
       {/* Left — copy */}
       <div>
         <div className="eyebrow">Live-guided virtual campus tours</div>
-        <h1 className="mt-3 max-w-[720px] font-display text-h1 text-ink">
+        <h1 className="mt-3 max-w-[720px] font-display text-display text-ink">
           Explore campus with someone who actually studies there.
         </h1>
         <p className="lead mt-5">
-          Ask the questions you cannot find on the university website. Book a live
-          tour with a verified student guide.
+          Ask the questions you cannot find on the university website. Book a live tour with a
+          verified student guide.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
