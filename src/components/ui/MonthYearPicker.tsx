@@ -156,7 +156,10 @@ export function MonthYearPicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => (open ? closePicker() : setOpen(true))}
-        className="tp-icon-btn flex items-center gap-1 px-2.5 py-2 text-[14px] font-semibold text-ink"
+        // `min-w` holds a stable width for the widest label ("September 2026") and
+        // `justify-center` centers the text, so stepping months never makes the label
+        // grow/shrink and shove the ‹/› chevrons around.
+        className="tp-icon-btn flex min-w-[9.5rem] items-center justify-center gap-1 px-2.5 py-2 text-[14px] font-semibold text-ink"
       >
         {label}
       </button>
