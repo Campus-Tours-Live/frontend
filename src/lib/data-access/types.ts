@@ -146,6 +146,44 @@ export interface TourTopic {
   label: string;
 }
 
+/** Public marketplace card (Core TourSummaryResponse). */
+export interface TourSummary {
+  id: string;
+  title: string;
+  slug: string;
+  topic: string;
+  universityId: string;
+  universityName: string;
+  guideId: string;
+  guideDisplayName: string;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
+}
+
+/** Full public tour detail (Core TourDetailResponse). */
+export interface TourDetail extends TourSummary {
+  description: string | null;
+  languages: string[];
+  universitySlug: string;
+  universityCity: string | null;
+  universityRegion: string | null;
+  guideBio: string | null;
+}
+
+export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATING";
+
+/** Query params for GET /v1/tours. */
+export interface TourCatalogFilters {
+  universityId?: string;
+  topic?: string;
+  q?: string;
+  sort?: TourCatalogSort;
+  limit?: number;
+}
+
 // --- Availability v2 (CTL-55) — start + duration, BFF Contract A (/v1/availability*) --------------
 // Supersedes the old (day_of_week, start_local, end_local, tz) shape: no `endLocal`, no 24:00
 // sentinel, no wraparound. A rule/exception carries `windowMin` (minutes) instead of an end time.
