@@ -46,6 +46,15 @@ describe("tourCatalogOptions", () => {
       "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&q=campus&sort=RATING&limit=5",
     );
   });
+
+  it("queryFn omits limit when it is 0", async () => {
+    mockedApiJson.mockResolvedValue([] as never);
+
+    const queryFn = tourCatalogOptions({ limit: 0 }).queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours");
+  });
 });
 
 describe("tourDetailOptions", () => {
@@ -69,5 +78,14 @@ describe("tourDetailOptions", () => {
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
     expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc");
     expect(result).toBe(payload);
+  });
+
+  it("queryFn encodes the id into the path", async () => {
+    mockedApiJson.mockResolvedValue({} as never);
+
+    const queryFn = tourDetailOptions("a b/c?d").queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd");
   });
 });

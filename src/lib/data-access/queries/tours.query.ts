@@ -10,7 +10,7 @@ function toursPath(filters: TourCatalogFilters = {}) {
   if (filters.topic) params.set("topic", filters.topic);
   if (filters.q) params.set("q", filters.q);
   if (filters.sort) params.set("sort", filters.sort);
-  if (filters.limit != null) params.set("limit", String(filters.limit));
+  if (filters.limit != null && filters.limit > 0) params.set("limit", String(filters.limit));
   const qs = params.toString();
   return qs ? `/v1/tours?${qs}` : "/v1/tours";
 }
@@ -26,6 +26,6 @@ export const tourCatalogOptions = (filters: TourCatalogFilters = {}) =>
 export const tourDetailOptions = (id: string) =>
   queryOptions({
     queryKey: queryKeys.tourDetail(id),
-    queryFn: () => apiJson<TourDetail>(`/v1/tours/${id}`),
+    queryFn: () => apiJson<TourDetail>(`/v1/tours/${encodeURIComponent(id)}`),
     enabled: Boolean(id),
   });
