@@ -14,34 +14,25 @@ describe("AuthOptions", () => {
   });
 
   describe("clicking Continue with Google", () => {
-    const realLocation = window.location;
-    let assign: jest.Mock;
-
-    beforeEach(() => {
-      assign = jest.fn();
-      Object.defineProperty(window, "location", {
-        configurable: true,
-        value: { assign },
-      });
-    });
-    afterEach(() => {
-      Object.defineProperty(window, "location", { configurable: true, value: realLocation });
-    });
+    let navigate: jest.Mock;
 
     it("redirects to the BFF /auth/login with returnTo + intent", () => {
-      render(<AuthOptions intent="signup" returnTo="/onboarding/guide" />);
+      navigate = jest.fn();
+      render(<AuthOptions intent="signup" returnTo="/onboarding/guide" navigate={navigate} />);
       fireEvent.click(screen.getByRole("button", { name: /continue with google/i }));
-      expect(assign).toHaveBeenCalledTimes(1);
-      const url = assign.mock.calls[0][0] as string;
+      expect(navigate).toHaveBeenCalledTimes(1);
+      const url = navigate.mock.calls[0][0] as string;
       expect(url).toContain("/auth/login?");
       expect(url).toContain("intent=signup");
       expect(url).toContain(encodeURIComponent("/onboarding/guide"));
     });
 
     it("defaults to a signin intent and the dashboard return", () => {
-      render(<AuthOptions />);
+      navigate = jest.fn();
+      render(<AuthOptions navigate={navigate} />);
       fireEvent.click(screen.getByRole("button", { name: /continue with google/i }));
-      const url = assign.mock.calls[0][0] as string;
+      expect(navigate).toHaveBeenCalledTimes(1);
+      const url = navigate.mock.calls[0][0] as string;
       expect(url).toContain("intent=signin");
       expect(url).toContain(encodeURIComponent("/dashboard"));
     });

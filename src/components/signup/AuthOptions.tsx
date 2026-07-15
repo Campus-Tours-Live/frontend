@@ -21,15 +21,21 @@ export interface AuthOptionsProps {
   returnTo?: string;
   /** "signup" provisions a new account; "signin" requires an existing one. */
   intent?: "signup" | "signin";
+  /** Override redirect behavior in tests without replacing jsdom's window.location. */
+  navigate?: (url: string) => void;
 }
 
-export function AuthOptions({ returnTo = "/dashboard", intent = "signin" }: AuthOptionsProps) {
+export function AuthOptions({
+  returnTo = "/dashboard",
+  intent = "signin",
+  navigate = (url) => window.location.assign(url),
+}: AuthOptionsProps) {
   const [pending, setPending] = useState(false);
 
   const handleGoogle = () => {
     setPending(true);
     const qs = new URLSearchParams({ returnTo, intent }).toString();
-    window.location.assign(`${BFF_BASE}/auth/login?${qs}`);
+    navigate(`${BFF_BASE}/auth/login?${qs}`);
   };
 
   return (
