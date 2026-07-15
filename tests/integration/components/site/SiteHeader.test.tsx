@@ -40,31 +40,25 @@ describe("SiteHeader", () => {
   it("shows the logged-out account menu + sign-in CTA", async () => {
     renderWithQuery(<SiteHeader />);
     // Logged out → an "Account" dropdown trigger and the single sign-in CTA.
-    expect(
-      await screen.findByRole("button", { name: /account/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("link", { name: /sign in or join now/i }).length,
-    ).toBeGreaterThan(0);
+    expect(await screen.findByRole("button", { name: /account/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /sign in or join now/i }).length).toBeGreaterThan(0);
     // The legacy separate "Get started" CTA no longer exists.
-    expect(
-      screen.queryByRole("link", { name: /get started/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /get started/i })).not.toBeInTheDocument();
     await flush();
   });
 
   it("renders the primary navigation links", async () => {
     renderWithQuery(<SiteHeader />);
     // Links appear in both the desktop inline nav and the mobile drawer.
-    expect(
-      screen.getAllByRole("link", { name: /explore tours/i }).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByRole("link", { name: /how it works/i }).length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByRole("link", { name: /for students & parents/i }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /explore tours/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /explore tours/i })[0]).toHaveAttribute(
+      "href",
+      "/tours",
+    );
+    expect(screen.getAllByRole("link", { name: /how it works/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /for students & parents/i }).length).toBeGreaterThan(
+      0,
+    );
     await flush();
   });
 });

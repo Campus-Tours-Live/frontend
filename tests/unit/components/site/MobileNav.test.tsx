@@ -45,12 +45,11 @@ describe("MobileNav — drawer toggle", () => {
 
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
-    expect(
-      screen.getByRole("button", { name: "Open menu" }),
-    ).toHaveAttribute("aria-expanded", "true");
-    expect(
-      screen.getByRole("button", { name: "Close menu" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open menu" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Close menu" })).toBeInTheDocument();
   });
 
   it("closes the drawer when the close control is clicked", async () => {
@@ -62,9 +61,10 @@ describe("MobileNav — drawer toggle", () => {
     await user.click(screen.getByRole("button", { name: "Open menu" }));
     await user.click(screen.getByRole("button", { name: "Close menu" }));
 
-    expect(
-      screen.getByRole("button", { name: "Open menu" }),
-    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Open menu" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 });
 
@@ -77,7 +77,7 @@ describe("MobileNav — primary links", () => {
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.getByText("Discover")).toBeInTheDocument();
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("How it works")).toBeInTheDocument();
     expect(screen.getByText("For students & parents")).toBeInTheDocument();
   });
@@ -109,9 +109,7 @@ describe("MobileNav — logged in (onboarded)", () => {
     expect(screen.getByTestId("account-nav")).toBeInTheDocument();
     const signOut = screen.getByRole("link", { name: "Sign out" });
     expect(signOut).toHaveAttribute("href", "/auth/logout");
-    expect(
-      screen.queryByText("Sign in or Join Now"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });
 });
 
@@ -123,9 +121,7 @@ describe("MobileNav — auth-actions gate", () => {
     render(<MobileNav />);
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
-    expect(
-      screen.queryByText("Sign in or Join Now"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
     // Primary links still show.
     expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
@@ -137,9 +133,7 @@ describe("MobileNav — auth-actions gate", () => {
     render(<MobileNav showAuthActions={false} />);
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
-    expect(
-      screen.queryByText("Sign in or Join Now"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });
 
   it("hides Sign out when showAuthActions is false (logged in)", async () => {

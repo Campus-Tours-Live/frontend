@@ -15,18 +15,72 @@ import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
  * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
  * shown, followed by a "View all tours" CTA.
  *
- * Data is hardcoded; "View all" / "View tour" CTAs are inert for now.
+ * Data is hardcoded; "View tour" CTAs are inert for now.
  */
 const FEATURED_TOURS: TourCardProps[] = [
-  { title: "Campus life and hidden study spots", university: "North Coast University", guide: "Maya Chen", durationMinutes: 60, price: 42 },
-  { title: "Engineering, labs, and student projects", university: "Redwood State College", guide: "Elias Brooks", durationMinutes: 45, price: 36 },
-  { title: "International student experience", university: "Harborview University", guide: "Sofia Patel", durationMinutes: 60, price: 44 },
-  { title: "Dorm tour and housing options", university: "North Coast University", guide: "Liam Walsh", durationMinutes: 30, price: 28 },
-  { title: "Arts, studios, and performance spaces", university: "Lakeside College", guide: "Aria Nguyen", durationMinutes: 45, price: 38 },
-  { title: "Sports, gyms, and student rec", university: "Summit University", guide: "Marcus Lee", durationMinutes: 30, price: 30 },
-  { title: "Libraries and quiet study corners", university: "Harborview University", guide: "Chloe Adams", durationMinutes: 45, price: 34 },
-  { title: "Dining halls and campus food scene", university: "Redwood State College", guide: "Diego Romero", durationMinutes: 30, price: 26 },
-  { title: "Research labs and grad pathways", university: "Summit University", guide: "Priya Shah", durationMinutes: 60, price: 48 },
+  {
+    title: "Campus life and hidden study spots",
+    university: "North Coast University",
+    guide: "Maya Chen",
+    durationMinutes: 60,
+    price: 42,
+  },
+  {
+    title: "Engineering, labs, and student projects",
+    university: "Redwood State College",
+    guide: "Elias Brooks",
+    durationMinutes: 45,
+    price: 36,
+  },
+  {
+    title: "International student experience",
+    university: "Harborview University",
+    guide: "Sofia Patel",
+    durationMinutes: 60,
+    price: 44,
+  },
+  {
+    title: "Dorm tour and housing options",
+    university: "North Coast University",
+    guide: "Liam Walsh",
+    durationMinutes: 30,
+    price: 28,
+  },
+  {
+    title: "Arts, studios, and performance spaces",
+    university: "Lakeside College",
+    guide: "Aria Nguyen",
+    durationMinutes: 45,
+    price: 38,
+  },
+  {
+    title: "Sports, gyms, and student rec",
+    university: "Summit University",
+    guide: "Marcus Lee",
+    durationMinutes: 30,
+    price: 30,
+  },
+  {
+    title: "Libraries and quiet study corners",
+    university: "Harborview University",
+    guide: "Chloe Adams",
+    durationMinutes: 45,
+    price: 34,
+  },
+  {
+    title: "Dining halls and campus food scene",
+    university: "Redwood State College",
+    guide: "Diego Romero",
+    durationMinutes: 30,
+    price: 26,
+  },
+  {
+    title: "Research labs and grad pathways",
+    university: "Summit University",
+    guide: "Priya Shah",
+    durationMinutes: 60,
+    price: 48,
+  },
 ];
 
 const COUNT = FEATURED_TOURS.length;
@@ -39,8 +93,7 @@ function pageMetrics(el: HTMLDivElement): { stride: number; pageCount: number } 
   const kids = el.children;
   /* istanbul ignore next -- defensive: the carousel always renders all 9 cards */
   if (kids.length < 2) return { stride: el.clientWidth || 1, pageCount: 1 };
-  const step =
-    (kids[1] as HTMLElement).offsetLeft - (kids[0] as HTMLElement).offsetLeft;
+  const step = (kids[1] as HTMLElement).offsetLeft - (kids[0] as HTMLElement).offsetLeft;
   if (step <= 0) return { stride: el.clientWidth || 1, pageCount: 1 };
   const perView = Math.max(1, Math.round(el.clientWidth / step));
   return {
@@ -51,7 +104,17 @@ function pageMetrics(el: HTMLDivElement): { stride: number; pageCount: number } 
 
 function Chevron({ dir }: { dir: "left" | "right" }) {
   return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d={dir === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
     </svg>
   );
@@ -98,7 +161,7 @@ export function FeaturedTours() {
           </h2>
         </div>
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
-        <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
+        <Link href="/tours" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
           View all tours
         </Link>
       </div>
@@ -174,7 +237,9 @@ export function FeaturedTours() {
 
       {/* Mobile "View all" CTA (vertical stack only) */}
       <div className="mt-6 flex justify-center lg:hidden">
-        <Link href="#" className="font-semibold text-primary">View all tours</Link>
+        <Link href="/tours" className="font-semibold text-primary">
+          View all tours
+        </Link>
       </div>
     </section>
   );

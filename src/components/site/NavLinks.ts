@@ -1,9 +1,4 @@
-import {
-  Compass,
-  Lightbulb,
-  GraduationCap,
-  type LucideIcon,
-} from "lucide-react";
+import { Compass, GraduationCap, Lightbulb, type LucideIcon } from "lucide-react";
 
 /**
  * Primary site nav links. Lives in its own module (imported directly by the
@@ -17,7 +12,7 @@ export interface NavLink {
 }
 
 export const NAV_LINKS: NavLink[] = [
-  { label: "Explore tours", href: "#", icon: Compass },
+  { label: "Explore tours", href: "/tours", icon: Compass },
   { label: "How it works", href: "#", icon: Lightbulb },
   { label: "For students & parents", href: "#", icon: GraduationCap },
 ];
