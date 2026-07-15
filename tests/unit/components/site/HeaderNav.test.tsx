@@ -34,7 +34,7 @@ describe("HeaderNav — primary nav links", () => {
 
     render(<HeaderNav />);
 
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("How it works")).toBeInTheDocument();
     expect(screen.getByText("For students & parents")).toBeInTheDocument();
   });

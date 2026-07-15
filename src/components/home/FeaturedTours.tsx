@@ -15,7 +15,7 @@ import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
  * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
  * shown, followed by a "View all tours" CTA.
  *
- * Data is hardcoded; "View all" / "View tour" CTAs are inert for now.
+ * Data is hardcoded; "View tour" CTAs are inert for now.
  */
 const FEATURED_TOURS: TourCardProps[] = [
   {
@@ -161,7 +161,7 @@ export function FeaturedTours() {
           </Heading>
         </div>
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
-        <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
+        <Link href="/tours" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
           View all tours
         </Link>
       </div>
@@ -237,7 +237,7 @@ export function FeaturedTours() {
 
       {/* Mobile "View all" CTA (vertical stack only) */}
       <div className="mt-6 flex justify-center lg:hidden">
-        <Link href="#" className="font-semibold text-primary">
+        <Link href="/tours" className="font-semibold text-primary">
           View all tours
         </Link>
       </div>

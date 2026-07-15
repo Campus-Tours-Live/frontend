@@ -77,7 +77,7 @@ describe("MobileNav — primary links", () => {
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.getByText("Discover")).toBeInTheDocument();
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("How it works")).toBeInTheDocument();
     expect(screen.getByText("For students & parents")).toBeInTheDocument();
   });

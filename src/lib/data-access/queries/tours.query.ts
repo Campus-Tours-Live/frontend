@@ -19,7 +19,7 @@ function toursPath(filters: TourCatalogFilters = {}) {
 export const tourCatalogOptions = (filters: TourCatalogFilters = {}) =>
   queryOptions({
     queryKey: queryKeys.tourCatalog(filters),
-    queryFn: () => apiJson<TourSummary[]>(toursPath(filters)),
+    queryFn: () => apiJson<TourSummary[]>(toursPath(filters), { interactive: false }),
   });
 
 /** GET /v1/tours/{id} — single discoverable tour detail. */

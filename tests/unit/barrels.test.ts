@@ -92,6 +92,8 @@ describe("public barrels", () => {
       "useMe",
       "useParticipantProfile",
       "useGuideProfile",
+      "useTourCatalog",
+      "useTourDetail",
       "useTourTopics",
       "useUniversitySearch",
       "useUpdateParticipantProfile",

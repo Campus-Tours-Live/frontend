@@ -9,6 +9,9 @@ jest.mock("@/components/home/Hero", () => ({ Hero: () => <div data-testid="hero"
 jest.mock("@/components/home/FeaturedTours", () => ({
   FeaturedTours: () => <div data-testid="featured" />,
 }));
+jest.mock("@/components/tours/AllToursPage", () => ({
+  AllToursPage: () => <div data-testid="all-tours-page" />,
+}));
 jest.mock("@/components/signup/GuideOnboardingForm", () => ({
   GuideOnboardingForm: () => <div data-testid="guide-form" />,
 }));
@@ -23,6 +26,7 @@ jest.mock("@/components/profile/GuideProfilePage", () => ({
 }));
 
 import HomePage from "@/app/page";
+import ToursPage from "@/app/tours/page";
 import ProfilePage from "@/app/(app)/profile/page";
 import SupportPage from "@/app/(app)/support/page";
 import StaffPage from "@/app/staff/page";
@@ -38,6 +42,12 @@ describe("static / shell pages", () => {
     expect(screen.getByTestId("site-header")).toBeInTheDocument();
     expect(screen.getByTestId("hero")).toBeInTheDocument();
     expect(screen.getByTestId("featured")).toBeInTheDocument();
+  });
+
+  it("tours page renders header + all tours content", () => {
+    render(<ToursPage />);
+    expect(screen.getByTestId("site-header")).toBeInTheDocument();
+    expect(screen.getByTestId("all-tours-page")).toBeInTheDocument();
   });
 
   it("profile placeholder shows its heading", () => {
