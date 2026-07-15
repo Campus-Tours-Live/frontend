@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Alert, Chip, Link, SectionHeading, Spinner } from "@/components/ui";
+import { Alert, Chip, InlineLoading, Link, PageContainer, PageHeader } from "@/components/ui";
 import { useMe, useOfferings, useTourTopics, type Offering } from "@/lib/data-access";
 import { OfferingCard } from "./OfferingCard";
 import { filterOfferings, type OfferingFilter } from "./offeringStatus";
@@ -26,18 +26,16 @@ export function TourOfferingsPage() {
   const visible = filterOfferings(offerings, filter);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <SectionHeading
-          eyebrow="Guide"
-          title="Tour offerings"
-          lead="Manage the public tour products participants can discover and book."
-          level={1}
-        />
-        <Link href="/guide/tour-offerings/new" variant="primary">
-          Create tour offering
-        </Link>
-      </div>
+    <PageContainer width="wide">
+      <PageHeader
+        title="Tour offerings"
+        lead="Manage the public tour products participants can discover and book."
+        action={
+          <Link href="/guide/tour-offerings/new" variant="primary">
+            Create tour offering
+          </Link>
+        }
+      />
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by status">
         {FILTERS.map((tab) => (
@@ -47,12 +45,7 @@ export function TourOfferingsPage() {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center gap-2 text-ink-soft">
-          <Spinner />
-          Loading offerings…
-        </div>
-      ) : null}
+      {isLoading ? <InlineLoading label="Loading offerings…" /> : null}
 
       {isError ? <Alert variant="error">Failed to load your tour offerings.</Alert> : null}
 
@@ -81,6 +74,6 @@ export function TourOfferingsPage() {
         You may save drafts before verification. Only complete offerings owned by a verified guide
         can be published. Editing or retiring an offering does not change existing bookings.
       </div>
-    </div>
+    </PageContainer>
   );
 }

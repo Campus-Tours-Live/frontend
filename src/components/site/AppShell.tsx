@@ -17,9 +17,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Dashboard link is hidden in the header since the side menu provides it. */}
       <SiteHeader showGetStarted={false} showDashboardLink={false} />
 
-      <div className="mx-auto max-w-content gap-8 px-6 pb-24 pt-10 lg:grid lg:grid-cols-[256px_1fr] lg:gap-10">
+      {/* The column divider lives on the content <section> (grid `1fr`, which stretches to the
+          row height = max(sidebar, content)), NOT on the sticky sidebar — so the line tracks the
+          taller right-hand content and never stops short at the menu's end, while still keeping a
+          minimum length of the sidebar height on short pages. */}
+      <div className="mx-auto max-w-content px-6 pb-24 pt-10 lg:grid lg:grid-cols-[256px_1fr]">
         <AccountSidebar />
-        <section className="min-w-0">{children}</section>
+        <section className="min-w-0 lg:border-l lg:border-border lg:pl-10">{children}</section>
       </div>
     </main>
   );

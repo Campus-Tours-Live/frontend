@@ -6,7 +6,7 @@ import { AccountNav } from "./AccountNav";
  */
 export function AccountSidebar() {
   return (
-    <aside className="hidden lg:sticky lg:top-6 lg:block lg:self-start lg:border-r lg:border-border lg:pr-6">
+    <aside className="hidden lg:sticky lg:top-6 lg:block lg:self-start lg:pr-10">
       <AccountNav />
     </aside>
   );
