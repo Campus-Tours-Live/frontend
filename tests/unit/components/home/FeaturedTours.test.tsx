@@ -1,16 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { FeaturedTours } from "@/components/home/FeaturedTours";
 import { TourCard } from "@/components/tours/TourCard";
-import { useTours } from "@/lib/data-access";
+import { useTourCatalog } from "@/lib/data-access";
 import type { TourSummary } from "@/lib/data-access";
 
-// FeaturedTours reads live data via useTours(); mock the hook so we can drive
+// FeaturedTours reads live data via useTourCatalog(); mock the hook so we can drive
 // each branch (loading / error / empty / success) without a real QueryClient.
 jest.mock("@/lib/data-access", () => ({
-  useTours: jest.fn(),
+  useTourCatalog: jest.fn(),
 }));
 
-const mockUseTours = useTours as jest.Mock;
+const mockUseTours = useTourCatalog as jest.Mock;
 
 const TOURS: TourSummary[] = [
   {
@@ -150,13 +150,13 @@ const TOURS: TourSummary[] = [
   },
 ];
 
-function setHook(overrides: Partial<ReturnType<typeof useTours>>) {
+function setHook(overrides: Partial<ReturnType<typeof useTourCatalog>>) {
   mockUseTours.mockReturnValue({
     data: undefined,
     isLoading: false,
     isError: false,
     ...overrides,
-  } as ReturnType<typeof useTours>);
+  } as ReturnType<typeof useTourCatalog>);
 }
 
 afterEach(() => {

@@ -1,20 +1,20 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { FeaturedTours } from "@/components/home/FeaturedTours";
-import { useTours } from "@/lib/data-access";
+import { useTourCatalog } from "@/lib/data-access";
 import type { TourSummary } from "@/lib/data-access";
 
 /**
  * The carousel paging math reads live layout (offsetLeft / clientWidth) and calls
  * scrollTo — neither of which jsdom provides — so we stub the geometry to exercise
  * pageMetrics(), goToPage() and the chevron/dot handlers. FeaturedTours now reads
- * its cards via useTours(), so the hook is mocked with nine fixture tours (same
+ * its cards via useTourCatalog(), so the hook is mocked with nine fixture tours (same
  * count the geometry stubbing below assumes).
  */
 jest.mock("@/lib/data-access", () => ({
-  useTours: jest.fn(),
+  useTourCatalog: jest.fn(),
 }));
 
-const mockUseTours = useTours as jest.Mock;
+const mockUseTours = useTourCatalog as jest.Mock;
 
 const TOURS: TourSummary[] = Array.from({ length: 9 }, (_, i) => ({
   id: `t${i + 1}`,

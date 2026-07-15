@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Alert, Link } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
-import { useTours, type TourSummary } from "@/lib/data-access";
+import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 
 /**
@@ -65,7 +65,7 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 }
 
 export function FeaturedTours() {
-  const { data: tours, isLoading, isError } = useTours();
+  const { data: tours, isLoading, isError } = useTourCatalog();
   const list = tours ?? [];
   const count = list.length;
 
