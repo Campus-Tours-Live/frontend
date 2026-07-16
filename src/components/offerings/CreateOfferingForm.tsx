@@ -6,7 +6,6 @@ import {
   Alert,
   Button,
   Card,
-  Field,
   Icon,
   Link,
   Nudge,
@@ -17,10 +16,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { ApiError, useCreateOffering, useTourTopics } from "@/lib/data-access";
-import {
-  UniversityMultiSelect,
-  type UniversityOption,
-} from "@/components/signup/UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
 const DURATIONS = [30, 45, 60, 90] as const;
 
@@ -112,23 +108,22 @@ export function CreateOfferingForm() {
           {...register("title", { required: "Title is required" })}
         />
 
-        <Field label="University" htmlFor="offering-university" error={errors.university?.message}>
-          <Controller
-            control={control}
-            name="university"
-            rules={{
-              validate: (value) => value.length > 0 || "University is required",
-            }}
-            render={({ field }) => (
-              <UniversityMultiSelect
-                id="offering-university"
-                value={field.value}
-                onChange={field.onChange}
-                max={1}
-              />
-            )}
-          />
-        </Field>
+        <Controller
+          control={control}
+          name="university"
+          rules={{
+            validate: (value) => value.length > 0 || "University is required",
+          }}
+          render={({ field }) => (
+            <UniversityField
+              label="University"
+              error={errors.university?.message}
+              value={field.value}
+              onChange={field.onChange}
+              max={1}
+            />
+          )}
+        />
 
         <SelectField
           label="Topic"

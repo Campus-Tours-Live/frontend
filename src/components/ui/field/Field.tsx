@@ -35,7 +35,7 @@ export function Field({
   return (
     <div className={cn("field", className)}>
       {label ? (
-        <label htmlFor={htmlFor}>
+        <label id={htmlFor ? `${htmlFor}-label` : undefined} htmlFor={htmlFor}>
           {label}
           {optional ? <span className="font-normal text-ink-soft"> (optional)</span> : null}
         </label>

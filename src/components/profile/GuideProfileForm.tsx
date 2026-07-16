@@ -2,27 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import {
-  Alert,
-  Body,
-  Button,
-  Card,
-  Chip,
-  Field,
-  Spinner,
-  TextField,
-  Textarea,
-} from "@/components/ui";
+import { Alert, Body, Button, Card, Chip, Spinner, TextField, Textarea } from "@/components/ui";
 import {
   ApiError,
   useTourTopics,
   useUpdateGuideProfile,
   type GuideProfile,
 } from "@/lib/data-access";
-import {
-  UniversityMultiSelect,
-  type UniversityOption,
-} from "@/components/signup/UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
 const LANGUAGES = [
   { value: "en-US", label: "English" },
@@ -159,23 +146,22 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           />
         </div>
 
-        <Field label="University" htmlFor="profile-university" error={errors.university?.message}>
-          <Controller
-            control={control}
-            name="university"
-            rules={{
-              validate: (value) => value.length > 0 || "University is required",
-            }}
-            render={({ field }) => (
-              <UniversityMultiSelect
-                id="profile-university"
-                value={field.value}
-                onChange={field.onChange}
-                max={1}
-              />
-            )}
-          />
-        </Field>
+        <Controller
+          control={control}
+          name="university"
+          rules={{
+            validate: (value) => value.length > 0 || "University is required",
+          }}
+          render={({ field }) => (
+            <UniversityField
+              label="University"
+              error={errors.university?.message}
+              value={field.value}
+              onChange={field.onChange}
+              max={1}
+            />
+          )}
+        />
 
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField

@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
-import { Alert, Body, Button, Chip, Field, SectionHeading, Spinner } from "@/components/ui";
+import { Alert, Body, Button, Chip, SectionHeading, Spinner } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
-import { UniversityMultiSelect, type UniversityOption } from "./UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
 interface FormValues {
@@ -219,25 +219,20 @@ export function ParticipantOnboardingForm() {
 
         {/* Step 2 — Universities (optional) */}
         {step === 1 && (
-          <Field
-            label="Universities of interest"
-            htmlFor="onboarding-participant-universities"
-            description="Search and add the campuses you want to explore. Optional — you can add or change these anytime in your profile."
-            optional
-          >
-            <Controller
-              control={control}
-              name="universities"
-              render={({ field }) => (
-                <UniversityMultiSelect
-                  id="onboarding-participant-universities"
-                  value={field.value}
-                  onChange={field.onChange}
-                  max={5}
-                />
-              )}
-            />
-          </Field>
+          <Controller
+            control={control}
+            name="universities"
+            render={({ field }) => (
+              <UniversityField
+                label="Universities of interest"
+                description="Search and add the campuses you want to explore. Optional — you can add or change these anytime in your profile."
+                optional
+                value={field.value}
+                onChange={field.onChange}
+                max={5}
+              />
+            )}
+          />
         )}
 
         {/* Step 3 — Topics (optional) */}

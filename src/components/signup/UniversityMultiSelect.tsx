@@ -22,13 +22,17 @@ export function UniversityMultiSelect({
   onChange,
   max = 5,
   id,
+  "aria-labelledby": ariaLabelledby,
 }: {
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   max?: number;
-  /** Id for the search input, so a wrapping `<Field label htmlFor>` (or any `<label htmlFor>`)
-   *  can associate its label with this control. */
+  /** Id for the search input, so a wrapping `<label htmlFor>` associates + focuses it (present only
+   *  while below `max`). */
   id?: string;
+  /** Ids of the element(s) naming this control. When set, the always-present outer container becomes
+   *  a labelled `role="group"`, so the field keeps an accessible name even at max (input unmounted). */
+  "aria-labelledby"?: string;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -51,7 +55,7 @@ export function UniversityMultiSelect({
   const remove = (id: string) => onChange(value.filter((v) => v.id !== id));
 
   return (
-    <div>
+    <div role={ariaLabelledby ? "group" : undefined} aria-labelledby={ariaLabelledby}>
       {value.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {value.map((v) => (

@@ -10,14 +10,13 @@ import {
   Body,
   Button,
   Chip,
-  Field,
   SectionHeading,
   Spinner,
   TextField,
   Textarea,
 } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
-import { UniversityMultiSelect, type UniversityOption } from "./UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
 interface Option {
@@ -218,19 +217,14 @@ export function GuideOnboardingForm() {
                 validate: (v) => v.length > 0 || "Select the university you currently attend.",
               }}
               render={({ field }) => (
-                <Field
+                <UniversityField
                   label="Your university"
-                  htmlFor="onboarding-guide-university"
                   description="The campus you currently attend and will guide for."
                   error={errors.university?.message as string}
-                >
-                  <UniversityMultiSelect
-                    id="onboarding-guide-university"
-                    value={field.value}
-                    onChange={field.onChange}
-                    max={1}
-                  />
-                </Field>
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={1}
+                />
               )}
             />
 
