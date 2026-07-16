@@ -14,7 +14,11 @@ export {
 export { Link, type LinkProps } from "./Link";
 export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./Badge";
 export { Alert, type AlertProps, type AlertVariant } from "./Alert";
-export { Card, type CardProps } from "./Card";
+export { Card, type CardProps, type CardSize } from "./Card";
+export { CardMedia, type CardMediaProps } from "./CardMedia";
+export { CardHeader, type CardHeaderProps } from "./CardHeader";
+export { CardContent, type CardContentProps } from "./CardContent";
+export { CardActions, type CardActionsProps } from "./CardActions";
 export { Panel, PanelHeader, type PanelProps, type PanelHeaderProps } from "./Panel";
 export {
   MemberCard,
