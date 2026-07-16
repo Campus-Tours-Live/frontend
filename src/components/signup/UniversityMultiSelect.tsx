@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Body, Caption } from "@/components/ui";
 import { useUniversitySearch } from "@/lib/data-access";
 
 export interface UniversityOption {
@@ -80,9 +81,7 @@ export function UniversityMultiSelect({
           />
           {open && (loading || results.some((r) => !selectedIds.has(r.id))) && (
             <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-card border border-border bg-card shadow-card">
-              {loading && (
-                <li className="px-4 py-2 text-[13px] text-ink-soft">Searching…</li>
-              )}
+              {loading && <li className="px-4 py-2 text-[13px] text-ink-soft">Searching…</li>}
               {results
                 .filter((r) => !selectedIds.has(r.id))
                 .map((r) => (
@@ -92,11 +91,11 @@ export function UniversityMultiSelect({
                       onClick={() => add(r)}
                       className="flex w-full flex-col items-start px-4 py-2 text-left transition-colors hover:bg-primary-soft"
                     >
-                      <span className="text-[14px] text-ink">{r.name}</span>
+                      <Body as="span" size="medium">
+                        {r.name}
+                      </Body>
                       {(r.city || r.region) && (
-                        <span className="text-[12px] text-ink-soft">
-                          {[r.city, r.region].filter(Boolean).join(", ")}
-                        </span>
+                        <Caption>{[r.city, r.region].filter(Boolean).join(", ")}</Caption>
                       )}
                     </button>
                   </li>
@@ -106,9 +105,9 @@ export function UniversityMultiSelect({
         </div>
       )}
 
-      <p className="mt-1.5 text-[12px] text-ink-soft">
+      <Caption as="p" className="mt-1.5">
         {atMax ? `Maximum ${max} selected.` : `Pick up to ${max}.`}
-      </p>
+      </Caption>
     </div>
   );
 }

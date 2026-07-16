@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, Button, Card, Chip, Field, Spinner, TextField, Textarea } from "@/components/ui";
+import {
+  Alert,
+  Body,
+  Button,
+  Card,
+  Chip,
+  Field,
+  Spinner,
+  TextField,
+  Textarea,
+} from "@/components/ui";
 import {
   ApiError,
   useTourTopics,
@@ -220,7 +230,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
                 Tour specialties <span className="font-normal text-ink-soft">(optional)</span>
               </legend>
               {topicsLoading ? (
-                <p className="text-[14px] text-ink-soft">Loading…</p>
+                <Body size="medium" color="muted">
+                  Loading…
+                </Body>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {topicOptions.map((topic) => {

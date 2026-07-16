@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button, Heading, Link, StatusBadge } from "@/components/ui";
+import { Body, Button, Heading, Link, StatusBadge } from "@/components/ui";
 
 /**
  * RoleCard — signup-flow component (used by /signup/role).
@@ -53,7 +53,9 @@ export function RoleCard({
       <Heading as="h2" size="h3" className="mb-1.5 mt-4">
         {title}
       </Heading>
-      <p className="text-[14px] text-ink-soft">{subtitle}</p>
+      <Body size="medium" color="muted">
+        {subtitle}
+      </Body>
 
       <ul className="mt-4 flex min-h-[90px] flex-col gap-2 text-[14px] text-ink">
         {points.map((point) => (
