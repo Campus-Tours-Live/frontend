@@ -3,46 +3,49 @@ import userEvent from "@testing-library/user-event";
 import { List, ListItem } from "@/components/ui/List";
 
 describe("List", () => {
-  it("renders a role=list <ul> with dividers by default and spreads attributes", () => {
-    render(
-      <List aria-label="Vehicles" data-testid="vehicleList">
-        <ListItem>A</ListItem>
-        <ListItem>B</ListItem>
+  it("renders a role=list ul, wraps each child in an li, and divides between rows", () => {
+    const { container } = render(
+      <List aria-label="Animals" data-testid="animals">
+        <ListItem>Dog</ListItem>
+        <ListItem>Cat</ListItem>
+        <ListItem>Mouse</ListItem>
       </List>,
     );
-    const list = screen.getByRole("list", { name: "Vehicles" });
-    expect(list).toHaveAttribute("data-testid", "vehicleList");
-    expect(list).toHaveClass("divide-y", "divide-border");
-    expect(within(list).getAllByRole("listitem")).toHaveLength(2);
+    const list = screen.getByRole("list", { name: "Animals" });
+    expect(list).toHaveAttribute("data-testid", "animals");
+    expect(within(list).getAllByRole("listitem")).toHaveLength(3);
+    // 3 rows → 2 dividers between them (decorative, aria-hidden).
+    expect(container.querySelectorAll("[aria-hidden].border-t")).toHaveLength(2);
   });
 
   it("can drop the dividers", () => {
-    render(
+    const { container } = render(
       <List dividers={false} aria-label="Plain">
-        <ListItem>A</ListItem>
+        <ListItem>Dog</ListItem>
+        <ListItem>Cat</ListItem>
       </List>,
     );
-    expect(screen.getByRole("list", { name: "Plain" })).not.toHaveClass("divide-y");
+    expect(container.querySelectorAll(".border-t")).toHaveLength(0);
   });
 });
 
 describe("ListItem", () => {
-  it("lays out leading, children, and trailing", () => {
+  it("lays out leading, an optional title over the label, and trailing", () => {
     render(
-      <ul>
-        <ListItem
-          data-testid="row"
-          leading={<span data-testid="lead">L</span>}
-          trailing={<button type="button">Edit</button>}
-        >
-          Main content
-        </ListItem>
-      </ul>,
+      <ListItem
+        data-testid="row"
+        leading={<span data-testid="lead">L</span>}
+        title="Vehicle"
+        trailing={<button type="button">Edit</button>}
+      >
+        2020 Toyota
+      </ListItem>,
     );
     const row = screen.getByTestId("row");
-    expect(row.tagName).toBe("LI");
+    expect(row.tagName).toBe("DIV");
     expect(within(row).getByTestId("lead")).toBeInTheDocument();
-    expect(within(row).getByText("Main content")).toBeInTheDocument();
+    expect(within(row).getByText("Vehicle")).toBeInTheDocument();
+    expect(within(row).getByText("2020 Toyota")).toBeInTheDocument();
     expect(within(row).getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
@@ -50,13 +53,11 @@ describe("ListItem", () => {
     const user = userEvent.setup();
     const onClick = jest.fn();
     render(
-      <ul>
-        <ListItem onClick={onClick} data-dca-id="B:DE34073B1A">
-          Clickable
-        </ListItem>
-      </ul>,
+      <ListItem data-testid="row" onClick={onClick} data-dca-id="B:DE34073B1A">
+        Clickable
+      </ListItem>,
     );
-    const row = screen.getByText("Clickable").closest("li")!;
+    const row = screen.getByTestId("row");
     expect(row).toHaveAttribute("data-dca-id", "B:DE34073B1A");
     await user.click(row);
     expect(onClick).toHaveBeenCalledTimes(1);

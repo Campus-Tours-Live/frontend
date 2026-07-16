@@ -1,24 +1,37 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Divider — a hairline rule, horizontal (default) or vertical. Centralises the border colour and the
- * "inset" gutter used by {@link Panel}, so separators don't get hand-written as ad-hoc `border-t`s.
+ * Divider — a hairline rule. Decorative by default: hidden from screen readers (like a plain `<hr>`
+ * used for visual separation). Pass `title` to announce it as a MEANINGFUL separator instead.
+ * Horizontal (default) or vertical, with an optional `inset` gutter that keeps it clear of the
+ * container's edges so it aligns with padded content (matches Panel / List rows).
  *
- * `inset` keeps the rule clear of its container's edges by the standard gutter (aligns with padded
- * content); omit it for an edge-to-edge rule.
+ *   <Divider />                       // decorative
+ *   <Divider inset />                 // inset from the edges
+ *   <Divider title="Billing" />       // meaningful, labelled separator
  */
 export interface DividerProps {
   orientation?: "horizontal" | "vertical";
   inset?: boolean;
+  /** Accessible label — makes the divider a meaningful separator. Omit for a decorative rule. */
+  title?: string;
   className?: string;
 }
 
-export function Divider({ orientation = "horizontal", inset = false, className }: DividerProps) {
+export function Divider({
+  orientation = "horizontal",
+  inset = false,
+  title,
+  className,
+}: DividerProps) {
   const horizontal = orientation === "horizontal";
+  const decorative = title === undefined;
   return (
     <div
-      role="separator"
-      aria-orientation={orientation}
+      role={decorative ? undefined : "separator"}
+      aria-orientation={decorative ? undefined : orientation}
+      aria-label={title}
+      aria-hidden={decorative || undefined}
       className={cn(
         "shrink-0 border-border",
         horizontal ? "border-t" : "self-stretch border-l",
