@@ -63,6 +63,7 @@ export {
   type TextareaProps,
   type SelectFieldProps,
 } from "./field/Field";
+export { Select, type SelectProps, type SelectSize } from "./select/Select";
 export { FormLabel, type FormLabelProps, type FormLabelSize } from "./form/FormLabel";
 export { FormHelperText, type FormHelperTextProps } from "./form/FormHelperText";
 export { FormGroup, type FormGroupProps } from "./form/FormGroup";
