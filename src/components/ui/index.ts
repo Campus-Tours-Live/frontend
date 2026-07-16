@@ -53,6 +53,7 @@ export {
   Textarea,
   SelectField,
   type FieldProps,
+  type FieldSize,
   type TextFieldProps,
   type TextareaProps,
   type SelectFieldProps,

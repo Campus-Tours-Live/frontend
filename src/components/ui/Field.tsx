@@ -1,12 +1,23 @@
 import {
   forwardRef,
   useId,
+  useState,
+  type ChangeEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
 import { cn } from "@/lib/utils";
+import { useDebounced } from "@/hooks";
+
+/** Control size. `large` (default) matches `.input`; `small` tightens padding + font. */
+export type FieldSize = "small" | "large";
+
+const SIZE_CLASS: Record<FieldSize, string | false> = {
+  large: false,
+  small: "px-3 py-2 text-[13px]",
+};
 
 /**
  * Field — label + control + (error | hint) wrapper using `.field`. Use it
@@ -14,7 +25,9 @@ import { cn } from "@/lib/utils";
  * TextField / Textarea / SelectField convenience wrappers for plain controls.
  *
  * `error` takes priority over `hint`. `optional` appends an "(optional)" suffix
- * to the label. Styles live in globals.css (.field / .field-error / .field-hint).
+ * to the label. TextField/Textarea also take `size` ("small" | "large"); TextField
+ * adds `leadingIcon` / `trailing` slots and Textarea shows a live character counter
+ * when `maxLength` is set. Styles live in globals.css (.field / .field-error / .field-hint).
  */
 export interface FieldProps {
   label?: ReactNode;
@@ -56,10 +69,30 @@ type ControlExtras = {
   fieldClassName?: string;
 };
 
-export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement>, ControlExtras {}
+export interface TextFieldProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, "size">, ControlExtras {
+  /** @default "large" */
+  size?: FieldSize;
+  /** Decorative icon rendered inside the input's leading edge. */
+  leadingIcon?: ReactNode;
+  /** Trailing content inside the input (e.g. a clear IconButton). Interactive. */
+  trailing?: ReactNode;
+}
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
-  { label, error, hint, optional, id, className, fieldClassName, ...props },
+  {
+    label,
+    error,
+    hint,
+    optional,
+    id,
+    className,
+    fieldClassName,
+    size = "large",
+    leadingIcon,
+    trailing,
+    ...props
+  },
   ref,
 ) {
   const autoId = useId();
@@ -73,25 +106,76 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       optional={optional}
       className={fieldClassName}
     >
-      <input
-        ref={ref}
-        id={inputId}
-        className={cn("input", className)}
-        aria-invalid={error ? true : undefined}
-        {...props}
-      />
+      <div className="relative">
+        {leadingIcon ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-soft [&_svg]:h-[18px] [&_svg]:w-[18px]"
+          >
+            {leadingIcon}
+          </span>
+        ) : null}
+        <input
+          ref={ref}
+          id={inputId}
+          className={cn(
+            "input",
+            SIZE_CLASS[size],
+            leadingIcon && "pl-10",
+            trailing && "pr-10",
+            className,
+          )}
+          aria-invalid={error ? true : undefined}
+          {...props}
+        />
+        {trailing ? (
+          <span className="absolute inset-y-0 right-0 flex items-center pr-2">{trailing}</span>
+        ) : null}
+      </div>
     </Field>
   );
 });
 
-export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement>, ControlExtras {}
+export interface TextareaProps
+  extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "size">, ControlExtras {
+  /** @default "large" */
+  size?: FieldSize;
+}
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { label, error, hint, optional, id, className, fieldClassName, ...props },
+  {
+    label,
+    error,
+    hint,
+    optional,
+    id,
+    className,
+    fieldClassName,
+    size = "large",
+    maxLength,
+    value,
+    defaultValue,
+    onChange,
+    ...props
+  },
   ref,
 ) {
   const autoId = useId();
   const inputId = id ?? autoId;
+
+  // Track length for the character counter — works controlled (`value`) or not (`defaultValue`).
+  const controlled = value !== undefined;
+  const [innerLen, setInnerLen] = useState(() => String(defaultValue ?? "").length);
+  const length = controlled ? String(value ?? "").length : innerLen;
+  const remaining = maxLength != null ? Math.max(0, maxLength - length) : 0;
+  // Debounced so a screen reader announces the remaining count once typing settles, not per keystroke.
+  const announced = useDebounced(remaining, 1500);
+
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    if (!controlled) setInnerLen(event.target.value.length);
+    onChange?.(event);
+  };
+
   return (
     <Field
       label={label}
@@ -104,10 +188,26 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       <textarea
         ref={ref}
         id={inputId}
-        className={cn("input", className)}
+        className={cn("input", SIZE_CLASS[size], className)}
         aria-invalid={error ? true : undefined}
+        maxLength={maxLength}
+        value={value}
+        defaultValue={defaultValue}
+        onChange={handleChange}
         {...props}
       />
+      {maxLength != null ? (
+        <>
+          <div className="mt-1 flex justify-end">
+            <span aria-hidden className="font-mono text-[12px] tabular-nums text-ink-soft">
+              {length} / {maxLength}
+            </span>
+          </div>
+          <span className="sr-only" aria-live="polite" aria-atomic>
+            {announced} characters left.
+          </span>
+        </>
+      ) : null}
     </Field>
   );
 });

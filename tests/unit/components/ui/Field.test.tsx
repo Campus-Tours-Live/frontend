@@ -106,6 +106,23 @@ describe("TextField", () => {
     render(<TextField label="Email" ref={ref} />);
     expect(ref.current).toBeInstanceOf(HTMLInputElement);
   });
+
+  it("renders a leading icon and pads the input for it", () => {
+    render(<TextField label="Search" leadingIcon={<svg data-testid="lead" />} />);
+    expect(screen.getByTestId("lead")).toBeInTheDocument();
+    expect(screen.getByLabelText("Search")).toHaveClass("pl-10");
+  });
+
+  it("renders trailing content and pads the input for it", () => {
+    render(<TextField label="Name" trailing={<button type="button">Clear</button>} />);
+    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveClass("pr-10");
+  });
+
+  it("applies the small size classes", () => {
+    render(<TextField label="Email" size="small" />);
+    expect(screen.getByLabelText("Email")).toHaveClass("px-3", "py-2", "text-[13px]");
+  });
 });
 
 describe("Textarea", () => {
@@ -126,6 +143,18 @@ describe("Textarea", () => {
     const ref = createRef<HTMLTextAreaElement>();
     render(<Textarea label="Bio" ref={ref} />);
     expect(ref.current).toBeInstanceOf(HTMLTextAreaElement);
+  });
+
+  it("shows a character counter when maxLength is set and updates it as you type", async () => {
+    render(<Textarea label="Bio" maxLength={200} />);
+    expect(screen.getByText("0 / 200")).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Bio"), "hello");
+    expect(screen.getByText("5 / 200")).toBeInTheDocument();
+  });
+
+  it("shows no counter without maxLength", () => {
+    render(<Textarea label="Bio" />);
+    expect(screen.queryByText(/\/\s*\d+$/)).not.toBeInTheDocument();
   });
 });
 
