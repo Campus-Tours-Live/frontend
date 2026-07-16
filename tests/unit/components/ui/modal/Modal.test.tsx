@@ -29,6 +29,17 @@ describe("Modal", () => {
     expect(screen.getByText("content")).toBeInTheDocument();
   });
 
+  it("traps focus: opening focuses the first content control, not the Close button", () => {
+    render(
+      <Modal open onClose={jest.fn()} header={<h2>Title</h2>}>
+        <input aria-label="name" />
+        <button type="button">Save</button>
+      </Modal>,
+    );
+    expect(screen.getByLabelText("name")).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Close" })).not.toHaveFocus();
+  });
+
   it("wires aria-labelledby from labelledBy", () => {
     render(
       <Modal open onClose={jest.fn()} labelledBy="title-1">

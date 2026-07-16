@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type HTMLAttributes, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  type HTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 const FOCUSABLE = [
   "a[href]",
@@ -21,6 +28,9 @@ function getFocusable(root: HTMLElement | null): HTMLElement[] {
  * focuses the first focusable child; Tab / Shift+Tab wrap at the ends; on unmount it returns focus to
  * whatever was focused before (unless `hasFocusReturn={false}`). Set `disabled` to switch it off.
  *
+ * Pass `excludeInitialFocus` (a ref to e.g. a close button) to keep that control out of the *initial*
+ * focus — it stays reachable via Tab, but focus lands on the first other control instead.
+ *
  * Dependency-free (no react-focus-lock) — covers keyboard navigation; it does not police
  * mouse-driven focus escapes, which isn't needed for our overlay components.
  */
@@ -30,12 +40,15 @@ export interface FocusTrapProps extends HTMLAttributes<HTMLDivElement> {
   disabled?: boolean;
   /** Return focus to the previously-focused element on unmount. @default true */
   hasFocusReturn?: boolean;
+  /** A focusable inside the trap to skip when choosing the initial focus (e.g. a close button). */
+  excludeInitialFocus?: RefObject<HTMLElement | null>;
 }
 
 export function FocusTrap({
   children,
   disabled = false,
   hasFocusReturn = true,
+  excludeInitialFocus,
   onKeyDown,
   ...rest
 }: FocusTrapProps) {
@@ -45,11 +58,15 @@ export function FocusTrap({
   useEffect(() => {
     if (disabled) return;
     restoreRef.current = document.activeElement as HTMLElement | null;
-    getFocusable(rootRef.current)[0]?.focus();
+    const items = getFocusable(rootRef.current);
+    const skip = excludeInitialFocus?.current ?? null;
+    // Prefer the first control that isn't the excluded one; fall back to the first focusable.
+    const initial = items.find((el) => el !== skip) ?? items[0];
+    initial?.focus();
     return () => {
       if (hasFocusReturn) restoreRef.current?.focus?.();
     };
-  }, [disabled, hasFocusReturn]);
+  }, [disabled, hasFocusReturn, excludeInitialFocus]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);

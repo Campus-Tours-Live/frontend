@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FocusTrap } from "@/components/ui/focus/FocusTrap";
@@ -32,6 +32,24 @@ describe("FocusTrap", () => {
   it("does not auto-focus when disabled", () => {
     render(<Harness disabled />);
     expect(screen.getByText("first")).not.toHaveFocus();
+  });
+
+  it("skips excludeInitialFocus for the initial focus, but keeps it Tab-reachable", () => {
+    function ExcludeHarness() {
+      const closeRef = useRef<HTMLButtonElement>(null);
+      return (
+        <FocusTrap excludeInitialFocus={closeRef}>
+          <button ref={closeRef} type="button">
+            close
+          </button>
+          <button type="button">content</button>
+        </FocusTrap>
+      );
+    }
+    render(<ExcludeHarness />);
+    // Initial focus goes to "content", not the (DOM-first) excluded "close".
+    expect(screen.getByText("content")).toHaveFocus();
+    expect(screen.getByText("close")).not.toHaveFocus();
   });
 
   it("wraps Tab from the last element back to the first", () => {

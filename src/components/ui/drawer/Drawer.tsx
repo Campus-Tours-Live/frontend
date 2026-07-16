@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
 import { Icon } from "../icon/Icon";
 import { IconButton } from "../icon-button/IconButton";
 import { Heading } from "../typography/Heading";
+import { FocusTrap } from "../focus/FocusTrap";
 
 /**
  * Drawer — panel that slides in over the page (a scrim-backed overlay). Handles the backdrop (click
@@ -80,6 +81,8 @@ export function Drawer({
   useScrollLock(open);
   useDismiss({ enabled: open, onDismiss: onClose });
   const titleId = useId();
+  // Excluded from the trap's initial focus so focus lands on the first content control, not Close.
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   // Portal-to-<body> mount gate: `document.body` doesn't exist during SSR, so the server renders
   // nothing here. Start `false` (matches the server) on the first client render too, then flip after
@@ -99,7 +102,13 @@ export function Drawer({
         <Heading as="h2" id={titleId} size="large">
           {title}
         </Heading>
-        <IconButton a11yLabel="Close" size="small" onClick={onClose} className="-mr-1 -mt-1">
+        <IconButton
+          ref={closeRef}
+          a11yLabel="Close"
+          size="small"
+          onClick={onClose}
+          className="-mr-1 -mt-1"
+        >
           <Icon name="close" size={18} />
         </IconButton>
       </div>
@@ -130,7 +139,11 @@ export function Drawer({
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />
-      <div
+      {/* FocusTrap is the panel element itself. The drawer stays mounted while closed (to animate),
+          so the trap is toggled by `disabled={!open}` rather than by mount/unmount. */}
+      <FocusTrap
+        disabled={!open}
+        excludeInitialFocus={closeRef}
         role="dialog"
         aria-modal="true"
         aria-label={title !== undefined ? undefined : ariaLabel}
@@ -160,7 +173,7 @@ export function Drawer({
         ) : (
           children
         )}
-      </div>
+      </FocusTrap>
     </div>,
     document.body,
   );

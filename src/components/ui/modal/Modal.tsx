@@ -1,10 +1,11 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
 import { Icon } from "../icon/Icon";
 import { IconButton } from "../icon-button/IconButton";
+import { FocusTrap } from "../focus/FocusTrap";
 
 /**
  * Modal — centered overlay dialog. Handles the backdrop (click to dismiss),
@@ -51,6 +52,8 @@ export function Modal({
 }: ModalProps) {
   useScrollLock(open);
   useDismiss({ enabled: open, onDismiss: onClose });
+  // Excluded from the trap's initial focus so focus lands on the first content control, not Close.
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   if (!open) return null;
 
@@ -72,7 +75,10 @@ export function Modal({
         onClick={dismissOnBackdrop ? onClose : undefined}
         className="absolute inset-0 cursor-default bg-scrim/50"
       />
-      <div
+      {/* FocusTrap is the panel element itself (carries its classes) so it stays the flex
+          column and adds no extra DOM node. It contains focus while open and returns it on close. */}
+      <FocusTrap
+        excludeInitialFocus={closeRef}
         className={cn(
           "relative z-[61] w-full rounded-panel bg-card shadow-card",
           structured && "flex min-h-[min(22rem,80vh)] flex-col overflow-hidden",
@@ -85,6 +91,7 @@ export function Modal({
             {/* Explicit close control (top-right) — always dismisses, independent of
                 `dismissOnBackdrop`, as an additional way out beyond backdrop/Escape. */}
             <IconButton
+              ref={closeRef}
               a11yLabel="Close"
               size="small"
               variant="soft"
@@ -107,7 +114,7 @@ export function Modal({
         ) : (
           children
         )}
-      </div>
+      </FocusTrap>
     </div>
   );
 }
