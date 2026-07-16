@@ -1,9 +1,4 @@
-import {
-  Compass,
-  Lightbulb,
-  GraduationCap,
-  type LucideIcon,
-} from "lucide-react";
+import { Compass, Lightbulb, GraduationCap, type LucideIcon } from "lucide-react";
 
 /**
  * Primary site nav links. Lives in its own module (imported directly by the

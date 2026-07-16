@@ -28,9 +28,7 @@ export const metadata: Metadata = {
     "Explore campus with someone who actually studies there. Book a live tour with a verified student guide.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${nunito.variable} ${quicksand.variable}`}>
       <body className="min-h-screen bg-background text-foreground antialiased">

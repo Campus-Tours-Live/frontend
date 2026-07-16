@@ -16,10 +16,7 @@ type MePartial = {
   firstName?: string | null;
 };
 
-function setupMe(
-  me: MePartial | null,
-  opts?: { isLoading?: boolean; isOnboarded?: boolean },
-) {
+function setupMe(me: MePartial | null, opts?: { isLoading?: boolean; isOnboarded?: boolean }) {
   (useMe as jest.Mock).mockReturnValue({
     me,
     isLoading: opts?.isLoading ?? false,
@@ -51,9 +48,7 @@ describe("HeaderNav — logged out (not onboarded)", () => {
   it("shows the 'Account' trigger (not a greeting)", () => {
     render(<HeaderNav />);
 
-    expect(
-      screen.getByRole("button", { name: /Account/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Account/ })).toBeInTheDocument();
     expect(screen.queryByText(/^Hi/)).not.toBeInTheDocument();
   });
 
@@ -75,10 +70,7 @@ describe("HeaderNav — logged out (not onboarded)", () => {
     await user.click(screen.getByRole("button", { name: /Account/ }));
 
     const dashboard = screen.getByRole("menuitem", { name: "Dashboard" });
-    expect(dashboard).toHaveAttribute(
-      "href",
-      "/auth/login?intent=signin&returnTo=%2Fdashboard",
-    );
+    expect(dashboard).toHaveAttribute("href", "/auth/login?intent=signin&returnTo=%2Fdashboard");
     // Logged-out menu must NOT offer "Sign out".
     expect(screen.queryByText("Sign out")).not.toBeInTheDocument();
   });
@@ -86,18 +78,13 @@ describe("HeaderNav — logged out (not onboarded)", () => {
 
 describe("HeaderNav — logged in (onboarded)", () => {
   beforeEach(() => {
-    setupMe(
-      { displayName: "Ada Lovelace" },
-      { isOnboarded: true },
-    );
+    setupMe({ displayName: "Ada Lovelace" }, { isOnboarded: true });
   });
 
   it("greets the member by first name", () => {
     render(<HeaderNav />);
 
-    expect(
-      screen.getByRole("button", { name: /Hi, Ada/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Hi, Ada/ })).toBeInTheDocument();
   });
 
   it("falls back to firstName when displayName is absent", () => {
@@ -105,9 +92,7 @@ describe("HeaderNav — logged in (onboarded)", () => {
 
     render(<HeaderNav />);
 
-    expect(
-      screen.getByRole("button", { name: /Hi, Grace/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Hi, Grace/ })).toBeInTheDocument();
   });
 
   it("renders 'Hi' with no name when no name fields are present", () => {
@@ -126,17 +111,16 @@ describe("HeaderNav — logged in (onboarded)", () => {
 
     await user.click(screen.getByRole("button", { name: /Hi, Ada/ }));
 
-    expect(
-      screen.getByRole("menuitem", { name: "Dashboard" }),
-    ).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("menuitem", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
     expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByText("Support")).toBeInTheDocument();
     const signOut = screen.getByRole("menuitem", { name: "Sign out" });
     expect(signOut).toHaveAttribute("href", "/auth/logout");
     // Logged-in menu must NOT show the public sign-in CTA.
-    expect(
-      screen.queryByText("Sign in or Join Now"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });
 
   it("hides the Dashboard item when showDashboard is false", async () => {
@@ -145,9 +129,7 @@ describe("HeaderNav — logged in (onboarded)", () => {
 
     await user.click(screen.getByRole("button", { name: /Hi, Ada/ }));
 
-    expect(
-      screen.queryByRole("menuitem", { name: "Dashboard" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Dashboard" })).not.toBeInTheDocument();
     expect(screen.getByText("Profile")).toBeInTheDocument();
   });
 });
@@ -158,9 +140,7 @@ describe("HeaderNav — loading / auth-actions gate", () => {
 
     render(<HeaderNav />);
 
-    expect(
-      screen.queryByRole("button", { name: /Account/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Account/ })).not.toBeInTheDocument();
     // Nav links still render.
     expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
@@ -170,9 +150,7 @@ describe("HeaderNav — loading / auth-actions gate", () => {
 
     render(<HeaderNav showAuthActions={false} />);
 
-    expect(
-      screen.queryByRole("button", { name: /Hi/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Hi/ })).not.toBeInTheDocument();
     expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 });

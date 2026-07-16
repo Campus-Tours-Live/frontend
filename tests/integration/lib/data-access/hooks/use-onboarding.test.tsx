@@ -64,9 +64,7 @@ describe("useOnboarding", () => {
   });
 
   it("encodes the participant role into the query string", async () => {
-    fetchMock.mockResolvedValue(
-      jsonResponse(200, { data: { role: "participant", steps: [] } }),
-    );
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: { role: "participant", steps: [] } }));
 
     const { result } = renderHook(() => useOnboarding("participant"), {
       wrapper: makeWrapper(),
@@ -74,10 +72,7 @@ describe("useOnboarding", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/onboarding?role=participant",
-      expect.anything(),
-    );
+    expect(fetchMock).toHaveBeenCalledWith("/v1/onboarding?role=participant", expect.anything());
   });
 
   it("surfaces an error when the response is not ok", async () => {

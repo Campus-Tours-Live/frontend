@@ -34,16 +34,15 @@ describe("universitySearchOptions", () => {
     mockedApiJson.mockResolvedValue(payload as never);
 
     const signal = new AbortController().signal;
-    const queryFn = universitySearchOptions("stan ford", true).queryFn as (
-      ctx: { signal: AbortSignal },
-    ) => Promise<unknown>;
+    const queryFn = universitySearchOptions("stan ford", true).queryFn as (ctx: {
+      signal: AbortSignal;
+    }) => Promise<unknown>;
     const result = await queryFn({ signal });
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith(
-      "/v1/universities?q=stan%20ford&limit=8",
-      { signal },
-    );
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/universities?q=stan%20ford&limit=8", {
+      signal,
+    });
     expect(result).toBe(payload);
   });
 });

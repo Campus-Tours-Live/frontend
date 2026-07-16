@@ -1,10 +1,4 @@
-import {
-  CalendarDays,
-  Compass,
-  GraduationCap,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { CalendarDays, Compass, GraduationCap, ShieldCheck, UserRound } from "lucide-react";
 import {
   MemberCard,
   SectionHeading,
@@ -31,16 +25,12 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
     {
       icon: Compass,
       label: "Topics",
-      value: p.topicsOfInterest?.length
-        ? `${p.topicsOfInterest.length} selected`
-        : "—",
+      value: p.topicsOfInterest?.length ? `${p.topicsOfInterest.length} selected` : "—",
     },
     {
       icon: GraduationCap,
       label: "Universities",
-      value: p.universitiesOfInterest?.length
-        ? `${p.universitiesOfInterest.length} selected`
-        : "—",
+      value: p.universitiesOfInterest?.length ? `${p.universitiesOfInterest.length} selected` : "—",
     },
     {
       icon: CalendarDays,
