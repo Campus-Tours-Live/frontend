@@ -449,4 +449,28 @@
   .divider {
     @apply h-px bg-border border-0 my-[18px];
   }
+
+  /* Spinner — six pills fading in sequence around the centre (transform-origin
+     is the 48×48 viewBox centre). Each pill's animation-delay is set inline so
+     the bright pill chases around the ring. Freezes under reduced-motion. */
+  .spinner-pill {
+    transform-origin: 24px 24px;
+    animation: spinner-pill-fade 1.2s linear infinite;
+  }
+}
+
+@keyframes spinner-pill-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-pill {
+    animation: none;
+    opacity: 0.55;
+  }
 }

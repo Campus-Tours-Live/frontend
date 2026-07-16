@@ -8,17 +8,28 @@ import { VisuallyHidden } from "@/components/ui/VisuallyHidden";
 import { GoogleMark } from "@/components/ui/GoogleMark";
 
 describe("Spinner", () => {
-  it("renders an aria-hidden spinner with default size and merges className", () => {
+  it("renders an aria-hidden spinner (six pills) with default size and merges className", () => {
     const { container } = render(<Spinner className="text-primary" />);
     const el = container.firstChild as HTMLElement;
     expect(el).toHaveAttribute("aria-hidden");
-    expect(el).toHaveClass("animate-spin", "text-primary");
+    expect(el).toHaveClass("inline-flex", "shrink-0", "text-primary");
     expect(el).toHaveStyle({ width: "16px", height: "16px" });
+    expect(container.querySelectorAll("use.spinner-pill")).toHaveLength(6);
   });
 
-  it("honours a custom size", () => {
+  it("honours a custom size on the wrapper and the svg", () => {
     const { container } = render(<Spinner size={32} />);
     expect(container.firstChild).toHaveStyle({ width: "32px", height: "32px" });
+    expect(container.querySelector("svg")).toHaveAttribute("width", "32");
+  });
+
+  it("becomes an announced status region when given an a11yLabel", () => {
+    render(<Spinner a11yLabel="Loading profile" />);
+    const status = screen.getByRole("status");
+    expect(status).not.toHaveAttribute("aria-hidden");
+    // A status live region announces its content on change (name-from-content
+    // isn't supported for role=status), so the label lives inside as text.
+    expect(status).toHaveTextContent("Loading profile");
   });
 });
 

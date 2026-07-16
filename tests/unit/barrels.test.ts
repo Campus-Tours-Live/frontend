@@ -35,6 +35,8 @@ describe("public barrels", () => {
       "GoogleMark",
       "Icon",
       "Spinner",
+      "Skeleton",
+      "SkeletonText",
       "VisuallyHidden",
       "MenuItem",
       "MenuSection",

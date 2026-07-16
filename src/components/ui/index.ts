@@ -74,6 +74,8 @@ export {
   type IconButtonVariant,
 } from "./IconButton";
 export { Spinner, type SpinnerProps } from "./Spinner";
+export { Skeleton, type SkeletonProps, type SkeletonVariant } from "./Skeleton";
+export { SkeletonText, type SkeletonTextProps } from "./SkeletonText";
 export { VisuallyHidden } from "./VisuallyHidden";
 export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./MenuItem";
 export { MenuSection, type MenuSectionProps } from "./Menu";
