@@ -23,6 +23,7 @@ export function UniversityMultiSelect({
   max = 5,
   id,
   "aria-labelledby": ariaLabelledby,
+  "aria-describedby": ariaDescribedby,
 }: {
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
@@ -33,6 +34,9 @@ export function UniversityMultiSelect({
   /** Ids of the element(s) naming this control. When set, the always-present outer container becomes
    *  a labelled `role="group"`, so the field keeps an accessible name even at max (input unmounted). */
   "aria-labelledby"?: string;
+  /** Ids of the element(s) describing this control (e.g. help text) — placed on the same persistent
+   *  container as the label, so the description survives at max too. */
+  "aria-describedby"?: string;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -55,7 +59,11 @@ export function UniversityMultiSelect({
   const remove = (id: string) => onChange(value.filter((v) => v.id !== id));
 
   return (
-    <div role={ariaLabelledby ? "group" : undefined} aria-labelledby={ariaLabelledby}>
+    <div
+      role={ariaLabelledby ? "group" : undefined}
+      aria-labelledby={ariaLabelledby}
+      aria-describedby={ariaDescribedby}
+    >
       {value.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {value.map((v) => (

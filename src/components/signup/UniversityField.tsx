@@ -39,6 +39,7 @@ export function UniversityField({
       <UniversityMultiSelect
         id={id}
         aria-labelledby={`${id}-label`}
+        aria-describedby={description ? `${id}-description` : undefined}
         value={value}
         onChange={onChange}
         max={max}

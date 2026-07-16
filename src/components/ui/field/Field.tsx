@@ -40,7 +40,11 @@ export function Field({
           {optional ? <span className="font-normal text-ink-soft"> (optional)</span> : null}
         </label>
       ) : null}
-      {description ? <p className="field-description">{description}</p> : null}
+      {description ? (
+        <p id={htmlFor ? `${htmlFor}-description` : undefined} className="field-description">
+          {description}
+        </p>
+      ) : null}
       {children}
       {error ? (
         <p role="alert" className="field-error">

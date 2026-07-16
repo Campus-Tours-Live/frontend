@@ -23,4 +23,21 @@ describe("UniversityField", () => {
     expect(screen.getByPlaceholderText(/search universities/i)).toHaveAttribute("id");
     expect(screen.getByRole("group", { name: "Your university" })).toBeInTheDocument();
   });
+
+  it("describes the group with its help text, and it persists at max", () => {
+    render(
+      <UniversityField
+        label="Your university"
+        description="The campus you attend."
+        value={[PICK]}
+        onChange={() => {}}
+        max={1}
+      />,
+    );
+    // At max the input is gone; the description is wired to the persistent group, not the input.
+    const group = screen.getByRole("group", { name: "Your university" });
+    const describedby = group.getAttribute("aria-describedby");
+    expect(describedby).toBeTruthy();
+    expect(document.getElementById(describedby!)).toHaveTextContent("The campus you attend.");
+  });
 });
