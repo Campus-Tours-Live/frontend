@@ -62,6 +62,11 @@ export {
   type TextareaProps,
   type SelectFieldProps,
 } from "./Field";
+export { FormLabel, type FormLabelProps, type FormLabelSize } from "./FormLabel";
+export { FormHelperText, type FormHelperTextProps } from "./FormHelperText";
+export { FormGroup, type FormGroupProps } from "./FormGroup";
+export { FocusTrap, type FocusTrapProps } from "./FocusTrap";
+export { FocusGuard, type FocusGuardProps } from "./FocusGuard";
 export { GoogleMark } from "./GoogleMark";
 export { Heading, type HeadingProps, type HeadingSize } from "./Heading";
 export { Display, type DisplayProps, type DisplaySize } from "./Display";
