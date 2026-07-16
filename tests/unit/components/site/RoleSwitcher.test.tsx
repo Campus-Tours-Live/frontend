@@ -26,12 +26,8 @@ function setupMe(me: MePartial | null) {
   });
 }
 
-function setupSetActiveRole(opts?: {
-  mutateAsync?: jest.Mock;
-  isPending?: boolean;
-}) {
-  const mutateAsync =
-    opts?.mutateAsync ?? jest.fn().mockResolvedValue({});
+function setupSetActiveRole(opts?: { mutateAsync?: jest.Mock; isPending?: boolean }) {
+  const mutateAsync = opts?.mutateAsync ?? jest.fn().mockResolvedValue({});
   (useSetActiveRole as jest.Mock).mockReturnValue({
     mutateAsync,
     isPending: opts?.isPending ?? false,
@@ -44,7 +40,7 @@ beforeEach(() => {
 });
 
 describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
-  it("renders a Participant/Guide toggle with the active side pressed + disabled", () => {
+  it("renders a Participant/Guide toggle with the active side pressed", () => {
     setupMe({
       activeRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
@@ -57,12 +53,11 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     const guide = screen.getByRole("button", { name: "Guide" });
 
     expect(participant).toHaveAttribute("aria-pressed", "true");
-    expect(participant).toBeDisabled();
+    // SegmentedControl doesn't disable the active option (clicking it is a no-op — see below).
+    expect(participant).toBeEnabled();
     expect(guide).toHaveAttribute("aria-pressed", "false");
     expect(guide).toBeEnabled();
-    expect(
-      screen.getByRole("group", { name: "Active role" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Active role" })).toBeInTheDocument();
   });
 
   it("clicking Guide calls setActiveRole.mutateAsync('GUIDE')", async () => {
@@ -95,7 +90,7 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("when activeRole=GUIDE, the Guide side is active/disabled", () => {
+  it("when activeRole=GUIDE, the Guide side is active (pressed)", () => {
     setupMe({
       activeRole: "GUIDE",
       roles: ["PARTICIPANT", "GUIDE"],
@@ -108,7 +103,7 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     const guide = screen.getByRole("button", { name: "Guide" });
 
     expect(guide).toHaveAttribute("aria-pressed", "true");
-    expect(guide).toBeDisabled();
+    expect(guide).toBeEnabled();
     expect(participant).toHaveAttribute("aria-pressed", "false");
     expect(participant).toBeEnabled();
   });
@@ -194,9 +189,7 @@ describe("RoleSwitcher — holds ONE role (become the other)", () => {
 
     render(<RoleSwitcher onNavigate={onNavigate} />);
 
-    await userEvent.click(
-      screen.getByRole("button", { name: /become a participant/i }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /become a participant/i }));
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledTimes(1);

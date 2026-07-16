@@ -19,6 +19,8 @@ export interface SegmentedControlProps<T extends string> {
   /** Accessible name for the control (required). */
   "aria-label": string;
   size?: "small" | "medium";
+  /** Disable the whole control (e.g. while a switch is in flight). */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -34,6 +36,7 @@ export function SegmentedControl<T extends string>({
   defaultValue,
   onChange,
   size = "medium",
+  disabled = false,
   className,
   "aria-label": ariaLabel,
 }: SegmentedControlProps<T>) {
@@ -58,6 +61,7 @@ export function SegmentedControl<T extends string>({
       aria-label={ariaLabel}
       className={cn(
         "relative isolate grid w-full rounded-full border border-border bg-card p-1",
+        disabled && "opacity-60",
         className,
       )}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
@@ -79,9 +83,10 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             type="button"
             aria-pressed={isSelected}
+            disabled={disabled}
             onClick={() => select(option.value)}
             className={cn(
-              "rounded-full font-semibold transition-colors",
+              "rounded-full font-semibold transition-colors disabled:cursor-not-allowed",
               size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
               isSelected ? "text-primary-foreground" : "text-ink-soft hover:text-ink",
             )}
