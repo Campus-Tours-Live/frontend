@@ -13,6 +13,8 @@ export {
 } from "./Button";
 export { Link, type LinkProps } from "./Link";
 export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./Badge";
+export { Rating, type RatingProps, type RatingSize } from "./Rating";
+export { RatingStar, type RatingStarProps, type RatingStarVariant } from "./RatingStar";
 export { Alert, type AlertProps, type AlertVariant } from "./Alert";
 export { Nudge, type NudgeProps } from "./Nudge";
 export { Card, type CardProps, type CardSize } from "./Card";
