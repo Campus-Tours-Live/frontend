@@ -11,7 +11,8 @@ export type BadgeVariant =
   | "coral"
   | "success"
   | "warn"
-  | "verified";
+  | "verified"
+  | "neutral";
 
 const BADGE: Record<BadgeVariant, string> = {
   primary: "badge-primary",
@@ -20,6 +21,7 @@ const BADGE: Record<BadgeVariant, string> = {
   success: "badge-success",
   warn: "badge-warn",
   verified: "badge-verified",
+  neutral: "badge-neutral",
 };
 
 export function Badge({

@@ -13,7 +13,10 @@ describe("Drawer", () => {
         <p>panel</p>
       </Drawer>,
     );
-    expect(screen.getByRole("dialog", { name: "Nav" })).toBeInTheDocument();
+    // Mounted but hidden from the a11y tree while closed (so it isn't announced as a dialog).
+    const dialog = screen.getByRole("dialog", { hidden: true });
+    expect(dialog).toHaveAttribute("aria-label", "Nav");
+    expect(dialog).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("panel")).toBeInTheDocument();
   });
 
@@ -31,8 +34,8 @@ describe("Drawer", () => {
         <p>p</p>
       </Drawer>,
     );
-    // left side default → closed slides to -translate-x-full
-    expect(screen.getByRole("dialog")).toHaveClass("-translate-x-full");
+    // left side default → closed slides to -translate-x-full (and is aria-hidden while closed)
+    expect(screen.getByRole("dialog", { hidden: true })).toHaveClass("-translate-x-full");
   });
 
   it("side='right' positions on the right and uses translate-x-full when closed", () => {
@@ -41,19 +44,19 @@ describe("Drawer", () => {
         <p>p</p>
       </Drawer>,
     );
-    const dialog = screen.getByRole("dialog");
+    const dialog = screen.getByRole("dialog", { hidden: true });
     expect(dialog).toHaveClass("right-0", "translate-x-full");
   });
 
   it("calls onClose when the backdrop is clicked", async () => {
     const onClose = jest.fn();
-    const { container } = render(
+    render(
       <Drawer open onClose={onClose}>
         <p>p</p>
       </Drawer>,
     );
-    // The backdrop is the first child div (aria-hidden).
-    const backdrop = container.querySelector('[aria-hidden]') as HTMLElement;
+    // Rendered via a portal to <body>; the backdrop is the aria-hidden overlay.
+    const backdrop = document.body.querySelector("[aria-hidden]") as HTMLElement;
     await userEvent.click(backdrop);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -94,5 +97,22 @@ describe("Drawer", () => {
       </Drawer>,
     );
     expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("structured mode renders a fixed header + footer around the scrollable body", () => {
+    render(
+      <Drawer
+        open
+        onClose={jest.fn()}
+        side="bottom"
+        header={<h2>Edit day</h2>}
+        footer={<button type="button">Save</button>}
+      >
+        <p>editor body</p>
+      </Drawer>,
+    );
+    expect(screen.getByRole("heading", { name: "Edit day" })).toBeInTheDocument();
+    expect(screen.getByText("editor body")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
   });
 });

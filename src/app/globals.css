@@ -297,6 +297,9 @@
   .badge-verified {
     @apply bg-sage-soft text-success-foreground;
   }
+  .badge-neutral {
+    @apply bg-muted text-ink-soft;
+  }
 
   /* Status pill with a leading dot (mirrors design_new .status). Pair with a
      variant: status-info / status-warning / status-success / status-error. */

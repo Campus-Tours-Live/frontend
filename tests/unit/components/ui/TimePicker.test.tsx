@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -118,6 +119,28 @@ describe("TimePicker — segmented field", () => {
     await user.click(period);
     await user.keyboard("p");
     expect(onChange).toHaveBeenCalledWith("21:00");
+  });
+
+  it("arrow keys step the FOCUSED hour/minute segment and update its display", async () => {
+    const user = userEvent.setup();
+    function Controlled() {
+      const [v, setV] = useState("09:00");
+      return <TimePicker value={v} onChange={setV} aria-label="Start" />;
+    }
+    render(<Controlled />);
+
+    const hour = screen.getByRole("textbox", { name: "Start hour" });
+    await user.click(hour);
+    await user.keyboard("{ArrowUp}");
+    // The displayed value updates too — not just the emitted value (the draft used to mask it).
+    expect(hour).toHaveValue("10");
+    await user.keyboard("{ArrowDown}{ArrowDown}");
+    expect(hour).toHaveValue("8");
+
+    const min = screen.getByRole("textbox", { name: "Start minutes" });
+    await user.click(min);
+    await user.keyboard("{ArrowUp}"); // minutes step by 5
+    expect(min).toHaveValue("05");
   });
 
   it("ArrowUp on the hour segment steps the value", async () => {

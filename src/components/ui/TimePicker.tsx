@@ -392,9 +392,14 @@ function Segment({
       onKeyDown={(e) => {
         if (e.key === "ArrowUp") {
           e.preventDefault();
+          // Drop the typing draft so the stepped value shows immediately — otherwise the draft set
+          // on focus keeps masking the controlled `display` (why arrows looked dead on hr/min but
+          // not on the readOnly AM/PM segment).
+          setDraft(null);
           onStep(1);
         } else if (e.key === "ArrowDown") {
           e.preventDefault();
+          setDraft(null);
           onStep(-1);
         } else if (e.key === "Enter") {
           e.preventDefault();
@@ -448,16 +453,28 @@ export function TimePicker({
   // Set when the dropdown should grab focus on the Hour wheel once it renders.
   const focusHourWheelRef = useRef(false);
 
-  const positionPopover = () => {
+  const computePos = (): { left: number; top: number } | null => {
     const rect = wrapperRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect) return null;
     const gap = 4;
     const flipUp =
       rect.bottom + POPOVER_HEIGHT + gap > window.innerHeight &&
       rect.top - POPOVER_HEIGHT - gap > 0;
-    const left = Math.max(MARGIN, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - MARGIN));
-    const top = flipUp ? rect.top - POPOVER_HEIGHT - gap : rect.bottom + gap;
-    setPos({ left, top });
+    // Round to whole pixels: sub-pixel `getBoundingClientRect` jitter would otherwise churn `setPos`
+    // (and re-seed the wheels) on every reposition.
+    const left = Math.round(
+      Math.max(MARGIN, Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - MARGIN)),
+    );
+    const top = Math.round(flipUp ? rect.top - POPOVER_HEIGHT - gap : rect.bottom + gap);
+    return { left, top };
+  };
+
+  const positionPopover = () => {
+    const next = computePos();
+    if (!next) return;
+    // Bail out (same reference) when nothing moved, so a reposition event that didn't shift the
+    // field costs no re-render.
+    setPos((prev) => (prev && prev.left === next.left && prev.top === next.top ? prev : next));
   };
 
   const openPicker = () => {
@@ -465,8 +482,7 @@ export function TimePicker({
     setOpen(true);
   };
 
-  // Close on outside pointer / Escape, and keep the popover pinned to the field
-  // while the modal scrolls or the window resizes.
+  // Close on outside pointer / Escape, and keep the fixed popover pinned to the field.
   useEffect(() => {
     if (!open) return;
     const onPointer = (e: PointerEvent) => {
@@ -478,8 +494,7 @@ export function TimePicker({
       if (e.key === "Escape") setOpen(false);
     };
     const onScroll = (e: Event) => {
-      // Reposition when an ANCESTOR (the modal) scrolls — but ignore the wheel's
-      // own inner scroll, which must not trigger a reposition re-render.
+      // Reposition when an ANCESTOR (the modal) scrolls — but ignore the wheel's own inner scroll.
       if (popoverRef.current?.contains(e.target as Node)) return;
       positionPopover();
     };
@@ -487,12 +502,25 @@ export function TimePicker({
     window.addEventListener("keydown", onKey);
     window.addEventListener("resize", positionPopover);
     window.addEventListener("scroll", onScroll, true);
+
+    // Reposition on REFLOW too: when the dialog grows (a dry-run notice appears) its `items-center`
+    // panel re-centres and moves the field WITHOUT firing scroll/resize. A ResizeObserver on the
+    // field's ancestors catches the panel's size change and re-pins the popover — firing only on an
+    // actual size change (not every frame), so there's no jitter. Guard for jsdom (no ResizeObserver).
+    let ro: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => positionPopover());
+      for (let el = wrapperRef.current?.parentElement; el; el = el.parentElement) ro.observe(el);
+    }
+
     return () => {
       document.removeEventListener("pointerdown", onPointer);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", positionPopover);
       window.removeEventListener("scroll", onScroll, true);
+      ro?.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Once the dropdown is open, move focus to the Hour wheel if requested (e.g. a

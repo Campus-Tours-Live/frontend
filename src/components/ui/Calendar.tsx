@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { MonthYearPicker } from "./MonthYearPicker";
 
 /**
  * Calendar — a generic month grid (CTL-55). Renders weekday heads + week rows of
@@ -52,8 +53,20 @@ export interface CalendarProps {
   onDayHover?: (date: string | null, anchorEl: HTMLElement | null) => void;
   /** Custom per-day renderer; overrides `day.content`. */
   renderDay?: (day: CalendarDay) => ReactNode;
+  /** Optional month navigator ( ‹ Month YYYY › , built on {@link MonthYearPicker}) shown above the
+   *  grid. Provide it to let the user change month; omit for a static month. The callback receives
+   *  the first day of the chosen month. */
+  onMonthChange?: (monthStart: Date) => void;
+  /** Horizontal alignment of the month navigator. Default `"center"`. */
+  monthNavAlign?: "left" | "center" | "right";
   className?: string;
 }
+
+const MONTH_NAV_JUSTIFY: Record<NonNullable<CalendarProps["monthNavAlign"]>, string> = {
+  left: "justify-start",
+  center: "justify-center",
+  right: "justify-end",
+};
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -72,6 +85,8 @@ export function Calendar({
   onDayClick,
   onDayHover,
   renderDay,
+  onMonthChange,
+  monthNavAlign = "center",
   className,
 }: CalendarProps) {
   const heads = Array.from({ length: 7 }, (_, i) => WEEKDAY_LABELS[(i + weekStartsOn) % 7]);
@@ -79,59 +94,70 @@ export function Calendar({
   const leadingBlanks = (firstWeekday - weekStartsOn + 7) % 7;
 
   return (
-    <div className={className} role="grid" aria-label={`${year}-${month} calendar`}>
-      <div
-        role="row"
-        className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-soft"
-      >
-        {heads.map((label) => (
-          <div key={label} role="columnheader">
-            {label}
-          </div>
-        ))}
-      </div>
+    <div className={className}>
+      {onMonthChange ? (
+        <div className={cn("mb-3 flex items-center", MONTH_NAV_JUSTIFY[monthNavAlign])}>
+          <MonthYearPicker
+            value={new Date(year, month - 1, 1)}
+            onChange={onMonthChange}
+            aria-label="Month"
+          />
+        </div>
+      ) : null}
+      <div role="grid" aria-label={`${year}-${month} calendar`}>
+        <div
+          role="row"
+          className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-ink-soft"
+        >
+          {heads.map((label) => (
+            <div key={label} role="columnheader">
+              {label}
+            </div>
+          ))}
+        </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1">
-        {Array.from({ length: leadingBlanks }).map((_, index) => (
-          <div key={`blank-${index}`} aria-hidden />
-        ))}
-        {days.map((d) => {
-          const isHovered = hoveredDate != null && d.date === hoveredDate;
-          return (
-            <button
-              key={d.date}
-              type="button"
-              role="gridcell"
-              data-testid={`calendar-day-${d.date}`}
-              data-today={d.isToday ? "true" : "false"}
-              data-muted={d.muted ? "true" : "false"}
-              aria-label={d.ariaLabel ?? d.date}
-              aria-current={d.isToday ? "date" : undefined}
-              onClick={() => onDayClick?.(d.date)}
-              onMouseEnter={(e) => onDayHover?.(d.date, e.currentTarget)}
-              onMouseLeave={() => onDayHover?.(null, null)}
-              onFocus={(e) => onDayHover?.(d.date, e.currentTarget)}
-              onBlur={() => onDayHover?.(null, null)}
-              className={cn(
-                "relative flex h-16 flex-col items-stretch gap-1 rounded-md border border-border bg-card p-1.5 text-left text-[13px] font-medium text-ink transition-colors",
-                "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft",
-                "hover:border-primary/60",
-                d.muted && "calendar-hatch text-ink-soft",
-                // Today: dark outline ring. Hover: distinct primary (blue) outline.
-                // Both use box-shadow rings so they can stack without shifting layout.
-                d.isToday && "ring-2 ring-ink ring-offset-1 ring-offset-card",
-                isHovered && "ring-2 ring-primary ring-offset-1 ring-offset-card",
-              )}
-            >
-              <span className="text-[12px] leading-none tabular-nums">{d.day}</span>
-              {!d.muted ? (
-                <span className="mt-auto min-h-0 w-full">
-                  {renderDay ? renderDay(d) : d.content}
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
+        <div className="mt-1 grid grid-cols-7 gap-1">
+          {Array.from({ length: leadingBlanks }).map((_, index) => (
+            <div key={`blank-${index}`} aria-hidden />
+          ))}
+          {days.map((d) => {
+            const isHovered = hoveredDate != null && d.date === hoveredDate;
+            return (
+              <button
+                key={d.date}
+                type="button"
+                role="gridcell"
+                data-testid={`calendar-day-${d.date}`}
+                data-today={d.isToday ? "true" : "false"}
+                data-muted={d.muted ? "true" : "false"}
+                aria-label={d.ariaLabel ?? d.date}
+                aria-current={d.isToday ? "date" : undefined}
+                onClick={() => onDayClick?.(d.date)}
+                onMouseEnter={(e) => onDayHover?.(d.date, e.currentTarget)}
+                onMouseLeave={() => onDayHover?.(null, null)}
+                onFocus={(e) => onDayHover?.(d.date, e.currentTarget)}
+                onBlur={() => onDayHover?.(null, null)}
+                className={cn(
+                  "relative flex aspect-square flex-col items-stretch gap-1 rounded-md border border-border bg-card p-1.5 text-left text-[13px] font-medium text-ink transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft",
+                  "hover:border-primary/60",
+                  d.muted && "calendar-hatch text-ink-soft",
+                  // Today: dark outline ring. Hover: distinct primary (blue) outline.
+                  // Both use box-shadow rings so they can stack without shifting layout.
+                  d.isToday && "ring-2 ring-ink ring-offset-1 ring-offset-card",
+                  isHovered && "ring-2 ring-primary ring-offset-1 ring-offset-card",
+                )}
+              >
+                <span className="text-[12px] leading-none tabular-nums">{d.day}</span>
+                {!d.muted ? (
+                  <span className="mt-auto min-h-0 w-full">
+                    {renderDay ? renderDay(d) : d.content}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ export { Link, type LinkProps } from "./Link";
 export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./Badge";
 export { Alert, type AlertProps, type AlertVariant } from "./Alert";
 export { Card, type CardProps } from "./Card";
+export { Panel, PanelHeader, type PanelProps, type PanelHeaderProps } from "./Panel";
 export {
   MemberCard,
   type MemberCardProps,
@@ -28,6 +29,12 @@ export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { InlineLoading, type InlineLoadingProps } from "./InlineLoading";
 export { Chip, type ChipProps } from "./Chip";
 export { Toggle, type ToggleProps } from "./Toggle";
+export {
+  SegmentedControl,
+  type SegmentedControlProps,
+  type SegmentOption,
+} from "./SegmentedControl";
+export { ButtonGroup, type ButtonGroupProps } from "./ButtonGroup";
 export {
   Field,
   TextField,

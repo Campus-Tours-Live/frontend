@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Button, Modal, TimePicker } from "@/components/ui";
+import { Alert, Button, Drawer, Modal, SegmentedControl, TimePicker } from "@/components/ui";
 import {
   ApiError,
   useAvailabilityExceptions,
@@ -26,6 +26,7 @@ import {
 } from "@/lib/availability/fromTo";
 import { bucketOccurrencesByDate } from "@/lib/availability/bucketByDate";
 import { AffectedBookingsNotice } from "./AffectedBookingsNotice";
+import { formatDayHeader } from "./availabilityHelpers";
 import {
   TimeAxis,
   TimeAxisBar,
@@ -33,13 +34,13 @@ import {
   type TimeAxisSegment,
   type TimeAxisTick,
 } from "./TimeAxisBar";
-import { useDebounced } from "@/hooks";
+import { useDebounced, useMediaQuery } from "@/hooks";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
 
 /** Debounce delay (ms) between the last form edit and firing the dry-run preview request —
  *  keeps the guide from triggering a network round-trip on every keystroke. */
-const PREVIEW_DEBOUNCE_MS = 400;
+const PREVIEW_DEBOUNCE_MS = 2000;
 
 /** Two-segment control labels. `kind` = ADDITIONAL/UNAVAILABLE drives the whole modal. */
 const SEGMENT_LABELS: Record<AvailabilityExceptionKind, string> = {
@@ -130,18 +131,6 @@ function formatClockTime(iso: string, timeZone: string): string {
  *  `MonthAvailabilityView`'s `formatWindow`). */
 function formatOccurrence(window: AvailabilityOccurrence, timeZone: string): string {
   return `${formatClockTime(window.startAt, timeZone)} – ${formatClockTime(window.endAt, timeZone)}`;
-}
-
-/** "Fri 7/18"-style weekday + M/D for the modal title. Derived from the ISO calendar date at
- *  UTC-noon (avoids any tz-boundary slip); presentation only. */
-function formatWeekdayMonthDay(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!year || !month || !day) return iso;
-  const weekday = new Intl.DateTimeFormat("en-US", {
-    timeZone: "UTC",
-    weekday: "short",
-  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
-  return `${weekday} ${month}/${day}`;
 }
 
 /** Minutes-of-day (0–1440) of `iso` AS SEEN in `timeZone` — a rendering coordinate, not
@@ -374,7 +363,7 @@ function conflictSentences(conflictDays: DayView[], timeZone: string): string[] 
       .filter((segment) => segment.kind === "available")
       .map((segment) => segment.label);
     const after = availableLabels.length > 0 ? availableLabels.join(", ") : "no hours";
-    const day = formatWeekdayMonthDay(view.date);
+    const day = formatDayHeader(view.date);
     return `This blocks time on ${day} that overlaps your current hours — ${currently} becomes ${after}.`;
   });
 }
@@ -430,6 +419,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
   const [autoOpenKey, setAutoOpenKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // On touch / narrow screens the editor lives in a bottom Drawer (same sheet idiom as the day
+  // sheet); on a hover-capable desktop it's a centered Modal. Same content in both.
+  const isMobile = useMediaQuery("(hover: none), (max-width: 1023px)");
   // Bookings the last successful save overlapped (allow+notify). Non-empty ⇒ keep the modal open
   // and show the notice instead of closing, so the guide is told the change touched real bookings.
   const [affectedBookings, setAffectedBookings] = useState<AffectedBooking[]>([]);
@@ -562,17 +554,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
   };
 
   const header = (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-        Date-specific override
-      </p>
-      <h2
-        id="date-override-modal-title"
-        className="mt-1 font-display text-[22px] font-bold text-ink"
-      >
-        Date-specific hours · {formatWeekdayMonthDay(date)}
-      </h2>
-    </div>
+    <h2 id="date-override-modal-title" className="font-display text-[22px] font-bold text-ink">
+      Date-specific hours · {formatDayHeader(date)}
+    </h2>
   );
 
   const footer =
@@ -600,6 +584,183 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
       </div>
     );
 
+  const editorBody = (
+    <div className="space-y-5">
+      <Alert variant="info" role="status">
+        This is a single-day override — it does not change your weekly hours. For recurring changes,
+        use Weekly hours.
+      </Alert>
+
+      {error ? <Alert variant="error">{error}</Alert> : null}
+
+      <AffectedBookingsNotice bookings={affectedBookings} timeZone={settingsTimezone} />
+
+      <SegmentedControl<AvailabilityExceptionKind>
+        aria-label="Override type"
+        value={mode}
+        onChange={selectMode}
+        options={[
+          { value: "ADDITIONAL", label: SEGMENT_LABELS.ADDITIONAL },
+          { value: "UNAVAILABLE", label: SEGMENT_LABELS.UNAVAILABLE },
+        ]}
+      />
+
+      <div className="space-y-2 rounded-md border border-border bg-card p-3">
+        <p className="text-[13px] font-bold text-ink">Time slots for this day</p>
+        {slots.length === 0 ? (
+          <p className="text-[13px] text-ink-soft">
+            No {SEGMENT_LABELS[mode].toLowerCase()} slots for this day — add one below.
+          </p>
+        ) : (
+          slots.map((slot, index) => (
+            <div key={slot.key}>
+              <div
+                role="group"
+                aria-label={`Time slot ${index + 1}`}
+                className="flex items-center gap-2"
+              >
+                <div className="flex-1">
+                  <TimePicker
+                    aria-label={`Time slot ${index + 1} from`}
+                    value={slot.from}
+                    openOnMount={slot.key === autoOpenKey}
+                    onChange={(next) => updateSlot(slot.key, { from: next })}
+                  />
+                </div>
+                <span aria-hidden className="text-ink-soft">
+                  –
+                </span>
+                <div className="flex-1">
+                  <TimePicker
+                    midnightIsEndOfDay
+                    aria-label={`Time slot ${index + 1} to`}
+                    value={slot.to}
+                    onChange={(next) => updateSlot(slot.key, { to: next })}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeSlot(slot.key)}
+                  aria-label={`Remove time slot ${index + 1}`}
+                  className="tp-icon-btn"
+                >
+                  <Trash2 size={16} strokeWidth={1.8} aria-hidden />
+                </button>
+              </div>
+              {slotErrors[index] ? (
+                <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
+                  {slotErrors[index]}
+                </p>
+              ) : null}
+            </div>
+          ))
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={addSlot}>
+            <Plus size={15} strokeWidth={2} aria-hidden />
+            Add time slot
+          </Button>
+          {slots.length > 0 ? (
+            <Button type="button" variant="ghost" size="sm" onClick={clearAllSlots}>
+              <Trash2 size={15} strokeWidth={2} aria-hidden />
+              Clear all time slots
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <div
+        role="region"
+        aria-label="Preview"
+        className="rounded-md border border-border bg-card p-3"
+      >
+        <p className="text-[13px] font-bold text-ink">After applying</p>
+        {previewLoading ? (
+          <p className="mt-2 text-[13px] text-ink-soft">Loading preview…</p>
+        ) : previewError ? (
+          <Alert variant="error" className="mt-3">
+            {previewError}
+          </Alert>
+        ) : dayViews.length === 0 ? (
+          <p className="mt-2 text-[13px] text-ink-soft">No affected dates yet.</p>
+        ) : (
+          <>
+            {conflictMessages.length > 0 ? (
+              <Alert variant="warning" role="status" className="mt-3">
+                <ul className="space-y-1">
+                  {conflictMessages.map((message, index) => (
+                    <li key={index}>{message}</li>
+                  ))}
+                </ul>
+                <p className="mt-1 font-medium">Confirm the change?</p>
+              </Alert>
+            ) : null}
+            <ul className="mt-3 space-y-4">
+              {dayViews.map((view) => (
+                <li key={view.date} aria-label={`Timeline for ${view.date}`}>
+                  <p className="text-[12px] font-semibold text-ink">{formatDayHeader(view.date)}</p>
+                  {view.inert ? (
+                    // Beyond the materialization horizon: Core hasn't generated occurrences for
+                    // this date yet, so a Now/After timeline would be empty and read exactly like
+                    // a truly-empty day. Show why instead — the change is saved and takes effect
+                    // once the horizon rolls forward to cover this date.
+                    <p role="status" className="mt-2 text-[12px] text-ink-soft">
+                      Beyond your booking horizon — this change is saved now and activates as the
+                      horizon rolls forward to this date.
+                    </p>
+                  ) : (
+                    DAY_HALVES.map((half) => {
+                      const label = half.key.toUpperCase();
+                      return (
+                        <div key={half.key} className="mt-2 space-y-1">
+                          <TimeAxisBar
+                            barLabel="Now"
+                            ariaLabel={`Current hours on ${view.date} (${label})`}
+                            segments={segmentsInHalf(view.nowSegments, half)}
+                            domainStartMin={half.startMin}
+                            domainEndMin={half.endMin}
+                          />
+                          <TimeAxisBar
+                            barLabel="After"
+                            ariaLabel={`After applying on ${view.date} (${label})`}
+                            segments={segmentsInHalf(view.afterSegments, half)}
+                            domainStartMin={half.startMin}
+                            domainEndMin={half.endMin}
+                          />
+                          <TimeAxis
+                            ticks={halfTicks(half.startMin, half.endMin)}
+                            rangeStartMin={half.startMin}
+                            rangeEndMin={half.endMin}
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </li>
+              ))}
+            </ul>
+            <TimeAxisLegend />
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer
+        open
+        onClose={onClose}
+        side="bottom"
+        ariaLabel="Date-specific hours"
+        header={header}
+        footer={footer}
+      >
+        {editorBody}
+      </Drawer>
+    );
+  }
+
   return (
     <Modal
       open
@@ -609,182 +770,7 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
       header={header}
       footer={footer}
     >
-      <div className="space-y-5">
-        <Alert variant="info" role="status">
-          This is a single-day override — it does not change your weekly hours. For recurring
-          changes, use Weekly hours.
-        </Alert>
-
-        {error ? <Alert variant="error">{error}</Alert> : null}
-
-        <AffectedBookingsNotice bookings={affectedBookings} timeZone={settingsTimezone} />
-
-        <div
-          role="group"
-          aria-label="Override type"
-          className="grid grid-cols-2 gap-1 rounded-full border border-border bg-card p-1"
-        >
-          {(Object.keys(SEGMENT_LABELS) as AvailabilityExceptionKind[]).map((key) => {
-            const selected = mode === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => selectMode(key)}
-                className={
-                  selected
-                    ? "rounded-full bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground"
-                    : "rounded-full px-4 py-2 text-[13px] font-medium text-ink-soft hover:text-ink"
-                }
-              >
-                {SEGMENT_LABELS[key]}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="space-y-2 rounded-md border border-border bg-card p-3">
-          <p className="text-[13px] font-bold text-ink">Time slots for this day</p>
-          {slots.length === 0 ? (
-            <p className="text-[13px] text-ink-soft">
-              No {SEGMENT_LABELS[mode].toLowerCase()} slots for this day — add one below.
-            </p>
-          ) : (
-            slots.map((slot, index) => (
-              <div key={slot.key}>
-                <div
-                  role="group"
-                  aria-label={`Time slot ${index + 1}`}
-                  className="flex items-center gap-2"
-                >
-                  <div className="flex-1">
-                    <TimePicker
-                      aria-label={`Time slot ${index + 1} from`}
-                      value={slot.from}
-                      openOnMount={slot.key === autoOpenKey}
-                      onChange={(next) => updateSlot(slot.key, { from: next })}
-                    />
-                  </div>
-                  <span aria-hidden className="text-ink-soft">
-                    –
-                  </span>
-                  <div className="flex-1">
-                    <TimePicker
-                      midnightIsEndOfDay
-                      aria-label={`Time slot ${index + 1} to`}
-                      value={slot.to}
-                      onChange={(next) => updateSlot(slot.key, { to: next })}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeSlot(slot.key)}
-                    aria-label={`Remove time slot ${index + 1}`}
-                    className="tp-icon-btn"
-                  >
-                    <Trash2 size={16} strokeWidth={1.8} aria-hidden />
-                  </button>
-                </div>
-                {slotErrors[index] ? (
-                  <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
-                    {slotErrors[index]}
-                  </p>
-                ) : null}
-              </div>
-            ))
-          )}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={addSlot}>
-              <Plus size={15} strokeWidth={2} aria-hidden />
-              Add time slot
-            </Button>
-            {slots.length > 0 ? (
-              <Button type="button" variant="ghost" size="sm" onClick={clearAllSlots}>
-                <Trash2 size={15} strokeWidth={2} aria-hidden />
-                Clear all time slots
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <div
-          role="region"
-          aria-label="Preview"
-          className="rounded-md border border-border bg-card p-3"
-        >
-          <p className="text-[13px] font-bold text-ink">After applying</p>
-          {previewLoading ? (
-            <p className="mt-2 text-[13px] text-ink-soft">Loading preview…</p>
-          ) : previewError ? (
-            <Alert variant="error" className="mt-3">
-              {previewError}
-            </Alert>
-          ) : dayViews.length === 0 ? (
-            <p className="mt-2 text-[13px] text-ink-soft">No affected dates yet.</p>
-          ) : (
-            <>
-              {conflictMessages.length > 0 ? (
-                <Alert variant="warning" role="status" className="mt-3">
-                  <ul className="space-y-1">
-                    {conflictMessages.map((message, index) => (
-                      <li key={index}>{message}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-1 font-medium">Confirm the change?</p>
-                </Alert>
-              ) : null}
-              <ul className="mt-3 space-y-4">
-                {dayViews.map((view) => (
-                  <li key={view.date} aria-label={`Timeline for ${view.date}`}>
-                    <p className="text-[12px] font-semibold text-ink">
-                      {formatWeekdayMonthDay(view.date)}
-                    </p>
-                    {view.inert ? (
-                      // Beyond the materialization horizon: Core hasn't generated occurrences for
-                      // this date yet, so a Now/After timeline would be empty and read exactly like
-                      // a truly-empty day. Show why instead — the change is saved and takes effect
-                      // once the horizon rolls forward to cover this date.
-                      <p role="status" className="mt-2 text-[12px] text-ink-soft">
-                        Beyond your booking horizon — this change is saved now and activates as the
-                        horizon rolls forward to this date.
-                      </p>
-                    ) : (
-                      DAY_HALVES.map((half) => {
-                        const label = half.key.toUpperCase();
-                        return (
-                          <div key={half.key} className="mt-2 space-y-1">
-                            <TimeAxisBar
-                              barLabel="Now"
-                              ariaLabel={`Current hours on ${view.date} (${label})`}
-                              segments={segmentsInHalf(view.nowSegments, half)}
-                              domainStartMin={half.startMin}
-                              domainEndMin={half.endMin}
-                            />
-                            <TimeAxisBar
-                              barLabel="After"
-                              ariaLabel={`After applying on ${view.date} (${label})`}
-                              segments={segmentsInHalf(view.afterSegments, half)}
-                              domainStartMin={half.startMin}
-                              domainEndMin={half.endMin}
-                            />
-                            <TimeAxis
-                              ticks={halfTicks(half.startMin, half.endMin)}
-                              rangeStartMin={half.startMin}
-                              rangeEndMin={half.endMin}
-                            />
-                          </div>
-                        );
-                      })
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <TimeAxisLegend />
-            </>
-          )}
-        </div>
-      </div>
+      {editorBody}
     </Modal>
   );
 }
