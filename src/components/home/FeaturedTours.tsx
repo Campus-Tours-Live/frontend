@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Alert, Heading, Link } from "@/components/ui";
+import { Alert, Icon, IconButton, Link, SectionHeading } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
@@ -46,24 +46,6 @@ function pageMetrics(el: HTMLDivElement, count: number): { stride: number; pageC
   };
 }
 
-function Chevron({ dir }: { dir: "left" | "right" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d={dir === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
-    </svg>
-  );
-}
-
 export function FeaturedTours() {
   const { data: tours, isLoading, isError } = useTourCatalog();
   const list = tours ?? [];
@@ -104,12 +86,7 @@ export function FeaturedTours() {
   return (
     <section className="mx-auto max-w-content px-6 pb-[90px] pt-8 xl:max-w-[1280px] 2xl:max-w-[1400px]">
       <div className="mb-6 flex items-end justify-between gap-5">
-        <div>
-          <div className="eyebrow">Featured tours</div>
-          <Heading as="h2" size="h2" className="mt-1">
-            Start with a campus that feels right.
-          </Heading>
-        </div>
+        <SectionHeading eyebrow="Featured tours" title="Start with a campus that feels right." />
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
         {showCarousel ? (
           <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
@@ -168,24 +145,24 @@ export function FeaturedTours() {
             />
 
             {/* Side chevrons (desktop carousel only) */}
-            <button
-              type="button"
-              aria-label="Previous tours"
+            <IconButton
+              a11yLabel="Previous tours"
+              variant="soft"
               onClick={() => goToPage(active - 1)}
               disabled={active === 0}
-              className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-pill border border-border bg-card text-ink shadow-card transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 lg:grid"
+              className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 border border-border bg-card text-ink shadow-card transition hover:border-primary hover:bg-card hover:text-primary lg:grid"
             >
-              <Chevron dir="left" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next tours"
+              <Icon name="chevronLeft" size={20} strokeWidth={2.2} />
+            </IconButton>
+            <IconButton
+              a11yLabel="Next tours"
+              variant="soft"
               onClick={() => goToPage(active + 1)}
               disabled={active === pageCount - 1}
-              className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-pill border border-border bg-card text-ink shadow-card transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 lg:grid"
+              className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 border border-border bg-card text-ink shadow-card transition hover:border-primary hover:bg-card hover:text-primary lg:grid"
             >
-              <Chevron dir="right" />
-            </button>
+              <Icon name="chevronRight" size={20} strokeWidth={2.2} />
+            </IconButton>
           </div>
 
           {/* Page-based dot pagination (desktop carousel only) */}
