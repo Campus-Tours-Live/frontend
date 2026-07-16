@@ -52,17 +52,11 @@ export {
 } from "./segmented-control/SegmentedControl";
 export { ButtonGroup, type ButtonGroupProps } from "./button-group/ButtonGroup";
 export { ButtonRow, type ButtonRowProps, type ButtonRowAlign } from "./button-row/ButtonRow";
-export {
-  Field,
-  TextField,
-  Textarea,
-  SelectField,
-  type FieldProps,
-  type FieldSize,
-  type TextFieldProps,
-  type TextareaProps,
-  type SelectFieldProps,
-} from "./field/Field";
+export { Field, type FieldProps } from "./field/Field";
+export { TextField, type TextFieldProps } from "./field/TextField";
+export { Textarea, type TextareaProps } from "./field/Textarea";
+export { SelectField, type SelectFieldProps } from "./field/SelectField";
+export { type FieldSize } from "./field/fieldShared";
 export { Select, type SelectProps, type SelectSize } from "./select/Select";
 export { FormLabel, type FormLabelProps, type FormLabelSize } from "./form/FormLabel";
 export { FormHelperText, type FormHelperTextProps } from "./form/FormHelperText";
