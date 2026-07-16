@@ -112,7 +112,7 @@ export function CreateOfferingForm() {
           {...register("title", { required: "Title is required" })}
         />
 
-        <Field label="University" error={errors.university?.message}>
+        <Field label="University" htmlFor="offering-university" error={errors.university?.message}>
           <Controller
             control={control}
             name="university"
@@ -120,7 +120,12 @@ export function CreateOfferingForm() {
               validate: (value) => value.length > 0 || "University is required",
             }}
             render={({ field }) => (
-              <UniversityMultiSelect value={field.value} onChange={field.onChange} max={1} />
+              <UniversityMultiSelect
+                id="offering-university"
+                value={field.value}
+                onChange={field.onChange}
+                max={1}
+              />
             )}
           />
         </Field>

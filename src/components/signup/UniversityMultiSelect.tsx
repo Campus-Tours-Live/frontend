@@ -21,10 +21,14 @@ export function UniversityMultiSelect({
   value,
   onChange,
   max = 5,
+  id,
 }: {
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   max?: number;
+  /** Id for the search input, so a wrapping `<Field label htmlFor>` (or any `<label htmlFor>`)
+   *  can associate its label with this control. */
+  id?: string;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -69,6 +73,7 @@ export function UniversityMultiSelect({
       {!atMax && (
         <div className="relative">
           <input
+            id={id}
             className="input"
             placeholder="Search universities…"
             value={query}

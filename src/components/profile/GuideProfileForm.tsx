@@ -159,7 +159,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           />
         </div>
 
-        <Field label="University" error={errors.university?.message}>
+        <Field label="University" htmlFor="profile-university" error={errors.university?.message}>
           <Controller
             control={control}
             name="university"
@@ -167,7 +167,12 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
               validate: (value) => value.length > 0 || "University is required",
             }}
             render={({ field }) => (
-              <UniversityMultiSelect value={field.value} onChange={field.onChange} max={1} />
+              <UniversityMultiSelect
+                id="profile-university"
+                value={field.value}
+                onChange={field.onChange}
+                max={1}
+              />
             )}
           />
         </Field>

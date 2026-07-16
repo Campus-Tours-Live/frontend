@@ -38,6 +38,15 @@ describe("Heading", () => {
     expect(el).toHaveClass("font-semibold", "text-primary");
   });
 
+  it("small maps to the ui-lg token", () => {
+    render(
+      <Heading as="h3" size="small">
+        Compact
+      </Heading>,
+    );
+    expect(screen.getByRole("heading", { name: "Compact" })).toHaveClass("text-ui-lg");
+  });
+
   it("forwards native attributes (id, aria, onClick) to the element", async () => {
     const user = userEvent.setup();
     const onClick = jest.fn();
@@ -90,5 +99,10 @@ describe("Body", () => {
     const el = screen.getByText("inline");
     expect(el.tagName).toBe("SPAN");
     expect(el).toHaveClass("text-[13px]", "font-bold");
+  });
+
+  it("large maps to the ui-lg token", () => {
+    render(<Body size="large">Prominent</Body>);
+    expect(screen.getByText("Prominent")).toHaveClass("text-ui-lg");
   });
 });

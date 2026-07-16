@@ -219,7 +219,11 @@ export function ParticipantOnboardingForm() {
 
         {/* Step 2 — Universities (optional) */}
         {step === 1 && (
-          <Field label="Universities of interest" optional>
+          <Field
+            label="Universities of interest"
+            htmlFor="onboarding-participant-universities"
+            optional
+          >
             <Body size="medium" color="muted" className="mb-3">
               Search and add the campuses you want to explore. Optional — you can add or change
               these anytime in your profile.
@@ -228,7 +232,12 @@ export function ParticipantOnboardingForm() {
               control={control}
               name="universities"
               render={({ field }) => (
-                <UniversityMultiSelect value={field.value} onChange={field.onChange} max={5} />
+                <UniversityMultiSelect
+                  id="onboarding-participant-universities"
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={5}
+                />
               )}
             />
           </Field>
