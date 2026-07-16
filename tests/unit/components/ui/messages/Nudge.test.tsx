@@ -3,6 +3,21 @@ import userEvent from "@testing-library/user-event";
 import { Nudge } from "@/components/ui/messages/Nudge";
 
 describe("Nudge", () => {
+  it("defaults to the neutral surface and tints for a variant", () => {
+    const { rerender } = render(
+      <Nudge data-testid="n" title="T">
+        body
+      </Nudge>,
+    );
+    expect(screen.getByTestId("n")).toHaveClass("border-border", "bg-card");
+    rerender(
+      <Nudge data-testid="n" variant="info" title="T">
+        body
+      </Nudge>,
+    );
+    expect(screen.getByTestId("n")).toHaveClass("border-primary-soft", "bg-primary-soft");
+  });
+
   it("renders leading, title, body, and actions", () => {
     render(
       <Nudge

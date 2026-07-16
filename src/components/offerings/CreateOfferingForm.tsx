@@ -6,7 +6,9 @@ import {
   Alert,
   Button,
   Field,
+  Icon,
   Link,
+  Nudge,
   SectionHeading,
   SelectField,
   Spinner,
@@ -163,10 +165,10 @@ export function CreateOfferingForm() {
         />
       </div>
 
-      <div className="rounded-panel border border-border bg-canvas p-5 text-[13px] text-ink-soft">
-        Saving creates a draft. Publishing requires a verified guide account and makes the offering
-        visible on the public marketplace.
-      </div>
+      <Nudge variant="info" leading={<Icon name="info" />} title="Saving creates a draft">
+        Publishing requires a verified guide account and makes the offering visible on the public
+        marketplace.
+      </Nudge>
 
       <Button type="submit" variant="primary" disabled={isSubmitting || createOffering.isPending}>
         {isSubmitting || createOffering.isPending ? (

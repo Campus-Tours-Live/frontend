@@ -17,7 +17,7 @@ export { Rating, type RatingProps, type RatingSize } from "./rating/Rating";
 export { RatingStar, type RatingStarProps, type RatingStarVariant } from "./rating/RatingStar";
 export { Alert, type AlertProps, type AlertVariant } from "./messages/Alert";
 export { Banner, type BannerProps, type BannerVariant } from "./messages/Banner";
-export { Nudge, type NudgeProps } from "./messages/Nudge";
+export { Nudge, type NudgeProps, type NudgeVariant } from "./messages/Nudge";
 export { Snack, type SnackProps, type SnackAction } from "./toast/Snack";
 export { SnackbarProvider, SnackbarContext, type SnackOptions } from "./toast/SnackbarProvider";
 export { useSnackbar } from "./toast/useSnackbar";

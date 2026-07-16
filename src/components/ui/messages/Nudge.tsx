@@ -18,9 +18,31 @@ import { IconButton } from "../icon-button/IconButton";
  *     Add weekly hours so participants can book you.
  *   </Nudge>
  */
+/** Tone — pick by trigger context. `neutral` is the plain card look; the rest tint the surface
+ *  (and the leading icon) with the matching theme token. */
+export type NudgeVariant = "neutral" | "info" | "success" | "warning" | "error";
+
+const SURFACE: Record<NudgeVariant, string> = {
+  neutral: "border-border bg-card",
+  info: "border-primary-soft bg-primary-soft",
+  success: "border-success-soft bg-success-soft",
+  warning: "border-warning-soft bg-warning-soft",
+  error: "border-error-soft bg-error-soft",
+};
+
+const LEADING_COLOR: Record<NudgeVariant, string> = {
+  neutral: "text-ink-soft",
+  info: "text-primary",
+  success: "text-success-foreground",
+  warning: "text-warning-foreground",
+  error: "text-error-foreground",
+};
+
 export interface NudgeProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   /** Prominent title line. */
   title: ReactNode;
+  /** @default "neutral" */
+  variant?: NudgeVariant;
   /** Optional body copy. */
   children?: ReactNode;
   /** Optional leading content (usually an icon). */
@@ -40,19 +62,17 @@ export function Nudge({
   actions,
   onClose,
   closeLabel = "Dismiss",
+  variant = "neutral",
   className,
   ...rest
 }: NudgeProps) {
   return (
     <div
-      className={cn(
-        "flex items-start gap-3 rounded-card border border-border bg-card p-4",
-        className,
-      )}
+      className={cn("flex items-start gap-3 rounded-card border p-4", SURFACE[variant], className)}
       {...rest}
     >
       {leading != null ? (
-        <div className="flex shrink-0 items-center text-ink-soft">{leading}</div>
+        <div className={cn("flex shrink-0 items-center", LEADING_COLOR[variant])}>{leading}</div>
       ) : null}
 
       <div className="min-w-0 flex-1">

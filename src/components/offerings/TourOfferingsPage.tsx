@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Alert, Chip, InlineLoading, Link, PageContainer, PageHeader } from "@/components/ui";
+import {
+  Alert,
+  Chip,
+  Icon,
+  InlineLoading,
+  Link,
+  Nudge,
+  PageContainer,
+  PageHeader,
+} from "@/components/ui";
 import { useMe, useOfferings, useTourTopics, type Offering } from "@/lib/data-access";
 import { OfferingCard } from "./OfferingCard";
 import { filterOfferings, type OfferingFilter } from "./offeringStatus";
@@ -70,10 +79,14 @@ export function TourOfferingsPage() {
         ))}
       </div>
 
-      <div className="rounded-panel border border-border bg-canvas p-5 text-[13px] text-ink-soft">
-        You may save drafts before verification. Only complete offerings owned by a verified guide
-        can be published. Editing or retiring an offering does not change existing bookings.
-      </div>
+      <Nudge
+        variant="info"
+        leading={<Icon name="info" />}
+        title="You may save drafts before verification"
+      >
+        Only complete offerings owned by a verified guide can be published. Editing or retiring an
+        offering does not change existing bookings.
+      </Nudge>
     </PageContainer>
   );
 }
