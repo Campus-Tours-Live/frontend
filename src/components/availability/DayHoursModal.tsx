@@ -262,7 +262,7 @@ function DayHoursModalContent({
           ))
         )}
 
-        <Button type="button" variant="ghost" size="sm" onClick={addRange}>
+        <Button type="button" variant="ghost" size="small" onClick={addRange}>
           <Plus size={15} strokeWidth={2} aria-hidden />
           Add time range
         </Button>

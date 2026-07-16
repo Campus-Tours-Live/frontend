@@ -12,7 +12,7 @@ import { IconButton } from "./IconButton";
  *   <Nudge
  *     leading={<Icon name="info" />}
  *     title="Finish setup"
- *     actions={<ButtonRow align="start"><Button size="sm">Add hours</Button></ButtonRow>}
+ *     actions={<ButtonRow align="start"><Button size="small">Add hours</Button></ButtonRow>}
  *     onClose={() => setDismissed(true)}
  *   >
  *     Add weekly hours so participants can book you.
@@ -60,7 +60,7 @@ export function Nudge({
           {title}
         </Body>
         {children != null ? (
-          <Body as="div" size="sm" color="muted" className="mt-1">
+          <Body as="div" size="small" color="muted" className="mt-1">
             {children}
           </Body>
         ) : null}
@@ -68,7 +68,7 @@ export function Nudge({
       </div>
 
       {onClose != null ? (
-        <IconButton a11yLabel={closeLabel} size="sm" onClick={onClose} className="-mr-1 -mt-1">
+        <IconButton a11yLabel={closeLabel} size="small" onClick={onClose} className="-mr-1 -mt-1">
           <Icon name="close" size={16} />
         </IconButton>
       ) : null}

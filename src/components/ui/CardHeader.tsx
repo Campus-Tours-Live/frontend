@@ -26,7 +26,7 @@ export function CardHeader({ leadingIcon, title, trailing, className, ...rest }:
       {leadingIcon != null ? (
         <span className="flex shrink-0 items-center text-ink-soft">{leadingIcon}</span>
       ) : null}
-      <Heading as="h3" size={size === "large" ? "lg" : "md"} className="min-w-0 flex-1">
+      <Heading as="h3" size={size === "large" ? "large" : "medium"} className="min-w-0 flex-1">
         {title}
       </Heading>
       {trailing != null ? <span className="flex shrink-0 items-center">{trailing}</span> : null}

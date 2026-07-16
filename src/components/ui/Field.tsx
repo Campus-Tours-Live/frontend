@@ -10,6 +10,8 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import { useDebounced } from "@/hooks";
+import { VisuallyHidden } from "./VisuallyHidden";
+import { Caption } from "./Caption";
 
 /** Control size. `large` (default) matches `.input`; `small` tightens padding + font. */
 export type FieldSize = "small" | "large";
@@ -18,6 +20,10 @@ const SIZE_CLASS: Record<FieldSize, string | false> = {
   large: false,
   small: "px-3 py-2 text-[13px]",
 };
+
+/** Leading-icon overlay (shared by TextField + SelectField); the input reserves room with `pl-10`. */
+const LEADING_ICON_CLASS =
+  "pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-soft [&_svg]:h-[18px] [&_svg]:w-[18px]";
 
 /**
  * Field — label + control + (error | hint) wrapper using `.field`. Use it
@@ -109,10 +115,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     >
       <div className="relative">
         {leadingIcon ? (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-soft [&_svg]:h-[18px] [&_svg]:w-[18px]"
-          >
+          <span aria-hidden className={LEADING_ICON_CLASS}>
             {leadingIcon}
           </span>
         ) : null}
@@ -200,13 +203,13 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       {maxLength != null ? (
         <>
           <div className="mt-1 flex justify-end">
-            <span aria-hidden className="font-mono text-[12px] tabular-nums text-ink-soft">
+            <Caption isMonospace aria-hidden className="tabular-nums">
               {length} / {maxLength}
-            </span>
+            </Caption>
           </div>
-          <span className="sr-only" aria-live="polite" aria-atomic>
+          <VisuallyHidden aria-live="polite" aria-atomic>
             {announced} characters left.
-          </span>
+          </VisuallyHidden>
         </>
       ) : null}
     </Field>
@@ -250,10 +253,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
     >
       <div className="relative">
         {leadingIcon ? (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-soft [&_svg]:h-[18px] [&_svg]:w-[18px]"
-          >
+          <span aria-hidden className={LEADING_ICON_CLASS}>
             {leadingIcon}
           </span>
         ) : null}

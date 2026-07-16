@@ -13,39 +13,38 @@ import { cn } from "@/lib/utils";
 export type TagColor = "blue" | "gray" | "green" | "red" | "purple" | "spark";
 export type TagVariant = "primary" | "secondary" | "tertiary";
 
-// Literal class strings (Tailwind can't JIT interpolated `bg-${color}-…`). primary = solid emphasis,
-// secondary = soft tint (default), tertiary = subtle low-visibility.
+// Literal class strings (Tailwind can't JIT interpolated `bg-${color}-…`), all mapped to the app's
+// theme tokens. primary = solid emphasis, secondary = soft tint (default), tertiary = softest.
 const TAG_STYLES: Record<TagColor, Record<TagVariant, string>> = {
   blue: {
-    primary: "bg-blue-600 text-white",
-    secondary: "bg-blue-100 text-blue-800",
-    tertiary: "bg-blue-50 text-blue-700",
+    primary: "bg-primary text-primary-foreground",
+    secondary: "bg-primary-soft text-primary-dark",
+    tertiary: "bg-primary-soft/60 text-primary-dark",
   },
   gray: {
-    primary: "bg-slate-600 text-white",
-    secondary: "bg-slate-100 text-slate-800",
-    tertiary: "bg-slate-50 text-slate-700",
+    primary: "bg-ink text-white",
+    secondary: "bg-muted text-ink",
+    tertiary: "bg-muted/60 text-ink-soft",
   },
   green: {
-    primary: "bg-emerald-600 text-white",
-    secondary: "bg-emerald-100 text-emerald-800",
-    tertiary: "bg-emerald-50 text-emerald-700",
+    primary: "bg-success text-success-foreground",
+    secondary: "bg-success-soft text-success-foreground",
+    tertiary: "bg-success-soft/60 text-success-foreground",
   },
   red: {
-    primary: "bg-red-600 text-white",
-    secondary: "bg-red-100 text-red-800",
-    tertiary: "bg-red-50 text-red-700",
+    primary: "bg-error text-error-foreground",
+    secondary: "bg-error-soft text-error-foreground",
+    tertiary: "bg-error-soft/60 text-error-foreground",
   },
   purple: {
-    primary: "bg-violet-600 text-white",
-    secondary: "bg-violet-100 text-violet-800",
-    tertiary: "bg-violet-50 text-violet-700",
+    primary: "bg-purple text-purple-foreground",
+    secondary: "bg-purple-soft text-purple-foreground",
+    tertiary: "bg-purple-soft/60 text-purple-foreground",
   },
   spark: {
-    // Amber is too light for white text — use dark text on the solid variant.
-    primary: "bg-amber-400 text-amber-950",
-    secondary: "bg-amber-100 text-amber-800",
-    tertiary: "bg-amber-50 text-amber-700",
+    primary: "bg-warning text-warning-foreground",
+    secondary: "bg-warning-soft text-warning-foreground",
+    tertiary: "bg-warning-soft/60 text-warning-foreground",
   },
 };
 

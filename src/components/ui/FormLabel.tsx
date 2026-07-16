@@ -27,7 +27,7 @@ export function FormLabel({
   return (
     <label className={cn("inline-block", className)} {...rest}>
       {size === "large" ? (
-        <Body as="span" size="md" weight={600} color={color}>
+        <Body as="span" size="medium" weight={600} color={color}>
           {children}
         </Body>
       ) : (

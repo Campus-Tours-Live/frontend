@@ -1,9 +1,10 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
+import { Icon } from "./Icon";
+import { IconButton } from "./IconButton";
 
 /**
  * Modal — centered overlay dialog. Handles the backdrop (click to dismiss),
@@ -83,14 +84,15 @@ export function Modal({
           <>
             {/* Explicit close control (top-right) — always dismisses, independent of
                 `dismissOnBackdrop`, as an additional way out beyond backdrop/Escape. */}
-            <button
-              type="button"
-              aria-label="Close"
+            <IconButton
+              a11yLabel="Close"
+              size="small"
+              variant="soft"
               onClick={onClose}
-              className="absolute right-4 top-4 z-[62] rounded p-1 text-ink-soft transition-colors hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft"
+              className="absolute right-4 top-4 z-[62]"
             >
-              <X size={18} strokeWidth={1.8} aria-hidden />
-            </button>
+              <Icon name="close" size={18} />
+            </IconButton>
             {header !== undefined ? (
               <div className="shrink-0 border-b border-border p-6 pr-14">{header}</div>
             ) : null}

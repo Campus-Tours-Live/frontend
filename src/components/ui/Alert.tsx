@@ -1,7 +1,7 @@
 import { type HTMLAttributes, type ReactNode } from "react";
-import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VisuallyHidden } from "./VisuallyHidden";
+import { ALERT_COLOR, ALERT_ICON, ALERT_ICON_SIZE, type AlertVariant } from "./alertShared";
 
 /**
  * Alert — a block-level message / notice (`.alert`). Use for form-submit errors,
@@ -10,21 +10,7 @@ import { VisuallyHidden } from "./VisuallyHidden";
  * defaults to "alert" (assertive); pass role="status" for passive notes. An
  * optional `action` (e.g. a Button/Link) renders under the message. Styles: globals.css.
  */
-export type AlertVariant = "info" | "warning" | "success" | "error";
-
-const ALERT: Record<AlertVariant, string> = {
-  info: "alert-info",
-  warning: "alert-warning",
-  success: "alert-success",
-  error: "alert-error",
-};
-
-const ICON: Record<AlertVariant, LucideIcon> = {
-  info: Info,
-  warning: TriangleAlert,
-  success: CircleCheck,
-  error: CircleAlert,
-};
+export type { AlertVariant };
 
 export interface AlertProps extends HTMLAttributes<HTMLDivElement> {
   variant?: AlertVariant;
@@ -43,16 +29,16 @@ export function Alert({
   children,
   ...props
 }: AlertProps) {
-  const Icon = ICON[variant];
+  const Icon = ALERT_ICON[variant];
   return (
     <div
       role={role}
-      className={cn("alert flex items-start gap-2.5", ALERT[variant], className)}
+      className={cn("alert flex items-start gap-2.5", ALERT_COLOR[variant], className)}
       {...props}
     >
       <span className="mt-px shrink-0">
         <VisuallyHidden>{`${a11yIconLabel ?? variant}:`}</VisuallyHidden>
-        <Icon size={16} strokeWidth={2} aria-hidden />
+        <Icon size={ALERT_ICON_SIZE} strokeWidth={2} aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
         {children}

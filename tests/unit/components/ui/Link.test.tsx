@@ -62,7 +62,7 @@ describe("Link — routing decision", () => {
 describe("Link — styling", () => {
   it("applies button classes when a variant is set", () => {
     render(
-      <Link href="/x" variant="primary" size="lg" block>
+      <Link href="/x" variant="primary" size="large" block>
         Go
       </Link>,
     );

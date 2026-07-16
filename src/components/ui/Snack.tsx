@@ -46,7 +46,7 @@ export function Snack({ message, action, onClose, className }: SnackProps) {
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        className="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white/40"
       >
         <Icon name="close" size={16} />
       </button>

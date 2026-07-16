@@ -4,27 +4,41 @@ import { cn } from "@/lib/utils";
 /**
  * Radio — one option in a mutually-exclusive group. Controlled: pass `checked` + `onChange`, and the
  * same `name` to every radio in the group (required for keyboard navigation). An accessible name is
- * required at compile time — exactly one of `label` or `aria-labelledby`. `className` styles the
- * wrapping <label>; remaining props (`value`, `id`, …) flow to the input.
+ * required at compile time — exactly one of `label`, `aria-label`, or `aria-labelledby`. `className`
+ * styles the wrapping <label>; remaining props (`value`, `id`, …) flow to the input.
  *
  *   <Radio name="plan" value="mo" label="Monthly" checked={p === "mo"} onChange={(e) => setP(e.target.value)} />
  */
 type RadioBaseProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  "type" | "onChange" | "aria-labelledby"
+  "type" | "onChange" | "aria-label" | "aria-labelledby"
 > & {
   name: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
-type RadioLabelProps = RadioBaseProps & { label: ReactNode; "aria-labelledby"?: never };
-type RadioA11yProps = RadioBaseProps & { "aria-labelledby": string; label?: never };
+type RadioLabelProps = RadioBaseProps & {
+  label: ReactNode;
+  "aria-label"?: never;
+  "aria-labelledby"?: never;
+};
+type RadioAriaLabelProps = RadioBaseProps & {
+  "aria-label": string;
+  label?: never;
+  "aria-labelledby"?: never;
+};
+type RadioLabelledByProps = RadioBaseProps & {
+  "aria-labelledby": string;
+  label?: never;
+  "aria-label"?: never;
+};
 
-export type RadioProps = RadioLabelProps | RadioA11yProps;
+export type RadioProps = RadioLabelProps | RadioAriaLabelProps | RadioLabelledByProps;
 
 export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(props, ref) {
   const {
     label,
+    "aria-label": ariaLabel,
     "aria-labelledby": ariaLabelledBy,
     checked = false,
     disabled = false,
@@ -32,12 +46,16 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(pro
     name,
     onChange,
     ...inputRest
-  } = props as RadioBaseProps & { label?: ReactNode; "aria-labelledby"?: string };
+  } = props as RadioBaseProps & {
+    label?: ReactNode;
+    "aria-label"?: string;
+    "aria-labelledby"?: string;
+  };
 
   return (
     <label
       className={cn(
-        "inline-flex items-start gap-2 text-[14px] text-ink",
+        "control-label",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
         className,
       )}
@@ -49,6 +67,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(pro
         checked={checked}
         disabled={disabled}
         onChange={onChange}
+        aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
         className="peer sr-only"
         {...inputRest}
@@ -56,8 +75,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(pro
       <span
         aria-hidden
         className={cn(
-          "mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] bg-white transition-colors",
-          "peer-focus-visible:ring-[3px] peer-focus-visible:ring-primary-soft",
+          "control-box rounded-full",
           checked && !disabled ? "border-primary" : "border-border",
           disabled && "bg-canvas",
         )}

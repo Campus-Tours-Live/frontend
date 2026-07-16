@@ -445,6 +445,19 @@
     );
   }
 
+  /* ---------- Checkbox / Radio (shared control shell) ---------- */
+  /* The clickable row wrapping the hidden native input + indicator + label. */
+  .control-label {
+    @apply inline-flex items-start gap-2 text-[14px] text-ink;
+  }
+  /* The custom indicator box/circle. Pair with `rounded-[5px]` (checkbox) or
+     `rounded-full` (radio); components own only the checked/disabled tone. */
+  .control-box {
+    @apply mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center
+           border-[1.5px] bg-white transition-colors
+           peer-focus-visible:ring-[3px] peer-focus-visible:ring-primary-soft;
+  }
+
   /* ---------- Misc ---------- */
   .divider {
     @apply h-px bg-border border-0 my-[18px];

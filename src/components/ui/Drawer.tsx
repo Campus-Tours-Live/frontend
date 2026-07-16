@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
+import { Heading } from "./Heading";
 
 /**
  * Drawer — panel that slides in over the page (a scrim-backed overlay). Handles the backdrop (click
@@ -20,7 +21,7 @@ import { IconButton } from "./IconButton";
  * footer); otherwise the whole panel scrolls.
  */
 export type DrawerSide = "left" | "right" | "bottom";
-export type DrawerSize = "sm" | "md" | "lg";
+export type DrawerSize = "small" | "medium" | "large";
 
 export interface DrawerProps {
   open: boolean;
@@ -28,7 +29,7 @@ export interface DrawerProps {
   children: ReactNode;
   /** Edge the panel slides in from. `bottom` = a full-width sheet (mobile). */
   side?: DrawerSide;
-  /** Width for `left`/`right` drawers (ignored for `bottom`, which is full-width). Default "sm". */
+  /** Width for `left`/`right` drawers (ignored for `bottom`, which is full-width). Default "small". */
   size?: DrawerSize;
   /** Extra panel classes. */
   className?: string;
@@ -52,9 +53,9 @@ const POSITION_BY_SIDE: Record<DrawerSide, string> = {
 };
 
 const WIDTH_BY_SIZE: Record<DrawerSize, string> = {
-  sm: "w-[300px] max-w-[85vw]",
-  md: "w-[420px] max-w-[85vw]",
-  lg: "w-[560px] max-w-[90vw]",
+  small: "w-[300px] max-w-[85vw]",
+  medium: "w-[420px] max-w-[85vw]",
+  large: "w-[560px] max-w-[90vw]",
 };
 
 const CLOSED_BY_SIDE: Record<DrawerSide, string> = {
@@ -68,7 +69,7 @@ export function Drawer({
   onClose,
   children,
   side = "left",
-  size = "sm",
+  size = "small",
   className,
   ariaLabel,
   title,
@@ -95,10 +96,10 @@ export function Drawer({
     header ??
     (title !== undefined ? (
       <div className="flex items-start justify-between gap-4">
-        <h2 id={titleId} className="font-display text-[20px] font-bold text-ink">
+        <Heading as="h2" id={titleId} size="large">
           {title}
-        </h2>
-        <IconButton a11yLabel="Close" size="sm" onClick={onClose} className="-mr-1 -mt-1">
+        </Heading>
+        <IconButton a11yLabel="Close" size="small" onClick={onClose} className="-mr-1 -mt-1">
           <Icon name="close" size={18} />
         </IconButton>
       </div>

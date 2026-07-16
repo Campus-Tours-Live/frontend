@@ -139,7 +139,7 @@ describe("Drawer", () => {
 
   it("size sets the width for a side drawer", () => {
     render(
-      <Drawer open onClose={jest.fn()} side="right" size="lg" title="Wide">
+      <Drawer open onClose={jest.fn()} side="right" size="large" title="Wide">
         <p>body</p>
       </Drawer>,
     );

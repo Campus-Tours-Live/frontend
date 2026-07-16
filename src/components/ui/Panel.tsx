@@ -1,5 +1,7 @@
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Heading } from "./Heading";
+import { Body } from "./Body";
 
 /**
  * Panel — a `card` split into a top `header` block and a bottom body (`children`) by a horizontal
@@ -67,8 +69,14 @@ export function PanelHeader({ title, subtitle, action, children, className }: Pa
     <div className={cn("px-5 py-4 sm:px-6", className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="font-display text-[20px] font-bold text-ink">{title}</h2>
-          {subtitle != null ? <p className="mt-1 text-[13px] text-ink-soft">{subtitle}</p> : null}
+          <Heading as="h2" size="large">
+            {title}
+          </Heading>
+          {subtitle != null ? (
+            <Body size="small" color="muted" className="mt-1">
+              {subtitle}
+            </Body>
+          ) : null}
         </div>
         {action != null ? <div className="shrink-0">{action}</div> : null}
       </div>

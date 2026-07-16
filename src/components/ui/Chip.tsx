@@ -8,11 +8,11 @@ import { cn } from "@/lib/utils";
  */
 export interface ChipProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
-  size?: "sm" | "md";
+  size?: "small" | "medium";
 }
 
 export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
-  { active = false, size = "md", className, type, ...props },
+  { active = false, size = "medium", className, type, ...props },
   ref,
 ) {
   return (
@@ -20,7 +20,7 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
       ref={ref}
       type={type ?? "button"}
       aria-pressed={active}
-      className={cn("chip", active && "active", size === "sm" && "chip-sm", className)}
+      className={cn("chip", active && "active", size === "small" && "chip-sm", className)}
       {...props}
     />
   );

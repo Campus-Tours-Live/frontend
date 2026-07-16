@@ -11,7 +11,7 @@ export interface ButtonGroupProps<T extends string> {
   onChange: (value: T) => void;
   /** Accessible name for the group (required). */
   "aria-label": string;
-  size?: "sm" | "md";
+  size?: "small" | "medium";
   className?: string;
 }
 
@@ -24,7 +24,7 @@ export function ButtonGroup<T extends string>({
   options,
   value,
   onChange,
-  size = "md",
+  size = "medium",
   className,
   "aria-label": ariaLabel,
 }: ButtonGroupProps<T>) {
@@ -45,7 +45,7 @@ export function ButtonGroup<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "rounded-full transition-colors",
-              size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
+              size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
               isSelected
                 ? "bg-primary font-semibold text-primary-foreground"
                 : "font-medium text-ink-soft hover:text-ink",

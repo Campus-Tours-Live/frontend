@@ -8,13 +8,13 @@ import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./ty
  * call site hand-writing `font-display text-[20px] font-bold text-ink`. Forwards native attributes
  * (`id`, `onClick`, `aria-*`, `style`, …) to the chosen element.
  */
-export type HeadingSize = "sm" | "md" | "lg" | "xl";
+export type HeadingSize = "small" | "medium" | "large" | "xlarge";
 
 const SIZE_CLASS: Record<HeadingSize, string> = {
-  sm: "text-[15px]",
-  md: "text-[17px]",
-  lg: "text-[20px]",
-  xl: "text-[24px]",
+  small: "text-[15px]",
+  medium: "text-[17px]",
+  large: "text-[20px]",
+  xlarge: "text-[24px]",
 };
 
 export interface HeadingProps extends HTMLAttributes<HTMLElement> {
@@ -28,7 +28,7 @@ export interface HeadingProps extends HTMLAttributes<HTMLElement> {
 
 export function Heading({
   as: Tag = "h2",
-  size = "lg",
+  size = "large",
   weight = 700,
   color = "ink",
   className,

@@ -26,14 +26,12 @@ describe("Chip", () => {
   });
 
   it("applies chip-sm for the sm size", () => {
-    render(
-      <Chip size="sm">Tag</Chip>,
-    );
+    render(<Chip size="small">Tag</Chip>);
     expect(screen.getByRole("button")).toHaveClass("chip-sm");
   });
 
   it("does not apply chip-sm for the md size", () => {
-    render(<Chip size="md">Tag</Chip>);
+    render(<Chip size="medium">Tag</Chip>);
     expect(screen.getByRole("button")).not.toHaveClass("chip-sm");
   });
 

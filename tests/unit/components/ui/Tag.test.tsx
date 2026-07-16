@@ -2,19 +2,19 @@ import { render, screen } from "@testing-library/react";
 import { Tag } from "@/components/ui/Tag";
 
 describe("Tag", () => {
-  it("renders its children with the default blue/secondary styling", () => {
+  it("renders its children with the default blue/secondary styling (theme tokens)", () => {
     render(<Tag>Available</Tag>);
     const el = screen.getByText("Available");
-    expect(el).toHaveClass("bg-blue-100", "text-blue-800", "rounded-pill");
+    expect(el).toHaveClass("bg-primary-soft", "text-primary-dark", "rounded-pill");
   });
 
-  it("applies the color × variant class map", () => {
+  it("applies the color × variant class map using theme tokens", () => {
     render(
       <Tag color="green" variant="primary">
         Confirmed
       </Tag>,
     );
-    expect(screen.getByText("Confirmed")).toHaveClass("bg-emerald-600", "text-white");
+    expect(screen.getByText("Confirmed")).toHaveClass("bg-success", "text-success-foreground");
   });
 
   it("renders leading content before the children", () => {

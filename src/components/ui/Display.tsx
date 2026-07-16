@@ -9,13 +9,13 @@ import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./ty
  * Forwards native attributes to the chosen element.
  *
  *   <Display>Campus Tours</Display>
- *   <Display as="h1" size="lg" weight={700}>1,204</Display>
+ *   <Display as="h1" size="large" weight={700}>1,204</Display>
  */
-export type DisplaySize = "sm" | "lg";
+export type DisplaySize = "small" | "large";
 
 const SIZE_CLASS: Record<DisplaySize, string> = {
-  sm: "text-[30px]",
-  lg: "text-[40px]",
+  small: "text-[30px]",
+  large: "text-[40px]",
 };
 
 export interface DisplayProps extends HTMLAttributes<HTMLElement> {
@@ -30,7 +30,7 @@ export interface DisplayProps extends HTMLAttributes<HTMLElement> {
 
 export function Display({
   as: Tag = "span",
-  size = "lg",
+  size = "large",
   weight = 400,
   color = "ink",
   className,

@@ -24,14 +24,14 @@ describe("buttonClasses helper", () => {
   });
 
   it.each([
-    ["sm", "btn-sm"],
-    ["lg", "btn-lg"],
+    ["small", "btn-sm"],
+    ["large", "btn-lg"],
   ] as const)("maps size %s to %s", (size, expected) => {
     expect(buttonClasses({ size })).toContain(expected);
   });
 
   it("omits a size class for md", () => {
-    const cls = buttonClasses({ size: "md" });
+    const cls = buttonClasses({ size: "medium" });
     expect(cls).not.toMatch(/btn-(sm|lg)/);
   });
 
@@ -68,8 +68,8 @@ describe("Button", () => {
   });
 
   it.each([
-    ["sm", "btn-sm"],
-    ["lg", "btn-lg"],
+    ["small", "btn-sm"],
+    ["large", "btn-lg"],
   ] as const)("size %s applies %s", (size, expected) => {
     render(<Button size={size}>s</Button>);
     expect(screen.getByRole("button")).toHaveClass(expected);
@@ -114,7 +114,7 @@ describe("Button", () => {
   describe("asChild (Slot)", () => {
     it("renders the child element instead of a <button> and applies styles", () => {
       render(
-        <Button asChild variant="secondary" size="lg" block>
+        <Button asChild variant="secondary" size="large" block>
           <a href="/x">link button</a>
         </Button>,
       );

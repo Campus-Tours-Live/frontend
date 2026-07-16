@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  *   <IconButton a11yLabel="More" onClick={…}><Icon name="more" /></IconButton>
  *   <IconButton a11yLabel="Help" href="/help"><Icon name="info" /></IconButton>
  */
-export type IconButtonSize = "sm" | "md" | "lg";
+export type IconButtonSize = "small" | "medium" | "large";
 export type IconButtonVariant = "ghost" | "soft";
 
 interface IconButtonOwnProps {
@@ -43,9 +43,9 @@ export type IconButtonProps = IconButtonOwnProps &
   ((ButtonRest & { href?: undefined }) | (AnchorRest & { href: string }));
 
 const SIZE_CLASS: Record<IconButtonSize, string> = {
-  sm: "h-8 w-8",
-  md: "h-9 w-9",
-  lg: "h-11 w-11",
+  small: "h-8 w-8",
+  medium: "h-9 w-9",
+  large: "h-11 w-11",
 };
 
 const VARIANT_CLASS: Record<IconButtonVariant, string> = {
@@ -57,7 +57,7 @@ const VARIANT_CLASS: Record<IconButtonVariant, string> = {
 
 export const IconButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, IconButtonProps>(
   function IconButton(
-    { a11yLabel, children, size = "md", variant = "ghost", className, ...rest },
+    { a11yLabel, children, size = "medium", variant = "ghost", className, ...rest },
     ref,
   ) {
     const classes = cn(

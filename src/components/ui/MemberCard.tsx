@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Body } from "./Body";
 
 /**
  * MemberCard — a role-aware member / user-information card (Sam's Club / Airbnb
@@ -20,12 +21,7 @@ import { cn } from "@/lib/utils";
  * (role-participant=blue, role-guide=amber, role-guardian=purple) so it stays in
  * sync with the palette — no raw hex. Staff (admin/support) use a neutral ink accent.
  */
-export type MemberRole =
-  | "PARTICIPANT"
-  | "GUIDE"
-  | "GUARDIAN"
-  | "ADMIN"
-  | "SUPPORT";
+export type MemberRole = "PARTICIPANT" | "GUIDE" | "GUARDIAN" | "ADMIN" | "SUPPORT";
 
 export interface MemberCardItem {
   icon: LucideIcon;
@@ -148,10 +144,7 @@ export function MemberCard({
           <img
             src={avatarUrl}
             alt=""
-            className={cn(
-              avatarSize,
-              "shrink-0 rounded-full object-cover ring-1 ring-border",
-            )}
+            className={cn(avatarSize, "shrink-0 rounded-full object-cover ring-1 ring-border")}
           />
         ) : (
           <div
@@ -192,10 +185,7 @@ export function MemberCard({
           {items.map((item) => {
             const RowIcon = item.icon;
             return (
-              <li
-                key={item.label}
-                className="flex items-center gap-3 text-[14px]"
-              >
+              <li key={item.label} className="flex items-center gap-3 text-[14px]">
                 <RowIcon
                   size={18}
                   strokeWidth={1.8}
@@ -203,9 +193,7 @@ export function MemberCard({
                   aria-hidden
                 />
                 <span className="text-ink-soft">{item.label}</span>
-                <span className="ml-auto min-w-0 truncate text-right text-ink">
-                  {item.value}
-                </span>
+                <span className="ml-auto min-w-0 truncate text-right text-ink">{item.value}</span>
               </li>
             );
           })}
@@ -213,12 +201,7 @@ export function MemberCard({
       ) : null}
 
       {highlight && HighlightIcon ? (
-        <div
-          className={cn(
-            "mt-5 flex items-center gap-3 rounded-card p-4",
-            accent.calloutBox,
-          )}
-        >
+        <div className={cn("mt-5 flex items-center gap-3 rounded-card p-4", accent.calloutBox)}>
           <span
             className={cn(
               "flex h-10 w-10 shrink-0 items-center justify-center rounded-pill bg-card",
@@ -229,13 +212,11 @@ export function MemberCard({
             <HighlightIcon size={20} strokeWidth={1.8} />
           </span>
           <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-ink">
-              {highlight.title}
-            </p>
+            <Body weight={600}>{highlight.title}</Body>
             {highlight.description ? (
-              <p className="mt-0.5 text-[13px] text-ink-soft">
+              <Body size="small" color="muted" className="mt-0.5">
                 {highlight.description}
-              </p>
+              </Body>
             ) : null}
           </div>
         </div>

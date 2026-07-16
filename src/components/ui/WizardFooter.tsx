@@ -37,10 +37,10 @@ export function WizardFooter({
       {children ? <div>{children}</div> : null}
 
       <div className="flex items-center justify-between gap-3">
-        <Button {...prevRest} variant="secondary" size="md">
+        <Button {...prevRest} variant="secondary" size="medium">
           {prevLabel}
         </Button>
-        <Button {...nextRest} variant="primary" size="md">
+        <Button {...nextRest} variant="primary" size="medium">
           {nextLabel}
         </Button>
       </div>

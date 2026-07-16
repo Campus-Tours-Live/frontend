@@ -25,7 +25,13 @@ export function OnboardingCancel({ dirty, disabled }: { dirty: boolean; disabled
 
   return (
     <>
-      <Button variant="ghost" size="sm" onClick={onCancel} disabled={disabled} className="shrink-0">
+      <Button
+        variant="ghost"
+        size="small"
+        onClick={onCancel}
+        disabled={disabled}
+        className="shrink-0"
+      >
         <X size={16} strokeWidth={2} />
         Cancel
       </Button>

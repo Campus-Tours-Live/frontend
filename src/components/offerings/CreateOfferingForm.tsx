@@ -94,7 +94,7 @@ export function CreateOfferingForm() {
           lead="Save a draft now and publish when you're ready."
           level={1}
         />
-        <Link href="/guide/tour-offerings" variant="ghost" size="sm">
+        <Link href="/guide/tour-offerings" variant="ghost" size="small">
           Back to list
         </Link>
       </div>

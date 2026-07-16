@@ -38,7 +38,7 @@ export function FormGroup({
       {label || helper ? (
         <legend className="mb-2 flex flex-col gap-1 p-0">
           {label ? (
-            <Body as="span" size="md" weight={600}>
+            <Body as="span" size="medium" weight={600}>
               {label}
             </Body>
           ) : null}

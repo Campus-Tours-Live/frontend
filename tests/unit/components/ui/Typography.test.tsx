@@ -7,7 +7,7 @@ import { Display } from "@/components/ui/Display";
 describe("Heading", () => {
   it("renders the semantic tag from `as` (independent of size)", () => {
     render(
-      <Heading as="h3" size="lg">
+      <Heading as="h3" size="large">
         Weekly hours
       </Heading>,
     );
@@ -51,7 +51,7 @@ describe("Display", () => {
 
   it("honours as/size/weight and forwards props", () => {
     render(
-      <Display as="h1" size="sm" weight={700} data-testid="stat">
+      <Display as="h1" size="small" weight={700} data-testid="stat">
         1,204
       </Display>,
     );
@@ -71,7 +71,7 @@ describe("Body", () => {
 
   it("can render as a span", () => {
     render(
-      <Body as="span" size="sm" weight={700}>
+      <Body as="span" size="small" weight={700}>
         inline
       </Body>,
     );

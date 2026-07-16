@@ -12,7 +12,7 @@ import { Slot } from "./Slot";
  *   same styling.
  */
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "accent";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "small" | "medium" | "large";
 
 const VARIANT: Record<ButtonVariant, string> = {
   primary: "btn-primary",
@@ -22,15 +22,15 @@ const VARIANT: Record<ButtonVariant, string> = {
 };
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: "btn-sm",
-  md: "", // default size lives in `.btn`
-  lg: "btn-lg",
+  small: "btn-sm",
+  medium: "", // default size lives in `.btn`
+  large: "btn-lg",
 };
 
 export function buttonClasses(
   opts: { variant?: ButtonVariant; size?: ButtonSize; block?: boolean } = {},
 ): string {
-  const { variant = "primary", size = "md", block = false } = opts;
+  const { variant = "primary", size = "medium", block = false } = opts;
   return cn("btn", VARIANT[variant], SIZE[size], block && "btn-block");
 }
 

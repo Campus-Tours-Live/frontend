@@ -656,12 +656,12 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
           ))
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={addSlot}>
+          <Button type="button" variant="ghost" size="small" onClick={addSlot}>
             <Plus size={15} strokeWidth={2} aria-hidden />
             Add time slot
           </Button>
           {slots.length > 0 ? (
-            <Button type="button" variant="ghost" size="sm" onClick={clearAllSlots}>
+            <Button type="button" variant="ghost" size="small" onClick={clearAllSlots}>
               <Trash2 size={15} strokeWidth={2} aria-hidden />
               Clear all time slots
             </Button>

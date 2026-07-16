@@ -7,12 +7,12 @@ import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./ty
  * tokens, a small size scale, so paragraphs and labels stop hand-writing `text-[13px] text-ink-soft`
  * everywhere. Forwards native attributes (`id`, `onClick`, `aria-*`, `style`, …) to the element.
  */
-export type BodySize = "sm" | "md" | "lg";
+export type BodySize = "small" | "medium" | "large";
 
 const SIZE_CLASS: Record<BodySize, string> = {
-  sm: "text-[13px]",
-  md: "text-[14px]",
-  lg: "text-[15px]",
+  small: "text-[13px]",
+  medium: "text-[14px]",
+  large: "text-[15px]",
 };
 
 export interface BodyProps extends HTMLAttributes<HTMLElement> {
@@ -26,7 +26,7 @@ export interface BodyProps extends HTMLAttributes<HTMLElement> {
 
 export function Body({
   as: Tag = "p",
-  size = "md",
+  size = "medium",
   weight = 400,
   color = "ink",
   className,

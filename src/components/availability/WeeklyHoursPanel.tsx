@@ -203,7 +203,7 @@ export function WeeklyHoursPanel() {
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
+                  size="small"
                   onClick={() => setModalDay(dayIndex)}
                   aria-label={`Edit ${dayLabel} hours`}
                   className="shrink-0"

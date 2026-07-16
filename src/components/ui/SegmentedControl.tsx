@@ -18,7 +18,7 @@ export interface SegmentedControlProps<T extends string> {
   onChange?: (value: T) => void;
   /** Accessible name for the control (required). */
   "aria-label": string;
-  size?: "sm" | "md";
+  size?: "small" | "medium";
   className?: string;
 }
 
@@ -33,7 +33,7 @@ export function SegmentedControl<T extends string>({
   value,
   defaultValue,
   onChange,
-  size = "md",
+  size = "medium",
   className,
   "aria-label": ariaLabel,
 }: SegmentedControlProps<T>) {
@@ -82,7 +82,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => select(option.value)}
             className={cn(
               "rounded-full font-semibold transition-colors",
-              size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
+              size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
               isSelected ? "text-primary-foreground" : "text-ink-soft hover:text-ink",
             )}
           >

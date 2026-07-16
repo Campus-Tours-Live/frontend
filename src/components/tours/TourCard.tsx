@@ -21,14 +21,18 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
         Imported editorial campus crop
       </div>
       <div className="flex flex-1 flex-col p-[18px]">
-        <StatusBadge variant="success" className="self-start">Verified guide</StatusBadge>
+        <StatusBadge variant="success" className="self-start">
+          Verified guide
+        </StatusBadge>
         <h4 className="mb-1.5 mt-3.5 min-h-[2.6em] font-display text-h4 text-ink">{title}</h4>
         <div className="text-[13px] text-ink-soft">
           {university} · {guide} · {durationMinutes} min
         </div>
         <div className="mt-auto flex items-center justify-between pt-4">
           <span className="text-[18px] font-extrabold text-ink">${price}</span>
-          <Button variant="secondary" size="sm">View tour</Button>
+          <Button variant="secondary" size="small">
+            View tour
+          </Button>
         </div>
       </div>
     </article>

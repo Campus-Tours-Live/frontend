@@ -78,7 +78,12 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
 
         <div className="mt-5 flex flex-wrap gap-2">
           {isDraft ? (
-            <Button variant="primary" size="sm" disabled={publishDisabled} onClick={handlePublish}>
+            <Button
+              variant="primary"
+              size="small"
+              disabled={publishDisabled}
+              onClick={handlePublish}
+            >
               {activate.isPending ? "Publishing…" : "Publish"}
             </Button>
           ) : null}
