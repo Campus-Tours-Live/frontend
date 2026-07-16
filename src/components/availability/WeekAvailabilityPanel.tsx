@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Badge, Panel } from "@/components/ui";
+import { Badge, Body, Heading, IconButton, Panel } from "@/components/ui";
 import {
   useAvailabilityExceptions,
   useAvailabilitySettings,
@@ -75,15 +75,6 @@ export function WeekAvailabilityPanel({ className }: { className?: string }) {
     [selectedDate, occurrencesByDate, additionalIntervals, timeZone],
   );
 
-  // Same hover as MonthYearPicker's chevrons (`.tp-icon-btn`: bg-primary-soft + text-primary). At a
-  // week boundary it's disabled: dim it + show a not-allowed cursor and cancel the hover affordance
-  // (kept off `pointer-events-none` — which `.tp-icon-btn` uses — so the cursor can show on hover).
-  const chevron =
-    "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink-soft " +
-    "transition-colors hover:bg-primary-soft hover:text-primary focus-visible:outline-none " +
-    "focus-visible:ring-[3px] focus-visible:ring-primary-soft disabled:cursor-not-allowed " +
-    "disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink-soft";
-
   return (
     <Panel
       role="region"
@@ -92,40 +83,42 @@ export function WeekAvailabilityPanel({ className }: { className?: string }) {
       className={cn("flex flex-col", className)}
       header={
         <div className="flex items-center justify-between gap-2 px-5 py-4 sm:px-6">
-          <button
-            type="button"
-            aria-label="Previous day"
+          <IconButton
+            a11yLabel="Previous day"
+            variant="soft"
             disabled={atWeekStart}
             onClick={() => setPicked(addDays(selectedDate, -1))}
-            className={chevron}
           >
             <ChevronLeft size={18} strokeWidth={2} aria-hidden />
-          </button>
+          </IconButton>
           <div className="min-w-0 text-center">
-            <h2 className="font-display text-[17px] font-bold text-ink">
+            <Heading as="h2" size="medium">
               {formatDayHeader(selectedDate)}
-            </h2>
+            </Heading>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
               {selectedDate === todayIso ? "Today" : "This week"}
             </p>
           </div>
-          <button
-            type="button"
-            aria-label="Next day"
+          <IconButton
+            a11yLabel="Next day"
+            variant="soft"
             disabled={atWeekEnd}
             onClick={() => setPicked(addDays(selectedDate, 1))}
-            className={chevron}
           >
             <ChevronRight size={18} strokeWidth={2} aria-hidden />
-          </button>
+          </IconButton>
         </div>
       }
     >
       <div className="flex-1 px-5 py-4 sm:px-6">
         {windows.length === 0 ? (
-          <p className="rounded-md border border-border bg-card px-3 py-4 text-center text-[13px] text-ink-soft">
+          <Body
+            size="small"
+            color="muted"
+            className="rounded-md border border-border bg-card px-3 py-4 text-center"
+          >
             No hours this day.
-          </p>
+          </Body>
         ) : (
           <ul aria-label={`Windows on ${selectedDate}`} className="flex flex-col gap-2">
             {windows.map(({ window, additional }, index) => (
@@ -133,9 +126,9 @@ export function WeekAvailabilityPanel({ className }: { className?: string }) {
                 key={`${window.startAt}-${window.endAt}-${index}`}
                 className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5"
               >
-                <span className="text-[13px] font-semibold tabular-nums text-ink">
+                <Body as="span" size="small" weight={600} className="tabular-nums">
                   {formatWindow(window, timeZone)}
-                </span>
+                </Body>
                 <Badge variant={additional ? "primary" : "success"}>
                   {additional ? "Extra" : "Available"}
                 </Badge>
