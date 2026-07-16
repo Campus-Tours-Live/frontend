@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Link, StatusBadge } from "@/components/ui";
+import { Body, Caption, Heading, Link, StatusBadge } from "@/components/ui";
 import { AuthOptions } from "@/components/signup/AuthOptions";
 
 /**
@@ -61,18 +61,20 @@ export default function SignupParticipantPage() {
 
           <div className="flex flex-col justify-center gap-6 p-7 sm:gap-7 sm:p-10 lg:p-12">
             <div>
-              <StatusBadge variant="info" className="self-start">Participant</StatusBadge>
-              <h1 className="mt-3 font-display text-h2 text-ink">
+              <StatusBadge variant="info" className="self-start">
+                Participant
+              </StatusBadge>
+              <Heading as="h1" size="h2" className="mt-3">
                 Create your participant account
-              </h1>
-              <p className="lead mt-3 text-[16px]">
+              </Heading>
+              <Body size="lead" color="muted" weight={500} className="mt-3">
                 Explore and book live campus tours with verified student guides.
-              </p>
+              </Body>
             </div>
 
             <AuthOptions intent="signup" returnTo="/onboarding/participant" />
 
-            <p className="text-center text-[12px] leading-relaxed text-ink-soft">
+            <Caption as="p" className="text-center leading-relaxed">
               By continuing you agree to the{" "}
               <Link href="#" className="font-semibold text-primary">
                 Terms of Service
@@ -82,14 +84,14 @@ export default function SignupParticipantPage() {
                 Privacy Policy
               </Link>
               . Under-16 users cannot self-register.
-            </p>
+            </Caption>
 
-            <p className="border-t border-border pt-6 text-center text-[13px] text-ink-soft">
+            <Body size="small" color="muted" className="border-t border-border pt-6 text-center">
               Already have an account?{" "}
               <Link href="/signin" className="font-semibold text-primary">
                 Sign in
               </Link>
-            </p>
+            </Body>
           </div>
         </div>
       </section>

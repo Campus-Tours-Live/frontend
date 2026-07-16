@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, GoogleMark, Spinner } from "@/components/ui";
+import { Button, Caption, GoogleMark, Spinner } from "@/components/ui";
 
 /**
  * AuthOptions — Google sign-in entry used by the signup / sign-in screens.
@@ -34,20 +34,14 @@ export function AuthOptions({ returnTo = "/dashboard", intent = "signin" }: Auth
 
   return (
     <div className="flex flex-col gap-4">
-      <Button
-        variant="secondary"
-        block
-        onClick={handleGoogle}
-        disabled={pending}
-        className="gap-3"
-      >
+      <Button variant="secondary" block onClick={handleGoogle} disabled={pending} className="gap-3">
         {pending ? <Spinner /> : <GoogleMark />}
         {pending ? "Redirecting…" : "Continue with Google"}
       </Button>
 
-      <p className="text-center text-[12px] text-ink-soft">
+      <Caption as="p" className="text-center">
         Secure sign-in with your Google account — no password to manage.
-      </p>
+      </Caption>
     </div>
   );
 }

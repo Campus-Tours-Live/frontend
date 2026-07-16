@@ -79,6 +79,10 @@
     --brand-ivory: 42 50% 96.1%; /* ivory-100 #FAF7F0 */
     --brand-canvas: 40 34.9% 91.6%; /* canvas #F1ECE2 */
 
+    /* Overlay scrim behind modals/drawers — ink-toned (matches the design's
+       charcoal shadow colour) rather than pure black. Use with opacity, e.g. bg-scrim/50. */
+    --brand-scrim: var(--brand-ink); /* #2F3437 */
+
     /* ---- Purple base (new — member guardian accent) ---- */
     --brand-purple: 253 42% 63%; /* #8A78C8 */
     --brand-purple-soft: 255 67% 95%; /* #EFEBFB */
@@ -200,7 +204,7 @@
   /* ---------- Buttons ---------- */
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
-           font-sans font-bold text-[15px] leading-none px-5 py-3
+           font-sans font-bold text-ui-lg leading-none px-5 py-3
            rounded-pill border border-transparent cursor-pointer no-underline
            transition-all duration-150 focus-visible:outline-none
            focus-visible:ring-[3px] focus-visible:ring-primary-soft
@@ -243,13 +247,17 @@
 
   /* ---------- Inputs ---------- */
   .field label {
-    @apply block text-[13px] font-bold mb-1.5 text-ink;
+    @apply block text-ui-sm font-bold mb-1.5 text-ink;
   }
   .field-error {
-    @apply mt-1 text-[13px] font-semibold text-error-foreground;
+    @apply mt-1 text-ui-sm font-semibold text-error-foreground;
   }
   .field-hint {
     @apply mt-1 text-[12px] text-ink-soft;
+  }
+  /* Help text ABOVE the control (below the label) — for help below, use .field-hint. */
+  .field-description {
+    @apply mb-3 text-ui text-ink-soft;
   }
   .input {
     @apply w-full px-[15px] py-3 border-[1.5px] border-border rounded-field
@@ -297,12 +305,15 @@
   .badge-verified {
     @apply bg-sage-soft text-success-foreground;
   }
+  .badge-neutral {
+    @apply bg-muted text-ink-soft;
+  }
 
   /* Status pill with a leading dot (mirrors design_new .status). Pair with a
      variant: status-info / status-warning / status-success / status-error. */
   .status {
     @apply inline-flex items-center gap-[7px] rounded-pill border border-transparent
-           px-2.5 py-[7px] text-[13px] font-bold;
+           px-2.5 py-[7px] text-ui-sm font-bold;
   }
   .status::before {
     content: "";
@@ -323,7 +334,7 @@
 
   /* ---------- Alerts (block messages / banners) ---------- */
   .alert {
-    @apply rounded-card border px-4 py-3 text-[13px];
+    @apply rounded-card border px-4 py-3 text-ui-sm;
   }
   .alert-info {
     @apply border-[#D8E2EB] bg-[#EDF2F6] text-[#4F6F8F];
@@ -340,7 +351,7 @@
 
   /* ---------- Chips ---------- */
   .chip {
-    @apply inline-flex items-center gap-1.5 text-[13px] font-semibold
+    @apply inline-flex items-center gap-1.5 text-ui-sm font-semibold
            px-3.5 py-[7px] rounded-pill border-[1.5px] border-border
            bg-white text-ink-soft cursor-pointer transition-colors;
   }
@@ -351,7 +362,7 @@
     @apply px-2.5 py-1 text-[11.5px];
   }
 
-  /* ---------- Switch (Toggle) ---------- */
+  /* ---------- Switch ---------- */
   .switch {
     @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill
            border border-transparent bg-border cursor-pointer transition-colors
@@ -442,8 +453,45 @@
     );
   }
 
+  /* ---------- Checkbox / Radio (shared control shell) ---------- */
+  /* The clickable row wrapping the hidden native input + indicator + label. */
+  .control-label {
+    @apply inline-flex items-start gap-2 text-ui text-ink;
+  }
+  /* The custom indicator box/circle. Pair with `rounded-[5px]` (checkbox) or
+     `rounded-full` (radio); components own only the checked/disabled tone. */
+  .control-box {
+    @apply mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center
+           border-[1.5px] bg-white transition-colors
+           peer-focus-visible:ring-[3px] peer-focus-visible:ring-primary-soft;
+  }
+
   /* ---------- Misc ---------- */
   .divider {
     @apply h-px bg-border border-0 my-[18px];
+  }
+
+  /* Spinner — six pills fading in sequence around the centre (transform-origin
+     is the 48×48 viewBox centre). Each pill's animation-delay is set inline so
+     the bright pill chases around the ring. Freezes under reduced-motion. */
+  .spinner-pill {
+    transform-origin: 24px 24px;
+    animation: spinner-pill-fade 1.2s linear infinite;
+  }
+}
+
+@keyframes spinner-pill-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-pill {
+    animation: none;
+    opacity: 0.55;
   }
 }

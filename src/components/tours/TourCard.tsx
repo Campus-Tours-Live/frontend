@@ -1,4 +1,4 @@
-import { Button, StatusBadge } from "@/components/ui";
+import { Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -15,22 +15,38 @@ export interface TourCardProps {
 
 export function TourCard({ title, university, guide, durationMinutes, price }: TourCardProps) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-[18px] border border-border bg-card shadow-card">
+    <Card
+      as="article"
+      padded={false}
+      className="flex h-full flex-col overflow-hidden rounded-[18px]"
+    >
       {/* Image placeholder — imported editorial campus crop */}
-      <div className="flex h-[150px] items-center justify-center bg-canvas text-[12px] font-medium text-ink-soft">
+      <Caption
+        as="div"
+        weight={500}
+        className="flex h-[150px] items-center justify-center bg-canvas"
+      >
         Imported editorial campus crop
-      </div>
+      </Caption>
       <div className="flex flex-1 flex-col p-[18px]">
-        <StatusBadge variant="success" className="self-start">Verified guide</StatusBadge>
-        <h4 className="mb-1.5 mt-3.5 min-h-[2.6em] font-display text-h4 text-ink">{title}</h4>
-        <div className="text-[13px] text-ink-soft">
+        <StatusBadge variant="success" className="self-start">
+          Verified guide
+        </StatusBadge>
+        <Heading as="h4" size="h4" className="mb-1.5 mt-3.5 min-h-[2.6em]">
+          {title}
+        </Heading>
+        <div className="text-ui-sm text-ink-soft">
           {university} · {guide} · {durationMinutes} min
         </div>
         <div className="mt-auto flex items-center justify-between pt-4">
+          {/* Off-scale on purpose: the price is the card's most prominent number; 18px has no
+              type token and Heading would switch it to the display serif. */}
           <span className="text-[18px] font-extrabold text-ink">${price}</span>
-          <Button variant="secondary" size="sm">View tour</Button>
+          <Button variant="secondary" size="small">
+            View tour
+          </Button>
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

@@ -5,12 +5,18 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { useMe, useTourTopics, useUpdateGuideProfile } from "@/lib/data-access";
-import { Alert, Button, Chip, SectionHeading, Spinner, TextField, Textarea } from "@/components/ui";
-import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
 import {
-  UniversityMultiSelect,
-  type UniversityOption,
-} from "./UniversityMultiSelect";
+  Alert,
+  Body,
+  Button,
+  Chip,
+  SectionHeading,
+  Spinner,
+  TextField,
+  Textarea,
+} from "@/components/ui";
+import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
+import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
 interface Option {
@@ -99,9 +105,7 @@ export function GuideOnboardingForm() {
     setSubmitError(null);
     const dollars = Number(values.basePrice);
     const basePriceCents =
-      values.basePrice && !Number.isNaN(dollars)
-        ? Math.round(dollars * 100)
-        : undefined;
+      values.basePrice && !Number.isNaN(dollars) ? Math.round(dollars * 100) : undefined;
     try {
       // onSuccess invalidates ["me"] + the guide profile (submit=true grants GUIDE),
       // so the header reflects it immediately. Land in the guide area.
@@ -122,9 +126,7 @@ export function GuideOnboardingForm() {
       router.push("/dashboard");
     } catch (err) {
       setSubmitError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
+        err instanceof Error ? err.message : "Something went wrong. Please try again.",
       );
     }
   };
@@ -134,12 +136,7 @@ export function GuideOnboardingForm() {
 
   const advance = async () => {
     if (step === 0) {
-      const ok = await trigger([
-        "firstName",
-        "lastName",
-        "university",
-        "major",
-      ]);
+      const ok = await trigger(["firstName", "lastName", "university", "major"]);
       if (!ok) return;
     }
     setStep((s) => s + 1);
@@ -170,245 +167,231 @@ export function GuideOnboardingForm() {
       />
 
       <form onSubmit={onSubmit} className="mt-10">
-      {/* Progress */}
-      <div
-        className="mb-6 flex items-center gap-2"
-        aria-label={`Step ${step + 1} of ${STEPS.length}`}
-      >
-        {STEPS.map((label, i) => (
-          <span
-            key={label}
-            className={cn(
-              "h-2 rounded-pill transition-all",
-              i === step
-                ? "w-6 bg-primary"
-                : i < step
-                  ? "w-2 bg-primary/50"
-                  : "w-2 bg-border",
-            )}
-          />
-        ))}
-        <span className="ml-2 text-[13px] text-ink-soft">
-          Step {step + 1} of {STEPS.length} · {STEPS[step]}
-        </span>
-      </div>
-
-      {/* Step 1 — About you (required) */}
-      {step === 0 && (
-        <div className="flex flex-col gap-7">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <TextField
-              label="First name"
-              autoComplete="given-name"
-              placeholder="Jordan"
-              error={errors.firstName?.message}
-              {...register("firstName", {
-                required: "Please enter your first name.",
-              })}
+        {/* Progress */}
+        <div
+          className="mb-6 flex items-center gap-2"
+          aria-label={`Step ${step + 1} of ${STEPS.length}`}
+        >
+          {STEPS.map((label, i) => (
+            <span
+              key={label}
+              className={cn(
+                "h-2 rounded-pill transition-all",
+                i === step ? "w-6 bg-primary" : i < step ? "w-2 bg-primary/50" : "w-2 bg-border",
+              )}
             />
-            <TextField
-              label="Last name"
-              autoComplete="family-name"
-              placeholder="Lee"
-              error={errors.lastName?.message}
-              {...register("lastName", {
-                required: "Please enter your last name.",
-              })}
-            />
-          </div>
+          ))}
+          <Body as="span" size="small" color="muted" className="ml-2">
+            Step {step + 1} of {STEPS.length} · {STEPS[step]}
+          </Body>
+        </div>
 
-          <Controller
-            control={control}
-            name="university"
-            rules={{
-              validate: (v) =>
-                v.length > 0 || "Select the university you currently attend.",
-            }}
-            render={({ field }) => (
-              <fieldset>
-                <legend className="mb-2 block text-[13px] font-bold text-ink">
-                  Your university
-                </legend>
-                <p className="mb-3 text-[14px] text-ink-soft">
-                  The campus you currently attend and will guide for.
-                </p>
-                <UniversityMultiSelect
+        {/* Step 1 — About you (required) */}
+        {step === 0 && (
+          <div className="flex flex-col gap-7">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <TextField
+                label="First name"
+                autoComplete="given-name"
+                placeholder="Jordan"
+                error={errors.firstName?.message}
+                {...register("firstName", {
+                  required: "Please enter your first name.",
+                })}
+              />
+              <TextField
+                label="Last name"
+                autoComplete="family-name"
+                placeholder="Lee"
+                error={errors.lastName?.message}
+                {...register("lastName", {
+                  required: "Please enter your last name.",
+                })}
+              />
+            </div>
+
+            <Controller
+              control={control}
+              name="university"
+              rules={{
+                validate: (v) => v.length > 0 || "Select the university you currently attend.",
+              }}
+              render={({ field }) => (
+                <UniversityField
+                  label="Your university"
+                  description="The campus you currently attend and will guide for."
+                  error={errors.university?.message as string}
                   value={field.value}
                   onChange={field.onChange}
                   max={1}
                 />
-                {errors.university && (
-                  <p role="alert" className="field-error">
-                    {errors.university.message as string}
-                  </p>
-                )}
-              </fieldset>
-            )}
-          />
+              )}
+            />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <TextField
-              label="Major"
-              placeholder="Computer Science"
-              error={errors.major?.message}
-              {...register("major", { required: "Please enter your major." })}
-            />
-            <TextField
-              label="Class year"
-              optional
-              placeholder="2027"
-              {...register("classYear")}
-            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <TextField
+                label="Major"
+                placeholder="Computer Science"
+                error={errors.major?.message}
+                {...register("major", { required: "Please enter your major." })}
+              />
+              <TextField
+                label="Class year"
+                optional
+                placeholder="2027"
+                {...register("classYear")}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Step 2 — Your guiding (optional) */}
-      {step === 1 && (
-        <div className="flex flex-col gap-7">
-          <Textarea
-            label="Short bio"
-            optional
-            className="min-h-[96px]"
-            placeholder="Tell prospective students a little about you and what makes your tours great."
-            {...register("bio")}
-          />
+        {/* Step 2 — Your guiding (optional) */}
+        {step === 1 && (
+          <div className="flex flex-col gap-7">
+            <Textarea
+              label="Short bio"
+              optional
+              className="min-h-[96px]"
+              placeholder="Tell prospective students a little about you and what makes your tours great."
+              {...register("bio")}
+            />
 
-          <Controller
-            control={control}
-            name="languages"
-            render={({ field }) => (
-              <fieldset>
-                <legend className="mb-2 block text-[13px] font-bold text-ink">
-                  Languages you can guide in
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {LANGUAGES.map((l) => {
-                    const active = field.value.includes(l.value);
-                    return (
-                      <Chip
-                        key={l.value}
-                        active={active}
-                        onClick={() =>
-                          field.onChange(
-                            active
-                              ? field.value.filter((v) => v !== l.value)
-                              : [...field.value, l.value],
-                          )
-                        }
-                      >
-                        {l.label}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="specialties"
-            render={({ field }) => (
-              <fieldset>
-                <legend className="mb-2 block text-[13px] font-bold text-ink">
-                  Tour specialties{" "}
-                  <span className="font-normal text-ink-soft">(optional)</span>
-                </legend>
-                {topicOptions.length === 0 ? (
-                  <p className="text-[14px] text-ink-soft">Loading…</p>
-                ) : (
+            <Controller
+              control={control}
+              name="languages"
+              render={({ field }) => (
+                <fieldset>
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
+                    Languages you can guide in
+                  </Body>
                   <div className="flex flex-wrap gap-2">
-                    {topicOptions.map((t) => {
-                      const active = field.value.includes(t.value);
+                    {LANGUAGES.map((l) => {
+                      const active = field.value.includes(l.value);
                       return (
                         <Chip
-                          key={t.value}
+                          key={l.value}
                           active={active}
                           onClick={() =>
                             field.onChange(
                               active
-                                ? field.value.filter((v) => v !== t.value)
-                                : [...field.value, t.value],
+                                ? field.value.filter((v) => v !== l.value)
+                                : [...field.value, l.value],
                             )
                           }
                         >
-                          {t.label}
+                          {l.label}
                         </Chip>
                       );
                     })}
                   </div>
-                )}
-              </fieldset>
-            )}
-          />
+                </fieldset>
+              )}
+            />
 
-          <TextField
-            label="Base price per tour (USD)"
-            optional
-            type="number"
-            min={20}
-            max={200}
-            fieldClassName="max-w-[220px]"
-            error={errors.basePrice?.message}
-            hint="You can fine-tune pricing per tour later. Default is $28."
-            {...register("basePrice", {
-              // redundant with the input's native min/max + server validation
-              validate: /* istanbul ignore next */ (v) => {
-                if (!v) return true;
-                const n = Number(v);
-                if (Number.isNaN(n)) return "Enter a number.";
-                if (n < 20 || n > 200) return "Must be between $20 and $200.";
-                return true;
-              },
-            })}
-          />
-        </div>
-      )}
+            <Controller
+              control={control}
+              name="specialties"
+              render={({ field }) => (
+                <fieldset>
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
+                    Tour specialties <span className="font-normal text-ink-soft">(optional)</span>
+                  </Body>
+                  {topicOptions.length === 0 ? (
+                    <Body size="medium" color="muted">
+                      Loading…
+                    </Body>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {topicOptions.map((t) => {
+                        const active = field.value.includes(t.value);
+                        return (
+                          <Chip
+                            key={t.value}
+                            active={active}
+                            onClick={() =>
+                              field.onChange(
+                                active
+                                  ? field.value.filter((v) => v !== t.value)
+                                  : [...field.value, t.value],
+                              )
+                            }
+                          >
+                            {t.label}
+                          </Chip>
+                        );
+                      })}
+                    </div>
+                  )}
+                </fieldset>
+              )}
+            />
 
-      {/* Step 3 — Verification (required to submit) */}
-      {step === 2 && (
-        <div className="flex flex-col gap-5">
-          <TextField
-            label="School email address"
-            type="email"
-            autoComplete="email"
-            placeholder="you@university.edu"
-            error={errors.schoolEmail?.message}
-            {...register("schoolEmail", {
-              required: "Enter your school email to verify your student status.",
-              pattern: {
-                value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
-                message: "Enter a valid email address.",
-              },
-            })}
-          />
-          <Alert variant="info" role="status">
-            We use your school email to confirm you’re a current student. Your
-            application is reviewed before any tours go live — you’ll keep access
-            to your dashboard while it’s pending.
-          </Alert>
-        </div>
-      )}
-
-      {submitError && (
-        <Alert variant="error" className="mt-5">
-          {submitError}
-        </Alert>
-      )}
-
-      {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. */}
-      <div className="mt-8 flex items-center justify-end gap-3">
-        {step > 0 && (
-          <Button variant="ghost" onClick={back} disabled={isSubmitting}>
-            Back
-          </Button>
+            <TextField
+              label="Base price per tour (USD)"
+              optional
+              type="number"
+              min={20}
+              max={200}
+              fieldClassName="max-w-[220px]"
+              error={errors.basePrice?.message}
+              hint="You can fine-tune pricing per tour later. Default is $28."
+              {...register("basePrice", {
+                // redundant with the input's native min/max + server validation
+                validate: /* istanbul ignore next */ (v) => {
+                  if (!v) return true;
+                  const n = Number(v);
+                  if (Number.isNaN(n)) return "Enter a number.";
+                  if (n < 20 || n > 200) return "Must be between $20 and $200.";
+                  return true;
+                },
+              })}
+            />
+          </div>
         )}
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Spinner />}
-          {isSubmitting ? "Submitting…" : isLast ? "Submit" : "Continue"}
-        </Button>
-      </div>
+
+        {/* Step 3 — Verification (required to submit) */}
+        {step === 2 && (
+          <div className="flex flex-col gap-5">
+            <TextField
+              label="School email address"
+              type="email"
+              autoComplete="email"
+              placeholder="you@university.edu"
+              error={errors.schoolEmail?.message}
+              {...register("schoolEmail", {
+                required: "Enter your school email to verify your student status.",
+                pattern: {
+                  value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
+                  message: "Enter a valid email address.",
+                },
+              })}
+            />
+            <Alert variant="info" role="status">
+              We use your school email to confirm you’re a current student. Your application is
+              reviewed before any tours go live — you’ll keep access to your dashboard while it’s
+              pending.
+            </Alert>
+          </div>
+        )}
+
+        {submitError && (
+          <Alert variant="error" className="mt-5">
+            {submitError}
+          </Alert>
+        )}
+
+        {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. */}
+        <div className="mt-8 flex items-center justify-end gap-3">
+          {step > 0 && (
+            <Button variant="ghost" onClick={back} disabled={isSubmitting}>
+              Back
+            </Button>
+          )}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Spinner />}
+            {isSubmitting ? "Submitting…" : isLast ? "Submit" : "Continue"}
+          </Button>
+        </div>
       </form>
     </>
   );

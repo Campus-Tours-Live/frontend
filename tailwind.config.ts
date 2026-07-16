@@ -35,6 +35,14 @@ export default {
         h4: ["16px", { lineHeight: "1.35", fontWeight: "700" }],
         lead: ["clamp(16px,1vw,18px)", { lineHeight: "1.6", fontWeight: "500" }],
         body: ["15.5px", { lineHeight: "1.55" }],
+        // Interface-text sizes (component scale), distinct from the prose `body`/`caption` (which
+        // carry line-height). Size only, no line-height, so they drop in for the raw `text-[Npx]`
+        // they replace without shifting any vertical rhythm. `ui-lg` (15px) = prominent: Body
+        // `large`, Heading `small`, buttons, picker rows. `ui` (14px) = default: Body `medium`,
+        // labels, menus, nav. `ui-sm` (13px) = small: Body `small`, field help/error, chips, badges.
+        "ui-lg": "15px",
+        ui: "14px",
+        "ui-sm": "13px",
         caption: ["13px", { lineHeight: "1.4" }],
         eyebrow: ["13px", { lineHeight: "1.2", letterSpacing: "0.08em", fontWeight: "700" }],
       },
@@ -117,6 +125,7 @@ export default {
         },
         ivory: "hsl(var(--brand-ivory))",
         canvas: "hsl(var(--brand-canvas))",
+        scrim: "hsl(var(--brand-scrim))",
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
