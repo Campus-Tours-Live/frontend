@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
-import { Alert, Body, Button, Chip, SectionHeading, Spinner } from "@/components/ui";
+import { Alert, Body, Button, Chip, Field, SectionHeading, Spinner } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
 import { UniversityMultiSelect, type UniversityOption } from "./UniversityMultiSelect";
 import { OnboardingCancel } from "./OnboardingCancel";
@@ -219,10 +219,7 @@ export function ParticipantOnboardingForm() {
 
         {/* Step 2 — Universities (optional) */}
         {step === 1 && (
-          <fieldset>
-            <Body as="legend" size="small" weight={700} className="mb-2 block">
-              Universities of interest <span className="font-normal text-ink-soft">(optional)</span>
-            </Body>
+          <Field label="Universities of interest" optional>
             <Body size="medium" color="muted" className="mb-3">
               Search and add the campuses you want to explore. Optional — you can add or change
               these anytime in your profile.
@@ -234,7 +231,7 @@ export function ParticipantOnboardingForm() {
                 <UniversityMultiSelect value={field.value} onChange={field.onChange} max={5} />
               )}
             />
-          </fieldset>
+          </Field>
         )}
 
         {/* Step 3 — Topics (optional) */}

@@ -10,6 +10,7 @@ import {
   Body,
   Button,
   Chip,
+  Field,
   SectionHeading,
   Spinner,
   TextField,
@@ -217,20 +218,12 @@ export function GuideOnboardingForm() {
                 validate: (v) => v.length > 0 || "Select the university you currently attend.",
               }}
               render={({ field }) => (
-                <fieldset>
-                  <Body as="legend" size="small" weight={700} className="mb-2 block">
-                    Your university
-                  </Body>
+                <Field label="Your university" error={errors.university?.message as string}>
                   <Body size="medium" color="muted" className="mb-3">
                     The campus you currently attend and will guide for.
                   </Body>
                   <UniversityMultiSelect value={field.value} onChange={field.onChange} max={1} />
-                  {errors.university && (
-                    <p role="alert" className="field-error">
-                      {errors.university.message as string}
-                    </p>
-                  )}
-                </fieldset>
+                </Field>
               )}
             />
 
