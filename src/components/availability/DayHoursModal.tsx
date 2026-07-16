@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Button, Modal, TimePicker } from "@/components/ui";
+import { Alert, Button, IconButton, Modal, TimePicker } from "@/components/ui";
 import {
   ApiError,
   useReplaceRules,
@@ -244,14 +244,14 @@ function DayHoursModalContent({
                     onChange={(next) => updateRange(range.key, { to: next })}
                   />
                 </div>
-                <button
-                  type="button"
+                <IconButton
+                  variant="soft"
+                  size="small"
                   onClick={() => removeRange(range.key)}
-                  aria-label={`Remove range ${index + 1}`}
-                  className="tp-icon-btn"
+                  a11yLabel={`Remove range ${index + 1}`}
                 >
                   <Trash2 size={16} strokeWidth={1.8} aria-hidden />
-                </button>
+                </IconButton>
               </div>
               {rangeErrors[index] ? (
                 <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">

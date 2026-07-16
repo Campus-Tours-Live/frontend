@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Button, Drawer, Modal, SegmentedControl, TimePicker } from "@/components/ui";
+import {
+  Alert,
+  Button,
+  Drawer,
+  IconButton,
+  Modal,
+  SegmentedControl,
+  TimePicker,
+} from "@/components/ui";
 import {
   ApiError,
   useAvailabilityExceptions,
@@ -638,14 +646,14 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
                     onChange={(next) => updateSlot(slot.key, { to: next })}
                   />
                 </div>
-                <button
-                  type="button"
+                <IconButton
+                  variant="soft"
+                  size="small"
                   onClick={() => removeSlot(slot.key)}
-                  aria-label={`Remove time slot ${index + 1}`}
-                  className="tp-icon-btn"
+                  a11yLabel={`Remove time slot ${index + 1}`}
                 >
                   <Trash2 size={16} strokeWidth={1.8} aria-hidden />
-                </button>
+                </IconButton>
               </div>
               {slotErrors[index] ? (
                 <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
