@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Caption } from "@/components/ui";
 
 /**
  * TimeAxisBar — a small presentational time-of-day bar for the date-specific override
@@ -109,7 +110,9 @@ export function TimeAxisBar({
   );
   return (
     <div role="group" aria-label={ariaLabel} className="flex items-center gap-2">
-      <span className="w-12 shrink-0 text-[11px] font-medium text-ink-soft">{barLabel}</span>
+      <Caption size="xs" weight={500} className="w-12 shrink-0">
+        {barLabel}
+      </Caption>
       <div className="relative h-4 flex-1 overflow-hidden rounded bg-border/30">
         {segments.map((segment, index) => {
           const left = minToPercent(segment.startMin, startMin, endMin);
@@ -153,16 +156,18 @@ export function TimeAxis({ ticks, rangeStartMin, rangeEndMin }: TimeAxisProps) {
   return (
     <div className="relative ml-14 mt-1 h-4" aria-hidden>
       {ticks.map((tick) => (
-        <span
+        <Caption
+          as="span"
+          size="xxs"
           key={tick.min}
           className={cn(
-            "absolute whitespace-nowrap text-[10px] text-ink-soft",
+            "absolute whitespace-nowrap",
             tickTranslateClass(tick.min, rangeStartMin, rangeEndMin),
           )}
           style={{ left: `${minToPercent(tick.min, rangeStartMin, rangeEndMin)}%` }}
         >
           {tick.label}
-        </span>
+        </Caption>
       ))}
     </div>
   );
@@ -176,7 +181,7 @@ export function TimeAxisLegend() {
     { kind: "extra" },
   ];
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-soft">
+    <Caption as="div" size="xs" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
       {items.map(({ kind }) => (
         <span key={kind} className="flex items-center gap-1.5">
           <span
@@ -186,6 +191,6 @@ export function TimeAxisLegend() {
           {SEGMENT_NAME[kind]}
         </span>
       ))}
-    </div>
+    </Caption>
   );
 }

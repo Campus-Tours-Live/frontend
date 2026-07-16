@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Card, Toggle } from "@/components/ui";
+import { Alert, Body, Button, Panel, PanelHeader, Switch } from "@/components/ui";
 import {
   ApiError,
   useAvailabilityRules,
@@ -129,20 +129,32 @@ export function WeeklyHoursPanel() {
   const openModalDay = modalDay != null ? modalDay : null;
 
   return (
-    <Card padded={false} className="overflow-hidden">
-      <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="font-display text-[20px] font-bold text-ink">Weekly hours</h2>
-        <p className="mt-1 text-[13px] text-ink-soft">
-          Set when you are typically available for tours, shown as from–to ranges for each day.
-        </p>
-        {toggleError ? (
-          <Alert variant="error" className="mt-3">
-            {toggleError}
-          </Alert>
-        ) : null}
-      </div>
-
-      <div role="list" aria-label="Weekly hours by day">
+    <Panel
+      divider="inset"
+      className="overflow-hidden lg:flex lg:h-full lg:flex-col"
+      header={
+        <PanelHeader
+          className="lg:shrink-0"
+          title="Weekly hours"
+          subtitle="Set when you are typically available for tours, shown as from–to ranges for each day."
+        >
+          {toggleError ? (
+            <Alert variant="error" className="mt-3">
+              {toggleError}
+            </Alert>
+          ) : null}
+        </PanelHeader>
+      }
+    >
+      {/* On `lg` the card is stretched to match the taller right column, so the 7 rows share that
+          height equally (`lg:flex-1` each) instead of leaving a void at the bottom. On mobile they
+          keep their natural height. The horizontal gutter lives on THIS list (not the rows) so each
+          row's `border-b` spans only the inner width — an inset divider that matches the Panel's. */}
+      <div
+        role="list"
+        aria-label="Weekly hours by day"
+        className="px-5 sm:px-6 lg:flex lg:flex-1 lg:flex-col"
+      >
         {DAY_LABELS.map((dayLabel, dayIndex) => {
           const dayRules = rulesByDay.get(dayIndex) ?? [];
           const activeRules = dayRules.filter((rule) => rule.active);
@@ -153,20 +165,22 @@ export function WeeklyHoursPanel() {
             <div
               key={dayLabel}
               role="listitem"
-              className="border-b border-border px-5 py-4 last:border-b-0 sm:px-6"
+              className="border-b border-border py-4 last:border-b-0 lg:flex lg:flex-1 lg:flex-col lg:justify-center"
             >
               {/* Header row: day name (left) + status label & toggle (right) */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-[14px] font-semibold text-ink">{dayLabel}</span>
+                <Body as="span" size="medium" weight={600}>
+                  {dayLabel}
+                </Body>
                 <div className="flex shrink-0 items-center gap-5">
                   <span
                     className={
-                      "text-[14px] font-bold " + (isAvailable ? "text-primary" : "text-ink-soft")
+                      "text-ui font-bold " + (isAvailable ? "text-primary" : "text-ink-soft")
                     }
                   >
                     {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
                   </span>
-                  <Toggle
+                  <Switch
                     checked={isAvailable}
                     onChange={(next) => void handleToggle(dayIndex, next)}
                     disabled={isToggling}
@@ -180,18 +194,20 @@ export function WeeklyHoursPanel() {
                 <div className="flex min-w-0 flex-col gap-1">
                   {isAvailable ? (
                     activeRules.map((rule) => (
-                      <span key={rule.id} className="text-[14px] text-ink">
+                      <Body as="span" key={rule.id} size="medium">
                         {formatFromTo(rule.startLocal, rule.windowMin)}
-                      </span>
+                      </Body>
                     ))
                   ) : (
-                    <span className="text-[14px] text-ink-soft">No hours set</span>
+                    <Body as="span" size="medium" color="muted">
+                      No hours set
+                    </Body>
                   )}
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
+                  size="small"
                   onClick={() => setModalDay(dayIndex)}
                   aria-label={`Edit ${dayLabel} hours`}
                   className="shrink-0"
@@ -221,6 +237,6 @@ export function WeeklyHoursPanel() {
         settingsTimezone={settingsTimezone}
         onClose={() => setModalDay(null)}
       />
-    </Card>
+    </Panel>
   );
 }

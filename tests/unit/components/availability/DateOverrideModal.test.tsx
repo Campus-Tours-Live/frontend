@@ -213,12 +213,11 @@ describe("DateOverrideModal — the info alert + title", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the weekday + M/D title and the eyebrow (2026-07-20 is a Monday)", () => {
+  it("renders the full-date title (2026-07-20 is a Monday)", () => {
     renderModal();
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText("Date-specific override")).toBeInTheDocument();
     expect(
-      within(dialog).getByRole("heading", { name: /Date-specific hours · Mon 7\/20/ }),
+      within(dialog).getByRole("heading", { name: /Date-specific hours · Monday, Jul 20/ }),
     ).toBeInTheDocument();
   });
 
@@ -448,7 +447,7 @@ describe("DateOverrideModal — conflict warning (block-only, from the combined 
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    const warning = await within(dialog).findByText(/This blocks time on Mon 7\/20/);
+    const warning = await within(dialog).findByText(/This blocks time on Monday, Jul 20/);
     expect(warning).toBeInTheDocument();
     expect(
       within(dialog).getByText(/that overlaps your current hours — 9:00 AM – 11:00 AM becomes/),
@@ -533,7 +532,9 @@ describe("DateOverrideModal — conflict warning fires only when availability SH
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    expect(await within(dialog).findByText(/This blocks time on Mon 7\/20/)).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText(/This blocks time on Monday, Jul 20/),
+    ).toBeInTheDocument();
   });
 
   it("WARNS on a same-size block swap (equal total minutes, different windows)", async () => {
@@ -549,7 +550,9 @@ describe("DateOverrideModal — conflict warning fires only when availability SH
     renderModal();
     const dialog = screen.getByRole("dialog");
 
-    expect(await within(dialog).findByText(/This blocks time on Mon 7\/20/)).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText(/This blocks time on Monday, Jul 20/),
+    ).toBeInTheDocument();
   });
 });
 
@@ -752,5 +755,35 @@ describe("DateOverrideModal — a replace 422 keeps the modal open", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(within(dialog).getByRole("group", { name: "Time slot 1" })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe("DateOverrideModal — mobile (bottom drawer)", () => {
+  function mockTouch() {
+    window.matchMedia = jest.fn().mockImplementation((q: string) => ({
+      matches: true,
+      media: q,
+      onchange: null,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+  }
+
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia;
+  });
+
+  it("hosts the editor in a bottom drawer on touch instead of a centered modal", () => {
+    mockTouch();
+    render(<DateOverrideModal open initialDate="2026-07-20" onClose={jest.fn()} />);
+
+    // The shared Drawer (labelled) hosts the same editor content, so the flow stays a bottom sheet.
+    const dialog = screen.getByRole("dialog", { name: "Date-specific hours" });
+    expect(
+      within(dialog).getByRole("heading", { name: /Date-specific hours/ }),
+    ).toBeInTheDocument();
   });
 });

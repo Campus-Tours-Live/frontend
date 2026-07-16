@@ -40,7 +40,7 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
 
         <div className="mt-auto flex items-center justify-between pt-4">
           <span className="text-[18px] font-extrabold text-ink">{price}</span>
-          <Button variant="secondary" size="sm" className="gap-1.5">
+          <Button variant="secondary" size="small" className="gap-1.5">
             View tour
             <Icon
               icon={MoveRight}

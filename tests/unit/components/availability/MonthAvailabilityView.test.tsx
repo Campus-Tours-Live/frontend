@@ -1,6 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MonthAvailabilityView } from "@/components/availability/MonthAvailabilityView";
+import {
+  MonthAvailabilityView,
+  type MonthAvailabilityViewProps,
+} from "@/components/availability/MonthAvailabilityView";
 import {
   useAvailabilityExceptions,
   useAvailabilitySettings,
@@ -75,6 +78,19 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
+function renderView(props: Partial<MonthAvailabilityViewProps> = {}) {
+  return render(
+    <MonthAvailabilityView
+      onDayClick={jest.fn()}
+      daySheetDate={null}
+      onDaySheetClose={jest.fn()}
+      onEditOverride={jest.fn()}
+      canAddOverride
+      {...props}
+    />,
+  );
+}
+
 describe("MonthAvailabilityView — density bar + hatch", () => {
   it("renders a density bar on days with occurrences and hatches a zero-availability day", () => {
     setResolved([
@@ -82,7 +98,7 @@ describe("MonthAvailabilityView — density bar + hatch", () => {
       { startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T17:00:00Z" },
     ]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     // Days with occurrences get a density bar and are NOT muted.
     expect(screen.getByTestId("density-2026-07-05")).toBeInTheDocument();
@@ -110,7 +126,7 @@ describe("MonthAvailabilityView — density bar + hatch", () => {
       },
     ]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     expect(screen.getByTestId("density-2026-07-17")).toHaveAttribute("data-additional", "true");
     // A day with occurrences but no ADDITIONAL exception is not flagged additional.
@@ -120,7 +136,7 @@ describe("MonthAvailabilityView — density bar + hatch", () => {
   it("announces each day's availability status in its accessible name (a11y)", () => {
     setResolved([{ startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T15:00:00Z" }]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     // The accessible name carries the status, not just the raw ISO date, so screen readers
     // announce whether the day is bookable.
@@ -135,7 +151,7 @@ describe("MonthAvailabilityView — density bar + hatch", () => {
   it("opens the day summary tooltip when a day cell receives keyboard focus (a11y)", async () => {
     setResolved([{ startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T15:00:00Z" }]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     // Keyboard users reach the summary by focusing the day button (Tab), not only by mouse hover.
     screen.getByTestId("calendar-day-2026-07-10").focus();
@@ -146,7 +162,7 @@ describe("MonthAvailabilityView — density bar + hatch", () => {
   });
 
   it("outlines today's cell", () => {
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
     // System time 2026-07-15T18:00Z -> 13:00 America/Chicago on 2026-07-15.
     expect(screen.getByTestId("calendar-day-2026-07-15")).toHaveAttribute("data-today", "true");
     expect(screen.getByTestId("calendar-day-2026-07-16")).toHaveAttribute("data-today", "false");
@@ -163,12 +179,12 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
       { startAt: "2026-07-10T15:00:00Z", endAt: "2026-07-10T16:00:00Z" }, // 10-11 AM CDT
     ]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     await user.hover(screen.getByTestId("calendar-day-2026-07-10"));
 
     const popover = await screen.findByRole("tooltip", { name: /availability for 2026-07-10/i });
-    expect(popover).toHaveTextContent(/Fri 7\/10 · Available/);
+    expect(popover).toHaveTextContent(/Friday, Jul 10 · Available/);
     expect(screen.queryByText("9:00 AM – 11:00 AM")).not.toBeInTheDocument();
     expect(popover).toHaveTextContent("9:00 AM – 10:00 AM");
     expect(popover).toHaveTextContent("10:00 AM – 11:00 AM");
@@ -193,15 +209,17 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
       },
     ]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     await user.hover(screen.getByTestId("calendar-day-2026-07-17"));
     const popover = await screen.findByRole("tooltip", { name: /availability for 2026-07-17/i });
 
     expect(popover).toHaveTextContent("2:00 PM – 3:00 PM");
-    expect(popover).toHaveTextContent("Extra");
-    // The normal 9 AM window is present and not labelled Extra by itself.
     expect(popover).toHaveTextContent("9:00 AM – 10:00 AM");
+    // Both badges show in the windows list: the extra window is "Extra", the normal one "Available".
+    const list = within(popover).getByRole("list", { name: /windows on 2026-07-17/i });
+    expect(within(list).getByText("Extra")).toBeInTheDocument();
+    expect(within(list).getByText("Available")).toBeInTheDocument();
   });
 
   it("still labels a trimmed ADDITIONAL window 'Extra' when its start no longer matches the exception", async () => {
@@ -222,7 +240,7 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
       },
     ]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     await user.hover(screen.getByTestId("calendar-day-2026-07-17"));
     const popover = await screen.findByRole("tooltip", { name: /availability for 2026-07-17/i });
@@ -237,7 +255,7 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
     const winSpy = jest.spyOn(window, "addEventListener");
     setResolved([{ startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T15:00:00Z" }]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
     await user.hover(screen.getByTestId("calendar-day-2026-07-10"));
     await screen.findByRole("tooltip", { name: /availability for 2026-07-10/i });
 
@@ -252,7 +270,7 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
 
   it("shows 'No hours' / 'Unavailable' for a hovered zero-availability day", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     await user.hover(screen.getByTestId("calendar-day-2026-07-25"));
 
@@ -267,7 +285,7 @@ describe("MonthAvailabilityView — hover summary (backend times, settings tz, n
       { startAt: "2026-07-05T14:00:00Z", endAt: "2026-07-05T15:00:00Z" },
       { startAt: "2026-07-10T14:00:00Z", endAt: "2026-07-10T17:00:00Z" },
     ]);
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     const dayA = screen.getByTestId("calendar-day-2026-07-05");
     const dayB = screen.getByTestId("calendar-day-2026-07-10");
@@ -292,29 +310,117 @@ describe("MonthAvailabilityView — settings-tz bucketing", () => {
     // 2026-07-11T02:00Z = 2026-07-10 21:00 America/Chicago -> belongs to 07-10, not 07-11.
     setResolved([{ startAt: "2026-07-11T02:00:00Z", endAt: "2026-07-11T03:00:00Z" }]);
 
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     expect(screen.getByTestId("density-2026-07-10")).toBeInTheDocument();
     expect(screen.getByTestId("calendar-day-2026-07-11")).toHaveAttribute("data-muted", "true");
   });
 });
 
-describe("MonthAvailabilityView — click invokes onOpenOverride", () => {
-  it("calls onOpenOverride with the clicked day's ISO date", async () => {
+describe("MonthAvailabilityView — day click", () => {
+  it("calls onDayClick with the clicked day's ISO date", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    const onOpenOverride = jest.fn();
-    render(<MonthAvailabilityView onOpenOverride={onOpenOverride} />);
+    const onDayClick = jest.fn();
+    renderView({ onDayClick });
 
     await user.click(screen.getByTestId("calendar-day-2026-07-22"));
 
-    expect(onOpenOverride).toHaveBeenCalledWith("2026-07-22");
-    expect(onOpenOverride).toHaveBeenCalledTimes(1);
+    expect(onDayClick).toHaveBeenCalledWith("2026-07-22");
+    expect(onDayClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("MonthAvailabilityView — touch: a tap opens the day sheet, not the modal", () => {
+  function mockCanHover(matches: boolean) {
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+  }
+
+  afterEach(() => {
+    // Drop the stub so the rest of the suite keeps the default (desktop, no-touch) behavior.
+    delete (window as { matchMedia?: unknown }).matchMedia;
+  });
+
+  it("renders the day sheet for the controlled daySheetDate — windows + an Add override action", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const onEditOverride = jest.fn();
+    setResolved([{ startAt: "2026-07-22T14:00:00Z", endAt: "2026-07-22T15:00:00Z" }]);
+    renderView({ daySheetDate: "2026-07-22", onEditOverride });
+
+    const sheet = screen.getByRole("dialog", { name: /Availability for 2026-07-22/i });
+    expect(sheet).toHaveTextContent(/Wednesday, Jul 22/);
+    expect(within(sheet).getByText("9:00 AM – 10:00 AM")).toBeInTheDocument();
+
+    await user.click(within(sheet).getByRole("button", { name: "Add override" }));
+    expect(onEditOverride).toHaveBeenCalledWith("2026-07-22");
+  });
+
+  it("labels the sheet action 'Edit override' when the day already has an override", () => {
+    setResolved([{ startAt: "2026-07-22T14:00:00Z", endAt: "2026-07-22T15:00:00Z" }]);
+    setExceptions([
+      {
+        id: "e1",
+        exceptionDate: "2026-07-22",
+        kind: "ADDITIONAL",
+        startLocal: "09:00",
+        windowMin: 60,
+        reason: null,
+      },
+    ]);
+    renderView({ daySheetDate: "2026-07-22" });
+
+    const sheet = screen.getByRole("dialog", { name: /Availability for 2026-07-22/i });
+    expect(within(sheet).getByRole("button", { name: "Edit override" })).toBeInTheDocument();
+  });
+
+  it("disables the sheet's Add override action and shows a notice when overrides can't be added", () => {
+    setResolved([{ startAt: "2026-07-22T14:00:00Z", endAt: "2026-07-22T15:00:00Z" }]);
+    renderView({ daySheetDate: "2026-07-22", canAddOverride: false });
+
+    const sheet = screen.getByRole("dialog", { name: /Availability for 2026-07-22/i });
+    expect(within(sheet).getByRole("button", { name: "Add override" })).toBeDisabled();
+    expect(within(sheet).getByText(/set your weekly hours first/i)).toBeInTheDocument();
+  });
+
+  it("on desktop, clicking a day surfaces the blocked notice (and doesn't route the click) when overrides can't be added", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const onDayClick = jest.fn();
+    renderView({ canAddOverride: false, onDayClick });
+
+    // No notice until the guide actually tries.
+    expect(screen.queryByText(/set your weekly hours first/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
+
+    expect(screen.getByText(/set your weekly hours first/i)).toBeInTheDocument();
+    // Desktop blocks before routing — the page never opens the editor.
+    expect(onDayClick).not.toHaveBeenCalled();
+  });
+
+  it("does not show the hover summary popover on touch (mobile has no hover)", async () => {
+    mockCanHover(true);
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    setResolved([{ startAt: "2026-07-22T14:00:00Z", endAt: "2026-07-22T15:00:00Z" }]);
+    renderView();
+
+    await user.hover(screen.getByTestId("calendar-day-2026-07-22"));
+
+    // The hover summary is a tooltip; on touch it must never appear.
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });
 
 describe("MonthAvailabilityView — Sunday-first week", () => {
   it("renders the weekday header row Sunday-first (SUN … SAT)", () => {
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
     const heads = screen.getAllByRole("columnheader").map((el) => el.textContent);
     expect(heads).toEqual(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
   });
@@ -336,8 +442,16 @@ describe("MonthAvailabilityView — self-sufficient month cursor", () => {
         isError: false,
       });
 
-    const { rerender } = render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
-    rerender(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    const { rerender } = renderView();
+    rerender(
+      <MonthAvailabilityView
+        onDayClick={jest.fn()}
+        daySheetDate={null}
+        onDaySheetClose={jest.fn()}
+        onEditOverride={jest.fn()}
+        canAddOverride
+      />,
+    );
 
     expect(screen.getByText("August 2026")).toBeInTheDocument();
   });
@@ -346,7 +460,7 @@ describe("MonthAvailabilityView — self-sufficient month cursor", () => {
 describe("MonthAvailabilityView — month navigation", () => {
   it("moves to the next/previous month and keeps rendering day cells", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    render(<MonthAvailabilityView onOpenOverride={jest.fn()} />);
+    renderView();
 
     expect(screen.getByText("July 2026")).toBeInTheDocument();
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Alert, Link } from "@/components/ui";
+import { Alert, Heading, Link } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
@@ -106,9 +106,9 @@ export function FeaturedTours() {
       <div className="mb-6 flex items-end justify-between gap-5">
         <div>
           <div className="eyebrow">Featured tours</div>
-          <h2 className="mt-1 font-display text-[36px] font-bold leading-tight tracking-tight text-ink">
+          <Heading as="h2" size="h2" className="mt-1">
             Start with a campus that feels right.
-          </h2>
+          </Heading>
         </div>
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
         {showCarousel ? (

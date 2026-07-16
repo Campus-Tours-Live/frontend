@@ -7,8 +7,12 @@ jest.mock("next/navigation", () => ({
 }));
 jest.mock("@/lib/http/serverMe", () => ({ getServerMe: jest.fn() }));
 // Stub the heavy chrome so the test focuses on the guard + error alerts.
-jest.mock("@/components/site/SiteHeader", () => ({ SiteHeader: () => <div data-testid="header" /> }));
-jest.mock("@/components/site/Breadcrumb", () => ({ Breadcrumb: () => <nav data-testid="crumb" /> }));
+jest.mock("@/components/site/SiteHeader", () => ({
+  SiteHeader: () => <div data-testid="header" />,
+}));
+jest.mock("@/components/site/Breadcrumb", () => ({
+  Breadcrumb: () => <nav data-testid="crumb" />,
+}));
 jest.mock("@/components/signup/RoleCard", () => ({
   RoleCard: ({ badge }: { badge: string }) => <div data-testid="role-card">{badge}</div>,
 }));
@@ -37,9 +41,9 @@ async function renderPage(
 describe("/signup/role page", () => {
   it("redirects a member who already holds a role to /dashboard", async () => {
     getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"] });
-    await expect(
-      SignupRolePage({ searchParams: Promise.resolve({}) }),
-    ).rejects.toThrow("REDIRECT:/dashboard");
+    await expect(SignupRolePage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+      "REDIRECT:/dashboard",
+    );
   });
 
   it("renders the role chooser for a bare account (0 roles, no error)", async () => {

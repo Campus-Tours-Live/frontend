@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
-import { Alert, Button, Chip, SectionHeading, Spinner } from "@/components/ui";
+import { Alert, Body, Button, Chip, SectionHeading, Spinner } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
-import {
-  UniversityMultiSelect,
-  type UniversityOption,
-} from "./UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
 interface FormValues {
@@ -83,9 +80,7 @@ export function ParticipantOnboardingForm() {
       router.push("/dashboard");
     } catch (err) {
       setSubmitError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
+        err instanceof Error ? err.message : "Something went wrong. Please try again.",
       );
     }
   };
@@ -129,198 +124,179 @@ export function ParticipantOnboardingForm() {
       />
 
       <form onSubmit={onSubmit} className="mt-10">
-      {/* Progress */}
-      <div
-        className="mb-6 flex items-center gap-2"
-        aria-label={`Step ${step + 1} of ${STEPS.length}`}
-      >
-        {STEPS.map((label, i) => (
-          <span
-            key={label}
-            className={cn(
-              "h-2 rounded-pill transition-all",
-              i === step
-                ? "w-6 bg-primary"
-                : i < step
-                  ? "w-2 bg-primary/50"
-                  : "w-2 bg-border",
-            )}
-          />
-        ))}
-        <span className="ml-2 text-[13px] text-ink-soft">
-          Step {step + 1} of {STEPS.length} · {STEPS[step]}
-        </span>
-      </div>
-
-      {/* Step 1 — About you (required) */}
-      {step === 0 && (
-        <div className="flex flex-col gap-7">
-          <div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="field">
-                <label htmlFor="firstName">First name</label>
-                <input
-                  id="firstName"
-                  className="input"
-                  autoComplete="given-name"
-                  placeholder="Jordan"
-                  aria-invalid={!!errors.firstName}
-                  {...register("firstName", {
-                    required: "Please enter your first name.",
-                  })}
-                />
-                {errors.firstName && !bothNameMissing && (
-                  <p
-                    role="alert"
-                    className="mt-1 text-[13px] font-semibold text-error-foreground"
-                  >
-                    {errors.firstName.message}
-                  </p>
-                )}
-              </div>
-              <div className="field">
-                <label htmlFor="lastName">Last name</label>
-                <input
-                  id="lastName"
-                  className="input"
-                  autoComplete="family-name"
-                  placeholder="Lee"
-                  aria-invalid={!!errors.lastName}
-                  {...register("lastName", {
-                    required: "Please enter your last name.",
-                  })}
-                />
-                {errors.lastName && !bothNameMissing && (
-                  <p
-                    role="alert"
-                    className="mt-1 text-[13px] font-semibold text-error-foreground"
-                  >
-                    {errors.lastName.message}
-                  </p>
-                )}
-              </div>
-            </div>
-            {bothNameMissing && (
-              <p
-                role="alert"
-                className="mt-2 text-[13px] font-semibold text-error-foreground"
-              >
-                Please enter your first and last name to continue.
-              </p>
-            )}
-          </div>
-
-          <Controller
-            control={control}
-            name="participantType"
-            render={({ field }) => (
-              <fieldset>
-                <legend className="mb-2 block text-[13px] font-bold text-ink">
-                  I am a…
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {PARTICIPANT_TYPES.map((t) => (
-                    <Chip
-                      key={t.value}
-                      active={field.value === t.value}
-                      onClick={() => field.onChange(t.value)}
-                    >
-                      {t.label}
-                    </Chip>
-                  ))}
-                </div>
-              </fieldset>
-            )}
-          />
+        {/* Progress */}
+        <div
+          className="mb-6 flex items-center gap-2"
+          aria-label={`Step ${step + 1} of ${STEPS.length}`}
+        >
+          {STEPS.map((label, i) => (
+            <span
+              key={label}
+              className={cn(
+                "h-2 rounded-pill transition-all",
+                i === step ? "w-6 bg-primary" : i < step ? "w-2 bg-primary/50" : "w-2 bg-border",
+              )}
+            />
+          ))}
+          <Body as="span" size="small" color="muted" className="ml-2">
+            Step {step + 1} of {STEPS.length} · {STEPS[step]}
+          </Body>
         </div>
-      )}
 
-      {/* Step 2 — Universities (optional) */}
-      {step === 1 && (
-        <fieldset>
-          <legend className="mb-2 block text-[13px] font-bold text-ink">
-            Universities of interest{" "}
-            <span className="font-normal text-ink-soft">(optional)</span>
-          </legend>
-          <p className="mb-3 text-[14px] text-ink-soft">
-            Search and add the campuses you want to explore. Optional — you can
-            add or change these anytime in your profile.
-          </p>
+        {/* Step 1 — About you (required) */}
+        {step === 0 && (
+          <div className="flex flex-col gap-7">
+            <div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="field">
+                  <label htmlFor="firstName">First name</label>
+                  <input
+                    id="firstName"
+                    className="input"
+                    autoComplete="given-name"
+                    placeholder="Jordan"
+                    aria-invalid={!!errors.firstName}
+                    {...register("firstName", {
+                      required: "Please enter your first name.",
+                    })}
+                  />
+                  {errors.firstName && !bothNameMissing && (
+                    <Body role="alert" size="small" weight={600} color="error" className="mt-1">
+                      {errors.firstName.message}
+                    </Body>
+                  )}
+                </div>
+                <div className="field">
+                  <label htmlFor="lastName">Last name</label>
+                  <input
+                    id="lastName"
+                    className="input"
+                    autoComplete="family-name"
+                    placeholder="Lee"
+                    aria-invalid={!!errors.lastName}
+                    {...register("lastName", {
+                      required: "Please enter your last name.",
+                    })}
+                  />
+                  {errors.lastName && !bothNameMissing && (
+                    <Body role="alert" size="small" weight={600} color="error" className="mt-1">
+                      {errors.lastName.message}
+                    </Body>
+                  )}
+                </div>
+              </div>
+              {bothNameMissing && (
+                <Body role="alert" size="small" weight={600} color="error" className="mt-2">
+                  Please enter your first and last name to continue.
+                </Body>
+              )}
+            </div>
+
+            <Controller
+              control={control}
+              name="participantType"
+              render={({ field }) => (
+                <fieldset>
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
+                    I am a…
+                  </Body>
+                  <div className="flex flex-wrap gap-2">
+                    {PARTICIPANT_TYPES.map((t) => (
+                      <Chip
+                        key={t.value}
+                        active={field.value === t.value}
+                        onClick={() => field.onChange(t.value)}
+                      >
+                        {t.label}
+                      </Chip>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+            />
+          </div>
+        )}
+
+        {/* Step 2 — Universities (optional) */}
+        {step === 1 && (
           <Controller
             control={control}
             name="universities"
             render={({ field }) => (
-              <UniversityMultiSelect
+              <UniversityField
+                label="Universities of interest"
+                description="Search and add the campuses you want to explore. Optional — you can add or change these anytime in your profile."
+                optional
                 value={field.value}
                 onChange={field.onChange}
                 max={5}
               />
             )}
           />
-        </fieldset>
-      )}
-
-      {/* Step 3 — Topics (optional) */}
-      {step === 2 && (
-        <fieldset>
-          <legend className="mb-2 block text-[13px] font-bold text-ink">
-            Topics you care about{" "}
-            <span className="font-normal text-ink-soft">(optional)</span>
-          </legend>
-          <p className="mb-3 text-[14px] text-ink-soft">
-            Optional — you can change these anytime in your profile.
-          </p>
-          {topicOptions.length === 0 ? (
-            <p className="text-[14px] text-ink-soft">Loading topics…</p>
-          ) : (
-            <Controller
-              control={control}
-              name="topics"
-              render={({ field }) => (
-                <div className="flex flex-wrap gap-2">
-                  {topicOptions.map((t) => {
-                    const active = field.value.includes(t.value);
-                    return (
-                      <Chip
-                        key={t.value}
-                        active={active}
-                        onClick={() =>
-                          field.onChange(
-                            active
-                              ? field.value.filter((v) => v !== t.value)
-                              : [...field.value, t.value],
-                          )
-                        }
-                      >
-                        {t.label}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              )}
-            />
-          )}
-        </fieldset>
-      )}
-
-      {submitError && (
-        <Alert variant="error" className="mt-5">
-          {submitError}
-        </Alert>
-      )}
-
-      {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. */}
-      <div className="mt-8 flex items-center justify-end gap-3">
-        {step > 0 && (
-          <Button variant="ghost" onClick={back} disabled={isSubmitting}>
-            Back
-          </Button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Spinner />}
-          {isSubmitting ? "Saving…" : isLast ? "Submit" : "Continue"}
-        </Button>
-      </div>
+
+        {/* Step 3 — Topics (optional) */}
+        {step === 2 && (
+          <fieldset>
+            <Body as="legend" size="small" weight={700} className="mb-2 block">
+              Topics you care about <span className="font-normal text-ink-soft">(optional)</span>
+            </Body>
+            <Body size="medium" color="muted" className="mb-3">
+              Optional — you can change these anytime in your profile.
+            </Body>
+            {topicOptions.length === 0 ? (
+              <Body size="medium" color="muted">
+                Loading topics…
+              </Body>
+            ) : (
+              <Controller
+                control={control}
+                name="topics"
+                render={({ field }) => (
+                  <div className="flex flex-wrap gap-2">
+                    {topicOptions.map((t) => {
+                      const active = field.value.includes(t.value);
+                      return (
+                        <Chip
+                          key={t.value}
+                          active={active}
+                          onClick={() =>
+                            field.onChange(
+                              active
+                                ? field.value.filter((v) => v !== t.value)
+                                : [...field.value, t.value],
+                            )
+                          }
+                        >
+                          {t.label}
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                )}
+              />
+            )}
+          </fieldset>
+        )}
+
+        {submitError && (
+          <Alert variant="error" className="mt-5">
+            {submitError}
+          </Alert>
+        )}
+
+        {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. */}
+        <div className="mt-8 flex items-center justify-end gap-3">
+          {step > 0 && (
+            <Button variant="ghost" onClick={back} disabled={isSubmitting}>
+              Back
+            </Button>
+          )}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Spinner />}
+            {isSubmitting ? "Saving…" : isLast ? "Submit" : "Continue"}
+          </Button>
+        </div>
       </form>
     </>
   );

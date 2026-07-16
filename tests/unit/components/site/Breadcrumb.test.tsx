@@ -3,9 +3,7 @@ import { Breadcrumb } from "@/components/site/Breadcrumb";
 
 describe("Breadcrumb", () => {
   it("links all but the last crumb and marks the last as current", () => {
-    render(
-      <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign up" }]} />,
-    );
+    render(<Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign up" }]} />);
     const home = screen.getByRole("link", { name: "Home" });
     expect(home).toHaveAttribute("href", "/");
 

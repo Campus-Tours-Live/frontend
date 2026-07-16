@@ -42,10 +42,9 @@ describe("useUniversitySearch", () => {
   it("does NOT fetch when disabled (enabled: false)", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { data: [] }));
 
-    const { result } = renderHook(
-      () => useUniversitySearch("stanford", { enabled: false }),
-      { wrapper: makeWrapper() },
-    );
+    const { result } = renderHook(() => useUniversitySearch("stanford", { enabled: false }), {
+      wrapper: makeWrapper(),
+    });
 
     // Let the debounce window elapse so any pending fetch would have fired.
     await act(async () => {
@@ -82,10 +81,10 @@ describe("useUniversitySearch", () => {
 
     // Start empty (disabled) so the useState seed doesn't fire a request for the
     // initial term — isolating the debounce of the keystrokes that follow.
-    const { rerender } = renderHook(
-      ({ q }: { q: string }) => useUniversitySearch(q),
-      { wrapper: makeWrapper(), initialProps: { q: "" } },
-    );
+    const { rerender } = renderHook(({ q }: { q: string }) => useUniversitySearch(q), {
+      wrapper: makeWrapper(),
+      initialProps: { q: "" },
+    });
 
     // Rapidly type "mi" then "mit" within the same 250ms debounce window.
     rerender({ q: "mi" });
@@ -93,25 +92,18 @@ describe("useUniversitySearch", () => {
 
     // The final settled term "mit" must eventually be requested...
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/v1/universities?q=mit&limit=8",
-        expect.anything(),
-      ),
+      expect(fetchMock).toHaveBeenCalledWith("/v1/universities?q=mit&limit=8", expect.anything()),
     );
     // ...and the intermediate "mi" must NOT have been (debounce swallowed it).
-    expect(fetchMock).not.toHaveBeenCalledWith(
-      "/v1/universities?q=mi&limit=8",
-      expect.anything(),
-    );
+    expect(fetchMock).not.toHaveBeenCalledWith("/v1/universities?q=mi&limit=8", expect.anything());
   });
 
   it("url-encodes the query term", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { data: [] }));
 
-    const { result } = renderHook(
-      () => useUniversitySearch("a&b state"),
-      { wrapper: makeWrapper() },
-    );
+    const { result } = renderHook(() => useUniversitySearch("a&b state"), {
+      wrapper: makeWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
