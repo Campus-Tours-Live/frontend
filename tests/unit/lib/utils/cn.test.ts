@@ -14,9 +14,7 @@ describe("cn", () => {
   });
 
   it("supports conditional object syntax (clsx)", () => {
-    expect(cn({ active: true, disabled: false, visible: true })).toBe(
-      "active visible",
-    );
+    expect(cn({ active: true, disabled: false, visible: true })).toBe("active visible");
   });
 
   it("flattens array inputs (clsx)", () => {
@@ -24,9 +22,7 @@ describe("cn", () => {
   });
 
   it("supports nested arrays and objects mixed together", () => {
-    expect(cn("base", ["x", { y: true, z: false }], { w: true })).toBe(
-      "base x y w",
-    );
+    expect(cn("base", ["x", { y: true, z: false }], { w: true })).toBe("base x y w");
   });
 
   it("resolves conflicting Tailwind utilities, keeping the last (tailwind-merge)", () => {
@@ -48,5 +44,14 @@ describe("cn", () => {
 
   it("deduplicates / collapses repeated conflicting classes across many args", () => {
     expect(cn("block", "hidden", "block")).toBe("block");
+  });
+
+  it("treats the custom ui-sm/ui/ui-lg font-size tokens as one font-size group", () => {
+    // Registered via extendTailwindMerge (must mirror tailwind.config fontSize keys). Same group →
+    // last wins; a wrong/missing registration would emit both, breaking size dedup.
+    expect(cn("text-ui", "text-ui-lg")).toBe("text-ui-lg");
+    expect(cn("text-ui-lg", "text-ui-sm")).toBe("text-ui-sm");
+    // …but a font-size and a text-colour are different groups and must coexist.
+    expect(cn("text-ui", "text-ink-soft")).toBe("text-ui text-ink-soft");
   });
 });

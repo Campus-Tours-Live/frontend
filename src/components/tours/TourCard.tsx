@@ -1,4 +1,4 @@
-import { Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
+import { Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -39,9 +39,9 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
           {university} · {guide} · {durationMinutes} min
         </div>
         <div className="mt-auto flex items-center justify-between pt-4">
-          <Body as="span" size="lead" weight={800}>
-            ${price}
-          </Body>
+          {/* Off-scale on purpose: the price is the card's most prominent number; 18px has no
+              type token and Heading would switch it to the display serif. */}
+          <span className="text-[18px] font-extrabold text-ink">${price}</span>
           <Button variant="secondary" size="small">
             View tour
           </Button>
