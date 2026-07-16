@@ -126,7 +126,7 @@ export function Drawer({
         aria-hidden
         onClick={onClose}
         className={cn(
-          "absolute inset-0 bg-black/40 transition-opacity duration-200",
+          "absolute inset-0 bg-scrim/50 transition-opacity duration-200",
           open ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       />

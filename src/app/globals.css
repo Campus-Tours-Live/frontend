@@ -79,6 +79,10 @@
     --brand-ivory: 42 50% 96.1%; /* ivory-100 #FAF7F0 */
     --brand-canvas: 40 34.9% 91.6%; /* canvas #F1ECE2 */
 
+    /* Overlay scrim behind modals/drawers — ink-toned (matches the design's
+       charcoal shadow colour) rather than pure black. Use with opacity, e.g. bg-scrim/50. */
+    --brand-scrim: var(--brand-ink); /* #2F3437 */
+
     /* ---- Purple base (new — member guardian accent) ---- */
     --brand-purple: 253 42% 63%; /* #8A78C8 */
     --brand-purple-soft: 255 67% 95%; /* #EFEBFB */

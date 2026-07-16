@@ -70,7 +70,7 @@ export function Modal({
         type="button"
         aria-label="Dismiss"
         onClick={dismissOnBackdrop ? onClose : undefined}
-        className="absolute inset-0 cursor-default bg-black/40"
+        className="absolute inset-0 cursor-default bg-scrim/50"
       />
       <div
         className={cn(

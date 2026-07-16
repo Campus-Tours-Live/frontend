@@ -117,6 +117,7 @@ export default {
         },
         ivory: "hsl(var(--brand-ivory))",
         canvas: "hsl(var(--brand-canvas))",
+        scrim: "hsl(var(--brand-scrim))",
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
