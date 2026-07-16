@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Drawer } from "@/components/ui/Drawer";
 
@@ -114,5 +114,35 @@ describe("Drawer", () => {
     expect(screen.getByRole("heading", { name: "Edit day" })).toBeInTheDocument();
     expect(screen.getByText("editor body")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+
+  it("title convenience builds a header with a close button that labels the dialog and fires onClose", async () => {
+    const onClose = jest.fn();
+    render(
+      <Drawer
+        open
+        onClose={onClose}
+        side="right"
+        title="Filters"
+        actions={<button type="button">Apply</button>}
+      >
+        <p>body</p>
+      </Drawer>,
+    );
+    const dialog = screen.getByRole("dialog", { name: "Filters" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Filters" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Apply" })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("size sets the width for a side drawer", () => {
+    render(
+      <Drawer open onClose={jest.fn()} side="right" size="lg" title="Wide">
+        <p>body</p>
+      </Drawer>,
+    );
+    expect(screen.getByRole("dialog", { name: "Wide" })).toHaveClass("w-[560px]");
   });
 });

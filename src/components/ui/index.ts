@@ -73,7 +73,7 @@ export { VisuallyHidden } from "./VisuallyHidden";
 export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./MenuItem";
 export { MenuSection, type MenuSectionProps } from "./Menu";
 export { Modal, type ModalProps } from "./Modal";
-export { Drawer, type DrawerProps } from "./Drawer";
+export { Drawer, type DrawerProps, type DrawerSide, type DrawerSize } from "./Drawer";
 export { TimePicker, type TimePickerProps, type TimeParts } from "./TimePicker";
 export { Calendar, type CalendarProps, type CalendarDay, type Weekday } from "./Calendar";
 export { Popover, type PopoverProps } from "./Popover";
