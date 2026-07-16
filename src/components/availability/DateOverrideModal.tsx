@@ -50,7 +50,7 @@ const FALLBACK_TIMEZONE = "America/Los_Angeles";
 
 /** Debounce delay (ms) between the last form edit and firing the dry-run preview request —
  *  keeps the guide from triggering a network round-trip on every keystroke. */
-const PREVIEW_DEBOUNCE_MS = 2000;
+const PREVIEW_DEBOUNCE_MS = 400;
 
 /** Two-segment control labels. `kind` = ADDITIONAL/UNAVAILABLE drives the whole modal. */
 const SEGMENT_LABELS: Record<AvailabilityExceptionKind, string> = {
