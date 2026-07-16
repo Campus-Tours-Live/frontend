@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { Grid } from "@/components/ui/layout/Grid";
-import { GridColumn } from "@/components/ui/layout/GridColumn";
+import { Grid } from "@/components/ui/grid/Grid";
+import { GridColumn } from "@/components/ui/grid/GridColumn";
 
 describe("Grid / GridColumn", () => {
   it("renders a 12-column grid and adds a gutter when asked", () => {

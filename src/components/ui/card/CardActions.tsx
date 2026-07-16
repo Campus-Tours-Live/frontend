@@ -1,6 +1,6 @@
 import { type HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
-import { Divider } from "./Divider";
+import { Divider } from "../divider/Divider";
 import { useCardSize, type CardSize } from "./CardSizeContext";
 
 /**

@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { Bell } from "lucide-react";
 import { Spinner } from "@/components/ui/feedback/Spinner";
 import { Icon } from "@/components/ui/utils/Icon";
-import { Card } from "@/components/ui/layout/Card";
+import { Card } from "@/components/ui/card/Card";
 import { Slot } from "@/components/ui/utils/Slot";
 import { VisuallyHidden } from "@/components/ui/utils/VisuallyHidden";
 import { GoogleMark } from "@/components/ui/utils/GoogleMark";

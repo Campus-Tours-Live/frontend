@@ -1,5 +1,5 @@
 import { Children, type HTMLAttributes, type ReactNode } from "react";
-import { Divider } from "./Divider";
+import { Divider } from "../divider/Divider";
 
 /**
  * List — a vertical index of related rows. Renders a semantic `<ul>`, wraps each child in its own

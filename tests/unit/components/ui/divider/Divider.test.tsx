@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { Divider } from "@/components/ui/layout/Divider";
+import { Divider } from "@/components/ui/divider/Divider";
 
 describe("Divider", () => {
   it("is decorative by default — hidden from screen readers, no separator role", () => {

@@ -1,9 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
-import { Card } from "@/components/ui/layout/Card";
-import { CardMedia } from "@/components/ui/layout/CardMedia";
-import { CardHeader } from "@/components/ui/layout/CardHeader";
-import { CardContent } from "@/components/ui/layout/CardContent";
-import { CardActions } from "@/components/ui/layout/CardActions";
+import { Card } from "@/components/ui/card/Card";
+import { CardMedia } from "@/components/ui/card/CardMedia";
+import { CardHeader } from "@/components/ui/card/CardHeader";
+import { CardContent } from "@/components/ui/card/CardContent";
+import { CardActions } from "@/components/ui/card/CardActions";
 
 describe("Card compound", () => {
   it("composes media, header (leadingIcon/title/trailing), content, and actions", () => {

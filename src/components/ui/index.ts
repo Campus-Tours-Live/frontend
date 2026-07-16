@@ -25,12 +25,12 @@ export { Nudge, type NudgeProps } from "./feedback/Nudge";
 export { Snack, type SnackProps, type SnackAction } from "./feedback/Snack";
 export { SnackbarProvider, SnackbarContext, type SnackOptions } from "./feedback/SnackbarProvider";
 export { useSnackbar } from "./feedback/useSnackbar";
-export { Card, type CardProps, type CardSize } from "./layout/Card";
-export { CardMedia, type CardMediaProps } from "./layout/CardMedia";
-export { CardHeader, type CardHeaderProps } from "./layout/CardHeader";
-export { CardContent, type CardContentProps } from "./layout/CardContent";
-export { CardActions, type CardActionsProps } from "./layout/CardActions";
-export { Panel, PanelHeader, type PanelProps, type PanelHeaderProps } from "./layout/Panel";
+export { Card, type CardProps, type CardSize } from "./card/Card";
+export { CardMedia, type CardMediaProps } from "./card/CardMedia";
+export { CardHeader, type CardHeaderProps } from "./card/CardHeader";
+export { CardContent, type CardContentProps } from "./card/CardContent";
+export { CardActions, type CardActionsProps } from "./card/CardActions";
+export { Panel, PanelHeader, type PanelProps, type PanelHeaderProps } from "./panel/Panel";
 export {
   MemberCard,
   type MemberCardProps,
@@ -38,9 +38,9 @@ export {
   type MemberCardHighlight,
   type MemberRole,
 } from "./data-display/MemberCard";
-export { SectionHeading, type SectionHeadingProps } from "./layout/SectionHeading";
-export { PageContainer, type PageContainerProps, type PageWidth } from "./layout/PageContainer";
-export { PageHeader, type PageHeaderProps } from "./layout/PageHeader";
+export { SectionHeading, type SectionHeadingProps } from "./page/SectionHeading";
+export { PageContainer, type PageContainerProps, type PageWidth } from "./page/PageContainer";
+export { PageHeader, type PageHeaderProps } from "./page/PageHeader";
 export { InlineLoading, type InlineLoadingProps } from "./feedback/InlineLoading";
 export { Chip, type ChipProps } from "./actions/Chip";
 export { Switch, type SwitchProps } from "./forms/Switch";
@@ -78,11 +78,11 @@ export { Display, type DisplayProps, type DisplaySize } from "./typography/Displ
 export { Body, type BodyProps, type BodySize } from "./typography/Body";
 export { Caption, type CaptionProps } from "./typography/Caption";
 export { type TextWeight, type TextColor } from "./typography/typography";
-export { Divider, type DividerProps } from "./layout/Divider";
-export { Grid, type GridProps } from "./layout/Grid";
-export { GridColumn, type GridColumnProps, type GridColumnSpan } from "./layout/GridColumn";
-export { List, type ListProps } from "./layout/List";
-export { ListItem, type ListItemProps } from "./layout/ListItem";
+export { Divider, type DividerProps } from "./divider/Divider";
+export { Grid, type GridProps } from "./grid/Grid";
+export { GridColumn, type GridColumnProps, type GridColumnSpan } from "./grid/GridColumn";
+export { List, type ListProps } from "./list/List";
+export { ListItem, type ListItemProps } from "./list/ListItem";
 export { Icon, type IconProps, type IconName } from "./utils/Icon";
 export {
   IconButton,

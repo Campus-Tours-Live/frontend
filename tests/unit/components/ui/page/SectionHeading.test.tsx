@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { SectionHeading } from "@/components/ui/layout/SectionHeading";
+import { SectionHeading } from "@/components/ui/page/SectionHeading";
 
 describe("SectionHeading", () => {
   it("renders the title (required)", () => {
