@@ -194,9 +194,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           name="languages"
           render={({ field }) => (
             <fieldset>
-              <legend className="mb-2 block text-[13px] font-semibold text-ink">
+              <Body as="legend" size="small" weight={600} className="mb-2 block">
                 Languages you can guide in
-              </legend>
+              </Body>
               <div className="flex flex-wrap gap-2">
                 {LANGUAGES.map((language) => {
                   const active = field.value.includes(language.value);
@@ -226,9 +226,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           name="specialties"
           render={({ field }) => (
             <fieldset>
-              <legend className="mb-2 block text-[13px] font-semibold text-ink">
+              <Body as="legend" size="small" weight={600} className="mb-2 block">
                 Tour specialties <span className="font-normal text-ink-soft">(optional)</span>
-              </legend>
+              </Body>
               {topicsLoading ? (
                 <Body size="medium" color="muted">
                   Loading…

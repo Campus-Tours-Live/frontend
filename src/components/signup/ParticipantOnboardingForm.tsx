@@ -161,12 +161,9 @@ export function ParticipantOnboardingForm() {
                     })}
                   />
                   {errors.firstName && !bothNameMissing && (
-                    <p
-                      role="alert"
-                      className="mt-1 text-[13px] font-semibold text-error-foreground"
-                    >
+                    <Body role="alert" size="small" weight={600} color="error" className="mt-1">
                       {errors.firstName.message}
-                    </p>
+                    </Body>
                   )}
                 </div>
                 <div className="field">
@@ -182,19 +179,16 @@ export function ParticipantOnboardingForm() {
                     })}
                   />
                   {errors.lastName && !bothNameMissing && (
-                    <p
-                      role="alert"
-                      className="mt-1 text-[13px] font-semibold text-error-foreground"
-                    >
+                    <Body role="alert" size="small" weight={600} color="error" className="mt-1">
                       {errors.lastName.message}
-                    </p>
+                    </Body>
                   )}
                 </div>
               </div>
               {bothNameMissing && (
-                <p role="alert" className="mt-2 text-[13px] font-semibold text-error-foreground">
+                <Body role="alert" size="small" weight={600} color="error" className="mt-2">
                   Please enter your first and last name to continue.
-                </p>
+                </Body>
               )}
             </div>
 
@@ -203,7 +197,9 @@ export function ParticipantOnboardingForm() {
               name="participantType"
               render={({ field }) => (
                 <fieldset>
-                  <legend className="mb-2 block text-[13px] font-bold text-ink">I am a…</legend>
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
+                    I am a…
+                  </Body>
                   <div className="flex flex-wrap gap-2">
                     {PARTICIPANT_TYPES.map((t) => (
                       <Chip
@@ -224,9 +220,9 @@ export function ParticipantOnboardingForm() {
         {/* Step 2 — Universities (optional) */}
         {step === 1 && (
           <fieldset>
-            <legend className="mb-2 block text-[13px] font-bold text-ink">
+            <Body as="legend" size="small" weight={700} className="mb-2 block">
               Universities of interest <span className="font-normal text-ink-soft">(optional)</span>
-            </legend>
+            </Body>
             <Body size="medium" color="muted" className="mb-3">
               Search and add the campuses you want to explore. Optional — you can add or change
               these anytime in your profile.
@@ -244,9 +240,9 @@ export function ParticipantOnboardingForm() {
         {/* Step 3 — Topics (optional) */}
         {step === 2 && (
           <fieldset>
-            <legend className="mb-2 block text-[13px] font-bold text-ink">
+            <Body as="legend" size="small" weight={700} className="mb-2 block">
               Topics you care about <span className="font-normal text-ink-soft">(optional)</span>
-            </legend>
+            </Body>
             <Body size="medium" color="muted" className="mb-3">
               Optional — you can change these anytime in your profile.
             </Body>

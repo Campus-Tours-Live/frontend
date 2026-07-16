@@ -660,9 +660,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
                 </IconButton>
               </div>
               {slotErrors[index] ? (
-                <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
+                <Caption as="p" role="alert" weight={600} color="error" className="mt-1">
                   {slotErrors[index]}
-                </p>
+                </Caption>
               ) : null}
             </div>
           ))

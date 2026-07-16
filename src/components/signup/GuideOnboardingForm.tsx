@@ -218,9 +218,9 @@ export function GuideOnboardingForm() {
               }}
               render={({ field }) => (
                 <fieldset>
-                  <legend className="mb-2 block text-[13px] font-bold text-ink">
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
                     Your university
-                  </legend>
+                  </Body>
                   <Body size="medium" color="muted" className="mb-3">
                     The campus you currently attend and will guide for.
                   </Body>
@@ -267,9 +267,9 @@ export function GuideOnboardingForm() {
               name="languages"
               render={({ field }) => (
                 <fieldset>
-                  <legend className="mb-2 block text-[13px] font-bold text-ink">
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
                     Languages you can guide in
-                  </legend>
+                  </Body>
                   <div className="flex flex-wrap gap-2">
                     {LANGUAGES.map((l) => {
                       const active = field.value.includes(l.value);
@@ -299,9 +299,9 @@ export function GuideOnboardingForm() {
               name="specialties"
               render={({ field }) => (
                 <fieldset>
-                  <legend className="mb-2 block text-[13px] font-bold text-ink">
+                  <Body as="legend" size="small" weight={700} className="mb-2 block">
                     Tour specialties <span className="font-normal text-ink-soft">(optional)</span>
-                  </legend>
+                  </Body>
                   {topicOptions.length === 0 ? (
                     <Body size="medium" color="muted">
                       Loading…

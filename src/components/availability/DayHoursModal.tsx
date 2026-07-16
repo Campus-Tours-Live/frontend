@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Body, Button, Heading, IconButton, Modal, TimePicker } from "@/components/ui";
+import {
+  Alert,
+  Body,
+  Button,
+  Caption,
+  Heading,
+  IconButton,
+  Modal,
+  TimePicker,
+} from "@/components/ui";
 import {
   ApiError,
   useReplaceRules,
@@ -258,9 +267,9 @@ function DayHoursModalContent({
                 </IconButton>
               </div>
               {rangeErrors[index] ? (
-                <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
+                <Caption as="p" role="alert" weight={600} color="error" className="mt-1">
                   {rangeErrors[index]}
-                </p>
+                </Caption>
               ) : null}
             </div>
           ))

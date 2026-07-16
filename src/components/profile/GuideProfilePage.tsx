@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Card, SectionHeading, Spinner, StatusBadge } from "@/components/ui";
+import { Alert, Body, Card, SectionHeading, Spinner, StatusBadge } from "@/components/ui";
 import { useGuideProfile, useMe } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
@@ -39,19 +39,27 @@ export function GuideProfilePage() {
       <Card padded={false} className="rounded-panel p-6">
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-[13px] text-ink-soft">Display name</dt>
+            <Body as="dt" size="small" color="muted">
+              Display name
+            </Body>
             <dd className="font-semibold text-ink">{profile.displayName ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-[13px] text-ink-soft">Email</dt>
+            <Body as="dt" size="small" color="muted">
+              Email
+            </Body>
             <dd className="font-semibold text-ink">{profile.email ?? "—"}</dd>
           </div>
           <div>
-            <dt className="text-[13px] text-ink-soft">Member since</dt>
+            <Body as="dt" size="small" color="muted">
+              Member since
+            </Body>
             <dd className="font-semibold text-ink">{formatMonthYear(me?.createdAt)}</dd>
           </div>
           <div>
-            <dt className="text-[13px] text-ink-soft">Application</dt>
+            <Body as="dt" size="small" color="muted">
+              Application
+            </Body>
             <dd className="mt-1">
               <StatusBadge variant={applicationStatusVariant(profile.applicationStatus)}>
                 {applicationStatusLabel(profile.applicationStatus)}
@@ -59,7 +67,9 @@ export function GuideProfilePage() {
             </dd>
           </div>
           <div>
-            <dt className="text-[13px] text-ink-soft">Verification</dt>
+            <Body as="dt" size="small" color="muted">
+              Verification
+            </Body>
             <dd className="font-semibold text-ink">
               {verificationStatusLabel(profile.verificationStatus)}
             </dd>
