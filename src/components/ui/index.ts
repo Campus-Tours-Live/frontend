@@ -46,7 +46,17 @@ export {
   type SelectFieldProps,
 } from "./Field";
 export { GoogleMark } from "./GoogleMark";
-export { Icon, type IconProps } from "./Icon";
+export { Heading, type HeadingProps, type HeadingSize } from "./Heading";
+export { Body, type BodyProps, type BodySize } from "./Body";
+export { type TextWeight, type TextColor } from "./typography";
+export { Divider, type DividerProps } from "./Divider";
+export { Icon, type IconProps, type IconName } from "./Icon";
+export {
+  IconButton,
+  type IconButtonProps,
+  type IconButtonSize,
+  type IconButtonVariant,
+} from "./IconButton";
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { VisuallyHidden } from "./VisuallyHidden";
 export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./MenuItem";
