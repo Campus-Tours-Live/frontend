@@ -50,4 +50,23 @@ describe("Alert", () => {
     const el = screen.getByTestId("my-alert");
     expect(el).toHaveClass("alert", "extra");
   });
+
+  it("prepends a screen-reader severity label (defaulting to the variant)", () => {
+    render(<Alert variant="error">Boom</Alert>);
+    expect(screen.getByText("error:")).toHaveClass("sr-only");
+  });
+
+  it("overrides the severity label with a11yIconLabel", () => {
+    render(
+      <Alert variant="error" a11yIconLabel="problem">
+        Boom
+      </Alert>,
+    );
+    expect(screen.getByText("problem:")).toHaveClass("sr-only");
+  });
+
+  it("renders an optional action", () => {
+    render(<Alert action={<button type="button">Retry</button>}>Failed</Alert>);
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+  });
 });

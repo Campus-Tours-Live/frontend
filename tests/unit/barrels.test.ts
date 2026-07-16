@@ -25,6 +25,7 @@ describe("public barrels", () => {
       "Badge",
       "StatusBadge",
       "Alert",
+      "Banner",
       "Card",
       "MemberCard",
       "SectionHeading",

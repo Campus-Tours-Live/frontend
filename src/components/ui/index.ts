@@ -16,6 +16,7 @@ export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./Bad
 export { Rating, type RatingProps, type RatingSize } from "./Rating";
 export { RatingStar, type RatingStarProps, type RatingStarVariant } from "./RatingStar";
 export { Alert, type AlertProps, type AlertVariant } from "./Alert";
+export { Banner, type BannerProps, type BannerVariant } from "./Banner";
 export { Nudge, type NudgeProps } from "./Nudge";
 export { Snack, type SnackProps, type SnackAction } from "./Snack";
 export { SnackbarProvider, SnackbarContext, type SnackOptions } from "./SnackbarProvider";
