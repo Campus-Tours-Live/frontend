@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Panel, PanelHeader, Switch } from "@/components/ui";
+import { Alert, Body, Button, Panel, PanelHeader, Switch } from "@/components/ui";
 import {
   ApiError,
   useAvailabilityRules,
@@ -169,7 +169,9 @@ export function WeeklyHoursPanel() {
             >
               {/* Header row: day name (left) + status label & toggle (right) */}
               <div className="flex items-center justify-between gap-4">
-                <span className="text-[14px] font-semibold text-ink">{dayLabel}</span>
+                <Body as="span" size="medium" weight={600}>
+                  {dayLabel}
+                </Body>
                 <div className="flex shrink-0 items-center gap-5">
                   <span
                     className={
@@ -192,12 +194,14 @@ export function WeeklyHoursPanel() {
                 <div className="flex min-w-0 flex-col gap-1">
                   {isAvailable ? (
                     activeRules.map((rule) => (
-                      <span key={rule.id} className="text-[14px] text-ink">
+                      <Body as="span" key={rule.id} size="medium">
                         {formatFromTo(rule.startLocal, rule.windowMin)}
-                      </span>
+                      </Body>
                     ))
                   ) : (
-                    <span className="text-[14px] text-ink-soft">No hours set</span>
+                    <Body as="span" size="medium" color="muted">
+                      No hours set
+                    </Body>
                   )}
                 </div>
                 <Button

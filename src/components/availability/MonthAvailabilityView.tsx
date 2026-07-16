@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Alert,
   Badge,
+  Body,
   Button,
   Calendar,
   Drawer,
@@ -389,9 +390,13 @@ function SummaryPopover({ cell, timeZone }: { cell: DayCell; timeZone: string })
 function DaySheet({ cell, timeZone }: { cell: DayCell; timeZone: string }) {
   if (cell.windows.length === 0) {
     return (
-      <p className="rounded-md border border-border bg-card px-3 py-4 text-center text-[13px] text-ink-soft">
+      <Body
+        size="small"
+        color="muted"
+        className="rounded-md border border-border bg-card px-3 py-4 text-center"
+      >
         No hours set this day.
-      </p>
+      </Body>
     );
   }
   return (
@@ -401,9 +406,9 @@ function DaySheet({ cell, timeZone }: { cell: DayCell; timeZone: string }) {
           key={`${window.startAt}-${window.endAt}-${index}`}
           className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5"
         >
-          <span className="text-[13px] font-semibold tabular-nums text-ink">
+          <Body as="span" size="small" weight={600} className="tabular-nums">
             {formatWindow(window, timeZone)}
-          </span>
+          </Body>
           <Badge variant={additional ? "primary" : "success"}>
             {additional ? "Extra" : "Available"}
           </Badge>
