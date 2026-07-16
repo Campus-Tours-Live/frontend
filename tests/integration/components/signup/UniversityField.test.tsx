@@ -62,4 +62,24 @@ describe("UniversityField", () => {
       "aria-describedby",
     );
   });
+
+  it("marks the search input invalid when there is an error (and not otherwise)", () => {
+    const { rerender } = render(
+      <UniversityField label="Your university" value={[]} onChange={() => {}} max={1} />,
+    );
+    expect(screen.getByPlaceholderText(/search universities/i)).not.toHaveAttribute("aria-invalid");
+    rerender(
+      <UniversityField
+        label="Your university"
+        error="University is required"
+        value={[]}
+        onChange={() => {}}
+        max={1}
+      />,
+    );
+    expect(screen.getByPlaceholderText(/search universities/i)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+  });
 });

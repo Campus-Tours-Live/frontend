@@ -43,6 +43,7 @@ export function UniversityField({
         id={id}
         aria-labelledby={`${id}-label`}
         aria-describedby={description ? `${id}-description` : undefined}
+        aria-invalid={error ? true : undefined}
         value={value}
         onChange={onChange}
         max={max}

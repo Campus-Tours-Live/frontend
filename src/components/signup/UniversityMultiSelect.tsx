@@ -24,6 +24,7 @@ export function UniversityMultiSelect({
   id,
   "aria-labelledby": ariaLabelledby,
   "aria-describedby": ariaDescribedby,
+  "aria-invalid": ariaInvalid,
 }: {
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
@@ -38,6 +39,9 @@ export function UniversityMultiSelect({
    *  it's announced on focus, the common case) AND on the persistent group container (so it still
    *  survives at max, when the input has unmounted). */
   "aria-describedby"?: string;
+  /** Marks the field invalid (e.g. a required selection is empty). Applied to the search input —
+   *  which is always present in the error state, since an empty required selection is below `max`. */
+  "aria-invalid"?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -91,6 +95,7 @@ export function UniversityMultiSelect({
           <input
             id={id}
             aria-describedby={ariaDescribedby}
+            aria-invalid={ariaInvalid}
             className="input"
             placeholder="Search universities…"
             value={query}
