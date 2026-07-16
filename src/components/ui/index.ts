@@ -56,7 +56,8 @@ export { Body, type BodyProps, type BodySize } from "./Body";
 export { Caption, type CaptionProps } from "./Caption";
 export { type TextWeight, type TextColor } from "./typography";
 export { Divider, type DividerProps } from "./Divider";
-export { List, ListItem, type ListProps, type ListItemProps } from "./List";
+export { List, type ListProps } from "./List";
+export { ListItem, type ListItemProps } from "./ListItem";
 export { Icon, type IconProps, type IconName } from "./Icon";
 export {
   IconButton,

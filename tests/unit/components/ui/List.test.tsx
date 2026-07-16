@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { List, ListItem } from "@/components/ui/List";
+import { List } from "@/components/ui/List";
+import { ListItem } from "@/components/ui/ListItem";
 
 describe("List", () => {
   it("renders a role=list ul, wraps each child in an li, and divides between rows", () => {
