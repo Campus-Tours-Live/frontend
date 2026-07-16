@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   Alert,
+  Body,
   Button,
+  Caption,
   Drawer,
   IconButton,
   Modal,
@@ -614,11 +616,13 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
       />
 
       <div className="space-y-2 rounded-md border border-border bg-card p-3">
-        <p className="text-[13px] font-bold text-ink">Time slots for this day</p>
+        <Body size="small" weight={700}>
+          Time slots for this day
+        </Body>
         {slots.length === 0 ? (
-          <p className="text-[13px] text-ink-soft">
+          <Body size="small" color="muted">
             No {SEGMENT_LABELS[mode].toLowerCase()} slots for this day — add one below.
-          </p>
+          </Body>
         ) : (
           slots.map((slot, index) => (
             <div key={slot.key}>
@@ -682,15 +686,21 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
         aria-label="Preview"
         className="rounded-md border border-border bg-card p-3"
       >
-        <p className="text-[13px] font-bold text-ink">After applying</p>
+        <Body size="small" weight={700}>
+          After applying
+        </Body>
         {previewLoading ? (
-          <p className="mt-2 text-[13px] text-ink-soft">Loading preview…</p>
+          <Body size="small" color="muted" className="mt-2">
+            Loading preview…
+          </Body>
         ) : previewError ? (
           <Alert variant="error" className="mt-3">
             {previewError}
           </Alert>
         ) : dayViews.length === 0 ? (
-          <p className="mt-2 text-[13px] text-ink-soft">No affected dates yet.</p>
+          <Body size="small" color="muted" className="mt-2">
+            No affected dates yet.
+          </Body>
         ) : (
           <>
             {conflictMessages.length > 0 ? (
@@ -706,16 +716,18 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
             <ul className="mt-3 space-y-4">
               {dayViews.map((view) => (
                 <li key={view.date} aria-label={`Timeline for ${view.date}`}>
-                  <p className="text-[12px] font-semibold text-ink">{formatDayHeader(view.date)}</p>
+                  <Caption as="p" weight={600} color="ink">
+                    {formatDayHeader(view.date)}
+                  </Caption>
                   {view.inert ? (
                     // Beyond the materialization horizon: Core hasn't generated occurrences for
                     // this date yet, so a Now/After timeline would be empty and read exactly like
                     // a truly-empty day. Show why instead — the change is saved and takes effect
                     // once the horizon rolls forward to cover this date.
-                    <p role="status" className="mt-2 text-[12px] text-ink-soft">
+                    <Caption as="p" role="status" className="mt-2">
                       Beyond your booking horizon — this change is saved now and activates as the
                       horizon rolls forward to this date.
-                    </p>
+                    </Caption>
                   ) : (
                     DAY_HALVES.map((half) => {
                       const label = half.key.toUpperCase();

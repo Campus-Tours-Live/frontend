@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Heading, Link, StatusBadge } from "@/components/ui";
+import { Body, Caption, Heading, Link, StatusBadge } from "@/components/ui";
 import { AuthOptions } from "@/components/signup/AuthOptions";
 
 /**
@@ -72,7 +72,7 @@ export default function SignupGuidePage() {
 
             <AuthOptions intent="signup" returnTo="/onboarding/guide" />
 
-            <p className="text-center text-[12px] leading-relaxed text-ink-soft">
+            <Caption as="p" className="text-center leading-relaxed">
               By continuing you agree to the{" "}
               <Link href="#" className="font-semibold text-primary">
                 Terms of Service
@@ -82,14 +82,14 @@ export default function SignupGuidePage() {
                 Privacy Policy
               </Link>
               . Verification of current student status is required before your tours can be listed.
-            </p>
+            </Caption>
 
-            <p className="border-t border-border pt-6 text-center text-[13px] text-ink-soft">
+            <Body size="small" color="muted" className="border-t border-border pt-6 text-center">
               Already have an account?{" "}
               <Link href="/signin" className="font-semibold text-primary">
                 Sign in
               </Link>
-            </p>
+            </Body>
           </div>
         </div>
       </section>

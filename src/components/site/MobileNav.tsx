@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useMe } from "@/lib/data-access";
-import { Drawer, IconButton, Link, MenuItem } from "@/components/ui";
+import { Caption, Drawer, IconButton, Link, MenuItem } from "@/components/ui";
 import { AccountNav } from "./AccountNav";
 import { NAV_LINKS } from "./NavLinks";
 
@@ -62,9 +62,9 @@ export function MobileNav({
               <Link href="/signin" variant="primary" block onClick={close}>
                 Sign in or Join Now
               </Link>
-              <p className="mt-2.5 text-center text-[12px] leading-snug text-ink-soft">
+              <Caption as="p" className="mt-2.5 text-center leading-snug">
                 Book live campus tours, or guide your own campus.
-              </p>
+              </Caption>
             </div>
           )}
 

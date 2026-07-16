@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Card, Heading, StatusBadge } from "@/components/ui";
+import { Alert, Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import { offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
@@ -43,16 +43,16 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
           <StatusBadge variant={offeringStatusVariant(offering.status)}>
             {offeringStatusLabel(offering.status)}
           </StatusBadge>
-          <span className="text-[12px] text-ink-soft">
-            {isPublished ? "Visible publicly" : "Not public"}
-          </span>
+          <Caption>{isPublished ? "Visible publicly" : "Not public"}</Caption>
         </div>
 
         <Heading as="h3" size="h4" className="mt-3">
           {offering.title}
         </Heading>
         {offering.description ? (
-          <p className="mt-2 line-clamp-2 text-[14px] text-ink-soft">{offering.description}</p>
+          <Body size="medium" color="muted" className="mt-2 line-clamp-2">
+            {offering.description}
+          </Body>
         ) : null}
 
         <dl className="mt-4 grid grid-cols-3 gap-3 text-[13px]">
@@ -90,9 +90,7 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
             </Button>
           ) : null}
           {!canPublish && isDraft ? (
-            <p className="text-[12px] text-ink-soft">
-              Publishing unlocks after your guide application is approved.
-            </p>
+            <Caption as="p">Publishing unlocks after your guide application is approved.</Caption>
           ) : null}
         </div>
       </div>

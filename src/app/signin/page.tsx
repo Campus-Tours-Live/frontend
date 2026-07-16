@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site/SiteHeader";
-import { Alert, Link, SectionHeading } from "@/components/ui";
+import { Alert, Body, Link, SectionHeading } from "@/components/ui";
 // Import directly from the server-safe module, not the "@/lib/auth" barrel —
 // the barrel also re-exports the client-only authGate ('import "client-only"'),
 // which a Server Component (this page) must not pull in.
@@ -100,12 +100,12 @@ export default async function SignInPage({
               ))}
             </ul>
 
-            <p className="text-center text-[15px] text-ink-soft">
+            <Body size="large" color="muted" className="text-center">
               New to CampusToursLive?{" "}
               <Link href="/signup/role" className="font-semibold text-primary">
                 Choose how to sign up
               </Link>
-            </p>
+            </Body>
           </div>
         </div>
       </section>
