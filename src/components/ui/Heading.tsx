@@ -1,11 +1,12 @@
-import { type ReactNode } from "react";
+import { type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./typography";
 
 /**
- * Heading — display-font titles (h1–h4). Decouples the semantic level (`as`) from the visual
- * `size`, and pulls weight/colour from the shared typography tokens, so headings stay consistent
- * instead of each call site hand-writing `font-display text-[20px] font-bold text-ink`.
+ * Heading — display-font titles. Decouples the semantic level (`as`) from the visual `size`, and
+ * pulls weight/colour from the shared typography tokens, so headings stay consistent instead of each
+ * call site hand-writing `font-display text-[20px] font-bold text-ink`. Forwards native attributes
+ * (`id`, `onClick`, `aria-*`, `style`, …) to the chosen element.
  */
 export type HeadingSize = "sm" | "md" | "lg" | "xl";
 
@@ -16,14 +17,12 @@ const SIZE_CLASS: Record<HeadingSize, string> = {
   xl: "text-[24px]",
 };
 
-export interface HeadingProps {
+export interface HeadingProps extends HTMLAttributes<HTMLElement> {
   /** Semantic tag — pick by document outline, independent of `size`. Default `h2`. */
-  as?: "h1" | "h2" | "h3" | "h4";
+  as?: "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "span";
   size?: HeadingSize;
   weight?: TextWeight;
   color?: TextColor;
-  id?: string;
-  className?: string;
   children: ReactNode;
 }
 
@@ -32,13 +31,12 @@ export function Heading({
   size = "lg",
   weight = 700,
   color = "ink",
-  id,
   className,
   children,
+  ...rest
 }: HeadingProps) {
   return (
     <Tag
-      id={id}
       className={cn(
         "font-display",
         SIZE_CLASS[size],
@@ -46,6 +44,7 @@ export function Heading({
         COLOR_CLASS[color],
         className,
       )}
+      {...rest}
     >
       {children}
     </Tag>

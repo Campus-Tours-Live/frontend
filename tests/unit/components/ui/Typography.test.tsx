@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Heading } from "@/components/ui/Heading";
 import { Body } from "@/components/ui/Body";
+import { Display } from "@/components/ui/Display";
 
 describe("Heading", () => {
   it("renders the semantic tag from `as` (independent of size)", () => {
@@ -22,6 +24,40 @@ describe("Heading", () => {
     );
     const el = screen.getByRole("heading", { name: "Title" });
     expect(el).toHaveClass("font-semibold", "text-primary");
+  });
+
+  it("forwards native attributes (id, aria, onClick) to the element", async () => {
+    const user = userEvent.setup();
+    const onClick = jest.fn();
+    render(
+      <Heading as="h2" id="sec" aria-label="Section" onClick={onClick}>
+        Title
+      </Heading>,
+    );
+    const el = screen.getByRole("heading", { name: "Section" });
+    expect(el).toHaveAttribute("id", "sec");
+    await user.click(el);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Display", () => {
+  it("renders a span by default with display font + large size/ink", () => {
+    render(<Display>Hero</Display>);
+    const el = screen.getByText("Hero");
+    expect(el.tagName).toBe("SPAN");
+    expect(el).toHaveClass("font-display", "text-[40px]", "font-normal", "text-ink");
+  });
+
+  it("honours as/size/weight and forwards props", () => {
+    render(
+      <Display as="h1" size="sm" weight={700} data-testid="stat">
+        1,204
+      </Display>,
+    );
+    const el = screen.getByRole("heading", { level: 1, name: "1,204" });
+    expect(el).toHaveClass("text-[30px]", "font-bold");
+    expect(el).toHaveAttribute("data-testid", "stat");
   });
 });
 

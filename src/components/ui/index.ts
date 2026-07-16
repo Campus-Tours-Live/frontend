@@ -59,6 +59,7 @@ export {
 } from "./Field";
 export { GoogleMark } from "./GoogleMark";
 export { Heading, type HeadingProps, type HeadingSize } from "./Heading";
+export { Display, type DisplayProps, type DisplaySize } from "./Display";
 export { Body, type BodyProps, type BodySize } from "./Body";
 export { Caption, type CaptionProps } from "./Caption";
 export { type TextWeight, type TextColor } from "./typography";

@@ -1,10 +1,11 @@
-import { type ReactNode } from "react";
+import { type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./typography";
 
 /**
  * Caption — the smallest text tier below {@link Body}: helper text, hints, timestamps, the "*
- * required" note. Fixed caption size; weight/colour come from the shared typography tokens.
+ * required" note. Fixed caption size; weight/colour come from the shared typography tokens. Forwards
+ * native attributes (`id`, `onClick`, `aria-*`, `style`, …) to the chosen element.
  *
  *   <Caption>Secondary note</Caption>          // muted by default
  *   <Caption color="error">Required</Caption>
@@ -12,13 +13,12 @@ import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./ty
  *   <Caption isMonospace>ABC-123</Caption>     // monospace for codes/IDs
  *   <Caption as="p">…</Caption>                // span default; also p / div / small
  */
-export interface CaptionProps {
+export interface CaptionProps extends HTMLAttributes<HTMLElement> {
   as?: "span" | "p" | "div" | "small";
   weight?: TextWeight;
   color?: TextColor;
   /** Render in a monospace font (codes, IDs, digits that must align). */
   isMonospace?: boolean;
-  className?: string;
   children: ReactNode;
 }
 
@@ -29,6 +29,7 @@ export function Caption({
   isMonospace = false,
   className,
   children,
+  ...rest
 }: CaptionProps) {
   return (
     <Tag
@@ -39,6 +40,7 @@ export function Caption({
         COLOR_CLASS[color],
         className,
       )}
+      {...rest}
     >
       {children}
     </Tag>

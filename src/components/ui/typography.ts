@@ -1,6 +1,7 @@
 /**
- * Shared typography tokens for {@link Heading} and {@link Body} — one place to map the design
- * system's weight/colour choices to Tailwind classes so the two text components can't drift.
+ * Shared typography tokens for {@link Heading}, {@link Display}, {@link Body} and {@link Caption} —
+ * one place to map the design system's weight/colour choices to Tailwind classes so the text
+ * components can't drift.
  */
 
 export type TextWeight = 400 | 600 | 700;
