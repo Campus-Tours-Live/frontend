@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button } from "@/components/ui";
+import { Button, Heading } from "@/components/ui";
 
 /**
  * Hero — home hero from design_new (#home .home-hero).
@@ -22,9 +22,9 @@ export function Hero() {
       {/* Left — copy */}
       <div>
         <div className="eyebrow">Live-guided virtual campus tours</div>
-        <h1 className="mt-3 max-w-[720px] font-display text-display text-ink">
+        <Heading as="h1" size="display" className="mt-3 max-w-[720px]">
           Explore campus with someone who actually studies there.
-        </h1>
+        </Heading>
         <p className="lead mt-5">
           Ask the questions you cannot find on the university website. Book a live tour with a
           verified student guide.

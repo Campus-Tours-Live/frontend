@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, StatusBadge } from "@/components/ui";
+import { Alert, Button, Heading, StatusBadge } from "@/components/ui";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import { offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
@@ -48,7 +48,9 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
           </span>
         </div>
 
-        <h3 className="mt-3 font-display text-h4 text-ink">{offering.title}</h3>
+        <Heading as="h3" size="h4" className="mt-3">
+          {offering.title}
+        </Heading>
         {offering.description ? (
           <p className="mt-2 line-clamp-2 text-[14px] text-ink-soft">{offering.description}</p>
         ) : null}

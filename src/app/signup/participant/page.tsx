@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Link, StatusBadge } from "@/components/ui";
+import { Heading, Link, StatusBadge } from "@/components/ui";
 import { AuthOptions } from "@/components/signup/AuthOptions";
 
 /**
@@ -61,10 +61,12 @@ export default function SignupParticipantPage() {
 
           <div className="flex flex-col justify-center gap-6 p-7 sm:gap-7 sm:p-10 lg:p-12">
             <div>
-              <StatusBadge variant="info" className="self-start">Participant</StatusBadge>
-              <h1 className="mt-3 font-display text-h2 text-ink">
+              <StatusBadge variant="info" className="self-start">
+                Participant
+              </StatusBadge>
+              <Heading as="h1" size="h2" className="mt-3">
                 Create your participant account
-              </h1>
+              </Heading>
               <p className="lead mt-3 text-[16px]">
                 Explore and book live campus tours with verified student guides.
               </p>

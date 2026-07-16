@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Link, StatusBadge } from "@/components/ui";
+import { Heading, Link, StatusBadge } from "@/components/ui";
 import { AuthOptions } from "@/components/signup/AuthOptions";
 
 /**
@@ -58,13 +58,15 @@ export default function SignupGuidePage() {
 
           <div className="flex flex-col justify-center gap-6 p-7 sm:gap-7 sm:p-10 lg:p-12">
             <div>
-              <StatusBadge variant="warning" className="self-start">Guide application</StatusBadge>
-              <h1 className="mt-3 font-display text-h2 text-ink">
+              <StatusBadge variant="warning" className="self-start">
+                Guide application
+              </StatusBadge>
+              <Heading as="h1" size="h2" className="mt-3">
                 Apply to become a guide
-              </h1>
+              </Heading>
               <p className="lead mt-3 text-[16px]">
-                Share your campus with future students and earn from live, paid
-                tours. Open to current university students.
+                Share your campus with future students and earn from live, paid tours. Open to
+                current university students.
               </p>
             </div>
 
@@ -72,11 +74,14 @@ export default function SignupGuidePage() {
 
             <p className="text-center text-[12px] leading-relaxed text-ink-soft">
               By continuing you agree to the{" "}
-              <Link href="#" className="font-semibold text-primary">Terms of Service</Link>{" "}
+              <Link href="#" className="font-semibold text-primary">
+                Terms of Service
+              </Link>{" "}
               and acknowledge the{" "}
-              <Link href="#" className="font-semibold text-primary">Privacy Policy</Link>.
-              Verification of current student status is required before your tours
-              can be listed.
+              <Link href="#" className="font-semibold text-primary">
+                Privacy Policy
+              </Link>
+              . Verification of current student status is required before your tours can be listed.
             </p>
 
             <p className="border-t border-border pt-6 text-center text-[13px] text-ink-soft">

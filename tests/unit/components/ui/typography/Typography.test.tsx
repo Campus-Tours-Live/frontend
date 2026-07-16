@@ -16,6 +16,18 @@ describe("Heading", () => {
     expect(el).toHaveClass("font-display", "text-[20px]", "font-bold", "text-ink");
   });
 
+  it("supports the fluid marketing scale (h2/display -> config font-size classes)", () => {
+    render(
+      <Heading as="h1" size="display">
+        Hero
+      </Heading>,
+    );
+    expect(screen.getByRole("heading", { name: "Hero" })).toHaveClass(
+      "font-display",
+      "text-display",
+    );
+  });
+
   it("maps weight and color tokens to classes", () => {
     render(
       <Heading as="h2" weight={600} color="primary">

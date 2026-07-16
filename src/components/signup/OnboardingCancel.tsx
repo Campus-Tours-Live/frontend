@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import { Button, Modal } from "@/components/ui";
+import { Button, Heading, Modal } from "@/components/ui";
 import { useMe } from "@/lib/data-access";
 
 /**
@@ -43,9 +43,9 @@ export function OnboardingCancel({ dirty, disabled }: { dirty: boolean; disabled
         className="max-w-[400px]"
       >
         <div className="p-6">
-          <h2 id="discard-onboarding-title" className="font-display text-h4 text-ink">
+          <Heading as="h2" size="h4" id="discard-onboarding-title">
             Discard your progress?
-          </h2>
+          </Heading>
           <p className="mt-2 text-[14px] text-ink-soft">Your answers won&apos;t be saved.</p>
           <div className="mt-6 flex items-center justify-end gap-3">
             <Button variant="ghost" onClick={() => setConfirming(false)}>

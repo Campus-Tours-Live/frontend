@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button, Link, StatusBadge } from "@/components/ui";
+import { Button, Heading, Link, StatusBadge } from "@/components/ui";
 
 /**
  * RoleCard — signup-flow component (used by /signup/role).
@@ -47,14 +47,21 @@ export function RoleCard({
         />
       </div>
 
-      <StatusBadge variant={badgeVariant} className="self-start">{badge}</StatusBadge>
-      <h2 className="mb-1.5 mt-4 font-display text-h3 text-ink">{title}</h2>
+      <StatusBadge variant={badgeVariant} className="self-start">
+        {badge}
+      </StatusBadge>
+      <Heading as="h2" size="h3" className="mb-1.5 mt-4">
+        {title}
+      </Heading>
       <p className="text-[14px] text-ink-soft">{subtitle}</p>
 
       <ul className="mt-4 flex min-h-[90px] flex-col gap-2 text-[14px] text-ink">
         {points.map((point) => (
           <li key={point} className="flex items-start gap-2">
-            <span className="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-pill bg-sage-deep" aria-hidden />
+            <span
+              className="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-pill bg-sage-deep"
+              aria-hidden
+            />
             {point}
           </li>
         ))}
@@ -62,9 +69,13 @@ export function RoleCard({
 
       <div className="mt-auto pt-2">
         {ctaHref ? (
-          <Link href={ctaHref} variant={ctaVariant} block>{cta}</Link>
+          <Link href={ctaHref} variant={ctaVariant} block>
+            {cta}
+          </Link>
         ) : (
-          <Button variant={ctaVariant} block>{cta}</Button>
+          <Button variant={ctaVariant} block>
+            {cta}
+          </Button>
         )}
       </div>
     </article>

@@ -1,4 +1,4 @@
-import { Button, StatusBadge } from "@/components/ui";
+import { Button, Heading, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -24,7 +24,9 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
         <StatusBadge variant="success" className="self-start">
           Verified guide
         </StatusBadge>
-        <h4 className="mb-1.5 mt-3.5 min-h-[2.6em] font-display text-h4 text-ink">{title}</h4>
+        <Heading as="h4" size="h4" className="mb-1.5 mt-3.5 min-h-[2.6em]">
+          {title}
+        </Heading>
         <div className="text-[13px] text-ink-soft">
           {university} · {guide} · {durationMinutes} min
         </div>
