@@ -14,6 +14,7 @@ export {
 export { Link, type LinkProps } from "./Link";
 export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./Badge";
 export { Alert, type AlertProps, type AlertVariant } from "./Alert";
+export { Nudge, type NudgeProps } from "./Nudge";
 export { Card, type CardProps, type CardSize } from "./Card";
 export { CardMedia, type CardMediaProps } from "./CardMedia";
 export { CardHeader, type CardHeaderProps } from "./CardHeader";
