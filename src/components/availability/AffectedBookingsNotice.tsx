@@ -49,5 +49,3 @@ export function AffectedBookingsNotice({ bookings, timeZone }: AffectedBookingsN
     </Alert>
   );
 }
-
-// HeaderNav

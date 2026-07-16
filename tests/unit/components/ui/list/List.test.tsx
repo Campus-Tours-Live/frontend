@@ -28,6 +28,20 @@ describe("List", () => {
     );
     expect(container.querySelectorAll(".border-t")).toHaveLength(0);
   });
+
+  it("skips falsy children so a hidden conditional row renders no empty li", () => {
+    const show = false;
+    render(
+      <List dividers={false} aria-label="Conditional">
+        <ListItem>Dog</ListItem>
+        <ListItem>Cat</ListItem>
+        {show ? <ListItem>Ghost</ListItem> : null}
+      </List>,
+    );
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items.every((li) => li.textContent !== "")).toBe(true);
+  });
 });
 
 describe("ListItem", () => {

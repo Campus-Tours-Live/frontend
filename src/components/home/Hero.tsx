@@ -39,7 +39,7 @@ export function Hero() {
           {TRUST_SIGNALS.map((signal) => (
             <ListItem
               key={signal}
-              className="gap-2 px-0 py-0"
+              className="gap-2 px-0 py-0 sm:px-0"
               leading={<Icon name="success" className="text-sage-deep" />}
             >
               {signal}

@@ -1,3 +1,5 @@
+"use client";
+
 import {
   forwardRef,
   useId,
@@ -9,18 +11,10 @@ import { cn } from "@/lib/utils";
 import { Icon } from "../icon/Icon";
 import { FormLabel } from "../form/FormLabel";
 import { FormHelperText } from "../form/FormHelperText";
+import { LEADING_ICON_CLASS, SIZE_CLASS, type FieldSize } from "../field/fieldShared";
 
 /** Control size. `large` (default) matches `.input`; `small` tightens padding + label. */
-export type SelectSize = "large" | "small";
-
-const SIZE_CLASS: Record<SelectSize, string | false> = {
-  large: false,
-  small: "px-3 py-2 text-[13px]",
-};
-
-/** Leading-icon overlay (mirrors TextField/SelectField); the select reserves room with `pl-10`. */
-const LEADING_ICON_CLASS =
-  "pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-soft [&_svg]:h-[18px] [&_svg]:w-[18px]";
+export type SelectSize = FieldSize;
 
 export interface SelectProps extends Omit<ComponentPropsWithoutRef<"div">, "onChange"> {
   /** The `<option>` elements. */
@@ -91,6 +85,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         ) : null}
 
         <select
+          {...selectProps}
           ref={ref}
           id={selectId}
           value={value}
@@ -98,10 +93,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={helperContent ? helperId : undefined}
-          {...selectProps}
           className={cn(
-            "input cursor-pointer appearance-none pr-10",
+            "input cursor-pointer appearance-none",
             SIZE_CLASS[size],
+            "pr-10",
             leadingIcon && "pl-10",
             error && "border-error",
             disabled && "cursor-not-allowed opacity-60",

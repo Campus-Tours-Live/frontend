@@ -1,4 +1,4 @@
-import { Children, type HTMLAttributes, type ReactNode } from "react";
+import { Children, isValidElement, type HTMLAttributes, type ReactNode } from "react";
 import { Divider } from "../divider/Divider";
 
 /**
@@ -18,13 +18,15 @@ export interface ListProps extends HTMLAttributes<HTMLUListElement> {
 }
 
 export function List({ dividers = true, className, children, ...rest }: ListProps) {
-  const count = Children.count(children);
+  // toArray drops null/undefined/boolean children (e.g. a `cond ? <x/> : null` row) and flattens
+  // nested arrays — so a hidden conditional row never renders an empty `<li>` (or a stray divider).
+  const items = Children.toArray(children);
   return (
     <ul role="list" className={className} {...rest}>
-      {Children.map(children, (child, index) => (
-        <li>
+      {items.map((child, index) => (
+        <li key={isValidElement(child) ? child.key : index}>
           {child}
-          {dividers && index < count - 1 ? <Divider inset /> : null}
+          {dividers && index < items.length - 1 ? <Divider inset /> : null}
         </li>
       ))}
     </ul>

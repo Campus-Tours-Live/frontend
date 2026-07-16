@@ -83,6 +83,25 @@ describe("Select", () => {
     expect(screen.getByLabelText("State")).toHaveAttribute("name", "state");
   });
 
+  it("keeps room for the caret at small size (pr-10 wins over the small px)", () => {
+    render(
+      <Select label="State" size="small" value="ca" onChange={() => {}}>
+        {OPTIONS}
+      </Select>,
+    );
+    // small tightens padding, but the trailing caret's room must survive the merge.
+    expect(screen.getByLabelText("State")).toHaveClass("px-3", "py-2", "text-[13px]", "pr-10");
+  });
+
+  it("merges a caller className from selectProps onto the select", () => {
+    render(
+      <Select label="State" value="ca" onChange={() => {}} selectProps={{ className: "custom-x" }}>
+        {OPTIONS}
+      </Select>,
+    );
+    expect(screen.getByLabelText("State")).toHaveClass("input", "custom-x");
+  });
+
   it("forwards a ref to the select element", () => {
     const ref = createRef<HTMLSelectElement>();
     render(

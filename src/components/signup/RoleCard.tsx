@@ -61,7 +61,7 @@ export function RoleCard({
         {points.map((point) => (
           <ListItem
             key={point}
-            className="items-start gap-2 px-0 py-0"
+            className="items-start gap-2 px-0 py-0 sm:px-0"
             leading={<Icon name="success" className="mt-0.5 text-sage-deep" />}
           >
             {point}
