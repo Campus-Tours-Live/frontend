@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils/cn";
-import type { SegmentOption } from "../forms/SegmentedControl";
+import type { SegmentOption } from "../inputs/SegmentedControl";
 
 export interface ButtonGroupProps<T extends string> {
   /** Options in visual order, left → right. */

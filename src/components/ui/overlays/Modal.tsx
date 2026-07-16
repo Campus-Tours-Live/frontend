@@ -3,7 +3,7 @@
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
-import { Icon } from "../utils/Icon";
+import { Icon } from "../icon/Icon";
 import { IconButton } from "../actions/IconButton";
 
 /**

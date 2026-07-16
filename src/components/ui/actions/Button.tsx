@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
-import { Slot } from "../utils/Slot";
+import { Slot } from "../slot/Slot";
 
 /**
  * Button — wraps the design-system `.btn` classes (styles live in globals.css).

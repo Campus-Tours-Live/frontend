@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { IconButton } from "@/components/ui/actions/IconButton";
-import { Icon } from "@/components/ui/utils/Icon";
+import { Icon } from "@/components/ui/icon/Icon";
 
 describe("IconButton", () => {
   it("exposes a11yLabel as the button's accessible name", () => {

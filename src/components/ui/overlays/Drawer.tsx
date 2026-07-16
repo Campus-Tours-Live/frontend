@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { useScrollLock, useDismiss } from "@/hooks";
-import { Icon } from "../utils/Icon";
+import { Icon } from "../icon/Icon";
 import { IconButton } from "../actions/IconButton";
 import { Heading } from "../typography/Heading";
 
