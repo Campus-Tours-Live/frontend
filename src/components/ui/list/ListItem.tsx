@@ -17,6 +17,9 @@ export interface ListItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "tit
   leading?: ReactNode;
   /** Right slot — e.g. a button, link, or status. */
   trailing?: ReactNode;
+  /** Standard setting-row insets. Default `true`. Set `false` for a flush row (e.g. a bullet list),
+   *  so callers don't have to cancel the padding — including its `sm:` step — themselves. */
+  padded?: boolean;
 }
 
 export function ListItem({
@@ -25,10 +28,14 @@ export function ListItem({
   trailing,
   className,
   children,
+  padded = true,
   ...rest
 }: ListItemProps) {
   return (
-    <div className={cn("flex items-center gap-3 px-5 py-3.5 sm:px-6", className)} {...rest}>
+    <div
+      className={cn("flex items-center gap-3", padded && "px-5 py-3.5 sm:px-6", className)}
+      {...rest}
+    >
       {leading != null ? <span className="flex shrink-0 items-center">{leading}</span> : null}
       <div className="min-w-0 flex-1">
         {title != null ? (

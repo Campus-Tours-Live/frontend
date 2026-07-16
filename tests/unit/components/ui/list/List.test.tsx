@@ -64,6 +64,19 @@ describe("ListItem", () => {
     expect(within(row).getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
+  it("drops its row insets (including the sm: step) when padded={false}", () => {
+    const { rerender } = render(<ListItem data-testid="row">Flush</ListItem>);
+    // Default: standard setting-row insets.
+    expect(screen.getByTestId("row")).toHaveClass("px-5", "py-3.5", "sm:px-6");
+    rerender(
+      <ListItem data-testid="row" padded={false}>
+        Flush
+      </ListItem>,
+    );
+    const row = screen.getByTestId("row");
+    expect(row).not.toHaveClass("px-5", "py-3.5", "sm:px-6");
+  });
+
   it("passes through onClick / data-* attributes", async () => {
     const user = userEvent.setup();
     const onClick = jest.fn();
