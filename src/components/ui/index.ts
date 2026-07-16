@@ -39,6 +39,9 @@ export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { InlineLoading, type InlineLoadingProps } from "./InlineLoading";
 export { Chip, type ChipProps } from "./Chip";
 export { Switch, type SwitchProps } from "./Switch";
+export { Checkbox, type CheckboxProps } from "./Checkbox";
+export { Breadcrumb, type BreadcrumbProps } from "./Breadcrumb";
+export { BreadcrumbItem, type BreadcrumbItemProps } from "./BreadcrumbItem";
 export { Tag, type TagProps, type TagColor, type TagVariant } from "./Tag";
 export {
   SegmentedControl,
