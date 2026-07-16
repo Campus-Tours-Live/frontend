@@ -72,7 +72,7 @@ export { GoogleMark } from "./google-mark/GoogleMark";
 export { Heading, type HeadingProps, type HeadingSize } from "./typography/Heading";
 export { Display, type DisplayProps, type DisplaySize } from "./typography/Display";
 export { Body, type BodyProps, type BodySize } from "./typography/Body";
-export { Caption, type CaptionProps } from "./typography/Caption";
+export { Caption, type CaptionProps, type CaptionSize } from "./typography/Caption";
 export { type TextWeight, type TextColor } from "./typography/typography";
 export { Divider, type DividerProps } from "./divider/Divider";
 export { Grid, type GridProps } from "./grid/Grid";

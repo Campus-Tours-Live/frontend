@@ -16,7 +16,7 @@ describe("Caption", () => {
       </Caption>,
     );
     const el = screen.getByText("Error");
-    expect(el).toHaveClass("font-bold", "text-error");
+    expect(el).toHaveClass("font-bold", "text-error-foreground");
   });
 
   it("switches to a monospace font when isMonospace", () => {

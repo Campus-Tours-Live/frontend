@@ -20,7 +20,7 @@ describe("FormHelperText", () => {
 
   it("shows the error colour and an alert icon when hasError", () => {
     const { container } = render(<FormHelperText hasError>Required</FormHelperText>);
-    expect(screen.getByText("Required")).toHaveClass("text-error");
+    expect(screen.getByText("Required")).toHaveClass("text-error-foreground");
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden");
   });
 });
@@ -46,7 +46,7 @@ describe("FormGroup", () => {
         <input aria-label="a" type="checkbox" />
       </FormGroup>,
     );
-    expect(screen.getByText("Choose at least one")).toHaveClass("text-error");
+    expect(screen.getByText("Choose at least one")).toHaveClass("text-error-foreground");
     expect(screen.queryByText("Pick any")).not.toBeInTheDocument();
   });
 });
