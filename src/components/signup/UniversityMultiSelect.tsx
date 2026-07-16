@@ -34,8 +34,9 @@ export function UniversityMultiSelect({
   /** Ids of the element(s) naming this control. When set, the always-present outer container becomes
    *  a labelled `role="group"`, so the field keeps an accessible name even at max (input unmounted). */
   "aria-labelledby"?: string;
-  /** Ids of the element(s) describing this control (e.g. help text) — placed on the same persistent
-   *  container as the label, so the description survives at max too. */
+  /** Ids of the element(s) describing this control (e.g. help text). Placed on the search input (so
+   *  it's announced on focus, the common case) AND on the persistent group container (so it still
+   *  survives at max, when the input has unmounted). */
   "aria-describedby"?: string;
 }) {
   const [query, setQuery] = useState("");
@@ -86,6 +87,7 @@ export function UniversityMultiSelect({
         <div className="relative">
           <input
             id={id}
+            aria-describedby={ariaDescribedby}
             className="input"
             placeholder="Search universities…"
             value={query}

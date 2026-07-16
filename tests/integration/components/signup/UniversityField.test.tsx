@@ -40,4 +40,26 @@ describe("UniversityField", () => {
     expect(describedby).toBeTruthy();
     expect(document.getElementById(describedby!)).toHaveTextContent("The campus you attend.");
   });
+
+  it("also describes the search input while it's present (announced on focus)", () => {
+    render(
+      <UniversityField
+        label="Your university"
+        description="The campus you attend."
+        value={[]}
+        onChange={() => {}}
+        max={1}
+      />,
+    );
+    const input = screen.getByPlaceholderText(/search universities/i);
+    const describedby = input.getAttribute("aria-describedby");
+    expect(document.getElementById(describedby!)).toHaveTextContent("The campus you attend.");
+  });
+
+  it("emits no aria-describedby when there is no description", () => {
+    render(<UniversityField label="Your university" value={[PICK]} onChange={() => {}} max={1} />);
+    expect(screen.getByRole("group", { name: "Your university" })).not.toHaveAttribute(
+      "aria-describedby",
+    );
+  });
 });
