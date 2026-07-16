@@ -24,7 +24,7 @@ export type HeadingSize =
   | "display";
 
 const SIZE_CLASS: Record<HeadingSize, string> = {
-  small: "text-[15px]",
+  small: "text-ui-lg",
   medium: "text-[17px]",
   large: "text-[20px]",
   xlarge: "text-[24px]",

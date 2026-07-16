@@ -204,7 +204,7 @@
   /* ---------- Buttons ---------- */
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap
-           font-sans font-bold text-[15px] leading-none px-5 py-3
+           font-sans font-bold text-ui-lg leading-none px-5 py-3
            rounded-pill border border-transparent cursor-pointer no-underline
            transition-all duration-150 focus-visible:outline-none
            focus-visible:ring-[3px] focus-visible:ring-primary-soft

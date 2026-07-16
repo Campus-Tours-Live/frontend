@@ -35,9 +35,11 @@ export default {
         h4: ["16px", { lineHeight: "1.35", fontWeight: "700" }],
         lead: ["clamp(16px,1vw,18px)", { lineHeight: "1.6", fontWeight: "500" }],
         body: ["15.5px", { lineHeight: "1.55" }],
-        // `ui` = the default interface/component text size (menus, labels, controls, nav, list
-        // rows) — smaller than the prose `body` (15.5px). Size only, no line-height, so it drops in
-        // for the raw `text-[14px]` it replaces without shifting any vertical rhythm.
+        // Interface-text sizes (component scale), distinct from the prose `body` (15.5px). Size only,
+        // no line-height, so they drop in for the raw `text-[Npx]` they replace without shifting any
+        // vertical rhythm. `ui-lg` (15px) = the prominent variant: Body `large`, Heading `small`,
+        // button labels, picker rows. `ui` (14px) = the default: Body `medium`, labels, menus, nav.
+        "ui-lg": "15px",
         ui: "14px",
         caption: ["13px", { lineHeight: "1.4" }],
         eyebrow: ["13px", { lineHeight: "1.2", letterSpacing: "0.08em", fontWeight: "700" }],

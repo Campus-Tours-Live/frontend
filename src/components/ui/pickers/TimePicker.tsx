@@ -309,7 +309,7 @@ function WheelColumn({ label, options, value, onChange, wrap }: WheelColumnProps
               aria-selected={isSelected}
               onClick={() => selectOption(i % options.length)}
               className={cn(
-                "tp-item flex w-full items-center justify-center text-[15px] tabular-nums transition-colors",
+                "tp-item flex w-full items-center justify-center text-ui-lg tabular-nums transition-colors",
                 isSelected ? "font-bold text-primary" : "text-ink-soft",
               )}
               style={{ height: ITEM_HEIGHT }}
