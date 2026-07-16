@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Divider, Link, MenuItem } from "@/components/ui";
+import { Divider, Link, List, MenuItem } from "@/components/ui";
 import { useDropdown } from "@/hooks";
 import { useMe } from "@/lib/data-access";
 import { NAV_LINKS } from "./NavLinks";
@@ -74,17 +74,18 @@ export function HeaderNav({
   const panelCls = cn(PANEL, dd.open ? "visible opacity-100" : "invisible opacity-0");
 
   return (
-    <ul className="hidden items-center gap-7 text-[14px] font-semibold text-ink-soft lg:flex">
+    <List
+      dividers={false}
+      className="hidden items-center gap-7 text-[14px] font-semibold text-ink-soft lg:flex"
+    >
       {NAV_LINKS.map((link) => (
-        <li key={link.label}>
-          <Link href={link.href} className="transition-colors hover:text-ink">
-            {link.label}
-          </Link>
-        </li>
+        <Link key={link.label} href={link.href} className="transition-colors hover:text-ink">
+          {link.label}
+        </Link>
       ))}
 
-      {showAuthActions && !isLoading && (
-        <li onMouseEnter={dd.openNow} onMouseLeave={dd.scheduleClose}>
+      {showAuthActions && !isLoading ? (
+        <div onMouseEnter={dd.openNow} onMouseLeave={dd.scheduleClose}>
           <button
             type="button"
             aria-haspopup="menu"
@@ -148,8 +149,8 @@ export function HeaderNav({
               </>
             )}
           </div>
-        </li>
-      )}
-    </ul>
+        </div>
+      ) : null}
+    </List>
   );
 }
