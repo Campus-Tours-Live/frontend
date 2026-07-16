@@ -50,6 +50,7 @@ export { Heading, type HeadingProps, type HeadingSize } from "./Heading";
 export { Body, type BodyProps, type BodySize } from "./Body";
 export { type TextWeight, type TextColor } from "./typography";
 export { Divider, type DividerProps } from "./Divider";
+export { List, ListItem, type ListProps, type ListItemProps } from "./List";
 export { Icon, type IconProps, type IconName } from "./Icon";
 export {
   IconButton,
