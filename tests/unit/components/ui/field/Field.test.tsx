@@ -58,4 +58,20 @@ describe("Field", () => {
     );
     expect(container.firstChild).toHaveClass("field", "extra");
   });
+
+  it("renders description above the control and hint below it", () => {
+    const { container } = render(
+      <Field label="Uni" htmlFor="u" description="Pick your campus" hint="below">
+        <input id="u" />
+      </Field>,
+    );
+    const desc = screen.getByText("Pick your campus");
+    expect(desc).toHaveClass("field-description");
+    const kids = Array.from((container.querySelector(".field") as HTMLElement).children);
+    const descIdx = kids.indexOf(desc);
+    const inputIdx = kids.findIndex((el) => el.tagName === "INPUT");
+    const hintIdx = kids.indexOf(screen.getByText("below"));
+    expect(descIdx).toBeLessThan(inputIdx); // description above control
+    expect(hintIdx).toBeGreaterThan(inputIdx); // hint below control
+  });
 });

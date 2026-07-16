@@ -45,7 +45,7 @@ export function ButtonGroup<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "rounded-full transition-colors",
-              size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
+              size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-ui-sm",
               isSelected
                 ? "bg-primary font-semibold text-primary-foreground"
                 : "font-medium text-ink-soft hover:text-ink",

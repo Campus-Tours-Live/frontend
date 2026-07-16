@@ -28,7 +28,7 @@ export function Breadcrumb({
 
   return (
     <nav aria-label={a11yLabel} className={className} {...rest}>
-      <ol className="flex flex-wrap items-center gap-1.5 text-[13px]">
+      <ol className="flex flex-wrap items-center gap-1.5 text-ui-sm">
         {items.map((child, index) => (
           <li key={index} className="flex items-center gap-1.5">
             {child}

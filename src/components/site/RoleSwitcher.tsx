@@ -56,7 +56,7 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
           ]}
         />
         {failed && (
-          <Alert variant="error" className="mt-2.5 text-[13px]">
+          <Alert variant="error" className="mt-2.5 text-ui-sm">
             Couldn&apos;t switch right now. Please try again.
           </Alert>
         )}

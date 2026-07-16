@@ -4,7 +4,7 @@ import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./ty
 
 /**
  * Body — sans-font running text. Pairs with {@link Heading}: same weight/colour tokens, a small size
- * scale, so paragraphs and labels stop hand-writing `text-[13px] text-ink-soft` everywhere. `as` is a
+ * scale, so paragraphs and labels stop hand-writing `text-ui-sm text-ink-soft` everywhere. `as` is a
  * text-level tag (p default; also span/div for inline/wrapping, or description/legend tags dt/dd/legend).
  * It is deliberately NOT a list container: `ul`/`li` structure belongs to {@link List}/{@link ListItem}.
  * `lead` is the fluid marketing lead size (16–18px). Forwards native attributes to the element.
@@ -15,7 +15,7 @@ export type BodySize = "small" | "medium" | "large" | "lead";
 export type BodyAs = "p" | "span" | "div" | "dt" | "dd" | "legend";
 
 const SIZE_CLASS: Record<BodySize, string> = {
-  small: "text-[13px]",
+  small: "text-ui-sm",
   medium: "text-ui",
   large: "text-ui-lg",
   lead: "text-lead",

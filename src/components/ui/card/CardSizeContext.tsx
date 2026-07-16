@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext } from "react";
 
 /** Card padding scale, shared by the compound sub-components via context. */

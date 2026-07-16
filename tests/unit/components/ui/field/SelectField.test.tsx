@@ -42,6 +42,6 @@ describe("SelectField", () => {
     );
     expect(screen.getByTestId("lead")).toBeInTheDocument();
     const select = screen.getByLabelText("Topic");
-    expect(select).toHaveClass("px-3", "py-2", "text-[13px]", "pl-10");
+    expect(select).toHaveClass("px-3", "py-2", "text-ui-sm", "pl-10");
   });
 });

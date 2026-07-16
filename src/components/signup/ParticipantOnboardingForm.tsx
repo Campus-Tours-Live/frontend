@@ -222,12 +222,9 @@ export function ParticipantOnboardingForm() {
           <Field
             label="Universities of interest"
             htmlFor="onboarding-participant-universities"
+            description="Search and add the campuses you want to explore. Optional — you can add or change these anytime in your profile."
             optional
           >
-            <Body size="medium" color="muted" className="mb-3">
-              Search and add the campuses you want to explore. Optional — you can add or change
-              these anytime in your profile.
-            </Body>
             <Controller
               control={control}
               name="universities"

@@ -138,7 +138,7 @@ export function Calendar({
                 onFocus={(e) => onDayHover?.(d.date, e.currentTarget)}
                 onBlur={() => onDayHover?.(null, null)}
                 className={cn(
-                  "relative flex aspect-square flex-col items-stretch gap-1 rounded-md border border-border bg-card p-1.5 text-left text-[13px] font-medium text-ink transition-colors",
+                  "relative flex aspect-square flex-col items-stretch gap-1 rounded-md border border-border bg-card p-1.5 text-left text-ui-sm font-medium text-ink transition-colors",
                   "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft",
                   "hover:border-primary/60",
                   d.muted && "calendar-hatch text-ink-soft",

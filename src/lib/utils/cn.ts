@@ -24,6 +24,7 @@ const twMerge = extendTailwindMerge({
             "body",
             "ui-lg",
             "ui",
+            "ui-sm",
             "caption",
             "eyebrow",
           ],

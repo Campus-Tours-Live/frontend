@@ -62,6 +62,6 @@ describe("TextField", () => {
 
   it("applies the small size classes", () => {
     render(<TextField label="Email" size="small" />);
-    expect(screen.getByLabelText("Email")).toHaveClass("px-3", "py-2", "text-[13px]");
+    expect(screen.getByLabelText("Email")).toHaveClass("px-3", "py-2", "text-ui-sm");
   });
 });

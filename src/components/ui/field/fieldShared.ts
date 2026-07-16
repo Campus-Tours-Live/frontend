@@ -6,7 +6,7 @@ export type FieldSize = "small" | "large";
 /** Size → extra classes layered over `.input`. `large` adds nothing (the `.input` default). */
 export const SIZE_CLASS: Record<FieldSize, string | false> = {
   large: false,
-  small: "px-3 py-2 text-[13px]",
+  small: "px-3 py-2 text-ui-sm",
 };
 
 /** Leading-icon overlay (shared by TextField + SelectField); the control reserves room with `pl-10`. */

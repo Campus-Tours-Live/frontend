@@ -221,11 +221,9 @@ export function GuideOnboardingForm() {
                 <Field
                   label="Your university"
                   htmlFor="onboarding-guide-university"
+                  description="The campus you currently attend and will guide for."
                   error={errors.university?.message as string}
                 >
-                  <Body size="medium" color="muted" className="mb-3">
-                    The campus you currently attend and will guide for.
-                  </Body>
                   <UniversityMultiSelect
                     id="onboarding-guide-university"
                     value={field.value}

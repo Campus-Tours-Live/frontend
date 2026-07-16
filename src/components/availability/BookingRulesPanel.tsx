@@ -60,7 +60,7 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
               type="button"
               aria-expanded={expanded}
               onClick={() => setExpanded((prev) => !prev)}
-              className="whitespace-nowrap text-[13px] font-semibold text-primary hover:underline lg:hidden"
+              className="whitespace-nowrap text-ui-sm font-semibold text-primary hover:underline lg:hidden"
             >
               {expanded ? "Show less" : "View all rules"}
             </button>

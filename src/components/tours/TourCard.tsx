@@ -35,7 +35,7 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
         <Heading as="h4" size="h4" className="mb-1.5 mt-3.5 min-h-[2.6em]">
           {title}
         </Heading>
-        <div className="text-[13px] text-ink-soft">
+        <div className="text-ui-sm text-ink-soft">
           {university} · {guide} · {durationMinutes} min
         </div>
         <div className="mt-auto flex items-center justify-between pt-4">

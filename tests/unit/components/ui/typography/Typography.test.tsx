@@ -98,7 +98,7 @@ describe("Body", () => {
     );
     const el = screen.getByText("inline");
     expect(el.tagName).toBe("SPAN");
-    expect(el).toHaveClass("text-[13px]", "font-bold");
+    expect(el).toHaveClass("text-ui-sm", "font-bold");
   });
 
   it("large maps to the ui-lg token", () => {

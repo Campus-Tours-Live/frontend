@@ -6,20 +6,32 @@ import { cn } from "@/lib/utils";
  * custom control (e.g. UniversityMultiSelect), or use the {@link TextField} / {@link Textarea} /
  * {@link SelectField} convenience wrappers for plain controls.
  *
- * `error` takes priority over `hint`. `optional` appends an "(optional)" suffix to the label. Styles
- * live in globals.css (.field / .field-error / .field-hint).
+ * `error` takes priority over `hint`. `description` is help rendered ABOVE the control (below the
+ * label); `hint` renders BELOW it. `optional` appends an "(optional)" suffix to the label. Styles
+ * live in globals.css (.field / .field-description / .field-error / .field-hint).
  */
 export interface FieldProps {
   label?: ReactNode;
   htmlFor?: string;
   error?: ReactNode;
   hint?: ReactNode;
+  /** Help text rendered above the control (below the label). For help below the control, use `hint`. */
+  description?: ReactNode;
   optional?: boolean;
   className?: string;
   children: ReactNode;
 }
 
-export function Field({ label, htmlFor, error, hint, optional, className, children }: FieldProps) {
+export function Field({
+  label,
+  htmlFor,
+  error,
+  hint,
+  description,
+  optional,
+  className,
+  children,
+}: FieldProps) {
   return (
     <div className={cn("field", className)}>
       {label ? (
@@ -28,6 +40,7 @@ export function Field({ label, htmlFor, error, hint, optional, className, childr
           {optional ? <span className="font-normal text-ink-soft"> (optional)</span> : null}
         </label>
       ) : null}
+      {description ? <p className="field-description">{description}</p> : null}
       {children}
       {error ? (
         <p role="alert" className="field-error">

@@ -87,7 +87,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => select(option.value)}
             className={cn(
               "rounded-full font-semibold transition-colors disabled:cursor-not-allowed",
-              size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-[13px]",
+              size === "small" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-ui-sm",
               isSelected ? "text-primary-foreground" : "text-ink-soft hover:text-ink",
             )}
           >

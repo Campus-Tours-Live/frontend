@@ -59,7 +59,7 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
           </Body>
         ) : null}
 
-        <dl className="mt-4 grid grid-cols-3 gap-3 text-[13px]">
+        <dl className="mt-4 grid grid-cols-3 gap-3 text-ui-sm">
           <div>
             <dt className="text-ink-soft">Duration</dt>
             <dd className="font-semibold text-ink">{offering.durationMin} min</dd>

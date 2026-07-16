@@ -90,7 +90,7 @@ describe("Select", () => {
       </Select>,
     );
     // small tightens padding, but the trailing caret's room must survive the merge.
-    expect(screen.getByLabelText("State")).toHaveClass("px-3", "py-2", "text-[13px]", "pr-10");
+    expect(screen.getByLabelText("State")).toHaveClass("px-3", "py-2", "text-ui-sm", "pr-10");
   });
 
   it("merges a caller className from selectProps onto the select", () => {

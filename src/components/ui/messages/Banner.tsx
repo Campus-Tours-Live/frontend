@@ -37,7 +37,7 @@ export function Banner({
     <div
       role="alert"
       className={cn(
-        "flex w-full items-start gap-3 border px-4 py-3 text-[13px]",
+        "flex w-full items-start gap-3 border px-4 py-3 text-ui-sm",
         ALERT_COLOR[variant],
         className,
       )}

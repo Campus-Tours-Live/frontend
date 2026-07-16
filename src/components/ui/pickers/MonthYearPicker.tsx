@@ -216,7 +216,7 @@ export function MonthYearPicker({
                   aria-label={`${MONTH_NAMES_LONG[monthIndex]} ${currentYear}`}
                   onClick={() => pickMonth(monthIndex)}
                   className={cn(
-                    "rounded px-2 py-1.5 text-[13px] font-medium transition-colors",
+                    "rounded px-2 py-1.5 text-ui-sm font-medium transition-colors",
                     "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft",
                     selected
                       ? "bg-primary text-primary-foreground"

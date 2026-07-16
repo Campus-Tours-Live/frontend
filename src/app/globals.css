@@ -247,13 +247,17 @@
 
   /* ---------- Inputs ---------- */
   .field label {
-    @apply block text-[13px] font-bold mb-1.5 text-ink;
+    @apply block text-ui-sm font-bold mb-1.5 text-ink;
   }
   .field-error {
-    @apply mt-1 text-[13px] font-semibold text-error-foreground;
+    @apply mt-1 text-ui-sm font-semibold text-error-foreground;
   }
   .field-hint {
     @apply mt-1 text-[12px] text-ink-soft;
+  }
+  /* Help text ABOVE the control (below the label) — for help below, use .field-hint. */
+  .field-description {
+    @apply mb-3 text-ui text-ink-soft;
   }
   .input {
     @apply w-full px-[15px] py-3 border-[1.5px] border-border rounded-field
@@ -309,7 +313,7 @@
      variant: status-info / status-warning / status-success / status-error. */
   .status {
     @apply inline-flex items-center gap-[7px] rounded-pill border border-transparent
-           px-2.5 py-[7px] text-[13px] font-bold;
+           px-2.5 py-[7px] text-ui-sm font-bold;
   }
   .status::before {
     content: "";
@@ -330,7 +334,7 @@
 
   /* ---------- Alerts (block messages / banners) ---------- */
   .alert {
-    @apply rounded-card border px-4 py-3 text-[13px];
+    @apply rounded-card border px-4 py-3 text-ui-sm;
   }
   .alert-info {
     @apply border-[#D8E2EB] bg-[#EDF2F6] text-[#4F6F8F];
@@ -347,7 +351,7 @@
 
   /* ---------- Chips ---------- */
   .chip {
-    @apply inline-flex items-center gap-1.5 text-[13px] font-semibold
+    @apply inline-flex items-center gap-1.5 text-ui-sm font-semibold
            px-3.5 py-[7px] rounded-pill border-[1.5px] border-border
            bg-white text-ink-soft cursor-pointer transition-colors;
   }

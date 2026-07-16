@@ -36,7 +36,7 @@ export function Snack({ message, action, onClose, className }: SnackProps) {
             action.onClick?.();
             onClose();
           }}
-          className="shrink-0 text-[13px] font-bold text-primary-soft hover:underline"
+          className="shrink-0 text-ui-sm font-bold text-primary-soft hover:underline"
         >
           {action.label}
         </button>
