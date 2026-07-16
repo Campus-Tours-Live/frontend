@@ -49,9 +49,7 @@ beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
   meValue = null;
-  universityResults = [
-    { id: "u-1", name: "State University", shortName: "State" },
-  ];
+  universityResults = [{ id: "u-1", name: "State University", shortName: "State" }];
 });
 
 /** Fill step 1 required fields and pick a university, leaving the form on step 1. */
@@ -73,9 +71,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(screen.getByText(/your university/i)).toBeInTheDocument();
     // Step indicator reflects step 1 of 3 and the current step name.
     expect(screen.getByText(/step 1 of 3 · About you/i)).toBeInTheDocument();
-    expect(
-      document.querySelector('[aria-label="Step 1 of 3"]'),
-    ).toBeInTheDocument();
+    expect(document.querySelector('[aria-label="Step 1 of 3"]')).toBeInTheDocument();
     await act(async () => {});
   });
 
@@ -92,9 +88,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
     expect(await screen.findByText(/please enter your first name/i)).toBeInTheDocument();
     expect(screen.getByText(/please enter your last name/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/select the university you currently attend/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/select the university you currently attend/i)).toBeInTheDocument();
     expect(screen.getByText(/please enter your major/i)).toBeInTheDocument();
     // Still on step 1 — step 2 content not shown.
     expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
@@ -134,10 +128,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
     // Step 3 — Verification.
     expect(await screen.findByText(/step 3 of 3 · Verification/i)).toBeInTheDocument();
-    await user.type(
-      screen.getByLabelText(/school email address/i),
-      "jordan@university.edu",
-    );
+    await user.type(screen.getByLabelText(/school email address/i), "jordan@university.edu");
 
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
@@ -172,10 +163,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await user.click(screen.getByRole("button", { name: /Academics/i })); // deselect specialty
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    await user.type(
-      await screen.findByLabelText(/school email address/i),
-      "jordan@university.edu",
-    );
+    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     const payload = mutateAsync.mock.calls[0][0];
@@ -223,10 +211,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
     await user.click(await screen.findByRole("button", { name: /continue/i }));
-    await user.type(
-      await screen.findByLabelText(/school email address/i),
-      "jordan@university.edu",
-    );
+    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     expect(await screen.findByText(/school email already in use/i)).toBeInTheDocument();

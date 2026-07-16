@@ -18,7 +18,11 @@ jest.mock("@/lib/data-access", () => ({
   useUpdateGuideProfile: () => ({ mutateAsync }),
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => ({
     data:
-      opts?.enabled === false ? [] : query ? [{ id: "u-1", name: "State University", shortName: "State" }] : [],
+      opts?.enabled === false
+        ? []
+        : query
+          ? [{ id: "u-1", name: "State University", shortName: "State" }]
+          : [],
     isFetching: false,
   }),
 }));
@@ -61,10 +65,7 @@ describe("GuideOnboardingForm edge cases", () => {
 
     await user.clear(await screen.findByLabelText(/base price per tour/i));
     await user.click(screen.getByRole("button", { name: /continue/i }));
-    await user.type(
-      await screen.findByLabelText(/school email address/i),
-      "jordan@university.edu",
-    );
+    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
@@ -78,10 +79,7 @@ describe("GuideOnboardingForm edge cases", () => {
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
     await user.click(await screen.findByRole("button", { name: /continue/i }));
-    await user.type(
-      await screen.findByLabelText(/school email address/i),
-      "jordan@university.edu",
-    );
+    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     expect(await screen.findByText(/something went wrong\. please try again/i)).toBeInTheDocument();

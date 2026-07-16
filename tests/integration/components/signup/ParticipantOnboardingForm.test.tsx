@@ -67,9 +67,7 @@ describe("ParticipantOnboardingForm (wizard)", () => {
     const user = userEvent.setup();
     renderWithQuery(<ParticipantOnboardingForm />);
     await user.click(screen.getByRole("button", { name: /continue/i }));
-    expect(
-      await screen.findByText(/please enter your first and last name/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/please enter your first and last name/i)).toBeInTheDocument();
     expect(screen.queryByText(/universities of interest/i)).not.toBeInTheDocument();
   });
 
@@ -124,9 +122,7 @@ describe("ParticipantOnboardingForm (wizard)", () => {
     await user.click(academics); // deselect → exercises the filter branch
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
-    expect(mutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ topicsOfInterest: [] }),
-    );
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ topicsOfInterest: [] }));
   });
 
   it("shows an error alert when the submit mutation rejects (no navigation)", async () => {

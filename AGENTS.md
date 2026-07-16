@@ -47,6 +47,7 @@ command** (e.g. `/code-review`).
 > `.claude/settings.json`; `.claude/hooks/ensure-plugins.mjs` installs and keeps them updated for
 > whichever agent CLI you have (`claude` and/or `codex`). The same plugin ids work for both — the
 > `wshobson/agents` marketplace ships dual `.claude-plugin` + `.codex-plugin` manifests.
+>
 > - **Claude Code** — a `SessionStart` hook (every session) and the `predev` step (`npm run dev`)
 >   run the script. The hook emits `reloadSkills`, so a first-time install is usable in the
 >   **same** session (from the first prompt). Accept the workspace-trust dialog once so they load.
@@ -72,26 +73,26 @@ command** (e.g. `/code-review`).
 
 ## Situation → skill
 
-| When you are… | Use this skill |
-| --- | --- |
-| Planning any new feature / behavior change (think before coding) | `superpowers:brainstorming` † |
-| Refactoring (no behavior change) | `superpowers:brainstorming` †, then `comprehensive-review` |
-| Layout, color, typography, visual direction | `ui-design`, `ui-ux-pro-max`, `frontend-design` † |
-| React components / hooks / Server vs Client boundary | `frontend-mobile-development`, `javascript-typescript` |
-| Next.js App Router / SSR / data fetching | `frontend-mobile-development` |
-| Calling the bff API (types, TanStack Query) | `javascript-typescript` |
-| **Accessibility (a11y)** — public, student-facing UI | ⚠️ no dedicated enabled skill — use `ui-design` + `frontend-design` † and follow WCAG (semantics, focus, contrast, keyboard) |
-| Performance / Core Web Vitals / bundle size | `frontend-mobile-development` (no dedicated perf skill — measure first, then optimize) |
-| Env / config changes (`BFF_URL`, ports, `.env`) | ⚠️ cross-repo — port `:3001` is fixed (bff `WEB_ORIGIN` + Google OAuth redirect depend on it); see Cross-repo rules below |
-| Writing / adding unit & component tests (Jest + Testing Library) | `unit-testing`, `superpowers:test-driven-development` † |
-| End-to-end UI verification in a real browser | `webapp-testing` † |
-| Dependency upgrades / CVE remediation / `npm audit` | `security-scanning` |
-| Checking security (XSS, dependency CVEs, token storage) | `security-scanning` |
-| Fixing a red CI / failing build | `superpowers:systematic-debugging` † (reproduce locally: `npm run lint && npm run typecheck && npm test`) |
-| Debugging (any bug / test failure / unexpected behavior) | `superpowers:systematic-debugging` † |
-| Writing docs / README / comments | `doc-coauthoring` † |
-| Reviewing your own or someone else's PR, before merging | `comprehensive-review`, `/code-review`; security via `/security-review` |
-| **"Live" real-time tours (WebRTC / WebSocket)** | ⚠️ product core, **no skill and no infra yet** — always plan/`superpowers:brainstorming` † and design before coding |
+| When you are…                                                    | Use this skill                                                                                                               |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Planning any new feature / behavior change (think before coding) | `superpowers:brainstorming` †                                                                                                |
+| Refactoring (no behavior change)                                 | `superpowers:brainstorming` †, then `comprehensive-review`                                                                   |
+| Layout, color, typography, visual direction                      | `ui-design`, `ui-ux-pro-max`, `frontend-design` †                                                                            |
+| React components / hooks / Server vs Client boundary             | `frontend-mobile-development`, `javascript-typescript`                                                                       |
+| Next.js App Router / SSR / data fetching                         | `frontend-mobile-development`                                                                                                |
+| Calling the bff API (types, TanStack Query)                      | `javascript-typescript`                                                                                                      |
+| **Accessibility (a11y)** — public, student-facing UI             | ⚠️ no dedicated enabled skill — use `ui-design` + `frontend-design` † and follow WCAG (semantics, focus, contrast, keyboard) |
+| Performance / Core Web Vitals / bundle size                      | `frontend-mobile-development` (no dedicated perf skill — measure first, then optimize)                                       |
+| Env / config changes (`BFF_URL`, ports, `.env`)                  | ⚠️ cross-repo — port `:3001` is fixed (bff `WEB_ORIGIN` + Google OAuth redirect depend on it); see Cross-repo rules below    |
+| Writing / adding unit & component tests (Jest + Testing Library) | `unit-testing`, `superpowers:test-driven-development` †                                                                      |
+| End-to-end UI verification in a real browser                     | `webapp-testing` †                                                                                                           |
+| Dependency upgrades / CVE remediation / `npm audit`              | `security-scanning`                                                                                                          |
+| Checking security (XSS, dependency CVEs, token storage)          | `security-scanning`                                                                                                          |
+| Fixing a red CI / failing build                                  | `superpowers:systematic-debugging` † (reproduce locally: `npm run lint && npm run typecheck && npm test`)                    |
+| Debugging (any bug / test failure / unexpected behavior)         | `superpowers:systematic-debugging` †                                                                                         |
+| Writing docs / README / comments                                 | `doc-coauthoring` †                                                                                                          |
+| Reviewing your own or someone else's PR, before merging          | `comprehensive-review`, `/code-review`; security via `/security-review`                                                      |
+| **"Live" real-time tours (WebRTC / WebSocket)**                  | ⚠️ product core, **no skill and no infra yet** — always plan/`superpowers:brainstorming` † and design before coding          |
 
 ## ⚠️ Cross-repo observation rules (read before changing frontend)
 

@@ -18,11 +18,7 @@ const config = {
   testMatch: ["<rootDir>/tests/**/*.test.{ts,tsx}"],
   // Coverage (`npm run test:coverage`). Measure only production code under src/
   // (exclude type decls and the root layout bootstrap).
-  collectCoverageFrom: [
-    "src/**/*.{ts,tsx}",
-    "!src/**/*.d.ts",
-    "!src/app/layout.tsx",
-  ],
+  collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.d.ts", "!src/app/layout.tsx"],
   // Always collect coverage — so a plain `npm test` prints the terminal report and regenerates
   // the istanbul HTML report too, same as `npm run test:coverage`.
   collectCoverage: true,

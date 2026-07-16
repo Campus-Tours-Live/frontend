@@ -72,19 +72,12 @@ export interface ApiFetchInit extends RequestInit {
 }
 
 function isReauthRequired(res: Response): boolean {
-  return (
-    res.status === 401 && res.headers.get("auth-required") === "reauthenticate"
-  );
+  return res.status === 401 && res.headers.get("auth-required") === "reauthenticate";
 }
 
-export async function apiFetch(
-  path: string,
-  init: ApiFetchInit = {},
-): Promise<Response> {
+export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<Response> {
   if (!VERSIONED_BFF_PATH.test(path)) {
-    throw new Error(
-      `apiFetch only accepts versioned BFF paths ("/vN/..."); got: ${path}`,
-    );
+    throw new Error(`apiFetch only accepts versioned BFF paths ("/vN/..."); got: ${path}`);
   }
 
   const { retryAfterAuth, interactive = true, ...requestInit } = init;

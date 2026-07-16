@@ -17,10 +17,9 @@ describe("useDebounced", () => {
   });
 
   it("keeps the OLD value until the delay elapses, then returns the new one", () => {
-    const { result, rerender } = renderHook(
-      ({ value, ms }) => useDebounced(value, ms),
-      { initialProps: { value: "a", ms: 300 } },
-    );
+    const { result, rerender } = renderHook(({ value, ms }) => useDebounced(value, ms), {
+      initialProps: { value: "a", ms: 300 },
+    });
 
     expect(result.current).toBe("a");
 
@@ -40,10 +39,9 @@ describe("useDebounced", () => {
   });
 
   it("settles only to the last value across rapid successive changes", () => {
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebounced(value, 300),
-      { initialProps: { value: "a" } },
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebounced(value, 300), {
+      initialProps: { value: "a" },
+    });
 
     rerender({ value: "b" });
     act(() => {
@@ -66,10 +64,9 @@ describe("useDebounced", () => {
   });
 
   it("respects a changed delay", () => {
-    const { result, rerender } = renderHook(
-      ({ value, ms }) => useDebounced(value, ms),
-      { initialProps: { value: "a", ms: 300 } },
-    );
+    const { result, rerender } = renderHook(({ value, ms }) => useDebounced(value, ms), {
+      initialProps: { value: "a", ms: 300 },
+    });
 
     // Change both the value and the delay.
     rerender({ value: "b", ms: 1000 });
@@ -89,10 +86,9 @@ describe("useDebounced", () => {
   it("works with non-string values", () => {
     const obj1 = { n: 1 };
     const obj2 = { n: 2 };
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebounced(value, 200),
-      { initialProps: { value: obj1 } },
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebounced(value, 200), {
+      initialProps: { value: obj1 },
+    });
 
     expect(result.current).toBe(obj1);
 

@@ -8,15 +8,12 @@ describe("DEFAULT_RETURN_TO", () => {
 
 describe("sanitizeReturnTo", () => {
   describe("allowed roots pass through", () => {
-    it.each([
-      "/dashboard",
-      "/profile",
-      "/support",
-      "/staff",
-      "/onboarding",
-    ])("returns %s unchanged", (value) => {
-      expect(sanitizeReturnTo(value)).toBe(value);
-    });
+    it.each(["/dashboard", "/profile", "/support", "/staff", "/onboarding"])(
+      "returns %s unchanged",
+      (value) => {
+        expect(sanitizeReturnTo(value)).toBe(value);
+      },
+    );
   });
 
   describe("allowed subpaths pass through", () => {
@@ -59,9 +56,7 @@ describe("sanitizeReturnTo", () => {
 
     it("does not treat query content as part of the pathname", () => {
       // pathname is "/dashboard", the "/evil" only lives in the query string
-      expect(sanitizeReturnTo("/dashboard?next=/evil")).toBe(
-        "/dashboard?next=/evil",
-      );
+      expect(sanitizeReturnTo("/dashboard?next=/evil")).toBe("/dashboard?next=/evil");
     });
   });
 
@@ -71,9 +66,7 @@ describe("sanitizeReturnTo", () => {
       ["undefined", undefined],
       ["null", null],
     ])("returns default for %s", (_label, value) => {
-      expect(sanitizeReturnTo(value as string | null | undefined)).toBe(
-        DEFAULT_RETURN_TO,
-      );
+      expect(sanitizeReturnTo(value as string | null | undefined)).toBe(DEFAULT_RETURN_TO);
     });
   });
 
@@ -117,18 +110,15 @@ describe("sanitizeReturnTo", () => {
     });
 
     it("rejects absolute http URL to an allowed-looking path", () => {
-      expect(sanitizeReturnTo("https://evil.com/dashboard")).toBe(
-        DEFAULT_RETURN_TO,
-      );
+      expect(sanitizeReturnTo("https://evil.com/dashboard")).toBe(DEFAULT_RETURN_TO);
     });
 
-    it.each([
-      "javascript://alert(1)",
-      "/dashboard://evil",
-      "ftp://host",
-    ])("rejects any value containing '://' (%s)", (value) => {
-      expect(sanitizeReturnTo(value)).toBe(DEFAULT_RETURN_TO);
-    });
+    it.each(["javascript://alert(1)", "/dashboard://evil", "ftp://host"])(
+      "rejects any value containing '://' (%s)",
+      (value) => {
+        expect(sanitizeReturnTo(value)).toBe(DEFAULT_RETURN_TO);
+      },
+    );
   });
 
   describe("non-allowlisted roots fall back to default", () => {
