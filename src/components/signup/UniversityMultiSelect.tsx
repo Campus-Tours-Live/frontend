@@ -81,7 +81,11 @@ export function UniversityMultiSelect({
           />
           {open && (loading || results.some((r) => !selectedIds.has(r.id))) && (
             <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-card border border-border bg-card shadow-card">
-              {loading && <li className="px-4 py-2 text-[13px] text-ink-soft">Searching…</li>}
+              {loading && (
+                <Body as="li" size="small" color="muted" className="px-4 py-2">
+                  Searching…
+                </Body>
+              )}
               {results
                 .filter((r) => !selectedIds.has(r.id))
                 .map((r) => (

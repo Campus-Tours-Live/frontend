@@ -73,9 +73,9 @@ export function MobileNav({
 
           {/* Primary site links. */}
           <div className="mt-1 border-t border-border pt-3">
-            <div className="px-2.5 pb-1.5 text-[12px] font-extrabold uppercase tracking-[0.07em] text-ink-soft">
+            <Caption as="div" weight={800} className="px-2.5 pb-1.5 uppercase tracking-[0.07em]">
               Discover
-            </div>
+            </Caption>
             <ul className="flex flex-col gap-0.5">
               {NAV_LINKS.map((link) => (
                 <li key={link.label}>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Badge, Body, Heading, IconButton, Panel } from "@/components/ui";
+import { Badge, Body, Caption, Heading, IconButton, Panel } from "@/components/ui";
 import {
   useAvailabilityExceptions,
   useAvailabilitySettings,
@@ -95,9 +95,9 @@ export function WeekAvailabilityPanel({ className }: { className?: string }) {
             <Heading as="h2" size="medium">
               {formatDayHeader(selectedDate)}
             </Heading>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
+            <Caption as="p" size="xs" weight={600} className="uppercase tracking-wide">
               {selectedDate === todayIso ? "Today" : "This week"}
-            </p>
+            </Caption>
           </div>
           <IconButton
             a11yLabel="Next day"

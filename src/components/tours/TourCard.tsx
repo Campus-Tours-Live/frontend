@@ -1,4 +1,4 @@
-import { Button, Card, Heading, StatusBadge } from "@/components/ui";
+import { Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -21,9 +21,13 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
       className="flex h-full flex-col overflow-hidden rounded-[18px]"
     >
       {/* Image placeholder — imported editorial campus crop */}
-      <div className="flex h-[150px] items-center justify-center bg-canvas text-[12px] font-medium text-ink-soft">
+      <Caption
+        as="div"
+        weight={500}
+        className="flex h-[150px] items-center justify-center bg-canvas"
+      >
         Imported editorial campus crop
-      </div>
+      </Caption>
       <div className="flex flex-1 flex-col p-[18px]">
         <StatusBadge variant="success" className="self-start">
           Verified guide
@@ -35,7 +39,9 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
           {university} · {guide} · {durationMinutes} min
         </div>
         <div className="mt-auto flex items-center justify-between pt-4">
-          <span className="text-[18px] font-extrabold text-ink">${price}</span>
+          <Body as="span" size="lead" weight={800}>
+            ${price}
+          </Body>
           <Button variant="secondary" size="small">
             View tour
           </Button>

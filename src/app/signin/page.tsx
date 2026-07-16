@@ -88,7 +88,12 @@ export default async function SignInPage({
 
             <AuthOptions intent="signin" returnTo={safeReturnTo} />
 
-            <ul className="flex flex-col gap-2.5 border-t border-border pt-6 text-[13px] text-ink-soft">
+            <Body
+              as="ul"
+              size="small"
+              color="muted"
+              className="flex flex-col gap-2.5 border-t border-border pt-6"
+            >
               {TRUST.map((t) => (
                 <li key={t} className="flex items-center gap-2.5">
                   <span
@@ -98,7 +103,7 @@ export default async function SignInPage({
                   {t}
                 </li>
               ))}
-            </ul>
+            </Body>
 
             <Body size="large" color="muted" className="text-center">
               New to CampusToursLive?{" "}

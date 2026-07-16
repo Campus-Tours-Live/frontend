@@ -64,10 +64,10 @@ export default function SignupGuidePage() {
               <Heading as="h1" size="h2" className="mt-3">
                 Apply to become a guide
               </Heading>
-              <p className="lead mt-3 text-[16px]">
+              <Body size="lead" color="muted" weight={500} className="mt-3">
                 Share your campus with future students and earn from live, paid tours. Open to
                 current university students.
-              </p>
+              </Body>
             </div>
 
             <AuthOptions intent="signup" returnTo="/onboarding/guide" />

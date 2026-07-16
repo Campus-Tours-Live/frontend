@@ -7,7 +7,9 @@ import {
   Body,
   Button,
   Calendar,
+  Caption,
   Drawer,
+  Heading,
   Panel,
   PanelHeader,
   Popover,
@@ -275,9 +277,9 @@ export function MonthAvailabilityView({
         ariaLabel={sheetCell ? `Availability for ${sheetCell.iso}` : undefined}
         header={
           sheetCell ? (
-            <h3 className="font-display text-lg font-bold text-ink">
+            <Heading as="h3" size="h3">
               {formatDayHeader(sheetCell.iso)}
-            </h3>
+            </Heading>
           ) : undefined
         }
         footer={
@@ -377,9 +379,9 @@ function SummaryPopover({ cell, timeZone }: { cell: DayCell; timeZone: string })
       ) : (
         <p className="mt-2 text-ink-soft">No hours</p>
       )}
-      <p className="mt-2 border-t border-border pt-2 text-[11px] text-ink-soft">
+      <Caption as="p" size="xs" className="mt-2 border-t border-border pt-2">
         Summary from resolved availability — not recomputed.
-      </p>
+      </Caption>
     </div>
   );
 }
@@ -427,7 +429,7 @@ function Legend() {
     { className: "ring-2 ring-ink", label: "Today" },
   ];
   return (
-    <div className="mt-7 flex flex-col gap-2 text-[11px] text-ink-soft">
+    <Caption as="div" size="xs" className="mt-7 flex flex-col gap-2">
       <span>Density bar spans 12:00 AM – 12:00 AM (full day):</span>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {items.map((item) => (
@@ -437,6 +439,6 @@ function Legend() {
           </span>
         ))}
       </div>
-    </div>
+    </Caption>
   );
 }

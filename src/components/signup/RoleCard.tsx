@@ -57,7 +57,7 @@ export function RoleCard({
         {subtitle}
       </Body>
 
-      <ul className="mt-4 flex min-h-[90px] flex-col gap-2 text-[14px] text-ink">
+      <Body as="ul" size="medium" className="mt-4 flex min-h-[90px] flex-col gap-2">
         {points.map((point) => (
           <li key={point} className="flex items-start gap-2">
             <span
@@ -67,7 +67,7 @@ export function RoleCard({
             {point}
           </li>
         ))}
-      </ul>
+      </Body>
 
       <div className="mt-auto pt-2">
         {ctaHref ? (

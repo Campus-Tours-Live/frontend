@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button, Heading } from "@/components/ui";
+import { Body, Button, Heading } from "@/components/ui";
 
 /**
  * Hero — home hero from design_new (#home .home-hero).
@@ -35,14 +35,14 @@ export function Hero() {
           <Button variant="secondary">Become a guide</Button>
         </div>
 
-        <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-ink-soft">
+        <Body as="ul" size="medium" color="muted" className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {TRUST_SIGNALS.map((signal) => (
             <li key={signal} className="flex items-center gap-2">
               <span className="inline-block h-2.5 w-2.5 rounded-pill bg-sage-deep" aria-hidden />
               {signal}
             </li>
           ))}
-        </ul>
+        </Body>
       </div>
 
       {/* Right — campus illustration.

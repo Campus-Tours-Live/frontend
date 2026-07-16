@@ -67,9 +67,9 @@ export default function SignupParticipantPage() {
               <Heading as="h1" size="h2" className="mt-3">
                 Create your participant account
               </Heading>
-              <p className="lead mt-3 text-[16px]">
+              <Body size="lead" color="muted" weight={500} className="mt-3">
                 Explore and book live campus tours with verified student guides.
-              </p>
+              </Body>
             </div>
 
             <AuthOptions intent="signup" returnTo="/onboarding/participant" />

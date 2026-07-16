@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Divider, Link, MenuItem } from "@/components/ui";
+import { Body, Divider, Link, MenuItem } from "@/components/ui";
 import { useDropdown } from "@/hooks";
 import { useMe } from "@/lib/data-access";
 import { NAV_LINKS } from "./NavLinks";
@@ -74,7 +74,13 @@ export function HeaderNav({
   const panelCls = cn(PANEL, dd.open ? "visible opacity-100" : "invisible opacity-0");
 
   return (
-    <ul className="hidden items-center gap-7 text-[14px] font-semibold text-ink-soft lg:flex">
+    <Body
+      as="ul"
+      size="medium"
+      weight={600}
+      color="muted"
+      className="hidden items-center gap-7 lg:flex"
+    >
       {NAV_LINKS.map((link) => (
         <li key={link.label}>
           <Link href={link.href} className="transition-colors hover:text-ink">
@@ -150,6 +156,6 @@ export function HeaderNav({
           </div>
         </li>
       )}
-    </ul>
+    </Body>
   );
 }

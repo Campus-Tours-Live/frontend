@@ -35,9 +35,13 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
 
   return (
     <Card as="article" padded={false} className="overflow-hidden rounded-panel">
-      <div className="flex h-[150px] items-center justify-center bg-canvas text-[12px] font-medium text-ink-soft">
+      <Caption
+        as="div"
+        weight={500}
+        className="flex h-[150px] items-center justify-center bg-canvas"
+      >
         Campus tour image
-      </div>
+      </Caption>
       <div className="p-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge variant={offeringStatusVariant(offering.status)}>
