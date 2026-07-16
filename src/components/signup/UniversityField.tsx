@@ -7,7 +7,10 @@ import { UniversityMultiSelect, type UniversityOption } from "./UniversityMultiS
 export type { UniversityOption };
 
 export interface UniversityFieldProps {
-  label: ReactNode;
+  /** Required, non-empty: it both labels the Field and names the control's `role="group"` (via
+   *  aria-labelledby), so a falsy label would leave the group nameless. Typed `string`, not
+   *  ReactNode, to keep it a real accessible name. */
+  label: string;
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   /** Help text shown above the control (via Field's `description`). */

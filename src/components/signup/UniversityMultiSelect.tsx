@@ -61,9 +61,12 @@ export function UniversityMultiSelect({
 
   return (
     <div
+      // The container is only a named region when it has a label — keep its describedby paired with
+      // the group role so a stray describedby never lands on a roleless div (the input carries its
+      // own describedby below for the focus case).
       role={ariaLabelledby ? "group" : undefined}
       aria-labelledby={ariaLabelledby}
-      aria-describedby={ariaDescribedby}
+      aria-describedby={ariaLabelledby ? ariaDescribedby : undefined}
     >
       {value.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
