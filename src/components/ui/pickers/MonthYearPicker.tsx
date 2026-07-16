@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { Popover } from "../overlays/Popover";
+import { Popover } from "../popover/Popover";
 import { Icon } from "../icon/Icon";
 import { cn } from "@/lib/utils";
 

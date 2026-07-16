@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { Bell } from "lucide-react";
-import { Spinner } from "@/components/ui/loading/Spinner";
+import { Spinner } from "@/components/ui/spinner/Spinner";
 import { Icon } from "@/components/ui/icon/Icon";
 import { Card } from "@/components/ui/card/Card";
 import { Slot } from "@/components/ui/slot/Slot";

@@ -2,7 +2,7 @@ import { type HTMLAttributes, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Body } from "../typography/Body";
 import { Icon } from "../icon/Icon";
-import { IconButton } from "../actions/IconButton";
+import { IconButton } from "../icon-button/IconButton";
 
 /**
  * Nudge — an inline, optional reminder or next-step hint (not required to complete a task). Shows a

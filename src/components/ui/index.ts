@@ -10,15 +10,11 @@ export {
   type ButtonProps,
   type ButtonVariant,
   type ButtonSize,
-} from "./actions/Button";
-export { Link, type LinkProps } from "./actions/Link";
-export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./data-display/Badge";
-export { Rating, type RatingProps, type RatingSize } from "./data-display/Rating";
-export {
-  RatingStar,
-  type RatingStarProps,
-  type RatingStarVariant,
-} from "./data-display/RatingStar";
+} from "./button/Button";
+export { Link, type LinkProps } from "./link/Link";
+export { Badge, StatusBadge, type BadgeVariant, type StatusVariant } from "./badge/Badge";
+export { Rating, type RatingProps, type RatingSize } from "./rating/Rating";
+export { RatingStar, type RatingStarProps, type RatingStarVariant } from "./rating/RatingStar";
 export { Alert, type AlertProps, type AlertVariant } from "./messages/Alert";
 export { Banner, type BannerProps, type BannerVariant } from "./messages/Banner";
 export { Nudge, type NudgeProps } from "./messages/Nudge";
@@ -37,25 +33,25 @@ export {
   type MemberCardItem,
   type MemberCardHighlight,
   type MemberRole,
-} from "./data-display/MemberCard";
+} from "./member-card/MemberCard";
 export { SectionHeading, type SectionHeadingProps } from "./page/SectionHeading";
 export { PageContainer, type PageContainerProps, type PageWidth } from "./page/PageContainer";
 export { PageHeader, type PageHeaderProps } from "./page/PageHeader";
-export { InlineLoading, type InlineLoadingProps } from "./loading/InlineLoading";
-export { Chip, type ChipProps } from "./actions/Chip";
-export { Switch, type SwitchProps } from "./inputs/Switch";
-export { Checkbox, type CheckboxProps } from "./inputs/Checkbox";
-export { Radio, type RadioProps } from "./inputs/Radio";
-export { Breadcrumb, type BreadcrumbProps } from "./navigation/Breadcrumb";
-export { BreadcrumbItem, type BreadcrumbItemProps } from "./navigation/BreadcrumbItem";
-export { Tag, type TagProps, type TagColor, type TagVariant } from "./data-display/Tag";
+export { InlineLoading, type InlineLoadingProps } from "./inline-loading/InlineLoading";
+export { Chip, type ChipProps } from "./chip/Chip";
+export { Switch, type SwitchProps } from "./switch/Switch";
+export { Checkbox, type CheckboxProps } from "./checkbox/Checkbox";
+export { Radio, type RadioProps } from "./radio/Radio";
+export { Breadcrumb, type BreadcrumbProps } from "./breadcrumb/Breadcrumb";
+export { BreadcrumbItem, type BreadcrumbItemProps } from "./breadcrumb/BreadcrumbItem";
+export { Tag, type TagProps, type TagColor, type TagVariant } from "./tag/Tag";
 export {
   SegmentedControl,
   type SegmentedControlProps,
   type SegmentOption,
-} from "./inputs/SegmentedControl";
-export { ButtonGroup, type ButtonGroupProps } from "./actions/ButtonGroup";
-export { ButtonRow, type ButtonRowProps, type ButtonRowAlign } from "./actions/ButtonRow";
+} from "./segmented-control/SegmentedControl";
+export { ButtonGroup, type ButtonGroupProps } from "./button-group/ButtonGroup";
+export { ButtonRow, type ButtonRowProps, type ButtonRowAlign } from "./button-row/ButtonRow";
 export {
   Field,
   TextField,
@@ -66,7 +62,7 @@ export {
   type TextFieldProps,
   type TextareaProps,
   type SelectFieldProps,
-} from "./inputs/Field";
+} from "./field/Field";
 export { FormLabel, type FormLabelProps, type FormLabelSize } from "./form/FormLabel";
 export { FormHelperText, type FormHelperTextProps } from "./form/FormHelperText";
 export { FormGroup, type FormGroupProps } from "./form/FormGroup";
@@ -89,23 +85,23 @@ export {
   type IconButtonProps,
   type IconButtonSize,
   type IconButtonVariant,
-} from "./actions/IconButton";
-export { Spinner, type SpinnerProps } from "./loading/Spinner";
-export { Skeleton, type SkeletonProps, type SkeletonVariant } from "./loading/Skeleton";
-export { SkeletonText, type SkeletonTextProps } from "./loading/SkeletonText";
+} from "./icon-button/IconButton";
+export { Spinner, type SpinnerProps } from "./spinner/Spinner";
+export { Skeleton, type SkeletonProps, type SkeletonVariant } from "./skeleton/Skeleton";
+export { SkeletonText, type SkeletonTextProps } from "./skeleton/SkeletonText";
 export { VisuallyHidden, type VisuallyHiddenProps } from "./visually-hidden/VisuallyHidden";
 export { Collapse, type CollapseProps } from "./collapse/Collapse";
 export {
   WizardFooter,
   type WizardFooterProps,
   type WizardFooterButtonProps,
-} from "./navigation/WizardFooter";
-export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./overlays/MenuItem";
-export { MenuSection, type MenuSectionProps } from "./overlays/Menu";
-export { Modal, type ModalProps } from "./overlays/Modal";
-export { Drawer, type DrawerProps, type DrawerSide, type DrawerSize } from "./overlays/Drawer";
+} from "./wizard-footer/WizardFooter";
+export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./menu/MenuItem";
+export { MenuSection, type MenuSectionProps } from "./menu/Menu";
+export { Modal, type ModalProps } from "./modal/Modal";
+export { Drawer, type DrawerProps, type DrawerSide, type DrawerSize } from "./drawer/Drawer";
 export { TimePicker, type TimePickerProps, type TimeParts } from "./pickers/TimePicker";
 export { Calendar, type CalendarProps, type CalendarDay, type Weekday } from "./pickers/Calendar";
-export { Popover, type PopoverProps, type PopoverAlign } from "./overlays/Popover";
+export { Popover, type PopoverProps, type PopoverAlign } from "./popover/Popover";
 export { LineClamp, type LineClampProps } from "./line-clamp/LineClamp";
 export { MonthYearPicker, type MonthYearPickerProps } from "./pickers/MonthYearPicker";
