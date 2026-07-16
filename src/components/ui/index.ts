@@ -79,7 +79,9 @@ export {
 export { Spinner, type SpinnerProps } from "./Spinner";
 export { Skeleton, type SkeletonProps, type SkeletonVariant } from "./Skeleton";
 export { SkeletonText, type SkeletonTextProps } from "./SkeletonText";
-export { VisuallyHidden } from "./VisuallyHidden";
+export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
+export { Collapse, type CollapseProps } from "./Collapse";
+export { WizardFooter, type WizardFooterProps, type WizardFooterButtonProps } from "./WizardFooter";
 export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./MenuItem";
 export { MenuSection, type MenuSectionProps } from "./Menu";
 export { Modal, type ModalProps } from "./Modal";

@@ -48,6 +48,9 @@ describe("public barrels", () => {
       "MenuSection",
       "Modal",
       "Drawer",
+      "VisuallyHidden",
+      "Collapse",
+      "WizardFooter",
     ]);
   });
 

@@ -90,6 +90,18 @@ describe("VisuallyHidden", () => {
     expect(el.tagName).toBe("SPAN");
     expect(el).toHaveClass("sr-only");
   });
+
+  it("forwards native attributes and can render as another element", () => {
+    render(
+      <VisuallyHidden as="div" aria-live="polite" data-testid="live">
+        3 left
+      </VisuallyHidden>,
+    );
+    const el = screen.getByTestId("live");
+    expect(el.tagName).toBe("DIV");
+    expect(el).toHaveAttribute("aria-live", "polite");
+    expect(el).toHaveClass("sr-only");
+  });
 });
 
 describe("GoogleMark", () => {
