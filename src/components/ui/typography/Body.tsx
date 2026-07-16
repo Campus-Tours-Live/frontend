@@ -1,14 +1,18 @@
-import { type ElementType, type HTMLAttributes, type ReactNode } from "react";
+import { type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { COLOR_CLASS, WEIGHT_CLASS, type TextColor, type TextWeight } from "./typography";
 
 /**
  * Body — sans-font running text. Pairs with {@link Heading}: same weight/colour tokens, a small size
- * scale, so paragraphs and labels stop hand-writing `text-[13px] text-ink-soft` everywhere. `as` is
- * any element (p default; also span/div, or list/description/legend tags — ul/li/dt/dd/legend).
+ * scale, so paragraphs and labels stop hand-writing `text-[13px] text-ink-soft` everywhere. `as` is a
+ * text-level tag (p default; also span/div for inline/wrapping, or description/legend tags dt/dd/legend).
+ * It is deliberately NOT a list container: `ul`/`li` structure belongs to {@link List}/{@link ListItem}.
  * `lead` is the fluid marketing lead size (16–18px). Forwards native attributes to the element.
  */
 export type BodySize = "small" | "medium" | "large" | "lead";
+
+/** The text-level tags Body may render as — intentionally excludes list tags (ul/li → List/ListItem). */
+export type BodyAs = "p" | "span" | "div" | "dt" | "dd" | "legend";
 
 const SIZE_CLASS: Record<BodySize, string> = {
   small: "text-[13px]",
@@ -18,8 +22,9 @@ const SIZE_CLASS: Record<BodySize, string> = {
 };
 
 export interface BodyProps extends HTMLAttributes<HTMLElement> {
-  /** Element to render. Default `p`. Any element — span/div for inline/wrapping, or ul/li/dt/dd/legend. */
-  as?: ElementType;
+  /** Text-level tag to render. Default `p`. span/div for inline/wrapping, or dt/dd/legend.
+   *  Not a list container — use {@link List}/{@link ListItem} for ul/li. */
+  as?: BodyAs;
   size?: BodySize;
   weight?: TextWeight;
   color?: TextColor;

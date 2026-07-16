@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Body, Button, Heading, Link, StatusBadge } from "@/components/ui";
+import { Body, Button, Heading, Icon, Link, List, ListItem, StatusBadge } from "@/components/ui";
 
 /**
  * RoleCard — signup-flow component (used by /signup/role).
@@ -57,17 +57,17 @@ export function RoleCard({
         {subtitle}
       </Body>
 
-      <Body as="ul" size="medium" className="mt-4 flex min-h-[90px] flex-col gap-2">
+      <List dividers={false} className="mt-4 flex min-h-[90px] flex-col gap-2">
         {points.map((point) => (
-          <li key={point} className="flex items-start gap-2">
-            <span
-              className="mt-1.5 inline-block h-2 w-2 shrink-0 rounded-pill bg-sage-deep"
-              aria-hidden
-            />
+          <ListItem
+            key={point}
+            className="items-start gap-2 px-0 py-0"
+            leading={<Icon name="success" className="mt-0.5 text-sage-deep" />}
+          >
             {point}
-          </li>
+          </ListItem>
         ))}
-      </Body>
+      </List>
 
       <div className="mt-auto pt-2">
         {ctaHref ? (

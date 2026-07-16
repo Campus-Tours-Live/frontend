@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site/SiteHeader";
-import { Alert, Body, Link, SectionHeading } from "@/components/ui";
+import { Alert, Body, Icon, Link, List, ListItem, SectionHeading } from "@/components/ui";
 // Import directly from the server-safe module, not the "@/lib/auth" barrel —
 // the barrel also re-exports the client-only authGate ('import "client-only"'),
 // which a Server Component (this page) must not pull in.
@@ -88,22 +88,17 @@ export default async function SignInPage({
 
             <AuthOptions intent="signin" returnTo={safeReturnTo} />
 
-            <Body
-              as="ul"
-              size="small"
-              color="muted"
-              className="flex flex-col gap-2.5 border-t border-border pt-6"
-            >
+            <List dividers={false} className="flex flex-col gap-2.5 border-t border-border pt-6">
               {TRUST.map((t) => (
-                <li key={t} className="flex items-center gap-2.5">
-                  <span
-                    className="inline-block h-2 w-2 shrink-0 rounded-pill bg-sage-deep"
-                    aria-hidden
-                  />
+                <ListItem
+                  key={t}
+                  className="gap-2.5 px-0 py-0"
+                  leading={<Icon name="success" className="text-sage-deep" />}
+                >
                   {t}
-                </li>
+                </ListItem>
               ))}
-            </Body>
+            </List>
 
             <Body size="large" color="muted" className="text-center">
               New to CampusToursLive?{" "}

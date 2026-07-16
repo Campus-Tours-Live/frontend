@@ -1,4 +1,4 @@
-import { Alert, Body } from "@/components/ui";
+import { Alert } from "@/components/ui";
 import type { AffectedBooking } from "@/lib/data-access";
 
 /** One affected booking's scheduled window in the guide's settings timezone —
@@ -38,10 +38,10 @@ export function AffectedBookingsNotice({ bookings, timeZone }: AffectedBookingsN
       </p>
       <ul className="mt-1 space-y-1">
         {bookings.map((booking) => (
-          <Body as="li" key={booking.bookingId} size="small">
+          <li key={booking.bookingId} className="text-[13px]">
             <span className="font-semibold">{booking.bookingNumber}</span>{" "}
             {formatBookingWindow(booking.scheduledStartAt, booking.scheduledEndAt, timeZone)}
-          </Body>
+          </li>
         ))}
       </ul>
     </Alert>
