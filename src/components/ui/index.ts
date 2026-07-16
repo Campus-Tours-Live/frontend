@@ -39,6 +39,7 @@ export {
   type SegmentOption,
 } from "./SegmentedControl";
 export { ButtonGroup, type ButtonGroupProps } from "./ButtonGroup";
+export { ButtonRow, type ButtonRowProps, type ButtonRowAlign } from "./ButtonRow";
 export {
   Field,
   TextField,
