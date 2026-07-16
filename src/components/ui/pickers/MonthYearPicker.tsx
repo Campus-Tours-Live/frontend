@@ -85,7 +85,7 @@ function YearInput({ year, onCommit }: YearInputProps) {
       inputMode="numeric"
       aria-label="Year"
       value={draft ?? String(year)}
-      className="w-14 rounded bg-transparent text-center text-[14px] font-semibold text-ink outline-none tabular-nums focus:bg-primary-soft focus:text-primary-dark"
+      className="w-14 rounded bg-transparent text-center text-ui font-semibold text-ink outline-none tabular-nums focus:bg-primary-soft focus:text-primary-dark"
       onFocus={(event) => {
         setDraft(String(year));
         event.currentTarget.select();
@@ -159,7 +159,7 @@ export function MonthYearPicker({
         // `min-w` holds a stable width for the widest label ("September 2026") and
         // `justify-center` centers the text, so stepping months never makes the label
         // grow/shrink and shove the ‹/› chevrons around.
-        className="tp-icon-btn flex min-w-[9.5rem] items-center justify-center gap-1 px-2.5 py-2 text-[14px] font-semibold text-ink"
+        className="tp-icon-btn flex min-w-[9.5rem] items-center justify-center gap-1 px-2.5 py-2 text-ui font-semibold text-ink"
       >
         {label}
       </button>

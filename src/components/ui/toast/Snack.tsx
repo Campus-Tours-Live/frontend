@@ -23,7 +23,7 @@ export function Snack({ message, action, onClose, className }: SnackProps) {
   return (
     <div
       className={cn(
-        "pointer-events-auto flex items-center gap-3 rounded-lg bg-ink px-4 py-3 text-[14px] text-white shadow-lg",
+        "pointer-events-auto flex items-center gap-3 rounded-lg bg-ink px-4 py-3 text-ui text-white shadow-lg",
         className,
       )}
     >

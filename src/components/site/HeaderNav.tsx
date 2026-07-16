@@ -76,7 +76,7 @@ export function HeaderNav({
   return (
     <List
       dividers={false}
-      className="hidden items-center gap-7 text-[14px] font-semibold text-ink-soft lg:flex"
+      className="hidden items-center gap-7 text-ui font-semibold text-ink-soft lg:flex"
     >
       {NAV_LINKS.map((link) => (
         <Link key={link.label} href={link.href} className="transition-colors hover:text-ink">

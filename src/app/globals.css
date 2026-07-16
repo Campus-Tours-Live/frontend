@@ -452,7 +452,7 @@
   /* ---------- Checkbox / Radio (shared control shell) ---------- */
   /* The clickable row wrapping the hidden native input + indicator + label. */
   .control-label {
-    @apply inline-flex items-start gap-2 text-[14px] text-ink;
+    @apply inline-flex items-start gap-2 text-ui text-ink;
   }
   /* The custom indicator box/circle. Pair with `rounded-[5px]` (checkbox) or
      `rounded-full` (radio); components own only the checked/disabled tone. */

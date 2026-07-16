@@ -16,7 +16,7 @@ export type BodyAs = "p" | "span" | "div" | "dt" | "dd" | "legend";
 
 const SIZE_CLASS: Record<BodySize, string> = {
   small: "text-[13px]",
-  medium: "text-[14px]",
+  medium: "text-ui",
   large: "text-[15px]",
   lead: "text-lead",
 };

@@ -78,7 +78,7 @@ describe("Body", () => {
     render(<Body color="muted">Some copy</Body>);
     const el = screen.getByText("Some copy");
     expect(el.tagName).toBe("P");
-    expect(el).toHaveClass("font-sans", "text-[14px]", "font-normal", "text-ink-soft");
+    expect(el).toHaveClass("font-sans", "text-ui", "font-normal", "text-ink-soft");
   });
 
   it("can render as a span", () => {

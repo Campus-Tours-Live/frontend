@@ -185,7 +185,7 @@ export function MemberCard({
           {items.map((item) => {
             const RowIcon = item.icon;
             return (
-              <li key={item.label} className="flex items-center gap-3 text-[14px]">
+              <li key={item.label} className="flex items-center gap-3 text-ui">
                 <RowIcon
                   size={18}
                   strokeWidth={1.8}

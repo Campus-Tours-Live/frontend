@@ -175,7 +175,7 @@ export function WeeklyHoursPanel() {
                 <div className="flex shrink-0 items-center gap-5">
                   <span
                     className={
-                      "text-[14px] font-bold " + (isAvailable ? "text-primary" : "text-ink-soft")
+                      "text-ui font-bold " + (isAvailable ? "text-primary" : "text-ink-soft")
                     }
                   >
                     {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}

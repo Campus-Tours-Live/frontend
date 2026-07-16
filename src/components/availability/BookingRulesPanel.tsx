@@ -72,7 +72,7 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
         {/* Mobile-only condensed summary; hidden once expanded and always from `lg` up. */}
         <dl
           data-testid="booking-rules-summary"
-          className={cn("space-y-3 text-[14px]", expanded ? "hidden" : "block lg:hidden")}
+          className={cn("space-y-3 text-ui", expanded ? "hidden" : "block lg:hidden")}
         >
           <RuleRow label="Timezone" value={formatTimezoneLabel(settings.timezone)} />
           <RuleRow
@@ -85,7 +85,7 @@ export function BookingRulesPanel({ settings }: BookingRulesPanelProps) {
         {/* Full policy: shown when expanded (mobile) or always from `lg` up. */}
         <dl
           data-testid="booking-rules-full"
-          className={cn("space-y-3 text-[14px]", expanded ? "block" : "hidden lg:block")}
+          className={cn("space-y-3 text-ui", expanded ? "block" : "hidden lg:block")}
         >
           <RuleRow label="Timezone" value={formatTimezoneLabel(settings.timezone)} />
           <RuleRow label="Acceptance" value={settings.acceptanceMode} />

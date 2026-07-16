@@ -17,8 +17,8 @@ import { Link } from "../link/Link";
 export type MenuItemVariant = "row" | "pill";
 
 const BASE: Record<MenuItemVariant, string> = {
-  row: "flex w-full items-center gap-2.5 rounded-card px-3 py-2 text-left text-[14px] transition-colors",
-  pill: "flex w-full items-center gap-3 rounded-pill px-3.5 py-2.5 text-left text-[14px] transition-colors",
+  row: "flex w-full items-center gap-2.5 rounded-card px-3 py-2 text-left text-ui transition-colors",
+  pill: "flex w-full items-center gap-3 rounded-pill px-3.5 py-2.5 text-left text-ui transition-colors",
 };
 
 const STATE: Record<MenuItemVariant, { active: string; idle: string }> = {
