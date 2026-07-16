@@ -40,6 +40,7 @@ export { PageHeader, type PageHeaderProps } from "./page/PageHeader";
 export { InlineLoading, type InlineLoadingProps } from "./inline-loading/InlineLoading";
 export { Chip, type ChipProps } from "./chip/Chip";
 export { Switch, type SwitchProps } from "./switch/Switch";
+export { ControlShell, type ControlShellProps } from "./control/ControlShell";
 export { Checkbox, type CheckboxProps } from "./checkbox/Checkbox";
 export { Radio, type RadioProps } from "./radio/Radio";
 export { Breadcrumb, type BreadcrumbProps } from "./breadcrumb/Breadcrumb";

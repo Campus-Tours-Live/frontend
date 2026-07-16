@@ -1,5 +1,6 @@
 import { forwardRef, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { ControlShell } from "../control/ControlShell";
 
 /**
  * Radio — one option in a mutually-exclusive group. Controlled: pass `checked` + `onChange`, and the
@@ -53,13 +54,7 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(pro
   };
 
   return (
-    <label
-      className={cn(
-        "control-label",
-        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-        className,
-      )}
-    >
+    <ControlShell label={label} disabled={disabled} className={className}>
       <input
         ref={ref}
         type="radio"
@@ -84,7 +79,6 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(function Radio(pro
           <span className={cn("h-2.5 w-2.5 rounded-full", disabled ? "bg-border" : "bg-primary")} />
         ) : null}
       </span>
-      {label ? <span className="leading-[18px]">{label}</span> : null}
-    </label>
+    </ControlShell>
   );
 });

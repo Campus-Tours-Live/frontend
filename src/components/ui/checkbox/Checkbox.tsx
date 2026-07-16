@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import { ControlShell } from "../control/ControlShell";
 
 /**
  * Checkbox — a selectable option (checked / unchecked / indeterminate). Controlled: pass `checked` +
@@ -89,13 +90,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
       : "border-border bg-white";
 
   return (
-    <label
-      className={cn(
-        "control-label",
-        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-        className,
-      )}
-    >
+    <ControlShell label={label} disabled={disabled} className={className}>
       <input
         ref={setRef}
         type="checkbox"
@@ -124,7 +119,6 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(function Che
           </svg>
         ) : null}
       </span>
-      {label ? <span className="leading-[18px]">{label}</span> : null}
-    </label>
+    </ControlShell>
   );
 });
