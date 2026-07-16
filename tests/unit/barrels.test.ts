@@ -60,6 +60,7 @@ describe("public barrels", () => {
       "VisuallyHidden",
       "Collapse",
       "WizardFooter",
+      "LineClamp",
     ]);
   });
 

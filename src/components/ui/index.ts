@@ -97,5 +97,6 @@ export { Modal, type ModalProps } from "./Modal";
 export { Drawer, type DrawerProps, type DrawerSide, type DrawerSize } from "./Drawer";
 export { TimePicker, type TimePickerProps, type TimeParts } from "./TimePicker";
 export { Calendar, type CalendarProps, type CalendarDay, type Weekday } from "./Calendar";
-export { Popover, type PopoverProps } from "./Popover";
+export { Popover, type PopoverProps, type PopoverAlign } from "./Popover";
+export { LineClamp, type LineClampProps } from "./LineClamp";
 export { MonthYearPicker, type MonthYearPickerProps } from "./MonthYearPicker";

@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
  * unit-tested.
  */
 
+/** Horizontal alignment of the popover relative to the anchor (before viewport clamping). */
+export type PopoverAlign = "start" | "center" | "end";
+
 export interface PopoverProps {
   /** Whether the popover is shown. */
   open: boolean;
@@ -30,6 +33,10 @@ export interface PopoverProps {
   className?: string;
   /** Overlay role — e.g. "dialog" (default) or "tooltip" for hover summaries. */
   role?: string;
+  /** Horizontal alignment to the anchor: `start` aligns left edges (default),
+   *  `center` centres on the anchor, `end` aligns right edges. Vertical side is
+   *  always auto (below, flipping above when there isn't room). */
+  align?: PopoverAlign;
   "aria-label"?: string;
 }
 
@@ -43,6 +50,7 @@ export function Popover({
   onClose,
   className,
   role = "dialog",
+  align = "start",
   "aria-label": ariaLabel,
 }: PopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -57,7 +65,13 @@ export function Popover({
     const flipUp =
       anchor.bottom + height + GAP > window.innerHeight && anchor.top - height - GAP > 0;
     const top = flipUp ? anchor.top - height - GAP : anchor.bottom + GAP;
-    const left = Math.max(MARGIN, Math.min(anchor.left, window.innerWidth - width - MARGIN));
+    const alignedLeft =
+      align === "center"
+        ? anchor.left + anchor.width / 2 - width / 2
+        : align === "end"
+          ? anchor.right - width
+          : anchor.left;
+    const left = Math.max(MARGIN, Math.min(alignedLeft, window.innerWidth - width - MARGIN));
     setPos({ left, top });
   };
 
