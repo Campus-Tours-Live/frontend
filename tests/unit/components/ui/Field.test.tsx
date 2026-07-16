@@ -189,4 +189,15 @@ describe("SelectField", () => {
     );
     expect(ref.current).toBeInstanceOf(HTMLSelectElement);
   });
+
+  it("applies the small size and a leading icon", () => {
+    render(
+      <SelectField label="Topic" size="small" leadingIcon={<svg data-testid="lead" />}>
+        <option value="a">A</option>
+      </SelectField>,
+    );
+    expect(screen.getByTestId("lead")).toBeInTheDocument();
+    const select = screen.getByLabelText("Topic");
+    expect(select).toHaveClass("px-3", "py-2", "text-[13px]", "pl-10");
+  });
 });

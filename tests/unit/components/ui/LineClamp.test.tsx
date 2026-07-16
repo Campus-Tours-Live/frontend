@@ -21,7 +21,7 @@ describe("LineClamp", () => {
     render(<LineClamp lines={8}>Way too much text</LineClamp>);
     const el = screen.getByText("Way too much text");
     expect(el).not.toHaveClass("line-clamp-8");
-    expect(el.style.WebkitLineClamp).toBe("8");
+    expect((el.style as unknown as Record<string, string>).WebkitLineClamp).toBe("8");
   });
 
   it("forwards native props", () => {

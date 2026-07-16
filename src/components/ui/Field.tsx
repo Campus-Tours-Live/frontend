@@ -25,9 +25,10 @@ const SIZE_CLASS: Record<FieldSize, string | false> = {
  * TextField / Textarea / SelectField convenience wrappers for plain controls.
  *
  * `error` takes priority over `hint`. `optional` appends an "(optional)" suffix
- * to the label. TextField/Textarea also take `size` ("small" | "large"); TextField
- * adds `leadingIcon` / `trailing` slots and Textarea shows a live character counter
- * when `maxLength` is set. Styles live in globals.css (.field / .field-error / .field-hint).
+ * to the label. TextField/Textarea/SelectField take `size` ("small" | "large");
+ * TextField/SelectField add a `leadingIcon`, TextField also a `trailing` slot, and
+ * Textarea shows a live character counter when `maxLength` is set. Styles live in
+ * globals.css (.field / .field-error / .field-hint).
  */
 export interface FieldProps {
   label?: ReactNode;
@@ -212,10 +213,28 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   );
 });
 
-export interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement>, ControlExtras {}
+export interface SelectFieldProps
+  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, "size">, ControlExtras {
+  /** @default "large" */
+  size?: FieldSize;
+  /** Decorative icon rendered inside the select's leading edge. */
+  leadingIcon?: ReactNode;
+}
 
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
-  { label, error, hint, optional, id, className, fieldClassName, children, ...props },
+  {
+    label,
+    error,
+    hint,
+    optional,
+    id,
+    className,
+    fieldClassName,
+    size = "large",
+    leadingIcon,
+    children,
+    ...props
+  },
   ref,
 ) {
   const autoId = useId();
@@ -229,15 +248,25 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
       optional={optional}
       className={fieldClassName}
     >
-      <select
-        ref={ref}
-        id={selectId}
-        className={cn("input", className)}
-        aria-invalid={error ? true : undefined}
-        {...props}
-      >
-        {children}
-      </select>
+      <div className="relative">
+        {leadingIcon ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-ink-soft [&_svg]:h-[18px] [&_svg]:w-[18px]"
+          >
+            {leadingIcon}
+          </span>
+        ) : null}
+        <select
+          ref={ref}
+          id={selectId}
+          className={cn("input", SIZE_CLASS[size], leadingIcon && "pl-10", className)}
+          aria-invalid={error ? true : undefined}
+          {...props}
+        >
+          {children}
+        </select>
+      </div>
     </Field>
   );
 });

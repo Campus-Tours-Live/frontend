@@ -41,6 +41,7 @@ export { InlineLoading, type InlineLoadingProps } from "./InlineLoading";
 export { Chip, type ChipProps } from "./Chip";
 export { Switch, type SwitchProps } from "./Switch";
 export { Checkbox, type CheckboxProps } from "./Checkbox";
+export { Radio, type RadioProps } from "./Radio";
 export { Breadcrumb, type BreadcrumbProps } from "./Breadcrumb";
 export { BreadcrumbItem, type BreadcrumbItemProps } from "./BreadcrumbItem";
 export { Tag, type TagProps, type TagColor, type TagVariant } from "./Tag";

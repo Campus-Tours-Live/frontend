@@ -36,6 +36,7 @@ describe("public barrels", () => {
       "Chip",
       "Switch",
       "Checkbox",
+      "Radio",
       "Breadcrumb",
       "BreadcrumbItem",
       "Tag",
