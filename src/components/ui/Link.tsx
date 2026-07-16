@@ -36,24 +36,27 @@ function needsFullNav(href: string): boolean {
 }
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
-  { href, variant, size, block, external, className, children, ...props },
+  { href, variant, size, block, external, className, children, target, rel, ...props },
   ref,
 ) {
   // Only add button classes when a variant is requested; otherwise leave
   // className undefined so plain text links keep the global link styling.
-  const classes =
-    cn(variant && buttonClasses({ variant, size, block }), className) || undefined;
+  const classes = cn(variant && buttonClasses({ variant, size, block }), className) || undefined;
+
+  // A link that opens a new tab must not leak the opener (tab-nabbing) — default `rel` to
+  // `noopener noreferrer` for `target="_blank"` unless the caller set one explicitly.
+  const safeRel = rel ?? (target === "_blank" ? "noopener noreferrer" : undefined);
 
   if (external ?? needsFullNav(href)) {
     return (
-      <a ref={ref} href={href} className={classes} {...props}>
+      <a ref={ref} href={href} className={classes} target={target} rel={safeRel} {...props}>
         {children}
       </a>
     );
   }
 
   return (
-    <NextLink ref={ref} href={href} className={classes} {...props}>
+    <NextLink ref={ref} href={href} className={classes} target={target} rel={safeRel} {...props}>
       {children}
     </NextLink>
   );

@@ -48,4 +48,15 @@ describe("IconButton", () => {
     );
     expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
   });
+
+  it("renders an anchor when given href, with tab-nabbing-safe rel for target=_blank", () => {
+    render(
+      <IconButton a11yLabel="Help" href="https://example.com" target="_blank">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    const link = screen.getByRole("link", { name: "Help" });
+    expect(link).toHaveAttribute("href", "https://example.com");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
 });
