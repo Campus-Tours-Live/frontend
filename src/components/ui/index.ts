@@ -38,7 +38,8 @@ export { PageContainer, type PageContainerProps, type PageWidth } from "./PageCo
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
 export { InlineLoading, type InlineLoadingProps } from "./InlineLoading";
 export { Chip, type ChipProps } from "./Chip";
-export { Toggle, type ToggleProps } from "./Toggle";
+export { Switch, type SwitchProps } from "./Switch";
+export { Tag, type TagProps, type TagColor, type TagVariant } from "./Tag";
 export {
   SegmentedControl,
   type SegmentedControlProps,

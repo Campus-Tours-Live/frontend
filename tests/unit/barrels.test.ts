@@ -29,6 +29,8 @@ describe("public barrels", () => {
       "MemberCard",
       "SectionHeading",
       "Chip",
+      "Switch",
+      "Tag",
       "Field",
       "TextField",
       "Textarea",

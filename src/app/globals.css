@@ -354,7 +354,7 @@
     @apply px-2.5 py-1 text-[11.5px];
   }
 
-  /* ---------- Switch (Toggle) ---------- */
+  /* ---------- Switch ---------- */
   .switch {
     @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-pill
            border border-transparent bg-border cursor-pointer transition-colors

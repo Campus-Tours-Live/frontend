@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Panel, PanelHeader, Toggle } from "@/components/ui";
+import { Alert, Button, Panel, PanelHeader, Switch } from "@/components/ui";
 import {
   ApiError,
   useAvailabilityRules,
@@ -178,7 +178,7 @@ export function WeeklyHoursPanel() {
                   >
                     {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
                   </span>
-                  <Toggle
+                  <Switch
                     checked={isAvailable}
                     onChange={(next) => void handleToggle(dayIndex, next)}
                     disabled={isToggling}
