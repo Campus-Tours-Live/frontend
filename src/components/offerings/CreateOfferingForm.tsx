@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Button,
+  Card,
   Field,
   Icon,
   Link,
@@ -103,7 +104,7 @@ export function CreateOfferingForm() {
 
       {errors.root ? <Alert variant="error">{errors.root.message}</Alert> : null}
 
-      <div className="space-y-5 rounded-panel border border-border bg-card p-6 shadow-card">
+      <Card padded={false} className="space-y-5 rounded-panel p-6">
         <TextField
           label="Public title"
           placeholder="Campus life and hidden study spots"
@@ -163,7 +164,7 @@ export function CreateOfferingForm() {
           rows={4}
           {...register("description")}
         />
-      </div>
+      </Card>
 
       <Nudge variant="info" leading={<Icon name="info" />} title="Saving creates a draft">
         Publishing requires a verified guide account and makes the offering visible on the public

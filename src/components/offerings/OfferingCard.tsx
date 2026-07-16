@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Heading, StatusBadge } from "@/components/ui";
+import { Alert, Button, Card, Heading, StatusBadge } from "@/components/ui";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import { offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
@@ -34,7 +34,7 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
   };
 
   return (
-    <article className="overflow-hidden rounded-panel border border-border bg-card shadow-card">
+    <Card as="article" padded={false} className="overflow-hidden rounded-panel">
       <div className="flex h-[150px] items-center justify-center bg-canvas text-[12px] font-medium text-ink-soft">
         Campus tour image
       </div>
@@ -96,6 +96,6 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
           ) : null}
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

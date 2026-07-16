@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, Button, Chip, Field, Spinner, TextField, Textarea } from "@/components/ui";
+import { Alert, Button, Card, Chip, Field, Spinner, TextField, Textarea } from "@/components/ui";
 import {
   ApiError,
   useTourTopics,
@@ -133,7 +133,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
       {errors.root ? <Alert variant="error">{errors.root.message}</Alert> : null}
       {saveMessage ? <Alert variant="success">{saveMessage}</Alert> : null}
 
-      <div className="space-y-5 rounded-panel border border-border bg-card p-6 shadow-card">
+      <Card padded={false} className="space-y-5 rounded-panel p-6">
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField
             label="First name"
@@ -258,7 +258,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           hint="Default pricing for new tour offerings."
           {...register("basePrice", { required: "Price is required" })}
         />
-      </div>
+      </Card>
 
       <Button type="submit" variant="primary" disabled={isSubmitting || updateProfile.isPending}>
         {isSubmitting || updateProfile.isPending ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, SectionHeading, Spinner, StatusBadge } from "@/components/ui";
+import { Alert, Card, SectionHeading, Spinner, StatusBadge } from "@/components/ui";
 import { useGuideProfile, useMe } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
@@ -36,7 +36,7 @@ export function GuideProfilePage() {
         level={1}
       />
 
-      <div className="rounded-panel border border-border bg-card p-6 shadow-card">
+      <Card padded={false} className="rounded-panel p-6">
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-[13px] text-ink-soft">Display name</dt>
@@ -65,7 +65,7 @@ export function GuideProfilePage() {
             </dd>
           </div>
         </dl>
-      </div>
+      </Card>
 
       <GuideProfileForm profile={profile} />
     </div>

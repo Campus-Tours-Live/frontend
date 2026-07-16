@@ -1,4 +1,4 @@
-import { Button, Heading, StatusBadge } from "@/components/ui";
+import { Button, Card, Heading, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -15,7 +15,11 @@ export interface TourCardProps {
 
 export function TourCard({ title, university, guide, durationMinutes, price }: TourCardProps) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-[18px] border border-border bg-card shadow-card">
+    <Card
+      as="article"
+      padded={false}
+      className="flex h-full flex-col overflow-hidden rounded-[18px]"
+    >
       {/* Image placeholder — imported editorial campus crop */}
       <div className="flex h-[150px] items-center justify-center bg-canvas text-[12px] font-medium text-ink-soft">
         Imported editorial campus crop
@@ -37,6 +41,6 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
           </Button>
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

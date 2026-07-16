@@ -1,4 +1,4 @@
-import { type HTMLAttributes } from "react";
+import { type ElementType, type HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import { CardSizeContext, type CardSize } from "./CardSizeContext";
 
@@ -14,18 +14,27 @@ export type { CardSize };
  * scale the sub-components read from context.
  */
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** Element to render (e.g. `article`/`section` for a semantic card). Default `div`. */
+  as?: ElementType;
   /** Standard `.card-pad` inset. Set false when composing the Card* sub-components. Default true. */
   padded?: boolean;
   /** Padding scale for the sub-components (via context). Default "small". */
   size?: CardSize;
 }
 
-export function Card({ padded = true, size = "small", className, children, ...rest }: CardProps) {
+export function Card({
+  as: Tag = "div",
+  padded = true,
+  size = "small",
+  className,
+  children,
+  ...rest
+}: CardProps) {
   return (
     <CardSizeContext.Provider value={size}>
-      <div className={cn("card", padded && "card-pad", className)} {...rest}>
+      <Tag className={cn("card", padded && "card-pad", className)} {...rest}>
         {children}
-      </div>
+      </Tag>
     </CardSizeContext.Provider>
   );
 }
