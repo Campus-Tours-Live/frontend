@@ -1,8 +1,13 @@
-// import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lucide-react";
-// import { MemberCard, type MemberCardHighlight, type MemberCardItem } from "@/components/ui";
-import { Card, Link } from "@/components/ui";
+import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lucide-react";
+import {
+  Card,
+  Link,
+  MemberCard,
+  type MemberCardHighlight,
+  type MemberCardItem,
+} from "@/components/ui";
 import type { GuideDashboard, GuideProfile } from "@/lib/data-access";
-// import { formatMonthYear } from "@/lib/format";
+import { formatMonthYear } from "@/lib/format";
 import { DashboardHeader } from "./guide/DashboardHeader";
 
 /**
@@ -36,25 +41,41 @@ const PLACEHOLDER_STATS = [
 ] as const;
 
 export function GuideSummary({ data }: { data: GuideDashboard }) {
-  const { guide } = data;
+  const { guide, guideStatus, canPublish, offerings, createdAt } = data;
 
-  // -- MemberCard (commented out — team deciding whether to keep) --
-  // const { guide, guideStatus, canPublish, offerings, createdAt } = data;
-  // const items: MemberCardItem[] = [
-  //   { icon: GraduationCap, label: "Major", value: guide.major ?? "—" },
-  //   { icon: BadgeCheck, label: "Application", value: guideStatus ?? "—" },
-  //   { icon: List, label: "Offerings", value: String(offerings.length) },
-  //   { icon: CalendarDays, label: "Member since", value: formatMonthYear(createdAt) },
-  // ];
-  // const highlight: MemberCardHighlight = canPublish
-  //   ? { icon: Trophy, title: "Approved to host", description: "You can publish offerings and accept bookings." }
-  //   : { icon: Clock, title: "Application under review", description: "Hosting unlocks once an admin approves you." };
+  const items: MemberCardItem[] = [
+    { icon: GraduationCap, label: "Major", value: guide.major ?? "—" },
+    { icon: BadgeCheck, label: "Application", value: guideStatus ?? "—" },
+    { icon: List, label: "Offerings", value: String(offerings.length) },
+    { icon: CalendarDays, label: "Member since", value: formatMonthYear(createdAt) },
+  ];
+
+  const highlight: MemberCardHighlight = canPublish
+    ? {
+        icon: Trophy,
+        title: "Approved to host",
+        description: "You can publish offerings and accept bookings.",
+      }
+    : {
+        icon: Clock,
+        title: "Application under review",
+        description: "Hosting unlocks once an admin approves you.",
+      };
 
   const completionPct = profileCompletionPct(guide);
 
   return (
     <div className="space-y-6">
       <DashboardHeader firstName={guide.firstName} />
+
+      <MemberCard
+        name={guide.displayName ?? "Member"}
+        role="GUIDE"
+        roleLabel="Student Guide"
+        verification={canPublish ? "Identity and University Verified" : undefined}
+        items={items}
+        highlight={highlight}
+      />
 
       {/* Stats row — rating/earnings/payout show "—" until BFF endpoints land (FE-2 types, BFF-1/4) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -77,11 +98,9 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
               style={{ width: `${completionPct}%` }}
             />
           </div>
-          {completionPct < 100 && (
-            <Link href="/profile" variant="ghost" size="sm" className="mt-0.5 self-start px-0">
-              Complete profile
-            </Link>
-          )}
+          <Link href="/profile" variant="ghost" size="sm" className="mt-0.5 self-start px-0">
+            Complete profile
+          </Link>
         </Card>
 
         {PLACEHOLDER_STATS.map((s) => (
@@ -92,17 +111,6 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
           </Card>
         ))}
       </div>
-
-      {/* MemberCard — commented out, team deciding whether to keep
-      <MemberCard
-        name={guide.displayName ?? "Member"}
-        role="GUIDE"
-        roleLabel="Student Guide"
-        verification={canPublish ? "Identity and University Verified" : undefined}
-        items={items}
-        highlight={highlight}
-      />
-      */}
     </div>
   );
 }
