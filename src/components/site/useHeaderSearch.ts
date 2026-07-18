@@ -119,8 +119,13 @@ export function useHeaderSearch() {
   const topicLabel = topicOptions.find((t) => t.value === urlTopic)?.label;
   const summary =
     [urlQ.trim() || null, topicLabel || null].filter(Boolean).join(" · ") || "Search tours";
+  // Committed values for the compact 3-segment display (empty → the segment shows its placeholder).
+  const universityValue = urlQ.trim();
+  const topicValue = topicLabel ?? "";
 
   return {
+    universityValue,
+    topicValue,
     q,
     setQ,
     topic,

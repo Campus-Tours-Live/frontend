@@ -147,11 +147,13 @@ export function SiteHeader({
 
   return (
     <>
-      <header
-        ref={headerRef}
-        className="fixed inset-x-0 top-0 z-40 border-b border-border/70 bg-card"
-      >
-        <div className="mx-auto max-w-content px-6">
+      <header ref={headerRef} className="fixed inset-x-0 top-0 z-40">
+        {/* Animated white background panel — carries the header bg + bottom border and morphs its
+            height (72↔146) so the header itself grows/shrinks and its bottom edge stays below the
+            search shell. Absolute → out of flow, so the spacer stays 72px and content never moves. */}
+        <div className="ds-header-bg" data-collapsed={collapsed} aria-hidden />
+
+        <div className="relative z-10 mx-auto max-w-content px-6">
           {/* Constant-height row: logo | (mobile search / empty on desktop) | nav. */}
           <div className="grid h-[var(--header-row-height)] grid-cols-[auto_1fr_auto] items-center gap-4">
             <div className="flex shrink-0 items-center gap-2">

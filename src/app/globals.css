@@ -500,18 +500,20 @@
   }
 }
 
-/* ---- Collapsing header — single-shell morph (Airbnb-style) --------------------
-   The fixed header is a single constant-height row; the desktop search is ONE white shell
-   (.ds-shell) whose geometry (top/width/height) interpolates between expanded and compact.
-   It's an absolute overlay in a motion layer sibling of the row, centered to the header
-   (left:50% + fixed translateX(-50%)) — so it never re-parents, never enters flow, and the
-   spacer reserves only the row height and never animates (no content jump). The expanded form
-   and compact button cross-fade INSIDE the shell — the white pill is continuous. First-pass
-   geometry values; calibrate optically (see the morph spec). NO transform-scale, NO transition:all. */
+/* ---- Collapsing header — animated Header panel + single-shell morph -----------
+   The white Header itself morphs: an animated background PANEL (not the fixed <header>) carries the
+   background, bottom border and elevation, and its HEIGHT interpolates 72↔146px so the whole header
+   visually grows/shrinks and its bottom edge always sits BELOW the search shell. The search is ONE
+   `.ds-shell` (center-anchored; only top/width/height/box-shadow transition) that lives INSIDE the
+   panel. Both the panel and the shell are absolute (out of flow) → the spacer stays 72px and content
+   never moves. Expanded and compact layers share the SAME segment grid so fields stay aligned through
+   the morph. First-pass geometry — calibrate optically. NO transform-scale, NO transition:all. */
 :root {
   --header-row-height: 72px;
+  --header-expanded-height: 146px;
   --header-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --header-duration: 260ms;
+  --header-panel-duration: 280ms;
   --header-fade-duration: 180ms;
 }
 
@@ -520,28 +522,48 @@
   height: var(--header-row-height);
 }
 
-/* The one search shell. Center-anchored; only top/width/height transition. Width is capped by the
-   narrower-side estimate so it can't cover the logo/nav/account down to the 1024px breakpoint
-   (calibrate against real cluster widths at 1024/1280/1440). */
+/* Animated white Header background panel — the header's real visual surface + bottom border. */
+.ds-header-bg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 0;
+  height: var(--header-expanded-height);
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  transition: height var(--header-panel-duration) var(--header-easing);
+}
+.ds-header-bg[data-collapsed="true"] {
+  height: var(--header-row-height);
+}
+
+/* The one search shell — center-anchored; sits inside the panel; only top/width/height/shadow move.
+   Width capped by a narrower-side estimate so it can't cover logo/nav/account down to 1024px
+   (calibrate against real cluster widths at 1024/1280/1440). Shadow is weak when expanded (it's
+   inside the white header) and a touch stronger when collapsed (a clickable control in one row);
+   the scroll-expanded overlay's stronger elevation is a later step. */
 .ds-shell {
   position: absolute;
   left: 50%;
-  top: 76px;
+  top: 80px;
+  z-index: 20;
   width: min(680px, calc(100vw - 440px));
   height: 56px;
   transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
   transition:
     top var(--header-duration) var(--header-easing),
     width var(--header-duration) var(--header-easing),
-    height var(--header-duration) var(--header-easing);
+    height var(--header-duration) var(--header-easing),
+    box-shadow var(--header-duration) var(--header-easing);
 }
 .ds-shell[data-collapsed="true"] {
   top: 14px;
-  width: min(340px, calc(100vw - 440px));
+  width: min(460px, calc(100vw - 440px));
   height: 44px;
+  box-shadow: var(--shadow-md);
 }
 
-/* Content layers fill the shell and cross-fade; the geometry (above) is what reads as continuous. */
+/* Content layers fill the shell and cross-fade; the shared segment grid keeps fields aligned. */
 .ds-expanded,
 .ds-compact {
   position: absolute;
@@ -564,7 +586,22 @@
   transition: opacity var(--header-fade-duration) ease 80ms;
 }
 
+/* Shared segment widths (University widest, Topic, Language narrowest) — identical in both layers. */
+.ds-seg--uni {
+  flex: 42 1 0;
+  min-width: 0;
+}
+.ds-seg--topic {
+  flex: 25 1 0;
+  min-width: 0;
+}
+.ds-seg--lang {
+  flex: 21 1 0;
+  min-width: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ds-header-bg,
   .ds-shell,
   .ds-expanded,
   .ds-compact {

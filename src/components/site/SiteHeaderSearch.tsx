@@ -9,10 +9,11 @@ interface SearchProps {
   search: HeaderSearch;
 }
 
-/** The one circular primary search action, shared verbatim by the expanded (submit) and compact
- *  (decorative) layers so it reads as a single continuous anchor across the morph. */
-const ACTION_CLASS =
-  "grid h-10 w-10 shrink-0 place-items-center rounded-pill bg-primary text-primary-foreground";
+/** The circular primary search action — same colour/icon/radius token in both layers, sharing the
+ *  same right-edge centre so it reads as one continuous anchor (size differs by state). */
+const ACTION_BASE =
+  "grid shrink-0 place-items-center rounded-pill bg-primary text-primary-foreground";
+const DIVIDER = "my-2 w-px shrink-0 self-stretch bg-border";
 
 /**
  * DesktopSearchShell — the single white search shell (see globals `.ds-shell`). ONE DOM node whose
@@ -66,7 +67,7 @@ function ExpandedContent({
   return (
     <form
       role="search"
-      className="ds-expanded flex items-stretch gap-0 px-1"
+      className="ds-expanded flex items-center px-1"
       inert={collapsed}
       aria-hidden={collapsed}
       onSubmit={(e) => {
@@ -76,114 +77,154 @@ function ExpandedContent({
       onFocusCapture={onSearchFocusCapture}
       onBlurCapture={onSearchBlurCapture}
     >
-      <div className="relative flex min-w-0 flex-1 flex-col justify-center px-3">
-        <span className="text-[11px] font-bold leading-tight text-ink">University</span>
-        <input
-          ref={universityInputRef}
-          type="text"
-          role="combobox"
-          aria-label="University"
-          aria-autocomplete="list"
-          aria-expanded={suggestionsOpen}
-          aria-controls="header-university-suggestions"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onFocus={() => setUniFocused(true)}
-          onBlur={() => setUniFocused(false)}
-          placeholder="Search a school"
-          className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
-        />
-        {suggestionsOpen ? (
-          <ul
-            id="header-university-suggestions"
-            role="listbox"
-            aria-label="University suggestions"
-            className="absolute left-0 top-full z-20 mt-3 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"
+      <div className="flex min-w-0 flex-1 items-stretch">
+        <div className="ds-seg--uni relative flex flex-col justify-center px-3">
+          <span className="text-[11px] font-bold leading-tight text-ink">University</span>
+          <input
+            ref={universityInputRef}
+            type="text"
+            role="combobox"
+            aria-label="University"
+            aria-autocomplete="list"
+            aria-expanded={suggestionsOpen}
+            aria-controls="header-university-suggestions"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onFocus={() => setUniFocused(true)}
+            onBlur={() => setUniFocused(false)}
+            placeholder="Search a school"
+            className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
+          />
+          {suggestionsOpen ? (
+            <ul
+              id="header-university-suggestions"
+              role="listbox"
+              aria-label="University suggestions"
+              className="absolute left-0 top-full z-20 mt-3 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"
+            >
+              {q.trim().length < 1 ? (
+                <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+                  Recent searches
+                </li>
+              ) : null}
+              {suggestions.map((name) => (
+                <li key={name}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={q === name}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setQ(name);
+                      setUniFocused(false);
+                    }}
+                    className="w-full rounded-field px-2 py-2 text-left text-ui-sm hover:bg-muted"
+                  >
+                    {name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
+        <span className={DIVIDER} aria-hidden />
+
+        <label className="ds-seg--topic flex flex-col justify-center px-3">
+          <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
+          <select
+            aria-label="Topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none"
           >
-            {q.trim().length < 1 ? (
-              <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
-                Recent searches
-              </li>
-            ) : null}
-            {suggestions.map((name) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={q === name}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    setQ(name);
-                    setUniFocused(false);
-                  }}
-                  className="w-full rounded-field px-2 py-2 text-left text-ui-sm hover:bg-muted"
-                >
-                  {name}
-                </button>
-              </li>
+            <option value="">Any topic</option>
+            {topicOptions.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
-          </ul>
-        ) : null}
-      </div>
+          </select>
+        </label>
 
-      <span className="my-2 w-px shrink-0 bg-border" aria-hidden />
+        <span className={DIVIDER} aria-hidden />
 
-      <label className="flex min-w-0 flex-col justify-center px-3">
-        <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
-        <select
-          aria-label="Topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none"
+        <span
+          className="ds-seg--lang flex flex-col justify-center px-3 opacity-50"
+          title="Coming soon"
+          aria-disabled="true"
+          aria-label="Language — coming soon"
         >
-          <option value="">Any topic</option>
-          {topicOptions.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <span className="my-2 w-px shrink-0 bg-border" aria-hidden />
-
-      <span
-        className="flex flex-col justify-center px-3 opacity-50"
-        title="Coming soon"
-        aria-disabled="true"
-        aria-label="Language — coming soon"
-      >
-        <span className="text-[11px] font-bold leading-tight text-ink">Language</span>
-        <span className="inline-flex items-center gap-1.5 text-ui-sm leading-tight text-ink-soft">
-          Any language
-          <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em]">
-            Soon
+          <span className="text-[11px] font-bold leading-tight text-ink">Language</span>
+          <span className="inline-flex items-center gap-1.5 truncate text-ui-sm leading-tight text-ink-soft">
+            Any language
+            <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em]">
+              Soon
+            </span>
           </span>
         </span>
-      </span>
+      </div>
 
-      <button type="submit" aria-label="Search" className={`${ACTION_CLASS} ml-1 self-center`}>
+      <button
+        type="submit"
+        aria-label="Search"
+        className={`${ACTION_BASE} ml-1 h-10 w-10 self-center`}
+      >
         <Search size={18} strokeWidth={2} aria-hidden />
       </button>
     </form>
   );
 }
 
-/** Compact layer — the whole thing is one "Edit search" button; its circle is decorative only. */
+/** Compact layer — the whole thing is one "Edit search" button, but keeps the 3-segment structure
+ *  (values only, no labels) aligned to the expanded grid so fields don't collapse into one summary.
+ *  The inner segments and circle are decorative; only the shell is interactive. */
 function CompactContent({ search }: SearchProps) {
-  const { summary, openEditor, collapsed } = search;
+  const { universityValue, topicValue, openEditor, collapsed } = search;
   return (
     <button
       type="button"
-      className="ds-compact flex items-center gap-2 pl-4 pr-1 text-left"
+      className="ds-compact flex items-center px-1 text-left"
       aria-label="Edit search"
       inert={!collapsed}
       aria-hidden={!collapsed}
       onClick={openEditor}
     >
-      <span className="min-w-0 flex-1 truncate text-ui-sm font-semibold text-ink">{summary}</span>
-      <span aria-hidden className={`${ACTION_CLASS} self-center`}>
-        <Search size={18} strokeWidth={2} aria-hidden />
+      <span className="flex min-w-0 flex-1 items-stretch">
+        <span className="ds-seg--uni flex flex-col justify-center px-3">
+          <span
+            className={`truncate text-ui-sm font-semibold leading-tight ${
+              universityValue ? "text-ink" : "text-ink-soft"
+            }`}
+          >
+            {universityValue || "Choose university"}
+          </span>
+        </span>
+
+        <span className={DIVIDER} aria-hidden />
+
+        <span className="ds-seg--topic flex flex-col justify-center px-3">
+          <span
+            className={`truncate text-ui-sm leading-tight ${topicValue ? "text-ink" : "text-ink-soft"}`}
+          >
+            {topicValue || "Any topic"}
+          </span>
+        </span>
+
+        <span className={DIVIDER} aria-hidden />
+
+        <span className="ds-seg--lang flex flex-col justify-center px-3 opacity-60">
+          <span className="inline-flex items-center gap-1 truncate text-ui-sm leading-tight text-ink-soft">
+            Any language
+            <span className="rounded-pill bg-muted px-1 py-0.5 text-[8px] font-bold uppercase">
+              Soon
+            </span>
+          </span>
+        </span>
+      </span>
+
+      <span aria-hidden className={`${ACTION_BASE} ml-1 h-[34px] w-[34px] self-center`}>
+        <Search size={17} strokeWidth={2} aria-hidden />
       </span>
     </button>
   );
