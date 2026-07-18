@@ -605,6 +605,17 @@
   min-width: 0;
 }
 
+/* Shared section module panel — a header-layer sibling anchored under the shell's left (≈ the
+   University segment). First-pass anchor via calc (not per-frame rect measurement); calibrate.
+   Clamped to a left safe margin so it can't leave the viewport. */
+.ds-panel {
+  position: absolute;
+  top: 140px;
+  left: max(24px, calc(50% - min(680px, 100vw - 440px) / 2));
+  width: min(380px, calc(100vw - 48px));
+  z-index: 30;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ds-header-bg,
   .ds-shell,

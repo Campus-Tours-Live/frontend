@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HeaderNav } from "./HeaderNav";
 import { MobileNav } from "./MobileNav";
-import { DesktopSearchShell, HeaderSearchMobile } from "./SiteHeaderSearch";
+import { DesktopSearchShell, HeaderSearchMobile, UniversitySectionPanel } from "./SiteHeaderSearch";
 import { useHeaderSearch } from "./useHeaderSearch";
 
 /** Fallback delay for focusing University after a compact-search click, used when the shell's
@@ -45,9 +45,9 @@ export function SiteHeader({
     collapsed,
     forceExpanded,
     searchFocusWithin,
-    uniFocused,
     pendingFocus,
     setPendingFocus,
+    setPanelVisible,
     activeSection,
     cancelEditing,
   } = search;
@@ -76,6 +76,7 @@ export function SiteHeader({
   useEffect(() => {
     if (!pendingFocus) return;
     fallbackTimerRef.current = setTimeout(() => {
+      setPanelVisible(true);
       focusActiveSection();
       setPendingFocus(false);
       fallbackTimerRef.current = null;
@@ -86,7 +87,7 @@ export function SiteHeader({
         fallbackTimerRef.current = null;
       }
     };
-  }, [pendingFocus, setPendingFocus, focusActiveSection]);
+  }, [pendingFocus, setPendingFocus, setPanelVisible, focusActiveSection]);
 
   // Focus University only when the shell's OWN width transition finishes while expanding — so focus
   // lands once the shell has reached a usable size, not at 0ms and not on a child's transition.
@@ -98,6 +99,7 @@ export function SiteHeader({
       clearTimeout(fallbackTimerRef.current);
       fallbackTimerRef.current = null;
     }
+    setPanelVisible(true);
     focusActiveSection();
     setPendingFocus(false);
   };
@@ -120,7 +122,7 @@ export function SiteHeader({
   // engaged so Escape also works when the band was opened by focusing University at the top of the
   // page — not only after a compact-pill click.
   useEffect(() => {
-    if (!(forceExpanded || uniFocused || searchFocusWithin)) return;
+    if (!(forceExpanded || activeSection !== null || searchFocusWithin)) return;
 
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node | null;
@@ -142,7 +144,7 @@ export function SiteHeader({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [forceExpanded, uniFocused, searchFocusWithin, cancelEditing, cancelPendingFocus]);
+  }, [forceExpanded, activeSection, searchFocusWithin, cancelEditing, cancelPendingFocus]);
 
   return (
     <>
@@ -203,6 +205,10 @@ export function SiteHeader({
             onTransitionEnd={handleShellTransitionEnd}
           />
         </div>
+
+        {/* Shared section module panel (desktop) — a header-layer sibling so outside-click is covered
+            by headerRef. Its visibility is authored by activeSection + panelVisible. */}
+        <UniversitySectionPanel search={search} />
       </header>
 
       {/* Reserves only the fixed row's height, and never animates — content never jumps. */}

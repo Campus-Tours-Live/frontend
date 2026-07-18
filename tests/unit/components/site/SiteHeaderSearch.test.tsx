@@ -1,7 +1,11 @@
 import { useRef } from "react";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DesktopSearchShell, HeaderSearchMobile } from "@/components/site/SiteHeaderSearch";
+import {
+  DesktopSearchShell,
+  HeaderSearchMobile,
+  UniversitySectionPanel,
+} from "@/components/site/SiteHeaderSearch";
 import { useHeaderSearch } from "@/components/site/useHeaderSearch";
 
 const push = jest.fn();
@@ -57,6 +61,7 @@ function TestHeader() {
   return (
     <>
       <DesktopSearchShell search={state} universityInputRef={uniRef} topicRef={topicRef} />
+      <UniversitySectionPanel search={state} />
       <HeaderSearchMobile search={state} />
     </>
   );

@@ -24,16 +24,15 @@ export interface TopicOption {
 export type HeaderSection = "university" | "topic" | null;
 
 /**
- * useHeaderSearch — the shared STATE and behavior behind the global, two-tier header search.
- * It is deliberately DOM-free (no element refs): the scroll intent comes from `useHeaderScrollState`,
- * and the interaction lock is composed here —
- *   interactionLocked = searchFocusWithin || uniFocused || forceExpanded
- *   collapsed         = scrollWantsCollapsed && !interactionLocked
+ * useHeaderSearch — shared STATE for the global header search. DOM-free (refs live in SiteHeader).
  *
- * `forceExpanded` is set by the compact pill (`openEditor`) and released by `SiteHeader`'s
- * outside-click / Escape effect. Focusing University after the band expands (`pendingFocus`) and the
- * outside-click release both live in `SiteHeader`, which owns the actual DOM refs — keeping this
- * hook's return free of ref values.
+ * `activeSection` is the SINGLE authority for which section is highlighted and (with `panelVisible`)
+ * which module panel is shown — focus is only a consequence, never the source of panel visibility.
+ * `interactionLocked = activeSection !== null || searchFocusWithin || forceExpanded` keeps the header
+ * expanded against scroll jitter; a fresh clear downward scroll overrides it (see the soft-lock
+ * effect). `panelVisible` is revealed only once the shell has reached a usable expanded size
+ * (SiteHeader gates it on the shell's transition), so a compact-click doesn't flash a panel at the
+ * compact position.
  */
 export function useHeaderSearch() {
   const router = useRouter();
@@ -49,18 +48,18 @@ export function useHeaderSearch() {
 
   const [q, setQ] = useState(urlQ);
   const [topic, setTopic] = useState(urlTopic);
-  const [uniFocused, setUniFocused] = useState(false);
   const [searchFocusWithin, setSearchFocusWithin] = useState(false);
   const [forceExpanded, setForceExpanded] = useState(false);
   const [pendingFocus, setPendingFocus] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  // The interactive sections (Language is Soon → not a section). Drives which segment is highlighted
-  // and, later (Commit B/C), which module panel is shown.
   const [activeSection, setActiveSection] = useState<HeaderSection>(null);
+  // Whether the section module panel is actually shown (revealed after the shell has expanded).
+  const [panelVisible, setPanelVisible] = useState(false);
 
-  const { data: matches } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
-  const suggestions =
-    q.trim().length >= 1 ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
+  const { data: matches, isFetching } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
+  const queryHasText = q.trim().length >= 1;
+  const suggestions = queryHasText ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
+  const universityLoading = queryHasText && isFetching;
 
   // Collapse UI is desktop-only; keep the scroll machinery off below the breakpoint.
   const [desktop, setDesktop] = useState(false);
@@ -74,46 +73,41 @@ export function useHeaderSearch() {
 
   const { isCollapsed: scrollWantsCollapsed } = useHeaderScrollState({ enabled: desktop });
 
-  const interactionLocked = searchFocusWithin || uniFocused || forceExpanded;
+  const interactionLocked = activeSection !== null || searchFocusWithin || forceExpanded;
   const collapsed = scrollWantsCollapsed && !interactionLocked;
 
   // Any navigation cancels an in-flight edit intent (avoids a stray focus/expand on the next page).
-  // Resetting this transient UI on route change is exactly this effect's job.
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     setForceExpanded(false);
     setPendingFocus(false);
-    setUniFocused(false);
     setSearchFocusWithin(false);
     setActiveSection(null);
+    setPanelVisible(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [pathname]);
 
-  // SOFT LOCK: focus / suggestions-open / forced-open keep the header expanded against scroll JITTER,
-  // but a FRESH clear downward scroll overrides them — it ends the interaction so the header may
-  // collapse. We act only on the false→true TRANSITION of the scroll-collapse intent (a genuinely new
-  // downward gesture past the hook's threshold), never on the standing state — otherwise re-opening
-  // via the compact control while already scrolled would be cancelled instantly. Any focus stranded in
-  // the now-hidden form is blurred where the collapse is rendered (SiteHeader). (A future "hard lock" —
-  // pointer inside a panel, native picker open, IME — would be exempted here.)
+  // SOFT LOCK: an active section / focus / forced-open keeps the header expanded against scroll
+  // JITTER, but a FRESH clear downward scroll overrides it — it ends the interaction so the header may
+  // collapse. Act only on the false→true TRANSITION of the scroll-collapse intent (a genuinely new
+  // downward gesture), never on the standing state — else re-opening while already scrolled would be
+  // cancelled instantly. Ending the interaction cancels the edit: restore the committed draft.
   const prevScrollWantsCollapsedRef = useRef(false);
   useEffect(() => {
     const wasWanting = prevScrollWantsCollapsedRef.current;
     prevScrollWantsCollapsedRef.current = scrollWantsCollapsed;
-    if (wasWanting || !scrollWantsCollapsed) return; // only a fresh false→true transition
-    if (!(searchFocusWithin || uniFocused || forceExpanded)) return;
-    // Ending the interaction = cancel the edit: restore the committed draft so the compact segments
-    // show committed (never a stray unsubmitted draft) and re-opening starts clean.
+    if (wasWanting || !scrollWantsCollapsed) return;
+    if (!(activeSection !== null || searchFocusWithin || forceExpanded)) return;
     /* eslint-disable react-hooks/set-state-in-effect */
     setForceExpanded(false);
-    setUniFocused(false);
     setSearchFocusWithin(false);
     setPendingFocus(false);
     setActiveSection(null);
+    setPanelVisible(false);
     setQ(urlQ);
     setTopic(urlTopic);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scrollWantsCollapsed, searchFocusWithin, uniFocused, forceExpanded, urlQ, urlTopic]);
+  }, [scrollWantsCollapsed, activeSection, searchFocusWithin, forceExpanded, urlQ, urlTopic]);
 
   /** Commit the current draft as the search (compact/expanded Search action). */
   const commitSearch = useCallback(() => {
@@ -132,38 +126,46 @@ export function useHeaderSearch() {
     }
     setForceExpanded(false);
     setPendingFocus(false);
-    setUniFocused(false);
     setActiveSection(null);
+    setPanelVisible(false);
     setSheetOpen(false);
   }, [q, topic, onTours, params, router]);
 
-  /** Expand the header without choosing a section (e.g. from the compact search-icon area). */
+  /** Expand the header without choosing a section. */
   const ensureExpanded = useCallback(() => setForceExpanded(true), []);
 
-  /** Open a specific section: seed the draft from committed, expand, mark it active, and request
-   *  focus for THAT section once the shell has expanded (SiteHeader performs the focus). Topic must
-   *  NOT touch University focus/suggestions — no University flash. */
+  /** Open a section: seed the draft from committed, mark it active, request focus, and either reveal
+   *  the panel now (already expanded) or leave it for SiteHeader to reveal once the shell expands
+   *  (collapsed → expanding). Topic must NOT touch University focus/suggestions. */
   const openSection = useCallback(
     (section: NonNullable<HeaderSection>) => {
       setQ(urlQ);
       setTopic(urlTopic);
-      setForceExpanded(true);
       setActiveSection(section);
       setPendingFocus(true);
+      if (collapsed)
+        setForceExpanded(true); // reveal happens on the shell's transition-end
+      else setPanelVisible(true); // already expanded → reveal immediately
     },
-    [urlQ, urlTopic],
+    [urlQ, urlTopic, collapsed],
   );
 
-  /** Cancel editing: restore the committed draft, clear the active section, and collapse-eligible. */
+  /** Cancel editing: restore the committed draft, clear the active section + panel. */
   const cancelEditing = useCallback(() => {
     setForceExpanded(false);
     setPendingFocus(false);
-    setUniFocused(false);
     setSearchFocusWithin(false);
     setActiveSection(null);
+    setPanelVisible(false);
     setQ(urlQ);
     setTopic(urlTopic);
   }, [urlQ, urlTopic]);
+
+  /** Entering the University section by focusing its input (highlight + panel authority = section). */
+  const onUniversityFocus = useCallback(() => {
+    setActiveSection("university");
+    setPanelVisible(true);
+  }, []);
 
   const onSearchFocusCapture = useCallback(() => setSearchFocusWithin(true), []);
   const onSearchBlurCapture = useCallback((e: React.FocusEvent<HTMLElement>) => {
@@ -184,8 +186,6 @@ export function useHeaderSearch() {
     setQ,
     topic,
     setTopic,
-    uniFocused,
-    setUniFocused,
     searchFocusWithin,
     forceExpanded,
     setForceExpanded,
@@ -194,16 +194,21 @@ export function useHeaderSearch() {
     sheetOpen,
     setSheetOpen,
     suggestions,
+    queryHasText,
+    universityLoading,
     topicOptions,
     onTours,
     summary,
     collapsed,
     activeSection,
     setActiveSection,
+    panelVisible,
+    setPanelVisible,
     commitSearch,
     ensureExpanded,
     openSection,
     cancelEditing,
+    onUniversityFocus,
     onSearchFocusCapture,
     onSearchBlurCapture,
   };

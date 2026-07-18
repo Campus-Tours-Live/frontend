@@ -62,19 +62,16 @@ function ExpandedContent({
     setQ,
     topic,
     setTopic,
-    uniFocused,
-    setUniFocused,
-    suggestions,
     topicOptions,
     activeSection,
     setActiveSection,
+    panelVisible,
     commitSearch,
     collapsed,
+    onUniversityFocus,
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
-
-  const suggestionsOpen = uniFocused && suggestions.length > 0;
 
   return (
     <form
@@ -91,7 +88,7 @@ function ExpandedContent({
     >
       <div className="flex min-w-0 flex-1 items-stretch">
         <div
-          className="ds-seg--uni relative flex flex-col justify-center rounded-field px-3 transition-colors data-[active=true]:bg-muted/60"
+          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 transition-colors data-[active=true]:bg-muted/60"
           data-active={activeSection === "university"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">University</span>
@@ -101,49 +98,14 @@ function ExpandedContent({
             role="combobox"
             aria-label="University"
             aria-autocomplete="list"
-            aria-expanded={suggestionsOpen}
-            aria-controls="header-university-suggestions"
+            aria-expanded={activeSection === "university" && panelVisible}
+            aria-controls="header-university-panel"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            onFocus={() => {
-              setUniFocused(true);
-              setActiveSection("university");
-            }}
-            onBlur={() => setUniFocused(false)}
+            onFocus={onUniversityFocus}
             placeholder="Search a school"
             className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
           />
-          {suggestionsOpen ? (
-            <ul
-              id="header-university-suggestions"
-              role="listbox"
-              aria-label="University suggestions"
-              className="absolute left-0 top-full z-20 mt-3 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"
-            >
-              {q.trim().length < 1 ? (
-                <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
-                  Recent searches
-                </li>
-              ) : null}
-              {suggestions.map((name) => (
-                <li key={name}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={q === name}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      setQ(name);
-                      setUniFocused(false);
-                    }}
-                    className="w-full rounded-field px-2 py-2 text-left text-ui-sm hover:bg-muted"
-                  >
-                    {name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </div>
 
         <span className={DIVIDER} aria-hidden />
@@ -256,6 +218,69 @@ function CompactContent({ search }: SearchProps) {
       >
         <Search size={17} strokeWidth={2} aria-hidden />
       </button>
+    </div>
+  );
+}
+
+/** UniversitySectionPanel — the shared University module. Its visibility is authored ONLY by
+ *  `activeSection === "university"` + `panelVisible` (never by focus or suggestions length), so it is
+ *  a STABLE container that switches content between recent / loading / results / empty-results. It's a
+ *  header-layer sibling (see globals `.ds-panel`) so outside-click (headerRef.contains) covers it; the
+ *  real scroll container carries `overscroll-behavior: contain` so panel scroll never chains to the
+ *  page. Desktop only. */
+export function UniversitySectionPanel({ search }: SearchProps) {
+  const {
+    activeSection,
+    panelVisible,
+    collapsed,
+    q,
+    setQ,
+    queryHasText,
+    universityLoading,
+    suggestions,
+  } = search;
+  if (collapsed || !panelVisible || activeSection !== "university") return null;
+
+  return (
+    <div
+      id="header-university-panel"
+      role="region"
+      aria-label="University search"
+      className="ds-panel hidden rounded-card border border-border bg-card shadow-lg lg:block"
+    >
+      <div className="ds-panel-scroll max-h-[min(60vh,420px)] overflow-y-auto p-2 [overscroll-behavior:contain]">
+        {universityLoading ? (
+          <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">Searching…</p>
+        ) : suggestions.length > 0 ? (
+          <ul role="listbox" aria-label="University suggestions">
+            {!queryHasText ? (
+              <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+                Recent searches
+              </li>
+            ) : null}
+            {suggestions.map((name) => (
+              <li key={name}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={q === name}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setQ(name)}
+                  className="w-full rounded-field px-3 py-2 text-left text-ui-sm hover:bg-muted"
+                >
+                  {name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : queryHasText ? (
+          <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">No schools found</p>
+        ) : (
+          <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">
+            Start typing to find a school
+          </p>
+        )}
+      </div>
     </div>
   );
 }
