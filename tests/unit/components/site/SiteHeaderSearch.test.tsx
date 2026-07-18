@@ -63,6 +63,22 @@ describe("SiteHeaderSearch", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
+  it("preserves existing sort (and other params) when searching from /tours", async () => {
+    pathname = "/tours";
+    search = "sort=RATING&topic=DORM_HOUSING";
+    const user = userEvent.setup();
+    render(<SiteHeaderSearch />);
+    await user.click(screen.getByRole("button", { name: "Edit search" }));
+    const form = screen.getByRole("search");
+    await user.type(within(form).getByLabelText("University"), "MIT");
+    await user.click(within(form).getByRole("button", { name: "Search" }));
+    const url = (replace.mock.calls.at(-1) ?? [])[0] as string;
+    expect(url).toContain("sort=RATING");
+    expect(url).toContain("q=MIT");
+    expect(url).toContain("topic=DORM_HOUSING");
+    expect(url).not.toContain("page=");
+  });
+
   it("shows typeahead suggestions and fills the input when one is chosen", async () => {
     const user = userEvent.setup();
     render(<SiteHeaderSearch />);

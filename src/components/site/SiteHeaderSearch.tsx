@@ -49,9 +49,18 @@ export function SiteHeaderSearch() {
 
   const submit = () => {
     pushRecentUniversity(q);
-    const href = buildToursHref(q, topic);
-    if (onTours) router.replace(href, { scroll: false });
-    else router.push(href);
+    if (onTours) {
+      const next = new URLSearchParams(params.toString());
+      if (q.trim()) next.set("q", q.trim());
+      else next.delete("q");
+      if (topic) next.set("topic", topic);
+      else next.delete("topic");
+      next.delete("page");
+      const qs = next.toString();
+      router.replace(qs ? `/tours?${qs}` : "/tours", { scroll: false });
+    } else {
+      router.push(buildToursHref(q, topic));
+    }
     setExpanded(false);
     setUniFocused(false);
     setSheetOpen(false);
@@ -153,7 +162,12 @@ export function SiteHeaderSearch() {
 
       <span className="my-2 w-px shrink-0 bg-border" aria-hidden />
 
-      <span className="flex flex-col px-3 py-1 opacity-50" title="Coming soon">
+      <span
+        className="flex flex-col px-3 py-1 opacity-50"
+        title="Coming soon"
+        aria-disabled="true"
+        aria-label="Language — coming soon"
+      >
         <span className="text-[11px] font-bold text-ink">Language</span>
         <span className="inline-flex items-center gap-1.5 text-ui-sm text-ink-soft">
           Any language
@@ -236,7 +250,11 @@ export function SiteHeaderSearch() {
               ))}
             </select>
           </label>
-          <div className="flex items-center justify-between opacity-50">
+          <div
+            className="flex items-center justify-between opacity-50"
+            aria-disabled="true"
+            aria-label="Language — coming soon"
+          >
             <span className="text-ui-sm font-bold text-ink">Language</span>
             <span className="inline-flex items-center gap-1.5 text-ui-sm text-ink-soft">
               Any language
