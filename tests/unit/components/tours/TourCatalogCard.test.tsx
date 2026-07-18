@@ -11,11 +11,17 @@ const tour: TourSummary = {
   universityName: "North Coast University",
   guideId: "g1",
   guideDisplayName: "Maya Chen",
+  guideMajor: "Computer Science",
+  guideDegree: "BS",
+  guideEntryYear: 2023,
   durationMin: 60,
   priceCents: 4200,
   currency: "USD",
   avgRating: 4.8,
   reviewCount: 18,
+  languages: ["en-US"],
+  features: [],
+  isNew: false,
 };
 
 function renderCard(overrides: Partial<TourSummary> = {}) {
