@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
-import { useMe, useTourTopics, useUpdateGuideProfile } from "@/lib/data-access";
+import { useMajors, useMe, useTourTopics, useUpdateGuideProfile } from "@/lib/data-access";
 import {
   Alert,
   Body,
   Button,
   Chip,
   SectionHeading,
+  SelectField,
   Spinner,
   TextField,
   Textarea,
@@ -66,6 +67,7 @@ export function GuideOnboardingForm() {
   const {
     register,
     control,
+    watch,
     handleSubmit,
     trigger,
     setValue,
@@ -86,6 +88,10 @@ export function GuideOnboardingForm() {
     },
     mode: "onSubmit",
   });
+
+  // Majors are the fields of study the SELECTED school offers (live) — empty until one is picked.
+  const selectedUniversity = watch("university")?.[0];
+  const { data: majorOptions = [] } = useMajors(selectedUniversity?.id);
 
   // Prefill the name from the account — a member acquiring a second role already
   // entered it for the first (or it came from Google at signup). Fills empty fields
@@ -219,21 +225,42 @@ export function GuideOnboardingForm() {
               render={({ field }) => (
                 <UniversityField
                   label="Your university"
-                  description="The campus you currently attend and will guide for."
+                  description="Search any U.S. university you currently attend."
                   error={errors.university?.message as string}
                   value={field.value}
                   onChange={field.onChange}
                   max={1}
+                  source="live"
                 />
               )}
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField
-                label="Major"
-                placeholder="Computer Science"
-                error={errors.major?.message}
-                {...register("major", { required: "Please enter your major." })}
+              <Controller
+                control={control}
+                name="major"
+                rules={{ required: "Please select your major." }}
+                render={({ field }) => (
+                  <SelectField
+                    label="Major"
+                    error={errors.major?.message}
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={!selectedUniversity}
+                  >
+                    <option value="">
+                      {selectedUniversity ? "Select a major" : "Pick a university first"}
+                    </option>
+                    {field.value && !majorOptions.some((o) => o.value === field.value) ? (
+                      <option value={field.value}>{field.value}</option>
+                    ) : null}
+                    {majorOptions.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                )}
               />
               <TextField
                 label="Class year"

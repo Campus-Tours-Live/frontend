@@ -21,6 +21,7 @@ export function UniversityMultiSelect({
   value,
   onChange,
   max = 5,
+  source = "catalog",
   id,
   "aria-labelledby": ariaLabelledby,
   "aria-describedby": ariaDescribedby,
@@ -29,6 +30,8 @@ export function UniversityMultiSelect({
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   max?: number;
+  /** "catalog" = local table (default); "live" = every U.S. school via the Scorecard proxy. */
+  source?: "catalog" | "live";
   /** Id for the search input, so a wrapping `<label htmlFor>` associates + focuses it (present only
    *  while below `max`). */
   id?: string;
@@ -52,6 +55,7 @@ export function UniversityMultiSelect({
   // Debounce, request cancellation, and caching all live in the hook now.
   const { data: results = [], isFetching: loading } = useUniversitySearch(query, {
     enabled: !atMax,
+    source,
   });
 
   const add = (o: UniversityOption) => {

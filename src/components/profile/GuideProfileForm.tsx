@@ -2,9 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, Body, Button, Card, Chip, Spinner, TextField, Textarea } from "@/components/ui";
+import {
+  Alert,
+  Body,
+  Button,
+  Card,
+  Chip,
+  SelectField,
+  Spinner,
+  TextField,
+  Textarea,
+} from "@/components/ui";
 import {
   ApiError,
+  useMajors,
   useTourTopics,
   useUpdateGuideProfile,
   type GuideProfile,
@@ -74,6 +85,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   const {
     register,
     control,
+    watch,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -81,6 +93,12 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   } = useForm<FormValues>({
     defaultValues: toFormValues(profile),
   });
+
+  // Majors are the fields of study the SELECTED school actually offers (live). Empty until a school
+  // is picked, and empty for a pre-existing local university (whose id isn't a Scorecard id) — the
+  // saved major is preserved as a fallback option so editing other fields never loses it.
+  const selectedUniversity = watch("university")?.[0];
+  const { data: majorOptions = [] } = useMajors(selectedUniversity?.id);
 
   useEffect(() => {
     reset(toFormValues(profile));
@@ -155,19 +173,42 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           render={({ field }) => (
             <UniversityField
               label="University"
+              description="Search any U.S. university."
               error={errors.university?.message}
               value={field.value}
               onChange={field.onChange}
               max={1}
+              source="live"
             />
           )}
         />
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <TextField
-            label="Major"
-            error={errors.major?.message}
-            {...register("major", { required: "Major is required" })}
+          <Controller
+            control={control}
+            name="major"
+            rules={{ required: "Major is required" }}
+            render={({ field }) => (
+              <SelectField
+                label="Major"
+                error={errors.major?.message}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={!selectedUniversity}
+              >
+                <option value="">
+                  {selectedUniversity ? "Select a major" : "Pick a university first"}
+                </option>
+                {field.value && !majorOptions.some((o) => o.value === field.value) ? (
+                  <option value={field.value}>{field.value}</option>
+                ) : null}
+                {majorOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </SelectField>
+            )}
           />
           <TextField label="Class year" optional {...register("classYear")} />
         </div>
