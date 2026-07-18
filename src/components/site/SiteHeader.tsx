@@ -10,27 +10,25 @@ import Image from "next/image";
 import Link from "next/link";
 import { HeaderNav } from "./HeaderNav";
 import { MobileNav } from "./MobileNav";
-import { HeaderSearchBar, HeaderSearchMobile, HeaderSearchPill } from "./SiteHeaderSearch";
+import { DesktopSearchShell, HeaderSearchMobile } from "./SiteHeaderSearch";
 import { useHeaderSearch } from "./useHeaderSearch";
 
-/** Fallback delay for focusing University after a compact-search click, used when the band's
- *  transform `transitionend` doesn't fire (reduced motion / interrupted transition). */
+/** Fallback delay for focusing University after a compact-search click, used when the shell's
+ *  width `transitionend` doesn't fire (reduced motion / interrupted transition). */
 const EXPAND_FOCUS_FALLBACK_MS = 320;
 
 /**
- * SiteHeader — fixed, Airbnb-style collapsing header (uniform on every desktop page).
+ * SiteHeader — fixed, Airbnb-style collapsing header. STEP 1 of the morph rework: the desktop
+ * search is a single `.ds-shell` whose geometry morphs between expanded and compact (one DOM node;
+ * the expanded form and the compact "Edit search" button cross-fade inside it). The shell lives in
+ * a motion layer that is a SIBLING of the row grid and is positioned relative to this fixed header,
+ * so it never changes containing block. The band is an overlay (constant 72px spacer, no layout
+ * shift). The three-state top-expanded/scroll-expanded page safe-area is a later step; for now the
+ * shell always overlays.
  *
- * Layout strategy (deliberate): the fixed header is a single constant-height row, and the
- * expanded search sits in an ABSOLUTE overlay band below it. The band is never in document flow,
- * so expanding/collapsing it cannot change page height, push content, or move scrollY — the
- * `.header-spacer` reserves only the row height and never animates. This is what keeps content
- * from jumping (and keeps the collapse from feeding back into the scroll hook). The trade-off is
- * that at the very top of a page the open band overlays the first ~80px of content (the header
- * zone); that is intentional.
- *
- * The DOM refs and effects (release `forceExpanded` / close suggestions on a genuine outside
- * pointer-down or Escape; focus University after the band's expand transition, with cancellation
- * on any intent to stop editing) live here — `useHeaderSearch` stays DOM-free.
+ * DOM refs + effects (outside pointer-down / Escape end the interaction and cancel pending focus;
+ * focus University once the shell's width transition finishes; defensive blur if focus is somehow
+ * inside the expanded form when it collapses) live here — `useHeaderSearch` stays DOM-free.
  */
 export function SiteHeader({
   showGetStarted = true,
@@ -83,11 +81,11 @@ export function SiteHeader({
     };
   }, [pendingFocus, setPendingFocus]);
 
-  // Focus University only when the band's OWN transform transition finishes while expanding —
-  // not on the shorter opacity transition, and not on a child element's transition bubbling up.
-  const handleBandTransitionEnd = (e: ReactTransitionEvent<HTMLDivElement>) => {
+  // Focus University only when the shell's OWN width transition finishes while expanding — so focus
+  // lands once the shell has reached a usable size, not at 0ms and not on a child's transition.
+  const handleShellTransitionEnd = (e: ReactTransitionEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
-    if (e.propertyName !== "transform") return;
+    if (e.propertyName !== "width") return;
     if (!pendingFocus || collapsed) return;
     if (fallbackTimerRef.current !== null) {
       clearTimeout(fallbackTimerRef.current);
@@ -97,16 +95,29 @@ export function SiteHeader({
     setPendingFocus(false);
   };
 
-  // Genuine outside pointer-down / Escape ends the search interaction. Active whenever the search
-  // is engaged (forced open, focused, or suggestions open) so Escape also works when the band was
-  // opened by focusing University at the top of the page — not only after a compact-pill click.
+  // Defensive: never leave focus inside the expanded form once it collapses (the focus lock should
+  // already prevent this, but a race must not strand focus in an inert/aria-hidden node).
+  useEffect(() => {
+    if (!collapsed) return;
+    const active = document.activeElement as HTMLElement | null;
+    if (
+      active &&
+      headerRef.current?.contains(active) &&
+      (active.tagName === "INPUT" || active.tagName === "SELECT")
+    ) {
+      active.blur();
+    }
+  }, [collapsed]);
+
+  // Genuine outside pointer-down / Escape ends the search interaction. Active whenever the search is
+  // engaged so Escape also works when the band was opened by focusing University at the top of the
+  // page — not only after a compact-pill click.
   useEffect(() => {
     if (!(forceExpanded || uniFocused || searchFocusWithin)) return;
 
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node | null;
-      // Clicks inside the header (e.g. moving between University → Topic) never end the interaction.
-      if (headerRef.current && target && headerRef.current.contains(target)) return;
+      if (headerRef.current && target && headerRef.current.contains(target)) return; // inside header
       setForceExpanded(false);
       cancelPendingFocus();
     };
@@ -141,7 +152,7 @@ export function SiteHeader({
         className="fixed inset-x-0 top-0 z-40 border-b border-border/70 bg-card"
       >
         <div className="mx-auto max-w-content px-6">
-          {/* The one, constant-height header row: logo | search slot | nav. */}
+          {/* Constant-height row: logo | (mobile search / empty on desktop) | nav. */}
           <div className="grid h-[var(--header-row-height)] grid-cols-[auto_1fr_auto] items-center gap-4">
             <div className="flex shrink-0 items-center gap-2">
               <MobileNav
@@ -166,15 +177,8 @@ export function SiteHeader({
               </Link>
             </div>
 
-            {/* Center: desktop compact pill (cross-fades) + mobile pill (always). */}
+            {/* Center: mobile search only (desktop shell overlays via the motion layer below). */}
             <div className="flex min-w-0 justify-center">
-              <div
-                className="header-compact hidden w-full max-w-sm lg:block"
-                data-hidden={!collapsed}
-                inert={!collapsed}
-              >
-                <HeaderSearchPill search={search} hidden={!collapsed} />
-              </div>
               <HeaderSearchMobile search={search} />
             </div>
 
@@ -188,18 +192,14 @@ export function SiteHeader({
           </div>
         </div>
 
-        {/* Expanded search band — an OVERLAY below the row (absolute; never in flow). Fades +
-            retracts on collapse; nothing here changes document layout. */}
-        <div
-          className="header-band absolute inset-x-0 top-full hidden border-b border-border/70 bg-card shadow-md lg:block"
-          data-collapsed={collapsed}
-          aria-hidden={collapsed}
-          inert={collapsed}
-          onTransitionEnd={handleBandTransitionEnd}
-        >
-          <div className="mx-auto flex max-w-content justify-center px-6 pb-4 pt-2">
-            <HeaderSearchBar search={search} universityInputRef={universityInputRef} />
-          </div>
+        {/* Desktop single-shell search — motion layer (sibling of the row), centered to the header.
+            The shell is absolute; this wrapper is static so the shell's containing block is <header>. */}
+        <div className="hidden lg:block">
+          <DesktopSearchShell
+            search={search}
+            universityInputRef={universityInputRef}
+            onTransitionEnd={handleShellTransitionEnd}
+          />
         </div>
       </header>
 

@@ -1,11 +1,7 @@
 import { useRef } from "react";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import {
-  HeaderSearchBar,
-  HeaderSearchMobile,
-  HeaderSearchPill,
-} from "@/components/site/SiteHeaderSearch";
+import { DesktopSearchShell, HeaderSearchMobile } from "@/components/site/SiteHeaderSearch";
 import { useHeaderSearch } from "@/components/site/useHeaderSearch";
 
 const push = jest.fn();
@@ -54,11 +50,13 @@ function setScroll(y: number) {
 function TestHeader() {
   const state = useHeaderSearch();
   const uniRef = useRef<HTMLInputElement>(null);
+  // The real header renders ONE shell (expanded form + compact button cross-fading inside);
+  // each layer is aria-hidden in the inactive state, so role queries still resolve to the
+  // active layer. Mobile is a separate control.
   return (
     <>
-      {state.collapsed ? <HeaderSearchPill search={state} /> : null}
+      <DesktopSearchShell search={state} universityInputRef={uniRef} />
       <HeaderSearchMobile search={state} />
-      {!state.collapsed ? <HeaderSearchBar search={state} universityInputRef={uniRef} /> : null}
     </>
   );
 }

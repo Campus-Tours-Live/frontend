@@ -1,48 +1,48 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { RefObject, TransitionEvent as ReactTransitionEvent } from "react";
 import { Search } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
-/**
- * Presentational pieces of the global, Airbnb-style segmented search (University · Topic ·
- * Language). All of them are driven by a single `useHeaderSearch()` instance passed down from
- * `SiteHeader`, so the row-1 pill and the row-2 band act as one control. The Language segment
- * is disabled in Phase 1 (badged "Soon") until the backend can filter by language.
- *
- *  - `HeaderSearchBar`    — the expanded desktop form (row 2 band), incl. the University
- *                           suggestions dropdown (recent + typeahead).
- *  - `HeaderSearchPill`   — the compact desktop pill (row 1), shown only while collapsed;
- *                           clicking it re-expands the band to edit.
- *  - `HeaderSearchMobile` — the always-compact mobile pill (row 1) that opens the full-screen
- *                           search sheet, plus the sheet itself.
- */
 interface SearchProps {
   search: HeaderSearch;
 }
 
-/** HeaderSearchPill — compact "summary — search icon" button that reopens the band to edit.
- *  `hidden` (while the band is expanded) makes it non-focusable and hidden from AT on its own,
- *  not only via the parent's `inert`. */
-export function HeaderSearchPill({ search, hidden = false }: SearchProps & { hidden?: boolean }) {
+/** The one circular primary search action, shared verbatim by the expanded (submit) and compact
+ *  (decorative) layers so it reads as a single continuous anchor across the morph. */
+const ACTION_CLASS =
+  "grid h-10 w-10 shrink-0 place-items-center rounded-pill bg-primary text-primary-foreground";
+
+/**
+ * DesktopSearchShell — the single white search shell (see globals `.ds-shell`). ONE DOM node whose
+ * geometry (top/width/height) morphs between expanded and compact; the expanded form and the
+ * compact "Edit search" button cross-fade INSIDE it. Exactly one layer is interactive at a time
+ * (`inert` + `aria-hidden` keyed on `collapsed`); the two circular actions occupy the same right-edge
+ * slot so the anchor travels continuously. Desktop only — the mobile control is separate.
+ */
+export function DesktopSearchShell({
+  search,
+  universityInputRef,
+  onTransitionEnd,
+}: SearchProps & {
+  universityInputRef: RefObject<HTMLInputElement | null>;
+  onTransitionEnd?: (e: ReactTransitionEvent<HTMLDivElement>) => void;
+}) {
   return (
-    <button
-      type="button"
-      onClick={search.openEditor}
-      aria-label="Edit search"
-      aria-hidden={hidden}
-      tabIndex={hidden ? -1 : 0}
-      className="search flex min-w-0 max-w-sm flex-1 items-center justify-between text-left"
+    <div
+      className="ds-shell overflow-visible rounded-pill border border-border bg-card shadow-lg"
+      data-collapsed={search.collapsed}
+      onTransitionEnd={onTransitionEnd}
     >
-      <span className="truncate text-ink-soft">{search.summary}</span>
-      <Search size={18} strokeWidth={2} aria-hidden />
-    </button>
+      <ExpandedContent search={search} universityInputRef={universityInputRef} />
+      <CompactContent search={search} />
+    </div>
   );
 }
 
-/** HeaderSearchBar — the expanded segmented desktop form: University (+ suggestions), Topic, Language. */
-export function HeaderSearchBar({
+/** Expanded layer — the segmented form (University + suggestions · Topic · Language · submit). */
+function ExpandedContent({
   search,
   universityInputRef,
 }: SearchProps & { universityInputRef: RefObject<HTMLInputElement | null> }) {
@@ -56,6 +56,7 @@ export function HeaderSearchBar({
     suggestions,
     topicOptions,
     submit,
+    collapsed,
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
@@ -65,39 +66,39 @@ export function HeaderSearchBar({
   return (
     <form
       role="search"
+      className="ds-expanded flex items-stretch gap-0 px-1"
+      inert={collapsed}
+      aria-hidden={collapsed}
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
       onFocusCapture={onSearchFocusCapture}
       onBlurCapture={onSearchBlurCapture}
-      className="search flex w-full min-w-0 max-w-2xl items-stretch gap-0 p-1"
     >
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <label className="flex min-w-0 flex-col px-3 py-1">
-          <span className="text-[11px] font-bold text-ink">University</span>
-          <input
-            ref={universityInputRef}
-            type="text"
-            role="combobox"
-            aria-label="University"
-            aria-autocomplete="list"
-            aria-expanded={suggestionsOpen}
-            aria-controls="header-university-suggestions"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onFocus={() => setUniFocused(true)}
-            onBlur={() => setUniFocused(false)}
-            placeholder="Search a school"
-            className="min-w-0 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
-          />
-        </label>
+      <div className="relative flex min-w-0 flex-1 flex-col justify-center px-3">
+        <span className="text-[11px] font-bold leading-tight text-ink">University</span>
+        <input
+          ref={universityInputRef}
+          type="text"
+          role="combobox"
+          aria-label="University"
+          aria-autocomplete="list"
+          aria-expanded={suggestionsOpen}
+          aria-controls="header-university-suggestions"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onFocus={() => setUniFocused(true)}
+          onBlur={() => setUniFocused(false)}
+          placeholder="Search a school"
+          className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
+        />
         {suggestionsOpen ? (
           <ul
             id="header-university-suggestions"
             role="listbox"
             aria-label="University suggestions"
-            className="absolute left-0 top-full z-20 mt-2 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"
+            className="absolute left-0 top-full z-20 mt-3 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"
           >
             {q.trim().length < 1 ? (
               <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
@@ -127,13 +128,13 @@ export function HeaderSearchBar({
 
       <span className="my-2 w-px shrink-0 bg-border" aria-hidden />
 
-      <label className="flex min-w-0 flex-col px-3 py-1">
-        <span className="text-[11px] font-bold text-ink">Topic</span>
+      <label className="flex min-w-0 flex-col justify-center px-3">
+        <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
         <select
           aria-label="Topic"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          className="min-w-0 bg-transparent text-ui-sm outline-none"
+          className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none"
         >
           <option value="">Any topic</option>
           {topicOptions.map((t) => (
@@ -147,13 +148,13 @@ export function HeaderSearchBar({
       <span className="my-2 w-px shrink-0 bg-border" aria-hidden />
 
       <span
-        className="flex flex-col px-3 py-1 opacity-50"
+        className="flex flex-col justify-center px-3 opacity-50"
         title="Coming soon"
         aria-disabled="true"
         aria-label="Language — coming soon"
       >
-        <span className="text-[11px] font-bold text-ink">Language</span>
-        <span className="inline-flex items-center gap-1.5 text-ui-sm text-ink-soft">
+        <span className="text-[11px] font-bold leading-tight text-ink">Language</span>
+        <span className="inline-flex items-center gap-1.5 text-ui-sm leading-tight text-ink-soft">
           Any language
           <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em]">
             Soon
@@ -161,18 +162,35 @@ export function HeaderSearchBar({
         </span>
       </span>
 
-      <button
-        type="submit"
-        aria-label="Search"
-        className="ml-1 grid h-10 w-10 shrink-0 place-items-center rounded-pill bg-primary text-primary-foreground"
-      >
+      <button type="submit" aria-label="Search" className={`${ACTION_CLASS} ml-1 self-center`}>
         <Search size={18} strokeWidth={2} aria-hidden />
       </button>
     </form>
   );
 }
 
-/** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet. */
+/** Compact layer — the whole thing is one "Edit search" button; its circle is decorative only. */
+function CompactContent({ search }: SearchProps) {
+  const { summary, openEditor, collapsed } = search;
+  return (
+    <button
+      type="button"
+      className="ds-compact flex items-center gap-2 pl-4 pr-1 text-left"
+      aria-label="Edit search"
+      inert={!collapsed}
+      aria-hidden={!collapsed}
+      onClick={openEditor}
+    >
+      <span className="min-w-0 flex-1 truncate text-ui-sm font-semibold text-ink">{summary}</span>
+      <span aria-hidden className={`${ACTION_CLASS} self-center`}>
+        <Search size={18} strokeWidth={2} aria-hidden />
+      </span>
+    </button>
+  );
+}
+
+/** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet.
+ *  Kept as-is for now; a dedicated mobile visual is Step 3. */
 export function HeaderSearchMobile({ search }: SearchProps) {
   const { q, setQ, topic, setTopic, topicOptions, summary, sheetOpen, setSheetOpen, submit } =
     search;

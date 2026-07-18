@@ -500,17 +500,19 @@
   }
 }
 
-/* ---- Collapsing header (Airbnb-style) -----------------------------------------
-   The fixed header is a single constant-height row. The expanded search band is an
-   OVERLAY below it (absolute; never in flow), so expanding/collapsing it cannot change
-   document height, push content, or perturb scrollY. The spacer therefore reserves only
-   the row height and never animates — content stays put while the band fades/retracts. */
+/* ---- Collapsing header — single-shell morph (Airbnb-style) --------------------
+   The fixed header is a single constant-height row; the desktop search is ONE white shell
+   (.ds-shell) whose geometry (top/width/height) interpolates between expanded and compact.
+   It's an absolute overlay in a motion layer sibling of the row, centered to the header
+   (left:50% + fixed translateX(-50%)) — so it never re-parents, never enters flow, and the
+   spacer reserves only the row height and never animates (no content jump). The expanded form
+   and compact button cross-fade INSIDE the shell — the white pill is continuous. First-pass
+   geometry values; calibrate optically (see the morph spec). NO transform-scale, NO transition:all. */
 :root {
   --header-row-height: 72px;
   --header-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --header-duration: 260ms;
   --header-fade-duration: 180ms;
-  --header-compact-duration: 160ms;
 }
 
 /* Constant spacer — reserves the fixed header row only; deliberately does NOT animate. */
@@ -518,42 +520,54 @@
   height: var(--header-row-height);
 }
 
-/* Expanded search-band overlay (desktop only). Animates opacity + translateY only — no
-   height/overflow, so the University suggestions dropdown is never clipped and there is no
-   layout to drift against the spacer. */
-.header-band {
-  opacity: 1;
-  transform: translateY(0);
+/* The one search shell. Center-anchored; only top/width/height transition. Width is capped by the
+   narrower-side estimate so it can't cover the logo/nav/account down to the 1024px breakpoint
+   (calibrate against real cluster widths at 1024/1280/1440). */
+.ds-shell {
+  position: absolute;
+  left: 50%;
+  top: 76px;
+  width: min(680px, calc(100vw - 440px));
+  height: 56px;
+  transform: translateX(-50%);
   transition:
-    opacity var(--header-fade-duration) ease,
-    transform var(--header-duration) var(--header-easing);
+    top var(--header-duration) var(--header-easing),
+    width var(--header-duration) var(--header-easing),
+    height var(--header-duration) var(--header-easing);
 }
-.header-band[data-collapsed="true"] {
-  opacity: 0;
-  transform: translateY(-12px);
-  pointer-events: none;
+.ds-shell[data-collapsed="true"] {
+  top: 14px;
+  width: min(340px, calc(100vw - 440px));
+  height: 44px;
 }
 
-/* Compact pill in the row — cross-fades in slightly after the band starts retracting. */
-.header-compact {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  transition:
-    opacity var(--header-compact-duration) ease 80ms,
-    transform 220ms var(--header-easing) 60ms;
+/* Content layers fill the shell and cross-fade; the geometry (above) is what reads as continuous. */
+.ds-expanded,
+.ds-compact {
+  position: absolute;
+  inset: 0;
 }
-.header-compact[data-hidden="true"] {
+.ds-expanded {
+  opacity: 1;
+  transition: opacity var(--header-fade-duration) ease 60ms;
+}
+.ds-compact {
   opacity: 0;
-  transform: translateY(4px) scale(0.96);
-  pointer-events: none;
-  transition:
-    opacity 100ms ease,
-    transform 140ms ease;
+  transition: opacity 120ms ease;
+}
+.ds-shell[data-collapsed="true"] .ds-expanded {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.ds-shell[data-collapsed="true"] .ds-compact {
+  opacity: 1;
+  transition: opacity var(--header-fade-duration) ease 80ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .header-band,
-  .header-compact {
+  .ds-shell,
+  .ds-expanded,
+  .ds-compact {
     transition-duration: 1ms !important;
   }
 }
