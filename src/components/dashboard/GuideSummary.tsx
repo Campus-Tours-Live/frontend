@@ -98,7 +98,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
               style={{ width: `${completionPct}%` }}
             />
           </div>
-          <Link href="/profile" variant="ghost" size="sm" className="mt-0.5 self-start px-0">
+          <Link href="/profile" variant="ghost" size="small" className="mt-0.5 self-start px-0">
             Complete profile
           </Link>
         </Card>

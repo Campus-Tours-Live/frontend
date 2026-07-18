@@ -28,7 +28,7 @@ export function DashboardHeader({ firstName }: DashboardHeaderProps) {
           ready.
         </p>
       </div>
-      <Button variant="secondary" size="sm" className="mt-1 shrink-0">
+      <Button variant="secondary" size="small" className="mt-1 shrink-0">
         Edit Availability
       </Button>
     </div>
