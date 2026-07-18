@@ -116,14 +116,15 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(screen.getByRole("search")).toBeInTheDocument();
   });
 
-  it("stays expanded while a search field is focused, even when scrolled", async () => {
+  it("lets a clear downward scroll end a focused interaction and collapse (soft lock is overridable)", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);
     await user.click(within(screen.getByRole("search")).getByLabelText("University"));
+    // Focused → expanded. A clear downward scroll (past the hook's threshold) overrides the soft
+    // focus lock: the interaction ends and the header collapses to the compact control.
     setScroll(200);
-    // Interaction lock (focus) overrides scroll intent → band stays, pill never appears.
-    expect(screen.getByRole("search")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Edit search" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("search")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit search" })).toBeInTheDocument();
   });
 
   it("navigates to /tours with q and topic on submit off /tours", async () => {

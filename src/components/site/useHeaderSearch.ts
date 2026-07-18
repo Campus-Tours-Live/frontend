@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
 import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
@@ -81,6 +81,27 @@ export function useHeaderSearch() {
     setSearchFocusWithin(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [pathname]);
+
+  // SOFT LOCK: focus / suggestions-open / forced-open keep the header expanded against scroll JITTER,
+  // but a FRESH clear downward scroll overrides them — it ends the interaction so the header may
+  // collapse. We act only on the false→true TRANSITION of the scroll-collapse intent (a genuinely new
+  // downward gesture past the hook's threshold), never on the standing state — otherwise re-opening
+  // via the compact control while already scrolled would be cancelled instantly. Any focus stranded in
+  // the now-hidden form is blurred where the collapse is rendered (SiteHeader). (A future "hard lock" —
+  // pointer inside a panel, native picker open, IME — would be exempted here.)
+  const prevScrollWantsCollapsedRef = useRef(false);
+  useEffect(() => {
+    const wasWanting = prevScrollWantsCollapsedRef.current;
+    prevScrollWantsCollapsedRef.current = scrollWantsCollapsed;
+    if (wasWanting || !scrollWantsCollapsed) return; // only a fresh false→true transition
+    if (!(searchFocusWithin || uniFocused || forceExpanded)) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setForceExpanded(false);
+    setUniFocused(false);
+    setSearchFocusWithin(false);
+    setPendingFocus(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [scrollWantsCollapsed, searchFocusWithin, uniFocused, forceExpanded]);
 
   const submit = () => {
     pushRecentUniversity(q);
