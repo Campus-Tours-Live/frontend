@@ -65,6 +65,19 @@ describe("tourCatalogOptions", () => {
 
     expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
   });
+
+  it("adds page when > 0 and omits it when 0", async () => {
+    mockedApiJson.mockResolvedValue({} as never);
+
+    const withPage = tourCatalogOptions({ page: 2, limit: 20 }).queryFn as () => Promise<unknown>;
+    await withPage();
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours?page=2&limit=20", { interactive: false });
+
+    mockedApiJson.mockClear();
+    const firstPage = tourCatalogOptions({ page: 0 }).queryFn as () => Promise<unknown>;
+    await firstPage();
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+  });
 });
 
 describe("tourDetailOptions", () => {

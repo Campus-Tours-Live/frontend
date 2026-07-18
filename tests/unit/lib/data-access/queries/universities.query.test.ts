@@ -15,8 +15,20 @@ describe("universitySearchOptions", () => {
   it.each(["mit", "stan ford", "a&b"] as const)(
     "uses the universitySearch queryKey for query %s",
     (q) => {
-      expect(universitySearchOptions(q, true).queryKey).toEqual(queryKeys.universitySearch(q));
-      expect(universitySearchOptions(q, true).queryKey).toEqual(["university-search", q]);
+      expect(universitySearchOptions(q, true).queryKey).toEqual([
+        ...queryKeys.universitySearch(q),
+        "catalog",
+      ]);
+      expect(universitySearchOptions(q, true).queryKey).toEqual([
+        "university-search",
+        q,
+        "catalog",
+      ]);
+      expect(universitySearchOptions(q, true, "live").queryKey).toEqual([
+        "university-search",
+        q,
+        "live",
+      ]);
     },
   );
 
@@ -44,5 +56,22 @@ describe("universitySearchOptions", () => {
       signal,
     });
     expect(result).toBe(payload);
+  });
+
+  it("live source fetches /v1/meta/universities and adapts { value, label } to University", async () => {
+    mockedApiJson.mockResolvedValue([
+      { value: "243744", label: "Stanford — Stanford, CA" },
+    ] as never);
+
+    const signal = new AbortController().signal;
+    const queryFn = universitySearchOptions("stanford", true, "live").queryFn as (ctx: {
+      signal: AbortSignal;
+    }) => Promise<unknown>;
+    const result = await queryFn({ signal });
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/universities?q=stanford", { signal });
+    expect(result).toEqual([
+      { id: "243744", name: "Stanford — Stanford, CA", shortName: null, city: null, region: null },
+    ]);
   });
 });
