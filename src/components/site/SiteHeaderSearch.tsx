@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
-import { useTourTopics } from "@/lib/data-access";
+import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
 import { cn } from "@/lib/utils";
+import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
 import { useHeaderSearchCollapse } from "./useHeaderSearchCollapse";
 
 /** Build a /tours URL from the search draft; empty values are omitted. */
@@ -37,14 +38,20 @@ export function SiteHeaderSearch() {
   const [q, setQ] = useState(urlQ);
   const [topic, setTopic] = useState(urlTopic);
   const [expanded, setExpanded] = useState(false);
+  const [uniFocused, setUniFocused] = useState(false);
+  const { data: matches } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
+  const suggestions =
+    q.trim().length >= 1 ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
 
   const collapsed = useHeaderSearchCollapse(80, onTours) && !expanded;
 
   const submit = () => {
+    pushRecentUniversity(q);
     const href = buildToursHref(q, topic);
     if (onTours) router.replace(href, { scroll: false });
     else router.push(href);
     setExpanded(false);
+    setUniFocused(false);
   };
 
   const openEditor = () => {
@@ -80,17 +87,51 @@ export function SiteHeaderSearch() {
       }}
       className={cn("search hidden min-w-0 max-w-2xl flex-1 items-stretch gap-0 p-1 lg:flex")}
     >
-      <label className="flex min-w-0 flex-1 flex-col px-3 py-1">
-        <span className="text-[11px] font-bold text-ink">University</span>
-        <input
-          type="text"
-          aria-label="University"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search a school"
-          className="min-w-0 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
-        />
-      </label>
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <label className="flex min-w-0 flex-col px-3 py-1">
+          <span className="text-[11px] font-bold text-ink">University</span>
+          <input
+            type="text"
+            aria-label="University"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onFocus={() => setUniFocused(true)}
+            onBlur={() => setTimeout(() => setUniFocused(false), 120)}
+            placeholder="Search a school"
+            className="min-w-0 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
+          />
+        </label>
+        {uniFocused && suggestions.length > 0 ? (
+          <ul
+            role="listbox"
+            aria-label="University suggestions"
+            className="absolute left-0 top-full z-20 mt-2 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"
+          >
+            {q.trim().length < 1 ? (
+              <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+                Recent searches
+              </li>
+            ) : null}
+            {suggestions.map((name) => (
+              <li key={name}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={q === name}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setQ(name);
+                    setUniFocused(false);
+                  }}
+                  className="w-full rounded-field px-2 py-2 text-left text-ui-sm hover:bg-muted"
+                >
+                  {name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
 
       <span className="my-2 w-px shrink-0 bg-border" aria-hidden />
 

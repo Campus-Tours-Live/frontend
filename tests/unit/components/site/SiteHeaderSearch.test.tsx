@@ -19,6 +19,9 @@ jest.mock("@/lib/data-access", () => ({
       { value: "DORM_HOUSING", label: "Dorms & housing" },
     ],
   }),
+  useUniversitySearch: (q: string, opts?: { enabled?: boolean }) => ({
+    data: q.trim() && opts?.enabled ? [{ id: "u1", name: `${q} University` }] : [],
+  }),
 }));
 
 beforeEach(() => {
@@ -26,6 +29,7 @@ beforeEach(() => {
   replace.mockClear();
   pathname = "/";
   search = "";
+  localStorage.clear();
 });
 
 describe("SiteHeaderSearch", () => {
@@ -54,5 +58,26 @@ describe("SiteHeaderSearch", () => {
     await user.click(screen.getByRole("button", { name: "Search" }));
     expect(replace).toHaveBeenCalledWith("/tours?q=MIT", { scroll: false });
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows typeahead suggestions and fills the input when one is chosen", async () => {
+    const user = userEvent.setup();
+    render(<SiteHeaderSearch />);
+    const input = screen.getByLabelText("University");
+    await user.type(input, "Stanford");
+    const option = await screen.findByRole("option", { name: "Stanford University" });
+    await user.click(option);
+    expect(input).toHaveValue("Stanford University");
+  });
+
+  it("shows recent searches on an empty input and fills the field when one is chosen", async () => {
+    localStorage.setItem("cttl:recent-universities", JSON.stringify(["Harvard", "Yale"]));
+    const user = userEvent.setup();
+    render(<SiteHeaderSearch />);
+    await user.click(screen.getByLabelText("University"));
+    expect(screen.getByText("Recent searches")).toBeInTheDocument();
+    const option = await screen.findByRole("option", { name: "Harvard" });
+    await user.click(option);
+    expect(screen.getByLabelText("University")).toHaveValue("Harvard");
   });
 });
