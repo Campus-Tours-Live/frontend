@@ -3,8 +3,13 @@ import { act, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 
-// Header nav reads the route (useInFunnel / AccountNav) — no app-router in tests.
-jest.mock("next/navigation", () => ({ usePathname: () => "/" }));
+// Header nav reads the route (useInFunnel / AccountNav) and the mounted global
+// search (SiteHeaderSearch) uses the app router — provide all three in tests.
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/",
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(""),
+}));
 
 beforeEach(() => {
   // Logged-out: /auth/session → 200 { authenticated:false }; /v1/userinfo → 401.

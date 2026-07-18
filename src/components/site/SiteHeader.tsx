@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { HeaderNav } from "./HeaderNav";
 import { MobileNav } from "./MobileNav";
+import { SiteHeaderSearch } from "./SiteHeaderSearch";
 
 /**
  * SiteHeader — top product header from CampusToursLive-design_new.html (#home).
@@ -54,23 +54,8 @@ export function SiteHeader({
           </Link>
         </div>
 
-        {/* Search — sits between the logo and the nav at every width.
-            min-w-0 lets it shrink (instead of squeezing the logo) on narrow screens. */}
-        <div className="search flex min-w-0 max-w-sm flex-1">
-          <input
-            type="text"
-            inputMode="search"
-            aria-label="Search tours"
-            placeholder="Search universities, tours, or topics"
-          />
-          <button
-            type="button"
-            aria-label="Search"
-            className="flex shrink-0 items-center rounded-pill text-ink-soft outline-none focus-visible:ring-2 focus-visible:ring-primary-soft"
-          >
-            <Search size={18} strokeWidth={2} aria-hidden />
-          </button>
-        </div>
+        {/* Global search — the single search entry point (see SiteHeaderSearch). */}
+        <SiteHeaderSearch />
 
         {/* Inline nav + auth actions (lg+). On smaller screens these live in the drawer. */}
         <nav className="flex items-center gap-7">
