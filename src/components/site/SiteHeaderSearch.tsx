@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { Button, Drawer } from "@/components/ui";
 import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
 import { cn } from "@/lib/utils";
 import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
@@ -39,6 +40,7 @@ export function SiteHeaderSearch() {
   const [topic, setTopic] = useState(urlTopic);
   const [expanded, setExpanded] = useState(false);
   const [uniFocused, setUniFocused] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const { data: matches } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
   const suggestions =
     q.trim().length >= 1 ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
@@ -52,6 +54,7 @@ export function SiteHeaderSearch() {
     else router.push(href);
     setExpanded(false);
     setUniFocused(false);
+    setSheetOpen(false);
   };
 
   const openEditor = () => {
@@ -64,21 +67,17 @@ export function SiteHeaderSearch() {
   const summary =
     [urlQ.trim() || null, topicLabel || null].filter(Boolean).join(" · ") || "Search tours";
 
-  if (collapsed) {
-    return (
-      <button
-        type="button"
-        onClick={openEditor}
-        aria-label="Edit search"
-        className="search hidden min-w-0 max-w-sm flex-1 items-center justify-between text-left lg:flex"
-      >
-        <span className="truncate text-ink-soft">{summary}</span>
-        <Search size={18} strokeWidth={2} aria-hidden />
-      </button>
-    );
-  }
-
-  return (
+  const desktop = collapsed ? (
+    <button
+      type="button"
+      onClick={openEditor}
+      aria-label="Edit search"
+      className="search hidden min-w-0 max-w-sm flex-1 items-center justify-between text-left lg:flex"
+    >
+      <span className="truncate text-ink-soft">{summary}</span>
+      <Search size={18} strokeWidth={2} aria-hidden />
+    </button>
+  ) : (
     <form
       role="search"
       onSubmit={(e) => {
@@ -172,5 +171,84 @@ export function SiteHeaderSearch() {
         <Search size={18} strokeWidth={2} aria-hidden />
       </button>
     </form>
+  );
+
+  return (
+    <>
+      {/* Mobile: a pill that opens the full search sheet */}
+      <button
+        type="button"
+        onClick={() => setSheetOpen(true)}
+        className="search flex min-w-0 flex-1 items-center gap-2 text-left lg:hidden"
+      >
+        <Search size={18} strokeWidth={2} aria-hidden />
+        <span className="truncate text-ink-soft">{summary}</span>
+      </button>
+
+      <Drawer
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        side="bottom"
+        title="Search tours"
+        footer={
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              variant="ghost"
+              size="small"
+              onClick={() => {
+                setQ("");
+                setTopic("");
+              }}
+            >
+              Clear all
+            </Button>
+            <Button variant="primary" size="small" onClick={submit}>
+              Search
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <label className="block">
+            <span className="mb-1 block text-ui-sm font-bold text-ink">University</span>
+            <input
+              type="text"
+              aria-label="University"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search a school"
+              className="w-full rounded-field border border-input bg-white px-3 py-2 text-ui-sm outline-none"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-ui-sm font-bold text-ink">Topic</span>
+            <select
+              aria-label="Topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              className="w-full rounded-field border border-input bg-white px-3 py-2 text-ui-sm outline-none"
+            >
+              <option value="">Any topic</option>
+              {topicOptions.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex items-center justify-between opacity-50">
+            <span className="text-ui-sm font-bold text-ink">Language</span>
+            <span className="inline-flex items-center gap-1.5 text-ui-sm text-ink-soft">
+              Any language
+              <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                Soon
+              </span>
+            </span>
+          </div>
+        </div>
+      </Drawer>
+
+      {desktop}
+    </>
   );
 }
