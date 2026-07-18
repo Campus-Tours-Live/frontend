@@ -67,9 +67,20 @@ export function SiteHeader({
             </Link>
           </div>
 
-          {/* Desktop: compact pill, centered between logo and nav, only while collapsed. */}
+          {/* Desktop: compact pill, centered between logo and nav. Always mounted so it can
+              cross-fade with the band; inert + faded/scaled-out while the band is expanded. */}
           <div className="hidden min-w-0 flex-1 justify-center lg:flex">
-            {search.collapsed ? <HeaderSearchPill search={search} /> : null}
+            <div
+              className={cn(
+                "w-full max-w-sm transition-all duration-300 ease-out motion-reduce:transition-none",
+                search.collapsed
+                  ? "translate-y-0 scale-100 opacity-100"
+                  : "-translate-y-1 scale-95 opacity-0",
+              )}
+              inert={!search.collapsed}
+            >
+              <HeaderSearchPill search={search} />
+            </div>
           </div>
 
           {/* Mobile: always-compact pill that opens the full-screen search sheet. */}
@@ -85,17 +96,23 @@ export function SiteHeader({
           </nav>
         </div>
 
-        {/* Row 2: expanded search band (desktop only). Animates height + opacity on collapse. */}
+        {/* Row 2: expanded search band (desktop only). On scroll the band's height (max-height)
+            and the bar's scale/offset animate together — the bar visibly shrinks upward into the
+            row-1 pill while the header height contracts — one synchronized 300ms transition. */}
         <div
           className={cn(
-            "hidden overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none lg:grid",
-            search.collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] pb-4 opacity-100",
+            "hidden overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none lg:block",
+            search.collapsed ? "max-h-0 opacity-0" : "max-h-[88px] opacity-100",
           )}
+          inert={search.collapsed}
         >
-          <div className="min-h-0 overflow-hidden">
-            <div className="flex justify-center">
-              <HeaderSearchBar search={search} />
-            </div>
+          <div
+            className={cn(
+              "flex origin-top justify-center pb-4 transition-transform duration-300 ease-out motion-reduce:transition-none",
+              search.collapsed ? "-translate-y-2 scale-95" : "translate-y-0 scale-100",
+            )}
+          >
+            <HeaderSearchBar search={search} />
           </div>
         </div>
       </div>
