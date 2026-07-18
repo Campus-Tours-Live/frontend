@@ -126,6 +126,8 @@ export default {
         ivory: "hsl(var(--brand-ivory))",
         canvas: "hsl(var(--brand-canvas))",
         scrim: "hsl(var(--brand-scrim))",
+        // Campus label — the reserved university-name colour (kept out of the topic palette).
+        teal: "hsl(var(--brand-teal))",
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",

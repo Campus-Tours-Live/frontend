@@ -139,13 +139,7 @@ export function TourProductCard({
         <div className="flex min-h-[14rem] flex-1 flex-col gap-2 p-4">
           {/* Kicker (campus) + title read as one unit — kept tight, title leads the hierarchy. */}
           <div>
-            <Body
-              as="span"
-              size="medium"
-              weight={700}
-              color="inherit"
-              className={cn("block", campus.crestColor)}
-            >
+            <Body as="span" size="medium" weight={700} color="inherit" className="block text-teal">
               {tour.universityName}
             </Body>
             <Heading as="h3" size="large" className="mt-0.5 min-h-[2.4em] leading-tight">
@@ -207,7 +201,7 @@ export function TourProductCard({
                 <Tag
                   key={lang}
                   color="gray"
-                  variant="tertiary"
+                  variant="secondary"
                   leading={<Globe size={13} strokeWidth={2} aria-hidden />}
                 >
                   {languageLabel(lang)}

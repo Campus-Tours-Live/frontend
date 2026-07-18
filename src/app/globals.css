@@ -88,6 +88,10 @@
     --brand-purple-soft: 255 67% 95%; /* #EFEBFB */
     --brand-purple-foreground: 254 36% 46%; /* #5F4BA0 */
 
+    /* Campus label — a cool teal reserved for the university name so it never collides with the
+       topic hues (which own the coral/blue/amber/sage/purple/green palette). */
+    --brand-teal: 175 28% 34%; /* #3E6E6A */
+
     /* ---- Member role accent tokens (participant / guide / guardian) ----
        Semantic aliases so any role-coloured surface reuses one source. */
     --role-participant: var(--brand-primary);
