@@ -17,6 +17,21 @@ describe("Tag", () => {
     expect(screen.getByText("Confirmed")).toHaveClass("bg-success", "text-success-foreground");
   });
 
+  it("supports the brand coral / sage colours (theme tokens)", () => {
+    const { rerender } = render(
+      <Tag color="coral" variant="secondary">
+        Campus life
+      </Tag>,
+    );
+    expect(screen.getByText("Campus life")).toHaveClass("bg-coral-soft", "text-coral-foreground");
+    rerender(
+      <Tag color="sage" variant="secondary">
+        International
+      </Tag>,
+    );
+    expect(screen.getByText("International")).toHaveClass("bg-sage-soft", "text-sage-foreground");
+  });
+
   it("renders leading content before the children", () => {
     render(<Tag leading={<svg data-testid="icon" />}>Rated</Tag>);
     expect(screen.getByTestId("icon")).toBeInTheDocument();

@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import { glassClass } from "../glass/Glass";
 
 /**
  * IconButton — an icon-only control. Because it has no visible text, `a11yLabel` is REQUIRED and
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
  *   <IconButton a11yLabel="Help" href="/help"><Icon name="info" /></IconButton>
  */
 export type IconButtonSize = "small" | "medium" | "large";
-export type IconButtonVariant = "ghost" | "soft";
+export type IconButtonVariant = "ghost" | "soft" | "glass";
 
 interface IconButtonOwnProps {
   /** Accessible name (icon-only button has no visible text) — required. */
@@ -53,6 +54,8 @@ const VARIANT_CLASS: Record<IconButtonVariant, string> = {
   ghost: "text-ink-soft hover:bg-canvas hover:text-ink",
   // Brand-tinted hover (matches the calendar/nav chevrons).
   soft: "text-ink-soft hover:bg-primary-soft hover:text-primary",
+  // Frosted-glass control for photo / dark grounds — reuses the shared Glass surface.
+  glass: glassClass("light", "hover:bg-ivory/40"),
 };
 
 export const IconButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, IconButtonProps>(

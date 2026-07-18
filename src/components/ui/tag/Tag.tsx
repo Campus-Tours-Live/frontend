@@ -3,14 +3,14 @@ import { cn } from "@/lib/utils";
 
 /**
  * Tag — a small, visual-only, non-interactive label that draws focus to a trait: status,
- * availability, a rating, a category. Comes in six colours and three emphasis variants, with an
+ * availability, a rating, a category. Comes in eight colours and three emphasis variants, with an
  * optional leading icon. For the brand-token status pills, prefer Badge/StatusBadge; reach for Tag
  * when you need the wider colour × emphasis matrix.
  *
  *   <Tag color="green" leading={<Icon name="success" />}>Confirmed</Tag>
  *   <Tag color="spark" variant="primary">New</Tag>
  */
-export type TagColor = "blue" | "gray" | "green" | "red" | "purple" | "spark";
+export type TagColor = "blue" | "gray" | "green" | "red" | "purple" | "spark" | "coral" | "sage";
 export type TagVariant = "primary" | "secondary" | "tertiary";
 
 // Literal class strings (Tailwind can't JIT interpolated `bg-${color}-…`), all mapped to the app's
@@ -45,6 +45,16 @@ const TAG_STYLES: Record<TagColor, Record<TagVariant, string>> = {
     primary: "bg-warning text-warning-foreground",
     secondary: "bg-warning-soft text-warning-foreground",
     tertiary: "bg-warning-soft/60 text-warning-foreground",
+  },
+  coral: {
+    primary: "bg-coral text-coral-foreground",
+    secondary: "bg-coral-soft text-coral-foreground",
+    tertiary: "bg-coral-soft/60 text-coral-foreground",
+  },
+  sage: {
+    primary: "bg-sage text-sage-foreground",
+    secondary: "bg-sage-soft text-sage-foreground",
+    tertiary: "bg-sage-soft/60 text-sage-foreground",
   },
 };
 

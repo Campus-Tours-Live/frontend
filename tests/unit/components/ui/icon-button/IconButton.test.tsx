@@ -49,6 +49,19 @@ describe("IconButton", () => {
     expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
   });
 
+  it("applies the frosted-glass variant (brand off-white, blurred) for photo grounds", () => {
+    render(
+      <IconButton a11yLabel="Save" variant="glass">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toHaveClass(
+      "backdrop-blur-md",
+      "bg-ivory/25",
+      "text-ivory",
+    );
+  });
+
   it("renders an anchor when given href, with tab-nabbing-safe rel for target=_blank", () => {
     render(
       <IconButton a11yLabel="Help" href="https://example.com" target="_blank">
