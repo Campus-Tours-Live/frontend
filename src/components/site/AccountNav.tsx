@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useMe } from "@/lib/data-access";
-import { MenuItem, MenuSection } from "@/components/ui";
+import { Body, Heading, MenuItem, MenuSection } from "@/components/ui";
 import { RoleSwitcher } from "./RoleSwitcher";
 
 /**
@@ -27,7 +27,8 @@ import { RoleSwitcher } from "./RoleSwitcher";
  * current user to pick the participant vs guide menu, and renders nothing when
  * logged out.
  *
- * Item destinations are stubbed except Dashboard, Profile, and (for guides) Tour offerings.
+ * Item destinations are stubbed except Dashboard, Profile, and (for guides) Availability and
+ * Tour offerings.
  * Icons use lucide-react.
  */
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
@@ -80,7 +81,7 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Tours",
     items: [
       { label: "Upcoming tours", icon: Calendar },
-      { label: "Availability", icon: Clock },
+      { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
     ],
   },
@@ -130,7 +131,7 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
     <div>
       {/* Greeting */}
       <div className="border-b border-border px-2.5 pb-5">
-        <div className="flex items-center gap-2 font-display text-[20px] font-bold text-ink">
+        <Heading as="div" size="large" className="flex items-center gap-2">
           <span>Hi{name ? `, ${name}` : ""}!</span>
           <Image
             src="/assets/wave-hand.svg"
@@ -140,8 +141,10 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
             unoptimized
             className="inline-block h-[22px] w-[22px]"
           />
-        </div>
-        <p className="mt-0.5 text-[13px] text-ink-soft">{subtitle}</p>
+        </Heading>
+        <Body size="small" color="muted" className="mt-0.5">
+          {subtitle}
+        </Body>
       </div>
 
       {/* Switch active role / start a second role's onboarding */}

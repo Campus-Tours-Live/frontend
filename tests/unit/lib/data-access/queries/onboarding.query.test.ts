@@ -11,13 +11,10 @@ beforeEach(() => {
 });
 
 describe("onboardingOptions", () => {
-  it.each(["guide", "participant"] as const)(
-    "uses the onboarding queryKey for role %s",
-    (role) => {
-      expect(onboardingOptions(role).queryKey).toEqual(queryKeys.onboarding(role));
-      expect(onboardingOptions(role).queryKey).toEqual(["onboarding", role]);
-    },
-  );
+  it.each(["guide", "participant"] as const)("uses the onboarding queryKey for role %s", (role) => {
+    expect(onboardingOptions(role).queryKey).toEqual(queryKeys.onboarding(role));
+    expect(onboardingOptions(role).queryKey).toEqual(["onboarding", role]);
+  });
 
   it.each(["guide", "participant"] as const)(
     "queryFn fetches /v1/onboarding with role=%s in the path",

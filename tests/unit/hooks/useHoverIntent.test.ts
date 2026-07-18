@@ -66,9 +66,7 @@ describe("useHoverIntent", () => {
 
   it("cancelClose cancels a pending scheduled close", () => {
     const onClose = jest.fn();
-    const { result } = renderHook(() =>
-      useHoverIntent({ onOpen: jest.fn(), onClose }),
-    );
+    const { result } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose }));
 
     act(() => result.current.scheduleClose());
     act(() => result.current.cancelClose());
@@ -78,9 +76,7 @@ describe("useHoverIntent", () => {
 
   it("a second scheduleClose resets the timer (only fires once, late)", () => {
     const onClose = jest.fn();
-    const { result } = renderHook(() =>
-      useHoverIntent({ onOpen: jest.fn(), onClose }),
-    );
+    const { result } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose }));
 
     act(() => result.current.scheduleClose());
     act(() => jest.advanceTimersByTime(100));
@@ -92,27 +88,21 @@ describe("useHoverIntent", () => {
   });
 
   it("cancelClose is a no-op when nothing is scheduled", () => {
-    const { result } = renderHook(() =>
-      useHoverIntent({ onOpen: jest.fn(), onClose: jest.fn() }),
-    );
+    const { result } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose: jest.fn() }));
     expect(() => act(() => result.current.cancelClose())).not.toThrow();
   });
 
   describe("triggerProps", () => {
     it("onMouseEnter opens immediately", () => {
       const onOpen = jest.fn();
-      const { result } = renderHook(() =>
-        useHoverIntent({ onOpen, onClose: jest.fn() }),
-      );
+      const { result } = renderHook(() => useHoverIntent({ onOpen, onClose: jest.fn() }));
       act(() => result.current.triggerProps.onMouseEnter());
       expect(onOpen).toHaveBeenCalledTimes(1);
     });
 
     it("onMouseLeave schedules a delayed close", () => {
       const onClose = jest.fn();
-      const { result } = renderHook(() =>
-        useHoverIntent({ onOpen: jest.fn(), onClose }),
-      );
+      const { result } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose }));
       act(() => result.current.triggerProps.onMouseLeave());
       expect(onClose).not.toHaveBeenCalled();
       act(() => jest.advanceTimersByTime(150));
@@ -123,9 +113,7 @@ describe("useHoverIntent", () => {
   describe("contentProps", () => {
     it("onMouseEnter cancels a pending close (moving onto the panel keeps it open)", () => {
       const onClose = jest.fn();
-      const { result } = renderHook(() =>
-        useHoverIntent({ onOpen: jest.fn(), onClose }),
-      );
+      const { result } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose }));
       act(() => result.current.triggerProps.onMouseLeave()); // leaving trigger
       act(() => jest.advanceTimersByTime(50));
       act(() => result.current.contentProps.onMouseEnter()); // entered panel
@@ -135,9 +123,7 @@ describe("useHoverIntent", () => {
 
     it("onMouseLeave schedules a delayed close", () => {
       const onClose = jest.fn();
-      const { result } = renderHook(() =>
-        useHoverIntent({ onOpen: jest.fn(), onClose }),
-      );
+      const { result } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose }));
       act(() => result.current.contentProps.onMouseLeave());
       act(() => jest.advanceTimersByTime(150));
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -146,9 +132,7 @@ describe("useHoverIntent", () => {
 
   it("clears the pending timer on unmount (onClose never fires after)", () => {
     const onClose = jest.fn();
-    const { result, unmount } = renderHook(() =>
-      useHoverIntent({ onOpen: jest.fn(), onClose }),
-    );
+    const { result, unmount } = renderHook(() => useHoverIntent({ onOpen: jest.fn(), onClose }));
 
     act(() => result.current.scheduleClose());
     unmount();
@@ -171,9 +155,7 @@ describe("useHoverIntent", () => {
     // references constant means the memoized handlers stay referentially stable.
     const onOpen = jest.fn();
     const onClose = jest.fn();
-    const { result, rerender } = renderHook(() =>
-      useHoverIntent({ onOpen, onClose }),
-    );
+    const { result, rerender } = renderHook(() => useHoverIntent({ onOpen, onClose }));
     const first = {
       openNow: result.current.openNow,
       scheduleClose: result.current.scheduleClose,

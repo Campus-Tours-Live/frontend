@@ -1,23 +1,113 @@
+import { ApiError, apiJson } from "@/lib/data-access/http";
+import { queryKeys } from "@/lib/data-access/keys";
+import { tourCatalogOptions, tourDetailOptions } from "@/lib/data-access/queries/tours.query";
+
 jest.mock("@/lib/data-access/http", () => ({
-  ApiError: class ApiError extends Error {},
+  ApiError: class ApiError extends Error {
+    constructor(
+      public readonly status: number,
+      message?: string,
+    ) {
+      super(message ?? `HTTP ${status}`);
+      this.name = "ApiError";
+    }
+  },
   apiJson: jest.fn(),
 }));
 
-import { apiJson } from "@/lib/data-access/http";
-import { tourCatalogOptions, tourDetailOptions } from "@/lib/data-access/queries/tours.query";
+const mockedApiJson = apiJson as jest.MockedFunction<typeof apiJson>;
 
-describe("tour query contracts", () => {
-  it("calls the BFF marketplace endpoint non-interactively", async () => {
-    (apiJson as jest.Mock).mockResolvedValue([]);
-    await tourCatalogOptions().queryFn!({} as never);
-    expect(apiJson).toHaveBeenCalledWith("/v1/tours?sort=RECOMMENDED&limit=20", {
-      interactive: false,
-    });
+beforeEach(() => {
+  mockedApiJson.mockReset();
+});
+
+describe("tourCatalogOptions", () => {
+  it("uses the tourCatalog queryKey", () => {
+    const filters = { sort: "PRICE_ASC" as const, limit: 10 };
+    expect(tourCatalogOptions(filters).queryKey).toEqual(queryKeys.tourCatalog(filters));
+    expect(tourCatalogOptions(filters).queryKey).toEqual(["tour-catalog", filters]);
   });
 
-  it("encodes the tour id in the detail endpoint", async () => {
-    (apiJson as jest.Mock).mockResolvedValue({ id: "tour/id" });
-    await tourDetailOptions("tour/id").queryFn!({} as never);
-    expect(apiJson).toHaveBeenCalledWith("/v1/tours/tour%2Fid", { interactive: false });
+  it("queryFn fetches /v1/tours with no query string in ambient mode when filters are empty", async () => {
+    const payload = [{ id: "t1" }];
+    mockedApiJson.mockResolvedValue(payload as never);
+
+    const queryFn = tourCatalogOptions().queryFn as () => Promise<unknown>;
+    const result = await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledTimes(1);
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(result).toBe(payload);
+  });
+
+  it("queryFn builds the query string from filters", async () => {
+    mockedApiJson.mockResolvedValue([] as never);
+
+    const filters = {
+      universityId: "u1",
+      topic: "GENERAL_CAMPUS",
+      q: "campus",
+      sort: "RATING" as const,
+      limit: 5,
+    };
+    const queryFn = tourCatalogOptions(filters).queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith(
+      "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&q=campus&sort=RATING&limit=5",
+      { interactive: false },
+    );
+  });
+
+  it("queryFn omits limit when it is 0", async () => {
+    mockedApiJson.mockResolvedValue([] as never);
+
+    const queryFn = tourCatalogOptions({ limit: 0 }).queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+  });
+
+  it("does not retry client errors but retries transient errors once", () => {
+    const retry = tourCatalogOptions().retry as (failureCount: number, error: Error) => boolean;
+
+    expect(retry(0, new ApiError(401))).toBe(false);
+    expect(retry(1, new Error("Network hiccup"))).toBe(true);
+    expect(retry(2, new Error("Still down"))).toBe(false);
+  });
+});
+
+describe("tourDetailOptions", () => {
+  it("uses the tourDetail queryKey", () => {
+    expect(tourDetailOptions("abc").queryKey).toEqual(queryKeys.tourDetail("abc"));
+    expect(tourDetailOptions("abc").queryKey).toEqual(["tour-detail", "abc"]);
+  });
+
+  it("is disabled when id is empty", () => {
+    expect(tourDetailOptions("").enabled).toBe(false);
+    expect(tourDetailOptions("abc").enabled).toBe(true);
+  });
+
+  it("queryFn fetches /v1/tours/{id} and returns the resolved value in ambient mode", async () => {
+    const payload = { id: "abc", title: "Campus tour" };
+    mockedApiJson.mockResolvedValue(payload as never);
+
+    const queryFn = tourDetailOptions("abc").queryFn as () => Promise<unknown>;
+    const result = await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledTimes(1);
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc", { interactive: false });
+    expect(result).toBe(payload);
+  });
+
+  it("queryFn encodes the id into the path", async () => {
+    mockedApiJson.mockResolvedValue({} as never);
+
+    const queryFn = tourDetailOptions("a b/c?d").queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd", {
+      interactive: false,
+    });
   });
 });

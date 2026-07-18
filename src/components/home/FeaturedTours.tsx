@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { Alert, Link, Spinner } from "@/components/ui";
+import { Alert, Heading, Link, Spinner } from "@/components/ui";
 import { TourCard } from "@/components/tours/TourCard";
 import { ApiError, useTourCatalog } from "@/lib/data-access";
+import { cn } from "@/lib/utils";
 
 /**
  * FeaturedTours — featured section from design_new (#home .featured).
@@ -54,7 +54,14 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 }
 
 export function FeaturedTours() {
-  const { data: tours = [], isLoading, error } = useTourCatalog();
+  const {
+    data: tours = [],
+    isLoading,
+    error,
+  } = useTourCatalog({
+    sort: "RECOMMENDED",
+    limit: 20,
+  });
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [pageCount, setPageCount] = useState(1);
@@ -90,9 +97,9 @@ export function FeaturedTours() {
       <div className="mb-6 flex items-end justify-between gap-5">
         <div>
           <div className="eyebrow">Featured tours</div>
-          <h2 className="mt-1 font-display text-[36px] font-bold leading-tight tracking-tight text-ink">
+          <Heading as="h2" size="h2" className="mt-1">
             Start with a campus that feels right.
-          </h2>
+          </Heading>
         </div>
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
         <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">

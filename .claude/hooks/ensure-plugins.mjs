@@ -21,22 +21,22 @@
  * Requires Node 18+.
  */
 
-import { readFileSync, statSync, writeFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { homedir } from 'node:os';
-import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
+import { readFileSync, statSync, writeFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { homedir } from "node:os";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 
-const CHECK_ONLY = process.argv.includes('--check');
-const HOOK = process.argv.includes('--hook');
-const FORCE_UPDATE = process.argv.includes('--force-update');
+const CHECK_ONLY = process.argv.includes("--check");
+const HOOK = process.argv.includes("--hook");
+const FORCE_UPDATE = process.argv.includes("--force-update");
 const UPDATE_EVERY_MS = 24 * 60 * 60 * 1000; // keep-latest throttle: at most once/day per repo
 
 const here = dirname(fileURLToPath(import.meta.url));
-const settingsPath = join(here, '..', 'settings.json'); // <repo>/.claude/settings.json
-const markerKey = createHash('sha1').update(settingsPath).digest('hex').slice(0, 12);
-const marker = join(homedir(), '.claude', `.ctl-plugins-updated-${markerKey}`);
+const settingsPath = join(here, "..", "settings.json"); // <repo>/.claude/settings.json
+const markerKey = createHash("sha1").update(settingsPath).digest("hex").slice(0, 12);
+const marker = join(homedir(), ".claude", `.ctl-plugins-updated-${markerKey}`);
 
 // Logs go to stderr — in --hook mode stdout is reserved for the reloadSkills JSON.
 function log(msg) {
@@ -47,8 +47,8 @@ if (process.env.CI) process.exit(0);
 
 function run(bin, args, opts = {}) {
   return execFileSync(bin, args, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
     timeout: 30_000,
     ...opts,
   });
@@ -57,7 +57,7 @@ function run(bin, args, opts = {}) {
 // Resolve an agent CLI: prefer PATH, then known install locations (e.g. the macOS Codex app).
 function resolveBin(name, fallbacks = []) {
   try {
-    run(name, ['--version']);
+    run(name, ["--version"]);
     return name;
   } catch {
     /* not on PATH */
@@ -65,7 +65,7 @@ function resolveBin(name, fallbacks = []) {
   for (const f of fallbacks) {
     try {
       if (existsSync(f)) {
-        run(f, ['--version']);
+        run(f, ["--version"]);
         return f;
       }
     } catch {
@@ -78,7 +78,7 @@ function resolveBin(name, fallbacks = []) {
 // Read this repo's committed config.
 let settings;
 try {
-  settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+  settings = JSON.parse(readFileSync(settingsPath, "utf8"));
 } catch (err) {
   log(`could not read ${settingsPath}: ${err.message}`);
   process.exit(0);
@@ -91,8 +91,8 @@ const marketplaceRepos = Object.values(settings.extraKnownMarketplaces || {})
   .map((d) => d?.source?.repo)
   .filter(Boolean);
 
-const CLAUDE = resolveBin('claude');
-const CODEX = resolveBin('codex', ['/Applications/Codex.app/Contents/Resources/codex']);
+const CLAUDE = resolveBin("claude");
+const CODEX = resolveBin("codex", ["/Applications/Codex.app/Contents/Resources/codex"]);
 if (!CLAUDE && !CODEX) process.exit(0);
 
 // Is a keep-latest update pass due? Throttled to once/24h unless forced. Never in --check.
@@ -108,13 +108,13 @@ const updateDue =
     })());
 
 // In --hook mode, child stdout → OUR stderr (fd 2) so stdout stays clean for the JSON.
-const childOut = HOOK ? 2 : 'inherit';
+const childOut = HOOK ? 2 : "inherit";
 
 // ---- Claude Code ----
 function ensureClaude(bin) {
   let byId;
   try {
-    byId = new Map(JSON.parse(run(bin, ['plugin', 'list', '--json'])).map((p) => [p.id, p]));
+    byId = new Map(JSON.parse(run(bin, ["plugin", "list", "--json"])).map((p) => [p.id, p]));
   } catch (err) {
     log(`[claude] could not query plugins: ${err.message}`);
     return 0;
@@ -122,12 +122,12 @@ function ensureClaude(bin) {
   const missing = wanted.filter((id) => !byId.has(id));
   if (missing.length === 0 && !updateDue) return 0;
   if (CHECK_ONLY) {
-    if (missing.length) log(`[claude] missing ${missing.length}: ${missing.join(', ')}`);
+    if (missing.length) log(`[claude] missing ${missing.length}: ${missing.join(", ")}`);
     return 0;
   }
   for (const repo of marketplaceRepos) {
     try {
-      run(bin, ['plugin', 'marketplace', 'add', repo]);
+      run(bin, ["plugin", "marketplace", "add", repo]);
     } catch {
       /* already added / offline */
     }
@@ -136,8 +136,8 @@ function ensureClaude(bin) {
   for (const id of missing) {
     try {
       log(`[claude] installing ${id} …`);
-      run(bin, ['plugin', 'install', id, '--scope', 'user'], {
-        stdio: ['ignore', childOut, 'inherit'],
+      run(bin, ["plugin", "install", id, "--scope", "user"], {
+        stdio: ["ignore", childOut, "inherit"],
         timeout: 180_000,
       });
       changed++;
@@ -147,7 +147,7 @@ function ensureClaude(bin) {
   }
   if (updateDue) {
     try {
-      run(bin, ['plugin', 'marketplace', 'update'], { timeout: 120_000 });
+      run(bin, ["plugin", "marketplace", "update"], { timeout: 120_000 });
     } catch {
       /* ignore */
     }
@@ -155,7 +155,7 @@ function ensureClaude(bin) {
       const p = byId.get(id);
       if (!p) continue;
       try {
-        const out = run(bin, ['plugin', 'update', id, '--scope', p.scope || 'user'], {
+        const out = run(bin, ["plugin", "update", id, "--scope", p.scope || "user"], {
           timeout: 120_000,
         });
         if (/updated from/i.test(out)) {
@@ -174,7 +174,7 @@ function ensureClaude(bin) {
 function ensureCodex(bin) {
   let listText;
   try {
-    listText = run(bin, ['plugin', 'list'], { timeout: 60_000 });
+    listText = run(bin, ["plugin", "list"], { timeout: 60_000 });
   } catch {
     return 0;
   }
@@ -184,7 +184,7 @@ function ensureCodex(bin) {
   // the set already installed.
   const known = new Set();
   const installed = new Set();
-  for (const line of listText.split('\n')) {
+  for (const line of listText.split("\n")) {
     const m = line.trim().match(/^(\S+@\S+)\b/);
     if (!m) continue;
     known.add(m[1]);
@@ -193,12 +193,12 @@ function ensureCodex(bin) {
   const missing = wanted.filter((id) => known.has(id) && !installed.has(id));
   if (missing.length === 0 && !updateDue) return 0;
   if (CHECK_ONLY) {
-    if (missing.length) log(`[codex] missing ${missing.length}: ${missing.join(', ')}`);
+    if (missing.length) log(`[codex] missing ${missing.length}: ${missing.join(", ")}`);
     return 0;
   }
   for (const repo of marketplaceRepos) {
     try {
-      run(bin, ['plugin', 'marketplace', 'add', repo], { timeout: 120_000 });
+      run(bin, ["plugin", "marketplace", "add", repo], { timeout: 120_000 });
     } catch {
       /* already added / offline */
     }
@@ -207,7 +207,7 @@ function ensureCodex(bin) {
   for (const id of missing) {
     try {
       log(`[codex] installing ${id} …`);
-      run(bin, ['plugin', 'add', id], { stdio: ['ignore', childOut, 'inherit'], timeout: 180_000 });
+      run(bin, ["plugin", "add", id], { stdio: ["ignore", childOut, "inherit"], timeout: 180_000 });
       changed++;
     } catch {
       /* not in Codex's snapshot for this id — skip */
@@ -215,7 +215,7 @@ function ensureCodex(bin) {
   }
   if (updateDue) {
     try {
-      run(bin, ['plugin', 'marketplace', 'upgrade'], { timeout: 120_000 });
+      run(bin, ["plugin", "marketplace", "upgrade"], { timeout: 120_000 });
     } catch {
       /* ignore */
     }
@@ -244,8 +244,8 @@ if (HOOK) {
   if (changedClaude > 0) {
     process.stdout.write(
       JSON.stringify({
-        hookSpecificOutput: { hookEventName: 'SessionStart', reloadSkills: true },
-      }) + '\n',
+        hookSpecificOutput: { hookEventName: "SessionStart", reloadSkills: true },
+      }) + "\n",
     );
   }
 } else if (changedClaude + changedCodex > 0) {

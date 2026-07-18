@@ -9,6 +9,8 @@ export { useMe } from "./hooks/use-me";
 export { useParticipantProfile } from "./hooks/use-participant-profile";
 export { useGuideProfile } from "./hooks/use-guide-profile";
 export { useTourTopics } from "./hooks/use-tour-topics";
+export { useTourCatalog } from "./hooks/use-tour-catalog";
+export { useTourDetail } from "./hooks/use-tour-detail";
 export { useUniversitySearch } from "./hooks/use-university-search";
 export { useUpdateParticipantProfile } from "./hooks/use-update-participant-profile";
 export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
@@ -16,10 +18,20 @@ export { useSetActiveRole } from "./hooks/use-set-active-role";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useOnboarding } from "./hooks/use-onboarding";
 export { useOfferings } from "./hooks/use-offerings";
-export { useTourCatalog } from "./hooks/use-tour-catalog";
-export { useTourDetail } from "./hooks/use-tour-detail";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
+export {
+  useAvailabilityExceptions,
+  useAvailabilityRules,
+  useAvailabilitySettings,
+  useOfferingSlots,
+  useOverrideMultiPreview,
+  useReplaceOverrides,
+  useReplaceRules,
+  useResolvedAvailability,
+  useUpdateAvailabilityRule,
+  useUpdateAvailabilitySettings,
+} from "./hooks/use-guide-availability";
 
 export type {
   Me,
@@ -30,14 +42,34 @@ export type {
   GuideProfileUpdate,
   University,
   TourTopic,
-  Offering,
-  OfferingStatus,
   TourSummary,
   TourDetail,
+  TourCatalogFilters,
+  TourCatalogSort,
+  Offering,
+  OfferingStatus,
   CreateOfferingInput,
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,
   OnboardingProgress,
   OnboardingStep,
+  AvailabilityRule,
+  AvailabilityException,
+  AvailabilityExceptionKind,
+  AvailabilitySettings,
+  AvailabilityOccurrence,
+  ResolvedAvailability,
+  AffectedBooking,
+  AvailabilityWriteEnvelope,
+  CreateAvailabilityRuleInput,
+  UpdateAvailabilityRuleInput,
+  UpdateAvailabilitySettingsInput,
+  OfferingSlot,
+  OverridePreviewDay,
+  OverridePreviewResponse,
+  OverrideWindow,
+  OverrideMultiPreviewParams,
+  OverrideReplaceInput,
+  RulesReplaceInput,
 } from "./types";

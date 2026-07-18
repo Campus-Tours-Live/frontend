@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link, MenuItem } from "@/components/ui";
+import { Divider, Link, List, MenuItem } from "@/components/ui";
 import { useDropdown } from "@/hooks";
 import { useMe } from "@/lib/data-access";
 import { NAV_LINKS } from "./NavLinks";
@@ -74,17 +74,18 @@ export function HeaderNav({
   const panelCls = cn(PANEL, dd.open ? "visible opacity-100" : "invisible opacity-0");
 
   return (
-    <ul className="hidden items-center gap-7 text-[14px] font-semibold text-ink-soft lg:flex">
+    <List
+      dividers={false}
+      className="hidden items-center gap-7 text-ui font-semibold text-ink-soft lg:flex"
+    >
       {NAV_LINKS.map((link) => (
-        <li key={link.label}>
-          <a href={link.href} className="transition-colors hover:text-ink">
-            {link.label}
-          </a>
-        </li>
+        <Link key={link.label} href={link.href} className="transition-colors hover:text-ink">
+          {link.label}
+        </Link>
       ))}
 
-      {showAuthActions && !isLoading && (
-        <li onMouseEnter={dd.openNow} onMouseLeave={dd.scheduleClose}>
+      {showAuthActions && !isLoading ? (
+        <div onMouseEnter={dd.openNow} onMouseLeave={dd.scheduleClose}>
           <button
             type="button"
             aria-haspopup="menu"
@@ -122,14 +123,9 @@ export function HeaderNav({
                   </MenuItem>
                 ))}
 
-                <div className="my-1 border-t border-border" />
+                <Divider className="my-1" />
 
-                <MenuItem
-                  role="menuitem"
-                  icon={LogOut}
-                  href="/auth/logout"
-                  onSelect={dd.close}
-                >
+                <MenuItem role="menuitem" icon={LogOut} href="/auth/logout" onSelect={dd.close}>
                   Sign out
                 </MenuItem>
               </>
@@ -142,24 +138,19 @@ export function HeaderNav({
                   </Link>
                 </div>
 
-                <div className="mx-1 mb-1 border-t border-border" />
+                <Divider className="mx-1 mb-1" />
 
                 {/* Common shortcuts — login-gated, so route through sign-in. */}
                 {COMMON_MENU.map((it) => (
-                  <MenuItem
-                    key={it.label}
-                    role="menuitem"
-                    icon={it.icon}
-                    href={loginThen(it.href)}
-                  >
+                  <MenuItem key={it.label} role="menuitem" icon={it.icon} href={loginThen(it.href)}>
                     {it.label}
                   </MenuItem>
                 ))}
               </>
             )}
           </div>
-        </li>
-      )}
-    </ul>
+        </div>
+      ) : null}
+    </List>
   );
 }

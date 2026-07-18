@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button } from "@/components/ui";
+import { Button, Heading, Icon, List, ListItem } from "@/components/ui";
 
 /**
  * Hero — home hero from design_new (#home .home-hero).
@@ -22,12 +22,12 @@ export function Hero() {
       {/* Left — copy */}
       <div>
         <div className="eyebrow">Live-guided virtual campus tours</div>
-        <h1 className="mt-3 max-w-[720px] font-display text-h1 text-ink">
+        <Heading as="h1" size="display" className="mt-3 max-w-[720px]">
           Explore campus with someone who actually studies there.
-        </h1>
+        </Heading>
         <p className="lead mt-5">
-          Ask the questions you cannot find on the university website. Book a live
-          tour with a verified student guide.
+          Ask the questions you cannot find on the university website. Book a live tour with a
+          verified student guide.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
@@ -35,14 +35,18 @@ export function Hero() {
           <Button variant="secondary">Become a guide</Button>
         </div>
 
-        <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[14px] text-ink-soft">
+        <List dividers={false} className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
           {TRUST_SIGNALS.map((signal) => (
-            <li key={signal} className="flex items-center gap-2">
-              <span className="inline-block h-2.5 w-2.5 rounded-pill bg-sage-deep" aria-hidden />
+            <ListItem
+              key={signal}
+              padded={false}
+              className="gap-2"
+              leading={<Icon name="success" className="text-sage-deep" />}
+            >
               {signal}
-            </li>
+            </ListItem>
           ))}
-        </ul>
+        </List>
       </div>
 
       {/* Right — campus illustration.

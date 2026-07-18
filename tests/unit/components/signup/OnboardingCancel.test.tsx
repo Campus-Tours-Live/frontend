@@ -7,8 +7,7 @@ const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 jest.mock("@/lib/data-access", () => ({ useMe: jest.fn() }));
 
-const mockMe = (isOnboarded: boolean) =>
-  (useMe as jest.Mock).mockReturnValue({ isOnboarded });
+const mockMe = (isOnboarded: boolean) => (useMe as jest.Mock).mockReturnValue({ isOnboarded });
 
 beforeEach(() => {
   jest.clearAllMocks();

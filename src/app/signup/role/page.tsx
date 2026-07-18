@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Alert, SectionHeading } from "@/components/ui";
+import { Alert, Body, SectionHeading } from "@/components/ui";
 import { RoleCard, type RoleCardProps } from "@/components/signup/RoleCard";
 import { getServerMe } from "@/lib/http/serverMe";
 
@@ -71,13 +71,15 @@ export default async function SignupRolePage({
 
         {parentNoGuide && (
           <Alert variant="error" className="mx-auto mb-8 max-w-[680px]">
-            Parent or guardian accounts can&rsquo;t become guides. You can continue as a participant.
+            Parent or guardian accounts can&rsquo;t become guides. You can continue as a
+            participant.
           </Alert>
         )}
 
         {completeSignup && (
           <Alert variant="error" className="mx-auto mb-8 max-w-[680px]">
-            You haven&rsquo;t finished setting up your account yet. Choose how you&rsquo;d like to join to continue.
+            You haven&rsquo;t finished setting up your account yet. Choose how you&rsquo;d like to
+            join to continue.
           </Alert>
         )}
 
@@ -95,10 +97,10 @@ export default async function SignupRolePage({
           ))}
         </div>
 
-        <p className="mx-auto mt-8 max-w-[680px] text-center text-[13px] text-ink-soft">
-          Under 16 users cannot self-register. Participants aged 16–17 require
-          guardian consent and live supervision.
-        </p>
+        <Body size="small" color="muted" className="mx-auto mt-8 max-w-[680px] text-center">
+          Under 16 users cannot self-register. Participants aged 16–17 require guardian consent and
+          live supervision.
+        </Body>
       </section>
     </main>
   );

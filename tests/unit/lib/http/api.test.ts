@@ -13,10 +13,7 @@ const mockedRequireAuth = requireAuth as jest.MockedFunction<typeof requireAuth>
  * Minimal Response-like stub. `headers` mimics the Headers API's `get` with
  * case-insensitive lookup (api.ts reads the "auth-required" header).
  */
-function makeRes(opts: {
-  status: number;
-  headers?: Record<string, string>;
-}): Response {
+function makeRes(opts: { status: number; headers?: Record<string, string> }): Response {
   const headerMap = new Map(
     Object.entries(opts.headers ?? {}).map(([k, v]) => [k.toLowerCase(), v]),
   );
@@ -42,16 +39,12 @@ beforeEach(() => {
 
 describe("apiFetch path guard", () => {
   it("throws for a non-versioned path", async () => {
-    await expect(apiFetch("/auth/session")).rejects.toThrow(
-      /versioned BFF paths/,
-    );
+    await expect(apiFetch("/auth/session")).rejects.toThrow(/versioned BFF paths/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("throws for an absolute / third-party URL", async () => {
-    await expect(apiFetch("https://evil.example/v1/x")).rejects.toThrow(
-      /versioned BFF paths/,
-    );
+    await expect(apiFetch("https://evil.example/v1/x")).rejects.toThrow(/versioned BFF paths/);
   });
 
   it("accepts any /vN/ version segment", async () => {
@@ -157,9 +150,7 @@ describe("apiFetch re-auth gate (interactive)", () => {
 
   it("cancels the 401 response body before re-authenticating", async () => {
     const first = makeRes({ status: 401, headers: REAUTH_HEADER });
-    fetchMock
-      .mockResolvedValueOnce(first)
-      .mockResolvedValueOnce(makeRes({ status: 200 }));
+    fetchMock.mockResolvedValueOnce(first).mockResolvedValueOnce(makeRes({ status: 200 }));
 
     await apiFetch("/v1/userinfo");
 
@@ -174,14 +165,8 @@ describe("apiFetch re-auth gate (interactive)", () => {
     await apiFetch("/v1/userinfo");
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0]).toEqual([
-      "/v1/userinfo",
-      { credentials: "same-origin" },
-    ]);
-    expect(fetchMock.mock.calls[1]).toEqual([
-      "/v1/userinfo",
-      { credentials: "same-origin" },
-    ]);
+    expect(fetchMock.mock.calls[0]).toEqual(["/v1/userinfo", { credentials: "same-origin" }]);
+    expect(fetchMock.mock.calls[1]).toEqual(["/v1/userinfo", { credentials: "same-origin" }]);
   });
 
   it("does NOT replay a mutation (POST) by default; returns the original 401", async () => {
@@ -221,9 +206,7 @@ describe("apiFetch re-auth gate (interactive)", () => {
   });
 
   it("propagates AuthCancelledError when the gate rejects (user dismisses modal)", async () => {
-    fetchMock.mockResolvedValueOnce(
-      makeRes({ status: 401, headers: REAUTH_HEADER }),
-    );
+    fetchMock.mockResolvedValueOnce(makeRes({ status: 401, headers: REAUTH_HEADER }));
     const cancelled = new Error("cancelled");
     mockedRequireAuth.mockRejectedValueOnce(cancelled);
 
@@ -237,9 +220,7 @@ describe("apiFetch ambient mode (interactive: false)", () => {
     const res = makeRes({ status: 401, headers: REAUTH_HEADER });
     fetchMock.mockResolvedValue(res);
 
-    await expect(
-      apiFetch("/v1/userinfo", { interactive: false }),
-    ).resolves.toBe(res);
+    await expect(apiFetch("/v1/userinfo", { interactive: false })).resolves.toBe(res);
     expect(mockedRequireAuth).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });

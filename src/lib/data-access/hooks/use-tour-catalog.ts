@@ -2,7 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { tourCatalogOptions } from "../queries/tours.query";
+import type { TourCatalogFilters } from "../types";
 
-export function useTourCatalog() {
-  return useQuery(tourCatalogOptions());
+/** Public marketplace catalog — GET /v1/tours */
+export function useTourCatalog(filters: TourCatalogFilters = {}) {
+  return useQuery(tourCatalogOptions(filters));
 }

@@ -63,7 +63,7 @@ export function SessionExpiredModal() {
             titleId="reauth-title"
             level={3}
             lead="We’ll take you to Google to sign in and bring you straight back to this page."
-            className="[&_h3]:lg:whitespace-nowrap [&_h3]:lg:text-[30px] [&_h3]:lg:leading-[1.15] [&_p]:text-[15px] [&_p]:lg:text-[16px]"
+            className="[&_h3]:lg:whitespace-nowrap [&_h3]:lg:text-[30px] [&_h3]:lg:leading-[1.15] [&_p]:text-ui-lg [&_p]:lg:text-[16px]"
           />
 
           <div className="flex flex-col gap-3">

@@ -41,9 +41,7 @@ describe("useDismiss", () => {
 
     it("removes the keydown listener on unmount", () => {
       const onDismiss = jest.fn();
-      const { unmount } = renderHook(() =>
-        useDismiss({ enabled: true, onDismiss }),
-      );
+      const { unmount } = renderHook(() => useDismiss({ enabled: true, onDismiss }));
 
       unmount();
       fireEvent.keyDown(window, { key: "Escape" });
@@ -52,10 +50,9 @@ describe("useDismiss", () => {
 
     it("re-attaches listeners when toggled from disabled to enabled", () => {
       const onDismiss = jest.fn();
-      const { rerender } = renderHook(
-        ({ enabled }) => useDismiss({ enabled, onDismiss }),
-        { initialProps: { enabled: false } },
-      );
+      const { rerender } = renderHook(({ enabled }) => useDismiss({ enabled, onDismiss }), {
+        initialProps: { enabled: false },
+      });
 
       fireEvent.keyDown(window, { key: "Escape" });
       expect(onDismiss).not.toHaveBeenCalled();
@@ -67,10 +64,9 @@ describe("useDismiss", () => {
 
     it("detaches listeners when toggled from enabled to disabled", () => {
       const onDismiss = jest.fn();
-      const { rerender } = renderHook(
-        ({ enabled }) => useDismiss({ enabled, onDismiss }),
-        { initialProps: { enabled: true } },
-      );
+      const { rerender } = renderHook(({ enabled }) => useDismiss({ enabled, onDismiss }), {
+        initialProps: { enabled: true },
+      });
 
       rerender({ enabled: false });
       fireEvent.keyDown(window, { key: "Escape" });
@@ -84,9 +80,7 @@ describe("useDismiss", () => {
       const onDismiss = jest.fn();
       renderHook(() => useDismiss({ enabled: true, onDismiss }));
 
-      const pointerCalls = addSpy.mock.calls.filter(
-        ([type]) => type === "pointerdown",
-      );
+      const pointerCalls = addSpy.mock.calls.filter(([type]) => type === "pointerdown");
       expect(pointerCalls).toHaveLength(0);
       addSpy.mockRestore();
     });
@@ -100,9 +94,7 @@ describe("useDismiss", () => {
       const ref = createRef<HTMLElement>();
       ref.current = inside;
 
-      renderHook(() =>
-        useDismiss({ enabled: true, onDismiss, outside: true, ref }),
-      );
+      renderHook(() => useDismiss({ enabled: true, onDismiss, outside: true, ref }));
 
       fireEvent.pointerDown(outside);
       expect(onDismiss).toHaveBeenCalledTimes(1);
@@ -121,9 +113,7 @@ describe("useDismiss", () => {
       const ref = createRef<HTMLElement>();
       ref.current = inside;
 
-      renderHook(() =>
-        useDismiss({ enabled: true, onDismiss, outside: true, ref }),
-      );
+      renderHook(() => useDismiss({ enabled: true, onDismiss, outside: true, ref }));
 
       fireEvent.pointerDown(inside);
       fireEvent.pointerDown(child); // contains() should treat descendant as inside
@@ -138,9 +128,7 @@ describe("useDismiss", () => {
       const target = document.createElement("div");
       document.body.appendChild(target);
 
-      renderHook(() =>
-        useDismiss({ enabled: true, onDismiss, outside: true, ref }),
-      );
+      renderHook(() => useDismiss({ enabled: true, onDismiss, outside: true, ref }));
 
       fireEvent.pointerDown(target);
       expect(onDismiss).not.toHaveBeenCalled();

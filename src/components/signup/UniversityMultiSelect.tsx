@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Body, Caption } from "@/components/ui";
 import { useUniversitySearch } from "@/lib/data-access";
 
 export interface UniversityOption {
@@ -20,10 +21,27 @@ export function UniversityMultiSelect({
   value,
   onChange,
   max = 5,
+  id,
+  "aria-labelledby": ariaLabelledby,
+  "aria-describedby": ariaDescribedby,
+  "aria-invalid": ariaInvalid,
 }: {
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   max?: number;
+  /** Id for the search input, so a wrapping `<label htmlFor>` associates + focuses it (present only
+   *  while below `max`). */
+  id?: string;
+  /** Ids of the element(s) naming this control. When set, the always-present outer container becomes
+   *  a labelled `role="group"`, so the field keeps an accessible name even at max (input unmounted). */
+  "aria-labelledby"?: string;
+  /** Ids of the element(s) describing this control (e.g. help text). Placed on the search input (so
+   *  it's announced on focus, the common case) AND on the persistent group container (so it still
+   *  survives at max, when the input has unmounted). */
+  "aria-describedby"?: string;
+  /** Marks the field invalid (e.g. a required selection is empty). Applied to the search input —
+   *  which is always present in the error state, since an empty required selection is below `max`. */
+  "aria-invalid"?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -46,7 +64,14 @@ export function UniversityMultiSelect({
   const remove = (id: string) => onChange(value.filter((v) => v.id !== id));
 
   return (
-    <div>
+    <div
+      // The container is only a named region when it has a label — keep its describedby paired with
+      // the group role so a stray describedby never lands on a roleless div (the input carries its
+      // own describedby below for the focus case).
+      role={ariaLabelledby ? "group" : undefined}
+      aria-labelledby={ariaLabelledby}
+      aria-describedby={ariaLabelledby ? ariaDescribedby : undefined}
+    >
       {value.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {value.map((v) => (
@@ -68,6 +93,9 @@ export function UniversityMultiSelect({
       {!atMax && (
         <div className="relative">
           <input
+            id={id}
+            aria-describedby={ariaDescribedby}
+            aria-invalid={ariaInvalid}
             className="input"
             placeholder="Search universities…"
             value={query}
@@ -80,9 +108,7 @@ export function UniversityMultiSelect({
           />
           {open && (loading || results.some((r) => !selectedIds.has(r.id))) && (
             <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-card border border-border bg-card shadow-card">
-              {loading && (
-                <li className="px-4 py-2 text-[13px] text-ink-soft">Searching…</li>
-              )}
+              {loading && <li className="px-4 py-2 text-ui-sm text-ink-soft">Searching…</li>}
               {results
                 .filter((r) => !selectedIds.has(r.id))
                 .map((r) => (
@@ -92,11 +118,11 @@ export function UniversityMultiSelect({
                       onClick={() => add(r)}
                       className="flex w-full flex-col items-start px-4 py-2 text-left transition-colors hover:bg-primary-soft"
                     >
-                      <span className="text-[14px] text-ink">{r.name}</span>
+                      <Body as="span" size="medium">
+                        {r.name}
+                      </Body>
                       {(r.city || r.region) && (
-                        <span className="text-[12px] text-ink-soft">
-                          {[r.city, r.region].filter(Boolean).join(", ")}
-                        </span>
+                        <Caption>{[r.city, r.region].filter(Boolean).join(", ")}</Caption>
                       )}
                     </button>
                   </li>
@@ -106,9 +132,9 @@ export function UniversityMultiSelect({
         </div>
       )}
 
-      <p className="mt-1.5 text-[12px] text-ink-soft">
+      <Caption as="p" className="mt-1.5">
         {atMax ? `Maximum ${max} selected.` : `Pick up to ${max}.`}
-      </p>
+      </Caption>
     </div>
   );
 }

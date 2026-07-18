@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useMe, useSetActiveRole, type Role } from "@/lib/data-access";
-import { Alert, Button } from "@/components/ui";
+import { Alert, Button, SegmentedControl } from "@/components/ui";
 
 /**
  * Role switcher, shown in the account menu. Three states by how
@@ -45,28 +44,19 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   if (hasRole("PARTICIPANT") && hasRole("GUIDE")) {
     return (
       <div className="border-b border-border px-2.5 py-4">
-        <div role="group" aria-label="Active role" className="flex rounded-pill border border-border p-0.5">
-          {(["PARTICIPANT", "GUIDE"] as const).map((r) => {
-            const isActive = active === r;
-            return (
-              <button
-                key={r}
-                type="button"
-                aria-pressed={isActive}
-                disabled={pending || isActive}
-                onClick={() => switchTo(r)}
-                className={cn(
-                  "flex-1 rounded-pill px-3 py-1.5 text-[13px] font-semibold transition-colors disabled:cursor-default",
-                  isActive ? "bg-primary text-white" : "text-ink-soft hover:text-ink",
-                )}
-              >
-                {r === "GUIDE" ? "Guide" : "Participant"}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl
+          aria-label="Active role"
+          size="small"
+          value={active}
+          disabled={pending}
+          onChange={switchTo}
+          options={[
+            { value: "PARTICIPANT", label: "Participant" },
+            { value: "GUIDE", label: "Guide" },
+          ]}
+        />
         {failed && (
-          <Alert variant="error" className="mt-2.5 text-[13px]">
+          <Alert variant="error" className="mt-2.5 text-ui-sm">
             Couldn&apos;t switch right now. Please try again.
           </Alert>
         )}

@@ -32,38 +32,26 @@ describe("ParticipantSummary", () => {
   });
 
   it("renders the participant type", () => {
-    render(
-      <ParticipantSummary data={makeData({ participantType: "PARENT" })} />,
-    );
+    render(<ParticipantSummary data={makeData({ participantType: "PARENT" })} />);
     expect(screen.getByText("Type")).toBeInTheDocument();
     expect(screen.getByText("PARENT")).toBeInTheDocument();
   });
 
   it("shows the topics count as 'N selected'", () => {
-    render(
-      <ParticipantSummary
-        data={makeData({ topicsOfInterest: ["a", "b", "c"] })}
-      />,
-    );
+    render(<ParticipantSummary data={makeData({ topicsOfInterest: ["a", "b", "c"] })} />);
     expect(screen.getByText("Topics")).toBeInTheDocument();
     expect(screen.getByText("3 selected")).toBeInTheDocument();
   });
 
   it("shows the universities count as 'N selected'", () => {
-    render(
-      <ParticipantSummary
-        data={makeData({ universitiesOfInterest: ["x", "y"] })}
-      />,
-    );
+    render(<ParticipantSummary data={makeData({ universitiesOfInterest: ["x", "y"] })} />);
     expect(screen.getByText("Universities")).toBeInTheDocument();
     expect(screen.getByText("2 selected")).toBeInTheDocument();
   });
 
   it("falls back to — for empty topics and universities arrays", () => {
     render(
-      <ParticipantSummary
-        data={makeData({ topicsOfInterest: [], universitiesOfInterest: [] })}
-      />,
+      <ParticipantSummary data={makeData({ topicsOfInterest: [], universitiesOfInterest: [] })} />,
     );
     // Both the Topics and Universities rows fall back to the em-dash.
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
@@ -92,21 +80,15 @@ describe("ParticipantSummary", () => {
   });
 
   it("renders the Guardian highlight for a PARENT participant", () => {
-    render(
-      <ParticipantSummary data={makeData({ participantType: "PARENT" })} />,
-    );
+    render(<ParticipantSummary data={makeData({ participantType: "PARENT" })} />);
     expect(screen.getByText("Guardian consent active")).toBeInTheDocument();
     expect(screen.queryByText("Ready to explore")).not.toBeInTheDocument();
   });
 
   it("renders the explorer highlight for a non-PARENT participant", () => {
-    render(
-      <ParticipantSummary data={makeData({ participantType: "STUDENT" })} />,
-    );
+    render(<ParticipantSummary data={makeData({ participantType: "STUDENT" })} />);
     expect(screen.getByText("Ready to explore")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Guardian consent active"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Guardian consent active")).not.toBeInTheDocument();
   });
 
   it("renders a bare 'Welcome.' and 'Member' when displayName is missing", () => {
