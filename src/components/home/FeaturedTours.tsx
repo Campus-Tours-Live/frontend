@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Heading, Link, Spinner } from "@/components/ui";
+import { Alert, Heading, IconButton, Link, Spinner } from "@/components/ui";
 import { TourCard } from "@/components/tours/TourCard";
 import { ApiError, useTourCatalog } from "@/lib/data-access";
 import { cn } from "@/lib/utils";
@@ -176,24 +176,26 @@ export function FeaturedTours() {
         />
 
         {/* Side chevrons (desktop carousel only) */}
-        <button
-          type="button"
-          aria-label="Previous tours"
+        <IconButton
+          a11yLabel="Previous tours"
+          size="large"
+          variant="soft"
           onClick={() => goToPage(active - 1)}
           disabled={active === 0}
-          className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-pill border border-border bg-card text-ink shadow-card transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 lg:grid"
+          className="absolute left-1 top-1/2 z-20 hidden -translate-y-1/2 border border-border bg-card text-ink shadow-card hover:border-primary lg:inline-flex"
         >
           <Chevron dir="left" />
-        </button>
-        <button
-          type="button"
-          aria-label="Next tours"
+        </IconButton>
+        <IconButton
+          a11yLabel="Next tours"
+          size="large"
+          variant="soft"
           onClick={() => goToPage(active + 1)}
           disabled={active === pageCount - 1}
-          className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-pill border border-border bg-card text-ink shadow-card transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 lg:grid"
+          className="absolute right-1 top-1/2 z-20 hidden -translate-y-1/2 border border-border bg-card text-ink shadow-card hover:border-primary lg:inline-flex"
         >
           <Chevron dir="right" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Page-based dot pagination (desktop carousel only) */}
