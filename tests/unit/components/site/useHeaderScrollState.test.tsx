@@ -84,6 +84,18 @@ describe("useHeaderScrollState", () => {
     expect(result.current.scrollDirection).toBe("up");
   });
 
+  it("does nothing and stays expanded when disabled (mobile)", () => {
+    const { result } = renderHook(() => useHeaderScrollState({ enabled: false }));
+    setScroll(300);
+    expect(result.current.isCollapsed).toBe(false);
+  });
+
+  it("starts collapsed when the page is loaded already scrolled past the threshold", () => {
+    Object.defineProperty(window, "scrollY", { value: 300, configurable: true, writable: true });
+    const { result } = renderHook(() => useHeaderScrollState());
+    expect(result.current.isCollapsed).toBe(true);
+  });
+
   it("removes its scroll listener on unmount", () => {
     const remove = jest.spyOn(window, "removeEventListener");
     const { unmount } = renderHook(() => useHeaderScrollState());

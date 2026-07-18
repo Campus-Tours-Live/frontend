@@ -500,61 +500,41 @@
   }
 }
 
-/* ---- Collapsing two-tier header (Airbnb-style) --------------------------------
-   One set of variables drives the fixed header's real height, the row-2 band's
-   animation target, AND the spacer — so they can never drift. Split row vs band
-   so a font/border/spacing tweak only touches the relevant variable. */
+/* ---- Collapsing header (Airbnb-style) -----------------------------------------
+   The fixed header is a single constant-height row. The expanded search band is an
+   OVERLAY below it (absolute; never in flow), so expanding/collapsing it cannot change
+   document height, push content, or perturb scrollY. The spacer therefore reserves only
+   the row height and never animates — content stays put while the band fades/retracts. */
 :root {
   --header-row-height: 72px;
-  --header-band-height: 80px;
-  --header-expanded-height: calc(var(--header-row-height) + var(--header-band-height));
-  --header-collapsed-height: var(--header-row-height);
   --header-easing: cubic-bezier(0.22, 1, 0.36, 1);
   --header-duration: 260ms;
   --header-fade-duration: 180ms;
   --header-compact-duration: 160ms;
 }
 
-/* Spacer under the fixed header: mobile reserves the single row; desktop reserves the
-   expanded/collapsed height and animates in lockstep with the band. */
+/* Constant spacer — reserves the fixed header row only; deliberately does NOT animate. */
 .header-spacer {
   height: var(--header-row-height);
-  transition: height var(--header-duration) var(--header-easing);
-}
-@media (min-width: 1024px) {
-  .header-spacer {
-    height: var(--header-expanded-height);
-  }
-  .header-spacer[data-collapsed="true"] {
-    height: var(--header-collapsed-height);
-  }
 }
 
-/* Row-2 band (desktop only). box-sizing: border-box means max-height includes padding. */
+/* Expanded search-band overlay (desktop only). Animates opacity + translateY only — no
+   height/overflow, so the University suggestions dropdown is never clipped and there is no
+   layout to drift against the spacer. */
 .header-band {
-  overflow: hidden;
-  max-height: var(--header-band-height);
-  padding-top: 8px;
-  padding-bottom: 16px;
   opacity: 1;
   transform: translateY(0);
   transition:
-    max-height var(--header-duration) var(--header-easing),
-    padding-top var(--header-duration) var(--header-easing),
-    padding-bottom var(--header-duration) var(--header-easing),
     opacity var(--header-fade-duration) ease,
     transform var(--header-duration) var(--header-easing);
 }
 .header-band[data-collapsed="true"] {
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-12px);
   pointer-events: none;
 }
 
-/* Compact pill in row 1 — appears slightly after the band starts collapsing. */
+/* Compact pill in the row — cross-fades in slightly after the band starts retracting. */
 .header-compact {
   opacity: 1;
   transform: translateY(0) scale(1);
@@ -572,7 +552,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .header-spacer,
   .header-band,
   .header-compact {
     transition-duration: 1ms !important;

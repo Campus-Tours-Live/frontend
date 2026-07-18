@@ -22,13 +22,17 @@ interface SearchProps {
   search: HeaderSearch;
 }
 
-/** HeaderSearchPill — compact "summary — search icon" button that reopens the band to edit. */
-export function HeaderSearchPill({ search }: SearchProps) {
+/** HeaderSearchPill — compact "summary — search icon" button that reopens the band to edit.
+ *  `hidden` (while the band is expanded) makes it non-focusable and hidden from AT on its own,
+ *  not only via the parent's `inert`. */
+export function HeaderSearchPill({ search, hidden = false }: SearchProps & { hidden?: boolean }) {
   return (
     <button
       type="button"
       onClick={search.openEditor}
       aria-label="Edit search"
+      aria-hidden={hidden}
+      tabIndex={hidden ? -1 : 0}
       className="search flex min-w-0 max-w-sm flex-1 items-center justify-between text-left"
     >
       <span className="truncate text-ink-soft">{search.summary}</span>
@@ -83,7 +87,7 @@ export function HeaderSearchBar({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onFocus={() => setUniFocused(true)}
-            onBlur={() => setTimeout(() => setUniFocused(false), 120)}
+            onBlur={() => setUniFocused(false)}
             placeholder="Search a school"
             className="min-w-0 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
           />

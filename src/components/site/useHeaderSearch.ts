@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
 import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
@@ -56,10 +56,31 @@ export function useHeaderSearch() {
   const suggestions =
     q.trim().length >= 1 ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
 
-  const { isCollapsed: scrollWantsCollapsed } = useHeaderScrollState();
+  // Collapse UI is desktop-only; keep the scroll machinery off below the breakpoint.
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setDesktop(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  const { isCollapsed: scrollWantsCollapsed } = useHeaderScrollState({ enabled: desktop });
 
   const interactionLocked = searchFocusWithin || uniFocused || forceExpanded;
   const collapsed = scrollWantsCollapsed && !interactionLocked;
+
+  // Any navigation cancels an in-flight edit intent (avoids a stray focus/expand on the next page).
+  // Resetting this transient UI on route change is exactly this effect's job.
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setForceExpanded(false);
+    setPendingFocus(false);
+    setUniFocused(false);
+    setSearchFocusWithin(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [pathname]);
 
   const submit = () => {
     pushRecentUniversity(q);
@@ -76,6 +97,7 @@ export function useHeaderSearch() {
       router.push(buildToursHref(q, topic));
     }
     setForceExpanded(false);
+    setPendingFocus(false);
     setUniFocused(false);
     setSheetOpen(false);
   };
