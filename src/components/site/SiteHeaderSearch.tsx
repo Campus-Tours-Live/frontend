@@ -17,36 +17,46 @@ const DIVIDER = "my-2 w-px shrink-0 self-stretch bg-border";
 
 /**
  * DesktopSearchShell — the single white search shell (see globals `.ds-shell`). ONE DOM node whose
- * geometry (top/width/height) morphs between expanded and compact; the expanded form and the
- * compact "Edit search" button cross-fade INSIDE it. Exactly one layer is interactive at a time
- * (`inert` + `aria-hidden` keyed on `collapsed`); the two circular actions occupy the same right-edge
- * slot so the anchor travels continuously. Desktop only — the mobile control is separate.
+ * geometry (top/width/height) morphs between expanded and compact; the expanded form and the compact
+ * section-button group cross-fade INSIDE it. Exactly one layer is interactive at a time (`inert` +
+ * `aria-hidden` keyed on `collapsed`). Desktop only — the mobile control is separate.
  */
 export function DesktopSearchShell({
   search,
   universityInputRef,
+  topicRef,
   onTransitionEnd,
 }: SearchProps & {
   universityInputRef: RefObject<HTMLInputElement | null>;
+  topicRef: RefObject<HTMLSelectElement | null>;
   onTransitionEnd?: (e: ReactTransitionEvent<HTMLDivElement>) => void;
 }) {
   return (
     <div
-      className="ds-shell overflow-visible rounded-pill border border-border bg-card shadow-lg"
+      className="ds-shell overflow-visible rounded-pill border border-border bg-card"
       data-collapsed={search.collapsed}
       onTransitionEnd={onTransitionEnd}
     >
-      <ExpandedContent search={search} universityInputRef={universityInputRef} />
+      <ExpandedContent
+        search={search}
+        universityInputRef={universityInputRef}
+        topicRef={topicRef}
+      />
       <CompactContent search={search} />
     </div>
   );
 }
 
-/** Expanded layer — the segmented form (University + suggestions · Topic · Language · submit). */
+/** Expanded layer — the segmented form. Each interactive segment sets `activeSection` (which is what
+ *  Commit B's shared panel will key off). Language is non-interactive ("Soon"). */
 function ExpandedContent({
   search,
   universityInputRef,
-}: SearchProps & { universityInputRef: RefObject<HTMLInputElement | null> }) {
+  topicRef,
+}: SearchProps & {
+  universityInputRef: RefObject<HTMLInputElement | null>;
+  topicRef: RefObject<HTMLSelectElement | null>;
+}) {
   const {
     q,
     setQ,
@@ -56,7 +66,9 @@ function ExpandedContent({
     setUniFocused,
     suggestions,
     topicOptions,
-    submit,
+    activeSection,
+    setActiveSection,
+    commitSearch,
     collapsed,
     onSearchFocusCapture,
     onSearchBlurCapture,
@@ -72,13 +84,16 @@ function ExpandedContent({
       aria-hidden={collapsed}
       onSubmit={(e) => {
         e.preventDefault();
-        submit();
+        commitSearch();
       }}
       onFocusCapture={onSearchFocusCapture}
       onBlurCapture={onSearchBlurCapture}
     >
       <div className="flex min-w-0 flex-1 items-stretch">
-        <div className="ds-seg--uni relative flex flex-col justify-center px-3">
+        <div
+          className="ds-seg--uni relative flex flex-col justify-center rounded-field px-3 transition-colors data-[active=true]:bg-muted/60"
+          data-active={activeSection === "university"}
+        >
           <span className="text-[11px] font-bold leading-tight text-ink">University</span>
           <input
             ref={universityInputRef}
@@ -90,7 +105,10 @@ function ExpandedContent({
             aria-controls="header-university-suggestions"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            onFocus={() => setUniFocused(true)}
+            onFocus={() => {
+              setUniFocused(true);
+              setActiveSection("university");
+            }}
             onBlur={() => setUniFocused(false)}
             placeholder="Search a school"
             className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
@@ -130,12 +148,17 @@ function ExpandedContent({
 
         <span className={DIVIDER} aria-hidden />
 
-        <label className="ds-seg--topic flex flex-col justify-center px-3">
+        <label
+          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 transition-colors data-[active=true]:bg-muted/60"
+          data-active={activeSection === "topic"}
+        >
           <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
           <select
+            ref={topicRef}
             aria-label="Topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
+            onFocus={() => setActiveSection("topic")}
             className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none"
           >
             <option value="">Any topic</option>
@@ -151,7 +174,6 @@ function ExpandedContent({
 
         <span
           className="ds-seg--lang flex flex-col justify-center px-3 opacity-50"
-          title="Coming soon"
           aria-disabled="true"
           aria-label="Language — coming soon"
         >
@@ -176,22 +198,20 @@ function ExpandedContent({
   );
 }
 
-/** Compact layer — the whole thing is one "Edit search" button, but keeps the 3-segment structure
- *  (values only, no labels) aligned to the expanded grid so fields don't collapse into one summary.
- *  The inner segments and circle are decorative; only the shell is interactive. */
+/** Compact layer — a GROUP (not one button): University and Topic are independent section buttons,
+ *  Language is a non-interactive span, and the circular action opens the University section. Keeps
+ *  the 3-segment structure aligned to the expanded grid. */
 function CompactContent({ search }: SearchProps) {
-  const { universityValue, topicValue, openEditor, collapsed } = search;
+  const { universityValue, topicValue, openSection, collapsed } = search;
   return (
-    <button
-      type="button"
-      className="ds-compact flex items-center px-1 text-left"
-      aria-label="Edit search"
-      inert={!collapsed}
-      aria-hidden={!collapsed}
-      onClick={openEditor}
-    >
+    <div className="ds-compact flex items-center px-1" inert={!collapsed} aria-hidden={!collapsed}>
       <span className="flex min-w-0 flex-1 items-stretch">
-        <span className="ds-seg--uni flex flex-col justify-center px-3">
+        <button
+          type="button"
+          aria-label="University"
+          onClick={() => openSection("university")}
+          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted/60"
+        >
           <span
             className={`truncate text-ui-sm font-semibold leading-tight ${
               universityValue ? "text-ink" : "text-ink-soft"
@@ -199,17 +219,22 @@ function CompactContent({ search }: SearchProps) {
           >
             {universityValue || "Choose university"}
           </span>
-        </span>
+        </button>
 
         <span className={DIVIDER} aria-hidden />
 
-        <span className="ds-seg--topic flex flex-col justify-center px-3">
+        <button
+          type="button"
+          aria-label="Topic"
+          onClick={() => openSection("topic")}
+          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted/60"
+        >
           <span
             className={`truncate text-ui-sm leading-tight ${topicValue ? "text-ink" : "text-ink-soft"}`}
           >
             {topicValue || "Any topic"}
           </span>
-        </span>
+        </button>
 
         <span className={DIVIDER} aria-hidden />
 
@@ -223,17 +248,22 @@ function CompactContent({ search }: SearchProps) {
         </span>
       </span>
 
-      <span aria-hidden className={`${ACTION_BASE} ml-1 h-[34px] w-[34px] self-center`}>
+      <button
+        type="button"
+        aria-label="Open search"
+        onClick={() => openSection("university")}
+        className={`${ACTION_BASE} ml-1 h-[34px] w-[34px] self-center`}
+      >
         <Search size={17} strokeWidth={2} aria-hidden />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
 /** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet.
- *  Kept as-is for now; a dedicated mobile visual is Step 3. */
+ *  Kept as-is for now; a dedicated mobile visual is a later step. */
 export function HeaderSearchMobile({ search }: SearchProps) {
-  const { q, setQ, topic, setTopic, topicOptions, summary, sheetOpen, setSheetOpen, submit } =
+  const { q, setQ, topic, setTopic, topicOptions, summary, sheetOpen, setSheetOpen, commitSearch } =
     search;
 
   return (
@@ -264,7 +294,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
             >
               Clear all
             </Button>
-            <Button variant="primary" size="small" onClick={submit}>
+            <Button variant="primary" size="small" onClick={commitSearch}>
               Search
             </Button>
           </div>

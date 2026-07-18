@@ -50,12 +50,13 @@ function setScroll(y: number) {
 function TestHeader() {
   const state = useHeaderSearch();
   const uniRef = useRef<HTMLInputElement>(null);
-  // The real header renders ONE shell (expanded form + compact button cross-fading inside);
-  // each layer is aria-hidden in the inactive state, so role queries still resolve to the
-  // active layer. Mobile is a separate control.
+  const topicRef = useRef<HTMLSelectElement>(null);
+  // The real header renders ONE shell (expanded form + compact section-button group cross-fading
+  // inside); each layer is aria-hidden in the inactive state, so role queries resolve to the active
+  // layer. Mobile is a separate control.
   return (
     <>
-      <DesktopSearchShell search={state} universityInputRef={uniRef} />
+      <DesktopSearchShell search={state} universityInputRef={uniRef} topicRef={topicRef} />
       <HeaderSearchMobile search={state} />
     </>
   );
@@ -102,18 +103,30 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
 
     setScroll(120);
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "University" })).toBeInTheDocument();
 
     setScroll(0);
     expect(screen.getByRole("search")).toBeInTheDocument();
   });
 
-  it("clicking the compact pill re-expands the band to edit", async () => {
+  it("clicking a compact section button re-expands the band to edit", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);
     setScroll(120);
-    await user.click(screen.getByRole("button", { name: "Edit search" }));
+    await user.click(screen.getByRole("button", { name: "University" }));
     expect(screen.getByRole("search")).toBeInTheDocument();
+  });
+
+  it("opening the Topic section expands without flashing the University suggestions", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    setScroll(120);
+    await user.click(screen.getByRole("button", { name: "Topic" }));
+    expect(screen.getByRole("search")).toBeInTheDocument();
+    // openSection('topic') must not focus University or open its suggestions.
+    expect(
+      screen.queryByRole("listbox", { name: "University suggestions" }),
+    ).not.toBeInTheDocument();
   });
 
   it("lets a clear downward scroll end a focused interaction and collapse (soft lock is overridable)", async () => {
@@ -124,7 +137,7 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     // focus lock: the interaction ends and the header collapses to the compact control.
     setScroll(200);
     expect(screen.queryByRole("search")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "University" })).toBeInTheDocument();
   });
 
   it("navigates to /tours with q and topic on submit off /tours", async () => {

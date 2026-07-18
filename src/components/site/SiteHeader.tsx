@@ -44,17 +44,24 @@ export function SiteHeader({
   const {
     collapsed,
     forceExpanded,
-    setForceExpanded,
     searchFocusWithin,
     uniFocused,
-    setUniFocused,
     pendingFocus,
     setPendingFocus,
+    activeSection,
+    cancelEditing,
   } = search;
 
   const headerRef = useRef<HTMLElement>(null);
   const universityInputRef = useRef<HTMLInputElement>(null);
+  const topicRef = useRef<HTMLSelectElement>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Focus the control for the section that was opened — not always University.
+  const focusActiveSection = useCallback(() => {
+    if (activeSection === "topic") topicRef.current?.focus();
+    else universityInputRef.current?.focus();
+  }, [activeSection]);
 
   const cancelPendingFocus = useCallback(() => {
     if (fallbackTimerRef.current !== null) {
@@ -69,7 +76,7 @@ export function SiteHeader({
   useEffect(() => {
     if (!pendingFocus) return;
     fallbackTimerRef.current = setTimeout(() => {
-      universityInputRef.current?.focus();
+      focusActiveSection();
       setPendingFocus(false);
       fallbackTimerRef.current = null;
     }, EXPAND_FOCUS_FALLBACK_MS);
@@ -79,7 +86,7 @@ export function SiteHeader({
         fallbackTimerRef.current = null;
       }
     };
-  }, [pendingFocus, setPendingFocus]);
+  }, [pendingFocus, setPendingFocus, focusActiveSection]);
 
   // Focus University only when the shell's OWN width transition finishes while expanding — so focus
   // lands once the shell has reached a usable size, not at 0ms and not on a child's transition.
@@ -91,7 +98,7 @@ export function SiteHeader({
       clearTimeout(fallbackTimerRef.current);
       fallbackTimerRef.current = null;
     }
-    universityInputRef.current?.focus();
+    focusActiveSection();
     setPendingFocus(false);
   };
 
@@ -118,15 +125,14 @@ export function SiteHeader({
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node | null;
       if (headerRef.current && target && headerRef.current.contains(target)) return; // inside header
-      setForceExpanded(false);
+      cancelEditing();
       cancelPendingFocus();
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      setUniFocused(false);
       const active = document.activeElement as HTMLElement | null;
       if (active && headerRef.current?.contains(active)) active.blur();
-      setForceExpanded(false);
+      cancelEditing();
       cancelPendingFocus();
     };
 
@@ -136,14 +142,7 @@ export function SiteHeader({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [
-    forceExpanded,
-    uniFocused,
-    searchFocusWithin,
-    setForceExpanded,
-    setUniFocused,
-    cancelPendingFocus,
-  ]);
+  }, [forceExpanded, uniFocused, searchFocusWithin, cancelEditing, cancelPendingFocus]);
 
   return (
     <>
@@ -200,6 +199,7 @@ export function SiteHeader({
           <DesktopSearchShell
             search={search}
             universityInputRef={universityInputRef}
+            topicRef={topicRef}
             onTransitionEnd={handleShellTransitionEnd}
           />
         </div>

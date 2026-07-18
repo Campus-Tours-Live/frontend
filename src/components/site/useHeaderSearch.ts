@@ -20,6 +20,9 @@ export interface TopicOption {
   label: string;
 }
 
+/** The interactive header search sections. Language is "Soon" (non-interactive) so it is not one. */
+export type HeaderSection = "university" | "topic" | null;
+
 /**
  * useHeaderSearch — the shared STATE and behavior behind the global, two-tier header search.
  * It is deliberately DOM-free (no element refs): the scroll intent comes from `useHeaderScrollState`,
@@ -51,6 +54,9 @@ export function useHeaderSearch() {
   const [forceExpanded, setForceExpanded] = useState(false);
   const [pendingFocus, setPendingFocus] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The interactive sections (Language is Soon → not a section). Drives which segment is highlighted
+  // and, later (Commit B/C), which module panel is shown.
+  const [activeSection, setActiveSection] = useState<HeaderSection>(null);
 
   const { data: matches } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
   const suggestions =
@@ -79,6 +85,7 @@ export function useHeaderSearch() {
     setPendingFocus(false);
     setUniFocused(false);
     setSearchFocusWithin(false);
+    setActiveSection(null);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [pathname]);
 
@@ -95,15 +102,21 @@ export function useHeaderSearch() {
     prevScrollWantsCollapsedRef.current = scrollWantsCollapsed;
     if (wasWanting || !scrollWantsCollapsed) return; // only a fresh false→true transition
     if (!(searchFocusWithin || uniFocused || forceExpanded)) return;
+    // Ending the interaction = cancel the edit: restore the committed draft so the compact segments
+    // show committed (never a stray unsubmitted draft) and re-opening starts clean.
     /* eslint-disable react-hooks/set-state-in-effect */
     setForceExpanded(false);
     setUniFocused(false);
     setSearchFocusWithin(false);
     setPendingFocus(false);
+    setActiveSection(null);
+    setQ(urlQ);
+    setTopic(urlTopic);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scrollWantsCollapsed, searchFocusWithin, uniFocused, forceExpanded]);
+  }, [scrollWantsCollapsed, searchFocusWithin, uniFocused, forceExpanded, urlQ, urlTopic]);
 
-  const submit = () => {
+  /** Commit the current draft as the search (compact/expanded Search action). */
+  const commitSearch = useCallback(() => {
     pushRecentUniversity(q);
     if (onTours) {
       const next = new URLSearchParams(params.toString());
@@ -120,17 +133,37 @@ export function useHeaderSearch() {
     setForceExpanded(false);
     setPendingFocus(false);
     setUniFocused(false);
+    setActiveSection(null);
     setSheetOpen(false);
-  };
+  }, [q, topic, onTours, params, router]);
 
-  /** Compact-pill click: seed the draft from the URL, force the band open, and flag that University
-   *  should be focused once the band has expanded (SiteHeader performs the focus). */
-  const openEditor = () => {
+  /** Expand the header without choosing a section (e.g. from the compact search-icon area). */
+  const ensureExpanded = useCallback(() => setForceExpanded(true), []);
+
+  /** Open a specific section: seed the draft from committed, expand, mark it active, and request
+   *  focus for THAT section once the shell has expanded (SiteHeader performs the focus). Topic must
+   *  NOT touch University focus/suggestions — no University flash. */
+  const openSection = useCallback(
+    (section: NonNullable<HeaderSection>) => {
+      setQ(urlQ);
+      setTopic(urlTopic);
+      setForceExpanded(true);
+      setActiveSection(section);
+      setPendingFocus(true);
+    },
+    [urlQ, urlTopic],
+  );
+
+  /** Cancel editing: restore the committed draft, clear the active section, and collapse-eligible. */
+  const cancelEditing = useCallback(() => {
+    setForceExpanded(false);
+    setPendingFocus(false);
+    setUniFocused(false);
+    setSearchFocusWithin(false);
+    setActiveSection(null);
     setQ(urlQ);
     setTopic(urlTopic);
-    setForceExpanded(true);
-    setPendingFocus(true);
-  };
+  }, [urlQ, urlTopic]);
 
   const onSearchFocusCapture = useCallback(() => setSearchFocusWithin(true), []);
   const onSearchBlurCapture = useCallback((e: React.FocusEvent<HTMLElement>) => {
@@ -165,8 +198,12 @@ export function useHeaderSearch() {
     onTours,
     summary,
     collapsed,
-    submit,
-    openEditor,
+    activeSection,
+    setActiveSection,
+    commitSearch,
+    ensureExpanded,
+    openSection,
+    cancelEditing,
     onSearchFocusCapture,
     onSearchBlurCapture,
   };
