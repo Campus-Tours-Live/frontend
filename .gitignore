@@ -40,3 +40,6 @@ next-env.d.ts
 .idea/*
 !.idea/externalDependencies.xml
 *.iml
+
+# Superpowers brainstorm/SDD scratch
+.superpowers/
