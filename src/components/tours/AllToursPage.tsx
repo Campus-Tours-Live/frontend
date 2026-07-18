@@ -2,10 +2,31 @@
 
 import { useMemo, useState } from "react";
 import { ArrowRight, Filter, RotateCcw, Search } from "lucide-react";
-import { Alert, Button, Chip, Link, SectionHeading } from "@/components/ui";
-import { useTourCatalog, type TourCatalogSort, type TourSummary } from "@/lib/data-access";
+import {
+  Alert,
+  Badge,
+  Body,
+  Button,
+  Caption,
+  Card,
+  Chip,
+  Heading,
+  Link,
+  Pagination,
+  SectionHeading,
+  SelectField,
+  Skeleton,
+  TextField,
+} from "@/components/ui";
+import {
+  useTourCatalog,
+  useTourFeatures,
+  type TourCatalogSort,
+  type TourSummary,
+} from "@/lib/data-access";
 import { cn } from "@/lib/utils";
-import { TourCatalogCard } from "./TourCatalogCard";
+import { TourProductCard } from "./TourProductCard";
+import { useTourListState } from "./useTourListState";
 
 const TOPIC_FILTERS = [
   { value: "GENERAL_CAMPUS", label: "Campus life" },
@@ -48,24 +69,31 @@ const UNIVERSITIES = [
   },
 ];
 
-function topicLabel(value: string): string {
-  return TOPIC_FILTERS.find((t) => t.value === value)?.label ?? value;
-}
-
 function UniversityFallbackCard({ university }: { university: (typeof UNIVERSITIES)[number] }) {
   return (
-    <article className="flex h-full flex-col rounded-panel border border-border bg-card p-5 shadow-card">
-      <div className="self-start rounded-pill bg-primary-soft px-2.5 py-1 text-[12px] font-bold text-primary-dark">
+    <Card as="article" padded={false} className="flex h-full flex-col p-5">
+      <Badge variant="primary" className="self-start">
         University
-      </div>
-      <h3 className="mt-3 font-display text-h4 text-ink">{university.name}</h3>
-      <p className="mt-1 text-[13px] font-semibold text-primary-dark">{university.location}</p>
-      <p className="mt-3 flex-1 text-[14px] text-ink-soft">{university.body}</p>
-      <Link href={university.href} variant="secondary" size="sm" className="mt-5 w-full sm:w-auto">
+      </Badge>
+      <Heading as="h3" size="h4" className="mt-3">
+        {university.name}
+      </Heading>
+      <Body size="small" weight={600} color="primary-dark" className="mt-1">
+        {university.location}
+      </Body>
+      <Body size="medium" color="muted" className="mt-3 flex-1">
+        {university.body}
+      </Body>
+      <Link
+        href={university.href}
+        variant="secondary"
+        size="small"
+        className="mt-5 w-full sm:w-auto"
+      >
         Explore university
         <ArrowRight size={15} strokeWidth={2} />
       </Link>
-    </article>
+    </Card>
   );
 }
 
@@ -82,17 +110,20 @@ function Results({
   onReset: () => void;
   onRetry: () => void;
 }) {
+  // Backend-owned feature vocabulary (single source of truth) → code→label map for the chips.
+  const { labelByCode: featureLabels } = useTourFeatures();
+
   if (loading) {
     return (
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading tours">
+      <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3" aria-label="Loading tours">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-panel border border-border bg-card p-5 shadow-card">
-            <div className="h-32 rounded-card bg-canvas" />
-            <div className="mt-5 h-4 w-28 rounded-pill bg-canvas" />
-            <div className="mt-4 h-5 w-3/4 rounded-pill bg-canvas" />
-            <div className="mt-3 h-4 w-full rounded-pill bg-canvas" />
-            <div className="mt-6 h-10 w-32 rounded-pill bg-canvas" />
-          </div>
+          <Card key={i}>
+            <Skeleton height={128} className="rounded-card" />
+            <Skeleton variant="rounded" height={16} width={112} className="mt-5" />
+            <Skeleton variant="rounded" height={20} width="75%" className="mt-4" />
+            <Skeleton variant="rounded" height={16} className="mt-3" />
+            <Skeleton variant="rounded" height={40} width={128} className="mt-6" />
+          </Card>
         ))}
       </div>
     );
@@ -110,13 +141,13 @@ function Results({
               We could not load live tours right now, so here are a few campuses to start from. Your
               filters are still saved.
             </p>
-            <Button variant="ghost" size="sm" onClick={onRetry} className="mt-3 px-0">
+            <Button variant="ghost" size="small" onClick={onRetry} className="mt-3 px-0">
               Try again
             </Button>
           </div>
         </Alert>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
           {UNIVERSITIES.slice(0, 3).map((u) => (
             <UniversityFallbackCard key={u.name} university={u} />
           ))}
@@ -127,32 +158,49 @@ function Results({
 
   if (tours.length === 0) {
     return (
-      <div className="rounded-panel border border-border bg-card p-8 shadow-card">
-        <h2 className="font-display text-h3 text-ink">No tours match these filters</h2>
-        <p className="mt-2 max-w-xl text-[14px] text-ink-soft">
+      <Card padded={false} className="p-8">
+        <Heading as="h2" size="h3">
+          No tours match these filters
+        </Heading>
+        <Body size="medium" color="muted" className="mt-2 max-w-xl">
           Try broadening your date, topic, or university selection.
-        </p>
-        <Button variant="secondary" size="sm" onClick={onReset} className="mt-5">
+        </Body>
+        <Button variant="secondary" size="small" onClick={onReset} className="mt-5">
           <RotateCcw size={15} strokeWidth={2} />
           Clear filters
         </Button>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
       {tours.map((tour) => (
-        <TourCatalogCard key={tour.id} tour={tour} topicLabel={topicLabel(tour.topic)} />
+        <TourProductCard
+          key={tour.id}
+          tour={tour}
+          major={tour.guideMajor}
+          degree={tour.guideDegree ?? undefined}
+          entryYear={tour.guideEntryYear ?? undefined}
+          featureLabels={featureLabels}
+        />
       ))}
     </div>
   );
 }
 
 export function AllToursPage() {
-  const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState<string>("");
-  const [sort, setSort] = useState<TourCatalogSort>("RECOMMENDED");
+  const {
+    query,
+    topic,
+    sort,
+    page,
+    changeQuery,
+    changeTopic,
+    changeSort,
+    setPage,
+    reset: resetState,
+  } = useTourListState();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filters = useMemo(
@@ -160,23 +208,25 @@ export function AllToursPage() {
       q: query.trim() || undefined,
       topic: topic || undefined,
       sort,
-      limit: 20,
+      page,
+      // A common multiple of the grid's column counts (1/2/3/4) so every full page fills complete
+      // rows at any width — no empty bottom-right cell on the 3-column desktop layout.
+      limit: 24,
     }),
-    [query, sort, topic],
+    [query, sort, topic, page],
   );
 
-  const { data: tours = [], isLoading, isError, refetch } = useTourCatalog(filters);
+  const { data, isLoading, isError, refetch } = useTourCatalog(filters);
+  const tours = data?.items ?? [];
   const activeFilterCount = Number(Boolean(query.trim())) + Number(Boolean(topic));
   const resultTitle = isLoading
     ? "Loading tours"
     : isError
       ? "Available tours"
-      : `${tours.length} tours`;
+      : `${data?.totalElements ?? tours.length} tours`;
 
   const reset = () => {
-    setQuery("");
-    setTopic("");
-    setSort("RECOMMENDED");
+    resetState();
     void refetch();
   };
 
@@ -196,122 +246,124 @@ export function AllToursPage() {
               level={1}
             />
             <div className="rounded-panel border border-border bg-card p-5 shadow-card">
-              <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-primary-dark">
+              <Body
+                as="div"
+                size="small"
+                weight={700}
+                color="primary-dark"
+                className="uppercase tracking-[0.08em]"
+              >
                 Public marketplace
-              </div>
-              <p className="mt-2 text-[14px] text-ink-soft">
+              </Body>
+              <Body size="medium" color="muted" className="mt-2">
                 Only published tours from approved student guides are shown.
-              </p>
+              </Body>
             </div>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-content px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="lg:sticky lg:top-6 lg:self-start">
-            <button
-              type="button"
-              className="mb-4 flex w-full items-center justify-between rounded-card border border-border bg-card px-4 py-3 text-left font-bold text-ink shadow-card lg:hidden"
-              onClick={() => setFiltersOpen((open) => !open)}
-              aria-expanded={filtersOpen}
-            >
-              <span className="inline-flex items-center gap-2">
-                <Filter size={17} strokeWidth={2} />
-                Filters
-              </span>
-              <span className="text-[12px] text-ink-soft">{activeFilterCount} active</span>
-            </button>
+        <button
+          type="button"
+          className="mb-4 flex w-full items-center justify-between rounded-card border border-border bg-card px-4 py-3 text-left font-bold text-ink shadow-card lg:hidden"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+        >
+          <span className="inline-flex items-center gap-2">
+            <Filter size={17} strokeWidth={2} />
+            Filters
+          </span>
+          <Caption>{activeFilterCount} active</Caption>
+        </button>
 
-            <div
-              className={cn(
-                "space-y-6 rounded-panel border border-border bg-card p-5 shadow-card",
-                !filtersOpen && "hidden lg:block",
-              )}
-            >
-              <div>
-                <h2 className="font-display text-h4 text-ink">Filters</h2>
-                <p className="mt-1 text-[13px] text-ink-soft">Refine the public catalog.</p>
-              </div>
-
-              <label className="field block">
-                <span>Search</span>
-                <div className="relative mt-1.5">
-                  <Search
-                    size={16}
-                    strokeWidth={2}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft"
-                    aria-hidden
-                  />
-                  <input
-                    className="input pl-9"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="University, tour, or topic"
-                    type="search"
-                  />
-                </div>
-              </label>
-
-              <fieldset>
-                <legend className="mb-2 block text-[13px] font-bold text-ink">Topic</legend>
-                <div className="flex flex-wrap gap-2">
-                  <Chip active={!topic} onClick={() => setTopic("")}>
-                    Any
-                  </Chip>
-                  {TOPIC_FILTERS.map((t) => (
-                    <Chip
-                      key={t.value}
-                      active={topic === t.value}
-                      onClick={() => setTopic(t.value)}
-                    >
-                      {t.label}
-                    </Chip>
-                  ))}
-                </div>
-              </fieldset>
-
-              <label className="field block">
-                <span>Sort by</span>
-                <select
-                  className="input mt-1.5"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as TourCatalogSort)}
-                >
-                  {SORTS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <Button variant="ghost" size="sm" onClick={reset} className="px-0">
-                <RotateCcw size={15} strokeWidth={2} />
-                Clear all
-              </Button>
-            </div>
-          </aside>
-
+        <div
+          className={cn(
+            "space-y-6 rounded-panel border border-border bg-card p-5 shadow-card",
+            !filtersOpen && "hidden lg:block",
+          )}
+        >
           <div>
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <div className="eyebrow">Available tours</div>
-                <h2 className="mt-1 font-display text-h3 text-ink">{resultTitle}</h2>
-              </div>
-              <p className="max-w-sm text-[13px] text-ink-soft">
-                Live listings update as student guides publish new availability.
-              </p>
-            </div>
-
-            <Results
-              tours={tours}
-              loading={isLoading}
-              error={isError}
-              onReset={reset}
-              onRetry={retry}
-            />
+            <Heading as="h2" size="h4">
+              Filters
+            </Heading>
+            <Body size="small" color="muted" className="mt-1">
+              Refine the public catalog.
+            </Body>
           </div>
+
+          <TextField
+            label="Search"
+            leadingIcon={<Search size={16} strokeWidth={2} />}
+            value={query}
+            onChange={(e) => changeQuery(e.target.value)}
+            placeholder="University, tour, or topic"
+            type="search"
+          />
+
+          <fieldset>
+            <Body as="legend" size="small" weight={700} className="mb-2 block">
+              Topic
+            </Body>
+            <div className="flex flex-wrap gap-2">
+              <Chip active={!topic} onClick={() => changeTopic("")}>
+                Any
+              </Chip>
+              {TOPIC_FILTERS.map((t) => (
+                <Chip key={t.value} active={topic === t.value} onClick={() => changeTopic(t.value)}>
+                  {t.label}
+                </Chip>
+              ))}
+            </div>
+          </fieldset>
+
+          <SelectField
+            label="Sort by"
+            value={sort}
+            onChange={(e) => changeSort(e.target.value as TourCatalogSort)}
+          >
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </SelectField>
+
+          <Button variant="ghost" size="small" onClick={reset} className="px-0">
+            <RotateCcw size={15} strokeWidth={2} />
+            Clear all
+          </Button>
+        </div>
+
+        <div className="mt-8">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="eyebrow">Available tours</div>
+              <Heading as="h2" size="h3" className="mt-1">
+                {resultTitle}
+              </Heading>
+            </div>
+            <Body size="small" color="muted" className="max-w-sm">
+              Live listings update as student guides publish new availability.
+            </Body>
+          </div>
+
+          <Results
+            tours={tours}
+            loading={isLoading}
+            error={isError}
+            onReset={reset}
+            onRetry={retry}
+          />
+
+          {!isLoading && !isError ? (
+            <Pagination
+              page={page}
+              totalPages={data?.totalPages ?? 0}
+              onPageChange={setPage}
+              className="mt-10"
+            />
+          ) : null}
         </div>
       </section>
 

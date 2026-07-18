@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { AllToursPage } from "@/components/tours/AllToursPage";
@@ -11,7 +12,9 @@ export default function ToursPage() {
   return (
     <main>
       <SiteHeader />
-      <AllToursPage />
+      <Suspense>
+        <AllToursPage />
+      </Suspense>
     </main>
   );
 }

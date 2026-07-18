@@ -5,6 +5,20 @@ import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
   useTourCatalog: jest.fn(),
+  useTourFeatures: jest.fn(() => ({
+    byTopic: {},
+    labelByCode: {},
+    isLoading: false,
+    isError: false,
+  })),
+}));
+
+const replace = jest.fn();
+const push = jest.fn();
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({ replace, push }),
+  usePathname: () => "/tours",
+  useSearchParams: () => new URLSearchParams(""),
 }));
 
 const mockUseTourCatalog = useTourCatalog as jest.MockedFunction<typeof useTourCatalog>;
@@ -19,26 +33,48 @@ const tour: TourSummary = {
   universityName: "North Coast University",
   guideId: "g1",
   guideDisplayName: "Maya Chen",
+  guideMajor: "Computer Science",
+  guideDegree: "BS",
+  guideEntryYear: 2023,
   durationMin: 60,
   priceCents: 4200,
   currency: "USD",
   avgRating: 4.8,
   reviewCount: 18,
+  languages: ["en-US"],
+  features: [],
+  isNew: false,
 };
 
-function mockCatalog(state: Partial<ReturnType<typeof useTourCatalog>>) {
+function mockCatalog(
+  state: {
+    items?: TourSummary[];
+    totalPages?: number;
+    isLoading?: boolean;
+    isError?: boolean;
+  } = {},
+) {
+  const items = state.items ?? [];
   mockUseTourCatalog.mockReturnValue({
-    data: [],
-    isLoading: false,
-    isError: false,
+    data:
+      state.isLoading || state.isError
+        ? undefined
+        : {
+            items,
+            page: 0,
+            size: 20,
+            totalElements: items.length,
+            totalPages: state.totalPages ?? (items.length > 0 ? 1 : 0),
+          },
+    isLoading: state.isLoading ?? false,
+    isError: state.isError ?? false,
     refetch,
-    ...state,
-  } as ReturnType<typeof useTourCatalog>);
+  } as unknown as ReturnType<typeof useTourCatalog>);
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockCatalog({ data: [tour] });
+  mockCatalog({ items: [tour] });
 });
 
 describe("AllToursPage", () => {
@@ -66,35 +102,40 @@ describe("AllToursPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("passes search, topic, and sort filters to the catalog hook", async () => {
+  it("requests the catalog with the default filters and 24 per page", () => {
+    render(<AllToursPage />);
+
+    expect(mockUseTourCatalog).toHaveBeenLastCalledWith({
+      q: undefined,
+      topic: undefined,
+      sort: "RECOMMENDED",
+      page: 0,
+      limit: 24,
+    });
+  });
+
+  it("writes a topic filter to the URL (replace)", async () => {
     const user = userEvent.setup();
     render(<AllToursPage />);
 
-    await user.type(screen.getByPlaceholderText("University, tour, or topic"), "housing");
     await user.click(screen.getByRole("button", { name: "Dorms & housing" }));
-    await user.selectOptions(screen.getByLabelText("Sort by"), "RATING");
 
-    expect(mockUseTourCatalog).toHaveBeenLastCalledWith({
-      q: "housing",
-      topic: "DORM_HOUSING",
-      sort: "RATING",
-      limit: 20,
-    });
+    expect(replace).toHaveBeenCalledWith("/tours?topic=DORM_HOUSING", { scroll: false });
   });
 
   it("renders loading, empty, and fallback states", async () => {
     const user = userEvent.setup();
-    mockCatalog({ isLoading: true, data: undefined });
+    mockCatalog({ isLoading: true });
     const { rerender } = render(<AllToursPage />);
     expect(screen.getByLabelText("Loading tours")).toBeInTheDocument();
 
-    mockCatalog({ data: [] });
+    mockCatalog({ items: [] });
     rerender(<AllToursPage />);
     expect(
       screen.getByRole("heading", { name: "No tours match these filters" }),
     ).toBeInTheDocument();
 
-    mockCatalog({ isError: true, data: [] });
+    mockCatalog({ isError: true });
     rerender(<AllToursPage />);
     expect(
       screen.getByRole("heading", { name: "Showing university suggestions" }),
@@ -116,5 +157,15 @@ describe("AllToursPage", () => {
 
     expect(screen.getByPlaceholderText("University, tour, or topic")).toHaveValue("");
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("pages through results when there is more than one page", async () => {
+    const user = userEvent.setup();
+    mockCatalog({ items: [tour], totalPages: 3 });
+    render(<AllToursPage />);
+
+    expect(screen.getByRole("navigation", { name: "Pagination" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Next page" }));
+    expect(push).toHaveBeenCalledWith("/tours?page=2", { scroll: false });
   });
 });
