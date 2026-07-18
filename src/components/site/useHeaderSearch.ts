@@ -125,7 +125,8 @@ export function useHeaderSearch() {
   // JITTER, but a FRESH clear downward scroll overrides it — it ends the interaction so the header may
   // collapse. Act only on the false→true TRANSITION of the scroll-collapse intent (a genuinely new
   // downward gesture), never on the standing state — else re-opening while already scrolled would be
-  // cancelled instantly. Ending the interaction cancels the edit: restore the committed draft.
+  // cancelled instantly. Ending the interaction only CLOSES the panel/section — it does NOT revert the
+  // draft (a picked university / typed query survives losing focus; only Escape explicitly reverts).
   const prevScrollWantsCollapsedRef = useRef(false);
   useEffect(() => {
     const wasWanting = prevScrollWantsCollapsedRef.current;
@@ -138,10 +139,8 @@ export function useHeaderSearch() {
     setPendingFocus(false);
     setActiveSection(null);
     setPanelVisible(false);
-    setQ(urlQ);
-    setSelectedTopicIds(urlTopicIds);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scrollWantsCollapsed, activeSection, searchFocusWithin, forceExpanded, urlQ, urlTopicIds]);
+  }, [scrollWantsCollapsed, activeSection, searchFocusWithin, forceExpanded]);
 
   /** Commit the current draft as the search (compact/expanded Search action). Preserves every other
    *  committed URL param (sort, and — for the future Nearby plan — geo/date): copy the current
@@ -188,16 +187,24 @@ export function useHeaderSearch() {
     [urlQ, urlTopicIds, collapsed],
   );
 
-  /** Cancel editing: restore the committed draft, clear the active section + panel. */
-  const cancelEditing = useCallback(() => {
+  /** End the interaction: close the panel/section and drop the focus/expand locks, but KEEP the draft
+   *  (a picked university / typed query / selected topics survive losing focus). Used by outside-click
+   *  and the soft-lock scroll — losing focus must not wipe an unsubmitted selection. */
+  const endInteraction = useCallback(() => {
     setForceExpanded(false);
     setPendingFocus(false);
     setSearchFocusWithin(false);
     setActiveSection(null);
     setPanelVisible(false);
+  }, []);
+
+  /** Cancel editing: end the interaction AND revert the draft to committed. This is the EXPLICIT undo
+   *  (Escape only) — not the plain lose-focus path. */
+  const cancelEditing = useCallback(() => {
+    endInteraction();
     setQ(urlQ);
     setSelectedTopicIds(urlTopicIds);
-  }, [urlQ, urlTopicIds]);
+  }, [endInteraction, urlQ, urlTopicIds]);
 
   /** Entering the University section by focusing its input (highlight + panel authority = section). */
   const onUniversityFocus = useCallback(() => {
@@ -275,6 +282,7 @@ export function useHeaderSearch() {
     openSection,
     enterSection,
     cancelEditing,
+    endInteraction,
     onUniversityFocus,
     onSearchFocusCapture,
     onSearchBlurCapture,

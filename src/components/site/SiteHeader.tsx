@@ -55,6 +55,7 @@ export function SiteHeader({
     setPanelVisible,
     activeSection,
     cancelEditing,
+    endInteraction,
   } = search;
 
   const headerRef = useRef<HTMLElement>(null);
@@ -132,7 +133,9 @@ export function SiteHeader({
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Node | null;
       if (headerRef.current && target && headerRef.current.contains(target)) return; // inside header
-      cancelEditing();
+      // Losing focus by clicking outside CLOSES the search but keeps the draft — a picked university /
+      // typed query must not be wiped. Only Escape (below) explicitly reverts to the committed value.
+      endInteraction();
       cancelPendingFocus();
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -154,7 +157,14 @@ export function SiteHeader({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [forceExpanded, activeSection, searchFocusWithin, cancelEditing, cancelPendingFocus]);
+  }, [
+    forceExpanded,
+    activeSection,
+    searchFocusWithin,
+    cancelEditing,
+    endInteraction,
+    cancelPendingFocus,
+  ]);
 
   return (
     <>

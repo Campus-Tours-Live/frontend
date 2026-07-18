@@ -1,5 +1,5 @@
 import { type ReactElement } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -76,5 +76,30 @@ describe("SiteHeader", () => {
     expect(trigger).toHaveFocus();
     // Focusing the trigger must not re-open the panel (it opens on click, not focus).
     expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a typed University value after clicking outside the header (does not wipe on blur)", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const uni = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(uni, "Stanford");
+    expect(uni).toHaveValue("Stanford");
+
+    // Clicking outside the header ends the interaction but must NOT revert the draft.
+    await user.click(document.body);
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
+  });
+
+  it("Escape explicitly reverts the typed University value to committed (empty)", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const uni = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(uni, "Stanford");
+    await user.keyboard("{Escape}");
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("");
   });
 });
