@@ -71,21 +71,23 @@ export function MobileNav({
           {/* Logged in: account menu. */}
           {loggedIn && <AccountNav onNavigate={close} />}
 
-          {/* Primary site links. */}
-          <div className="mt-1 border-t border-border pt-3">
-            <Caption as="div" weight={800} className="px-2.5 pb-1.5 uppercase tracking-[0.07em]">
-              Discover
-            </Caption>
-            <ul className="flex flex-col gap-0.5">
-              {NAV_LINKS.map((link) => (
-                <li key={link.label}>
-                  <MenuItem href={link.href} icon={link.icon} iconSize={17} onSelect={close}>
-                    {link.label}
-                  </MenuItem>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Primary site links (only when there are any — currently none). */}
+          {NAV_LINKS.length > 0 && (
+            <div className="mt-1 border-t border-border pt-3">
+              <Caption as="div" weight={800} className="px-2.5 pb-1.5 uppercase tracking-[0.07em]">
+                Discover
+              </Caption>
+              <ul className="flex flex-col gap-0.5">
+                {NAV_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <MenuItem href={link.href} icon={link.icon} iconSize={17} onSelect={close}>
+                      {link.label}
+                    </MenuItem>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Sign out (logged in only). */}
           {showAuthActions && loggedIn && (

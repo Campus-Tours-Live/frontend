@@ -52,18 +52,11 @@ describe("SiteHeader", () => {
     await flush();
   });
 
-  it("renders the primary navigation links", async () => {
+  it("renders no primary navigation links (removed)", async () => {
     renderWithQuery(<SiteHeader />);
-    // Links appear in both the desktop inline nav and the mobile drawer.
-    expect(screen.getAllByRole("link", { name: /explore tours/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /explore tours/i })[0]).toHaveAttribute(
-      "href",
-      "/tours",
-    );
-    expect(screen.getAllByRole("link", { name: /how it works/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /for students & parents/i }).length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.queryByRole("link", { name: /explore tours/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /how it works/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /for students & parents/i })).not.toBeInTheDocument();
     await flush();
   });
 });

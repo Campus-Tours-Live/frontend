@@ -28,15 +28,15 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe("HeaderNav — primary nav links", () => {
-  it("renders the primary nav links regardless of auth state", () => {
+describe("HeaderNav — primary nav links (removed)", () => {
+  it("renders no primary nav links", () => {
     setupMe(null, { isOnboarded: false });
 
     render(<HeaderNav />);
 
-    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
-    expect(screen.getByText("How it works")).toBeInTheDocument();
-    expect(screen.getByText("For students & parents")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Explore tours" })).not.toBeInTheDocument();
+    expect(screen.queryByText("How it works")).not.toBeInTheDocument();
+    expect(screen.queryByText("For students & parents")).not.toBeInTheDocument();
   });
 });
 
@@ -141,8 +141,6 @@ describe("HeaderNav — loading / auth-actions gate", () => {
     render(<HeaderNav />);
 
     expect(screen.queryByRole("button", { name: /Account/ })).not.toBeInTheDocument();
-    // Nav links still render.
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 
   it("hides the account trigger when showAuthActions is false", () => {
@@ -151,6 +149,5 @@ describe("HeaderNav — loading / auth-actions gate", () => {
     render(<HeaderNav showAuthActions={false} />);
 
     expect(screen.queryByRole("button", { name: /Hi/ })).not.toBeInTheDocument();
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 });

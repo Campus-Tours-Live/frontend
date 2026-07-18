@@ -68,18 +68,18 @@ describe("MobileNav — drawer toggle", () => {
   });
 });
 
-describe("MobileNav — primary links", () => {
-  it("always renders the Discover section with the nav links", async () => {
+describe("MobileNav — primary links (removed)", () => {
+  it("renders no Discover nav section", async () => {
     const user = userEvent.setup();
     setupMe({ isOnboarded: false });
 
     render(<MobileNav />);
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
-    expect(screen.getByText("Discover")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
-    expect(screen.getByText("How it works")).toBeInTheDocument();
-    expect(screen.getByText("For students & parents")).toBeInTheDocument();
+    expect(screen.queryByText("Discover")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Explore tours" })).not.toBeInTheDocument();
+    expect(screen.queryByText("How it works")).not.toBeInTheDocument();
+    expect(screen.queryByText("For students & parents")).not.toBeInTheDocument();
   });
 });
 
@@ -122,8 +122,6 @@ describe("MobileNav — auth-actions gate", () => {
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
-    // Primary links still show.
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 
   it("hides the welcome card when showAuthActions is false (logged out)", async () => {
