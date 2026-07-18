@@ -1,99 +1,54 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
-import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
-import { cn } from "@/lib/utils";
-import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
-import { useHeaderSearchCollapse } from "./useHeaderSearchCollapse";
-
-/** Build a /tours URL from the search draft; empty values are omitted. */
-function buildToursHref(q: string, topic: string): string {
-  const params = new URLSearchParams();
-  if (q.trim()) params.set("q", q.trim());
-  if (topic) params.set("topic", topic);
-  const qs = params.toString();
-  return qs ? `/tours?${qs}` : "/tours";
-}
+import type { HeaderSearch } from "./useHeaderSearch";
 
 /**
- * SiteHeaderSearch — the single, global, Airbnb-style segmented search (University · Topic ·
- * Language). Expanded at the top of a page, it collapses to a compact pill on scroll and whenever
- * the page is /tours. Submitting navigates to /tours (push) or refines it in place (replace). The
- * Language segment is disabled in Phase 1 (badged "Soon") until the backend can filter by language.
+ * Presentational pieces of the global, Airbnb-style segmented search (University · Topic ·
+ * Language). All of them are driven by a single `useHeaderSearch()` instance passed down from
+ * `SiteHeader`, so the row-1 pill and the row-2 band act as one control. The Language segment
+ * is disabled in Phase 1 (badged "Soon") until the backend can filter by language.
+ *
+ *  - `HeaderSearchBar`    — the expanded desktop form (row 2 band), incl. the University
+ *                           suggestions dropdown (recent + typeahead).
+ *  - `HeaderSearchPill`   — the compact desktop pill (row 1), shown only while collapsed;
+ *                           clicking it re-expands the band to edit.
+ *  - `HeaderSearchMobile` — the always-compact mobile pill (row 1) that opens the full-screen
+ *                           search sheet, plus the sheet itself.
  */
-export function SiteHeaderSearch() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const onTours = pathname === "/tours";
+interface SearchProps {
+  search: HeaderSearch;
+}
 
-  const { data: topics } = useTourTopics();
-  const topicOptions = topics ?? [];
-
-  const urlQ = onTours ? (params.get("q") ?? "") : "";
-  const urlTopic = onTours ? (params.get("topic") ?? "") : "";
-
-  const [q, setQ] = useState(urlQ);
-  const [topic, setTopic] = useState(urlTopic);
-  const [expanded, setExpanded] = useState(false);
-  const [uniFocused, setUniFocused] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const { data: matches } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
-  const suggestions =
-    q.trim().length >= 1 ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
-
-  const collapsed = useHeaderSearchCollapse(80, onTours) && !expanded;
-
-  const submit = () => {
-    pushRecentUniversity(q);
-    if (onTours) {
-      const next = new URLSearchParams(params.toString());
-      if (q.trim()) next.set("q", q.trim());
-      else next.delete("q");
-      if (topic) next.set("topic", topic);
-      else next.delete("topic");
-      next.delete("page");
-      const qs = next.toString();
-      router.replace(qs ? `/tours?${qs}` : "/tours", { scroll: false });
-    } else {
-      router.push(buildToursHref(q, topic));
-    }
-    setExpanded(false);
-    setUniFocused(false);
-    setSheetOpen(false);
-  };
-
-  const openEditor = () => {
-    setQ(urlQ);
-    setTopic(urlTopic);
-    setExpanded(true);
-  };
-
-  const topicLabel = topicOptions.find((t) => t.value === urlTopic)?.label;
-  const summary =
-    [urlQ.trim() || null, topicLabel || null].filter(Boolean).join(" · ") || "Search tours";
-
-  const desktop = collapsed ? (
+/** HeaderSearchPill — compact "summary — search icon" button that reopens the band to edit. */
+export function HeaderSearchPill({ search }: SearchProps) {
+  return (
     <button
       type="button"
-      onClick={openEditor}
+      onClick={search.openEditor}
       aria-label="Edit search"
-      className="search hidden min-w-0 max-w-sm flex-1 items-center justify-between text-left lg:flex"
+      className="search flex min-w-0 max-w-sm flex-1 items-center justify-between text-left"
     >
-      <span className="truncate text-ink-soft">{summary}</span>
+      <span className="truncate text-ink-soft">{search.summary}</span>
       <Search size={18} strokeWidth={2} aria-hidden />
     </button>
-  ) : (
+  );
+}
+
+/** HeaderSearchBar — the expanded segmented desktop form: University (+ suggestions), Topic, Language. */
+export function HeaderSearchBar({ search }: SearchProps) {
+  const { q, setQ, topic, setTopic, uniFocused, setUniFocused, suggestions, topicOptions, submit } =
+    search;
+
+  return (
     <form
       role="search"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
-      className={cn("search hidden min-w-0 max-w-2xl flex-1 items-stretch gap-0 p-1 lg:flex")}
+      className="search flex w-full min-w-0 max-w-2xl items-stretch gap-0 p-1"
     >
       <div className="relative flex min-w-0 flex-1 flex-col">
         <label className="flex min-w-0 flex-col px-3 py-1">
@@ -186,10 +141,15 @@ export function SiteHeaderSearch() {
       </button>
     </form>
   );
+}
+
+/** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet. */
+export function HeaderSearchMobile({ search }: SearchProps) {
+  const { q, setQ, topic, setTopic, topicOptions, summary, sheetOpen, setSheetOpen, submit } =
+    search;
 
   return (
     <>
-      {/* Mobile: a pill that opens the full search sheet */}
       <button
         type="button"
         onClick={() => setSheetOpen(true)}
@@ -265,8 +225,6 @@ export function SiteHeaderSearch() {
           </div>
         </div>
       </Drawer>
-
-      {desktop}
     </>
   );
 }
