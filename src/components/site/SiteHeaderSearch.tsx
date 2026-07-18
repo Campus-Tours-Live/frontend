@@ -1,9 +1,15 @@
 "use client";
 
-import type { RefObject, TransitionEvent as ReactTransitionEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+  type TransitionEvent as ReactTransitionEvent,
+} from "react";
 import { MapPin, Search } from "lucide-react";
-import { Button, Drawer, MenuItem } from "@/components/ui";
-import type { HeaderSearch, TopicOption } from "./useHeaderSearch";
+import { Button, Checkbox, Drawer, MenuItem } from "@/components/ui";
+import type { HeaderSearch } from "./useHeaderSearch";
 
 interface SearchProps {
   search: HeaderSearch;
@@ -60,8 +66,7 @@ function ExpandedContent({
   const {
     q,
     setQ,
-    topic,
-    topicOptions,
+    topicSummary,
     activeSection,
     panelVisible,
     enterSection,
@@ -71,8 +76,6 @@ function ExpandedContent({
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
-
-  const draftTopicLabel = topicOptions.find((t) => t.value === topic)?.label ?? "Any topic";
 
   return (
     <form
@@ -124,9 +127,9 @@ function ExpandedContent({
         >
           <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
           <span
-            className={`truncate text-ui-sm leading-tight ${topic ? "text-ink" : "text-ink-soft"}`}
+            className={`truncate text-ui-sm leading-tight ${topicSummary === "All topics" ? "text-ink-soft" : "text-ink"}`}
           >
-            {draftTopicLabel}
+            {topicSummary}
           </span>
         </button>
 
@@ -190,9 +193,9 @@ function CompactContent({ search }: SearchProps) {
           className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted/60"
         >
           <span
-            className={`truncate text-ui-sm leading-tight ${topicValue ? "text-ink" : "text-ink-soft"}`}
+            className={`truncate text-ui-sm leading-tight ${topicValue === "All topics" ? "text-ink-soft" : "text-ink"}`}
           >
-            {topicValue || "Any topic"}
+            {topicValue}
           </span>
         </button>
 
@@ -312,16 +315,69 @@ export function UniversitySectionPanel({ search }: SearchProps) {
   );
 }
 
-/** TopicSectionPanel — the Topic module (Commit C). Same header-sibling `.ds-panel` container as
- *  the University module, gated by `activeSection === "topic"` + `panelVisible`. Options come from the
- *  backend topic vocabulary (`useTourTopics`) — never hard-coded — rendered with the UI-library
- *  `MenuItem`. Choosing one updates the draft, closes the panel, and stays expanded (no auto-submit).
- *  Desktop only. */
+/** TopicSectionPanel — the Topic module, a real multi-select listbox. Same header-sibling
+ *  `.ds-panel` container as the University module, gated by `activeSection === "topic"` +
+ *  `panelVisible`. Options come from the backend topic vocabulary (`useTourTopics`) — never
+ *  hard-coded. Rows are explicit `<button type="button" role="option" aria-selected>` (NOT
+ *  `MenuItem` — header-v2 §6.0 forbids mixing `role="menuitem"` semantics with `aria-selected`).
+ *  "All topics" is a plain `<button>` OUTSIDE the listbox — it is not a `TourTopic`, so it must not
+ *  masquerade as an option. Toggling a topic updates the draft and keeps the panel open (no
+ *  auto-submit, no auto-close); the header-level keyboard contract lives here (ArrowUp/Down/
+ *  Home/End move an active index with `aria-activedescendant`, Space/Enter toggles). Desktop only. */
 export function TopicSectionPanel({ search }: SearchProps) {
-  const { activeSection, panelVisible, collapsed, topic, topicOptions, chooseTopic } = search;
+  const {
+    activeSection,
+    panelVisible,
+    collapsed,
+    selectedTopicIds,
+    topicOptions,
+    toggleTopic,
+    clearTopics,
+  } = search;
+  const [activeIdx, setActiveIdx] = useState(0);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    if (activeSection === "topic" && panelVisible) listRef.current?.focus();
+  }, [activeSection, panelVisible]);
+
+  // Clamp the active index if the vocab loads/changes; default to the first selected option.
+  useEffect(() => {
+    const firstSel = topicOptions.findIndex((t) => selectedTopicIds.includes(t.value));
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setActiveIdx((i) => (i > topicOptions.length - 1 ? 0 : i < 0 ? Math.max(0, firstSel) : i));
+    /* eslint-enable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicOptions.length]);
+
   if (collapsed || !panelVisible || activeSection !== "topic") return null;
 
-  const options: TopicOption[] = [{ value: "", label: "Any topic" }, ...topicOptions];
+  const selected = new Set(selectedTopicIds);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const last = topicOptions.length - 1;
+    if (last < 0) return; // empty options guard
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(i + 1, last));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setActiveIdx(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setActiveIdx(last);
+    } else if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      const opt = topicOptions[activeIdx];
+      if (opt) toggleTopic(opt.value);
+    }
+    // Escape: handled by SiteHeader's document keydown listener (→ cancelEditing); not re-handled here.
+  };
+
+  const activeId = topicOptions[activeIdx]?.value;
 
   return (
     <div
@@ -330,21 +386,41 @@ export function TopicSectionPanel({ search }: SearchProps) {
       aria-label="Topic"
       className="ds-panel ds-panel--topic hidden rounded-card border border-border bg-card shadow-lg lg:block"
     >
+      <div className="p-2">
+        <button
+          type="button"
+          onClick={clearTopics}
+          className={`w-full rounded-field px-3 py-2 text-left text-ui-sm ${selected.size === 0 ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
+        >
+          All topics
+        </button>
+      </div>
       <ul
+        ref={listRef}
+        tabIndex={0}
         role="listbox"
+        aria-multiselectable="true"
         aria-label="Topics"
-        className="ds-panel-scroll flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto p-2 [overscroll-behavior:contain]"
+        aria-activedescendant={activeId ? `topic-opt-${activeId}` : undefined}
+        onKeyDown={onKeyDown}
+        className="ds-panel-scroll flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto px-2 pb-2 outline-none [overscroll-behavior:contain]"
       >
-        {options.map((t) => (
-          <li key={t.value || "any"}>
-            <MenuItem
+        {topicOptions.map((t, i) => (
+          <li key={t.value}>
+            <button
+              type="button"
+              id={`topic-opt-${t.value}`}
               role="option"
-              active={topic === t.value}
-              onSelect={() => chooseTopic(t.value)}
-              className="w-full"
+              aria-selected={selected.has(t.value)}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                setActiveIdx(i);
+                toggleTopic(t.value);
+              }}
+              className={`w-full rounded-field px-3 py-2 text-left text-ui-sm ${selected.has(t.value) ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"} ${i === activeIdx ? "ring-1 ring-primary/40" : ""}`}
             >
               {t.label}
-            </MenuItem>
+            </button>
           </li>
         ))}
       </ul>
@@ -355,8 +431,18 @@ export function TopicSectionPanel({ search }: SearchProps) {
 /** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet.
  *  Kept as-is for now; a dedicated mobile visual is a later step. */
 export function HeaderSearchMobile({ search }: SearchProps) {
-  const { q, setQ, topic, setTopic, topicOptions, summary, sheetOpen, setSheetOpen, commitSearch } =
-    search;
+  const {
+    q,
+    setQ,
+    selectedTopicIds,
+    toggleTopic,
+    clearTopics,
+    topicOptions,
+    summary,
+    sheetOpen,
+    setSheetOpen,
+    commitSearch,
+  } = search;
 
   return (
     <>
@@ -381,7 +467,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
               size="small"
               onClick={() => {
                 setQ("");
-                setTopic("");
+                clearTopics();
               }}
             >
               Clear all
@@ -404,22 +490,19 @@ export function HeaderSearchMobile({ search }: SearchProps) {
               className="w-full rounded-field border border-input bg-white px-3 py-2 text-ui-sm outline-none"
             />
           </label>
-          <label className="block">
-            <span className="mb-1 block text-ui-sm font-bold text-ink">Topic</span>
-            <select
-              aria-label="Topic"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="w-full rounded-field border border-input bg-white px-3 py-2 text-ui-sm outline-none"
-            >
-              <option value="">Any topic</option>
+          <fieldset className="block">
+            <legend className="mb-1 block text-ui-sm font-bold text-ink">Topic</legend>
+            <div className="flex flex-col gap-2">
               {topicOptions.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
+                <Checkbox
+                  key={t.value}
+                  label={t.label}
+                  checked={selectedTopicIds.includes(t.value)}
+                  onChange={() => toggleTopic(t.value)}
+                />
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
           <div
             className="flex items-center justify-between opacity-50"
             aria-disabled="true"

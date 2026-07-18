@@ -139,8 +139,13 @@ export function SiteHeader({
       if (e.key !== "Escape") return;
       const active = document.activeElement as HTMLElement | null;
       if (active && headerRef.current?.contains(active)) active.blur();
+      const cancelledSection = activeSection;
       cancelEditing();
       cancelPendingFocus();
+      // Return focus to the trigger for the section that was cancelled. Safe only because the
+      // Topic trigger opens on click (not focus) — see ExpandedContent/CompactContent — so this
+      // programmatic focus does not re-open the panel.
+      if (cancelledSection === "topic") topicRef.current?.focus();
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);

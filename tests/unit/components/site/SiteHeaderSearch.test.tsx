@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -19,17 +19,25 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
-jest.mock("@/lib/data-access", () => ({
-  useTourTopics: () => ({
-    data: [
-      { value: "GENERAL_CAMPUS", label: "Campus life" },
-      { value: "DORM_HOUSING", label: "Dorms & housing" },
-    ],
-  }),
-  useUniversitySearch: (q: string, opts?: { enabled?: boolean }) => ({
-    data: q.trim() && opts?.enabled ? [{ id: "u1", name: `${q} University` }] : [],
-  }),
-}));
+jest.mock("@/lib/data-access", () => {
+  const { canonicalizeTopicIds } = jest.requireActual("@/lib/data-access/topics");
+  return {
+    canonicalizeTopicIds,
+    useTourTopics: () => ({
+      // Three options so a two-topic selection is a genuine SUBSET of the vocab — selecting every
+      // option is exercised separately (see "selecting every option…") to hit the canonical
+      // full-set→[] collapse (`canonicalizeTopicIds`), which two-of-three must NOT trigger.
+      data: [
+        { value: "GENERAL_CAMPUS", label: "Campus life" },
+        { value: "DORM_HOUSING", label: "Dorms & housing" },
+        { value: "DINING_STUDENT_LIFE", label: "Dining & student life" },
+      ],
+    }),
+    useUniversitySearch: (q: string, opts?: { enabled?: boolean }) => ({
+      data: q.trim() && opts?.enabled ? [{ id: "u1", name: `${q} University` }] : [],
+    }),
+  };
+});
 
 // Queue rAF callbacks and flush them after the scroll handler returns (mirrors real async
 // ordering so the scroll hook's frame guard clears between scrolls), inside one act().
@@ -56,6 +64,20 @@ function TestHeader() {
   const state = useHeaderSearch();
   const uniRef = useRef<HTMLInputElement>(null);
   const topicRef = useRef<HTMLButtonElement>(null);
+  const { activeSection, cancelEditing } = state;
+  // Mirrors SiteHeader's document Escape listener: cancel the edit and, when the cancelled
+  // section was Topic, return focus to its trigger (the trigger opens on click, not focus, so
+  // this programmatic focus does not re-open the panel).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const cancelledSection = activeSection;
+      cancelEditing();
+      if (cancelledSection === "topic") topicRef.current?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [activeSection, cancelEditing]);
   // The real header renders ONE shell (expanded form + compact section-button group cross-fading
   // inside); each layer is aria-hidden in the inactive state, so role queries resolve to the active
   // layer. Mobile is a separate control.
@@ -147,18 +169,83 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(screen.getByRole("button", { name: "University" })).toBeInTheDocument();
   });
 
-  it("navigates to /tours with q and topic on submit off /tours", async () => {
+  it("commits multiple selected topics as repeated params", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);
     const form = within(screen.getByRole("search"));
     await user.type(form.getByLabelText("University"), "Berkeley");
-    // Topic is a popover dropdown (UI-library MenuItem rows), not a native select. Scope to the
-    // Topic region so the label doesn't collide with the mobile sheet's (always-mounted) select.
     await user.click(form.getByRole("button", { name: "Topic" }));
-    const topicPanel = within(await screen.findByRole("region", { name: "Topic" }));
-    await user.click(topicPanel.getByRole("option", { name: "Dorms & housing" }));
+    const panel = within(await screen.findByRole("region", { name: "Topic" }));
+    await user.click(panel.getByRole("option", { name: "Campus life" }));
+    await user.click(panel.getByRole("option", { name: "Dorms & housing" }));
     await user.click(form.getByRole("button", { name: "Search" }));
-    expect(push).toHaveBeenCalledWith("/tours?q=Berkeley&topic=DORM_HOUSING");
+    const url = push.mock.calls.at(-1)![0] as string;
+    expect(url).toContain("q=Berkeley");
+    expect(url).toContain("topic=GENERAL_CAMPUS");
+    expect(url).toContain("topic=DORM_HOUSING");
+  });
+
+  it("multi-select listbox: options are multiselectable and toggle", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+    expect(list).toHaveAttribute("aria-multiselectable", "true");
+    const opt = within(list).getByRole("option", { name: "Campus life" });
+    await user.click(opt);
+    expect(opt).toHaveAttribute("aria-selected", "true");
+    await user.click(opt);
+    expect(opt).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("ArrowDown+Enter toggles the second option", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+    await user.keyboard("{ArrowDown}{Enter}");
+    const opt = within(list).getByRole("option", { name: "Dorms & housing" });
+    expect(opt).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("Escape closes the Topic region and returns focus to the trigger", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const trigger = within(screen.getByRole("search")).getByRole("button", { name: "Topic" });
+    await user.click(trigger);
+    expect(await screen.findByRole("region", { name: "Topic" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('"All topics" control clears the selection', async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const panel = within(await screen.findByRole("region", { name: "Topic" }));
+    await user.click(panel.getByRole("option", { name: "Campus life" }));
+    expect(panel.getByRole("option", { name: "Campus life" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await user.click(panel.getByRole("button", { name: "All topics" }));
+    expect(panel.getByRole("option", { name: "Campus life" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+  });
+
+  it("selecting every option shows the segment summary as All topics", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const form = within(screen.getByRole("search"));
+    await user.click(form.getByRole("button", { name: "Topic" }));
+    const panel = within(await screen.findByRole("region", { name: "Topic" }));
+    await user.click(panel.getByRole("option", { name: "Campus life" }));
+    await user.click(panel.getByRole("option", { name: "Dorms & housing" }));
+    await user.click(panel.getByRole("option", { name: "Dining & student life" }));
+    expect(form.getByRole("button", { name: "Topic" })).toHaveTextContent("All topics");
   });
 
   it("replaces the URL (no scroll) when already on /tours", async () => {

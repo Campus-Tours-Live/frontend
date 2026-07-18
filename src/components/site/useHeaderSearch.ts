@@ -1,18 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
+import { canonicalizeTopicIds, useTourTopics, useUniversitySearch } from "@/lib/data-access";
 import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
 import { useHeaderScrollState } from "./useHeaderScrollState";
 
-/** Build a /tours URL from the search draft; empty values are omitted. */
-function buildToursHref(q: string, topic: string): string {
+/** Build a /tours URL from the search draft; `canonicalTopicIds` must already be canonical (see
+ *  `canonicalizeTopicIds`) — this function never re-derives the empty/full-set rule. */
+function buildToursHref(q: string, canonicalTopicIds: string[]): string {
   const params = new URLSearchParams();
   if (q.trim()) params.set("q", q.trim());
-  if (topic) params.set("topic", topic);
+  for (const id of canonicalTopicIds) params.append("topic", id);
   const qs = params.toString();
   return qs ? `/tours?${qs}` : "/tours";
+}
+
+/** Canonical topic summary: full-set/empty → "All topics" (never a count for that case), one topic
+ *  → its label, otherwise "N topics". Both the draft and committed summaries route through this so
+ *  the "All topics" rule lives in exactly one place. */
+function summarizeTopics(canonicalIds: string[], topicOptions: TopicOption[]): string {
+  if (canonicalIds.length === 0) return "All topics";
+  if (canonicalIds.length === 1) {
+    return topicOptions.find((t) => t.value === canonicalIds[0])?.label ?? "1 topic";
+  }
+  return `${canonicalIds.length} topics`;
 }
 
 export interface TopicOption {
@@ -42,12 +54,30 @@ export function useHeaderSearch() {
 
   const { data: topics } = useTourTopics();
   const topicOptions: TopicOption[] = topics ?? [];
+  const allTopicValues = topicOptions.map((t) => t.value);
 
   const urlQ = onTours ? (params.get("q") ?? "") : "";
-  const urlTopic = onTours ? (params.get("topic") ?? "") : "";
+  // Accept repeated `topic=` params AND comma lists, merged; split on comma, trim, drop empty,
+  // dedupe (raw — canonicalisation for the "empty/full → []" rule happens where it's consumed).
+  // Memoised so its identity is stable across renders (it's read in effect/callback deps below).
+  const urlTopicIds = useMemo(
+    () =>
+      onTours
+        ? Array.from(
+            new Set(
+              params
+                .getAll("topic")
+                .flatMap((s) => s.split(","))
+                .map((s) => s.trim())
+                .filter(Boolean),
+            ),
+          )
+        : [],
+    [onTours, params],
+  );
 
   const [q, setQ] = useState(urlQ);
-  const [topic, setTopic] = useState(urlTopic);
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>(urlTopicIds);
   const [searchFocusWithin, setSearchFocusWithin] = useState(false);
   const [forceExpanded, setForceExpanded] = useState(false);
   const [pendingFocus, setPendingFocus] = useState(false);
@@ -109,31 +139,35 @@ export function useHeaderSearch() {
     setActiveSection(null);
     setPanelVisible(false);
     setQ(urlQ);
-    setTopic(urlTopic);
+    setSelectedTopicIds(urlTopicIds);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [scrollWantsCollapsed, activeSection, searchFocusWithin, forceExpanded, urlQ, urlTopic]);
+  }, [scrollWantsCollapsed, activeSection, searchFocusWithin, forceExpanded, urlQ, urlTopicIds]);
 
-  /** Commit the current draft as the search (compact/expanded Search action). */
+  /** Commit the current draft as the search (compact/expanded Search action). Preserves every other
+   *  committed URL param (sort, and — for the future Nearby plan — geo/date): copy the current
+   *  params and mutate only `q`/`topic`/`page`. Topics are written canonical (see
+   *  `canonicalizeTopicIds`) as repeated `topic=` params, never comma-joined. */
   const commitSearch = useCallback(() => {
     pushRecentUniversity(q);
+    const canonicalTopicIds = canonicalizeTopicIds(selectedTopicIds, allTopicValues);
     if (onTours) {
       const next = new URLSearchParams(params.toString());
       if (q.trim()) next.set("q", q.trim());
       else next.delete("q");
-      if (topic) next.set("topic", topic);
-      else next.delete("topic");
+      next.delete("topic");
+      for (const id of canonicalTopicIds) next.append("topic", id);
       next.delete("page");
       const qs = next.toString();
       router.replace(qs ? `/tours?${qs}` : "/tours", { scroll: false });
     } else {
-      router.push(buildToursHref(q, topic));
+      router.push(buildToursHref(q, canonicalTopicIds));
     }
     setForceExpanded(false);
     setPendingFocus(false);
     setActiveSection(null);
     setPanelVisible(false);
     setSheetOpen(false);
-  }, [q, topic, onTours, params, router]);
+  }, [q, selectedTopicIds, allTopicValues, onTours, params, router]);
 
   /** Expand the header without choosing a section. */
   const ensureExpanded = useCallback(() => setForceExpanded(true), []);
@@ -144,14 +178,14 @@ export function useHeaderSearch() {
   const openSection = useCallback(
     (section: NonNullable<HeaderSection>) => {
       setQ(urlQ);
-      setTopic(urlTopic);
+      setSelectedTopicIds(urlTopicIds);
       setActiveSection(section);
       setPendingFocus(true);
       if (collapsed)
         setForceExpanded(true); // reveal happens on the shell's transition-end
       else setPanelVisible(true); // already expanded → reveal immediately
     },
-    [urlQ, urlTopic, collapsed],
+    [urlQ, urlTopicIds, collapsed],
   );
 
   /** Cancel editing: restore the committed draft, clear the active section + panel. */
@@ -162,8 +196,8 @@ export function useHeaderSearch() {
     setActiveSection(null);
     setPanelVisible(false);
     setQ(urlQ);
-    setTopic(urlTopic);
-  }, [urlQ, urlTopic]);
+    setSelectedTopicIds(urlTopicIds);
+  }, [urlQ, urlTopicIds]);
 
   /** Entering the University section by focusing its input (highlight + panel authority = section). */
   const onUniversityFocus = useCallback(() => {
@@ -177,32 +211,47 @@ export function useHeaderSearch() {
     setPanelVisible(true);
   }, []);
 
-  /** Choose a topic from the Topic module: update the draft, close the panel, stay expanded. */
-  const chooseTopic = useCallback((value: string) => {
-    setTopic(value);
-    setActiveSection(null);
-    setPanelVisible(false);
+  /** Toggle a single topic in the Topic module's draft (multi-select — the panel stays open). */
+  const toggleTopic = useCallback((id: string) => {
+    setSelectedTopicIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   }, []);
+
+  /** "All topics" — clears the draft selection (canonical "no filter" is `[]`, not a per-id list). */
+  const clearTopics = useCallback(() => setSelectedTopicIds([]), []);
 
   const onSearchFocusCapture = useCallback(() => setSearchFocusWithin(true), []);
   const onSearchBlurCapture = useCallback((e: React.FocusEvent<HTMLElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSearchFocusWithin(false);
   }, []);
 
-  const topicLabel = topicOptions.find((t) => t.value === urlTopic)?.label;
+  // Draft summary (what the expanded Topic segment shows while editing).
+  const canonicalDraftTopicIds = canonicalizeTopicIds(selectedTopicIds, allTopicValues);
+  const topicSummary = summarizeTopics(canonicalDraftTopicIds, topicOptions);
+
+  // Committed summary (what the compact segment / mobile summary show) — same canonical rule,
+  // computed from the URL rather than the in-progress draft.
+  const canonicalCommittedTopicIds = canonicalizeTopicIds(urlTopicIds, allTopicValues);
+  const committedTopicSummary = summarizeTopics(canonicalCommittedTopicIds, topicOptions);
+
   const summary =
-    [urlQ.trim() || null, topicLabel || null].filter(Boolean).join(" · ") || "Search tours";
+    [urlQ.trim() || null, canonicalCommittedTopicIds.length > 0 ? committedTopicSummary : null]
+      .filter(Boolean)
+      .join(" · ") || "Search tours";
   // Committed values for the compact 3-segment display (empty → the segment shows its placeholder).
   const universityValue = urlQ.trim();
-  const topicValue = topicLabel ?? "";
+  const topicValue = committedTopicSummary;
 
   return {
     universityValue,
     topicValue,
     q,
     setQ,
-    topic,
-    setTopic,
+    selectedTopicIds,
+    toggleTopic,
+    clearTopics,
+    topicSummary,
     searchFocusWithin,
     forceExpanded,
     setForceExpanded,
@@ -225,7 +274,6 @@ export function useHeaderSearch() {
     ensureExpanded,
     openSection,
     enterSection,
-    chooseTopic,
     cancelEditing,
     onUniversityFocus,
     onSearchFocusCapture,
