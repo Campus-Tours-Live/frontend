@@ -14,7 +14,13 @@ import {
   SectionHeading,
   Skeleton,
 } from "@/components/ui";
-import { useTourCatalog, useTourFeatures, type TourSummary } from "@/lib/data-access";
+import {
+  canonicalizeTopicIds,
+  useTourCatalog,
+  useTourFeatures,
+  useTourTopics,
+  type TourSummary,
+} from "@/lib/data-access";
 import { TourProductCard } from "./TourProductCard";
 import { TourFiltersBar } from "./TourFiltersBar";
 import { TourFiltersModal } from "./TourFiltersModal";
@@ -170,27 +176,36 @@ function Results({
 export function AllToursPage() {
   const {
     query,
-    topic,
+    topicIds: rawTopicIds,
     sort,
     page,
-    changeTopic,
+    changeTopics,
     changeSort,
     setPage,
     reset: resetState,
   } = useTourListState();
   const [modalOpen, setModalOpen] = useState(false);
 
+  const { data: topics } = useTourTopics();
+  const allValues = useMemo(() => (topics ?? []).map((o) => o.value), [topics]);
+  // Canonicalise the URL's topics for display + query so a full-set URL renders as "Any" (no
+  // inversion) — the single authority for this rule is `canonicalizeTopicIds`.
+  const topicIds = useMemo(
+    () => canonicalizeTopicIds(rawTopicIds, allValues),
+    [rawTopicIds, allValues],
+  );
+
   const filters = useMemo(
     () => ({
       q: query.trim() || undefined,
-      topic: topic || undefined,
+      topicIds: topicIds.length ? topicIds : undefined,
       sort,
       page,
       // A common multiple of the grid's column counts (1/2/3/4) so every full page fills complete
       // rows at any width — no empty bottom-right cell on the 3-column desktop layout.
       limit: 24,
     }),
-    [query, sort, topic, page],
+    [query, sort, topicIds, page],
   );
 
   const { data, isLoading, isError, refetch } = useTourCatalog(filters);
@@ -241,8 +256,8 @@ export function AllToursPage() {
 
       <section className="mx-auto max-w-content px-6 py-10">
         <TourFiltersBar
-          topic={topic}
-          onTopicChange={changeTopic}
+          topicIds={topicIds}
+          onTopicsChange={changeTopics}
           onOpenFilters={() => setModalOpen(true)}
         />
         <TourFiltersModal

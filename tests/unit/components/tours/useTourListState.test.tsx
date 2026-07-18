@@ -18,11 +18,10 @@ beforeEach(() => {
 });
 
 describe("useTourListState", () => {
-  it("derives topic/sort/page (0-based) from the URL", () => {
+  it("derives sort/page (0-based) from the URL", () => {
     search = "q=housing&topic=DORM_HOUSING&sort=RATING&page=3";
     const { result } = renderHook(() => useTourListState());
     expect(result.current.query).toBe("housing");
-    expect(result.current.topic).toBe("DORM_HOUSING");
     expect(result.current.sort).toBe("RATING");
     expect(result.current.page).toBe(2); // 3 (1-based) -> 2 (0-based)
   });
@@ -30,17 +29,31 @@ describe("useTourListState", () => {
   it("defaults when params are absent or invalid", () => {
     search = "sort=BOGUS";
     const { result } = renderHook(() => useTourListState());
-    expect(result.current.topic).toBe("");
+    expect(result.current.topicIds).toEqual([]);
     expect(result.current.sort).toBe("RECOMMENDED");
     expect(result.current.page).toBe(0);
   });
 
-  it("changeTopic replaces the URL with the topic and drops page", () => {
-    search = "page=4";
+  it("reads repeated + comma topic params, deduped, into topicIds", () => {
+    search = "topic=GENERAL_CAMPUS,GENERAL_CAMPUS&topic=DORM_HOUSING";
     const { result } = renderHook(() => useTourListState());
-    act(() => result.current.changeTopic("FRESHMAN"));
-    expect(replace).toHaveBeenCalledWith("/tours?topic=FRESHMAN", { scroll: false });
-    expect(push).not.toHaveBeenCalled();
+    expect(result.current.topicIds).toEqual(["GENERAL_CAMPUS", "DORM_HOUSING"]);
+  });
+
+  it("changeTopics writes repeated params and resets page", () => {
+    const { result } = renderHook(() => useTourListState());
+    act(() => result.current.changeTopics(["GENERAL_CAMPUS", "DORM_HOUSING"]));
+    const url = replace.mock.calls.at(-1)![0] as string;
+    expect(url).toContain("topic=GENERAL_CAMPUS");
+    expect(url).toContain("topic=DORM_HOUSING");
+    expect(url).not.toContain("page=");
+  });
+
+  it("changeTopics([]) clears the topic param", () => {
+    search = "topic=GENERAL_CAMPUS";
+    const { result } = renderHook(() => useTourListState());
+    act(() => result.current.changeTopics([]));
+    expect(replace.mock.calls.at(-1)![0] as string).not.toContain("topic=");
   });
 
   it("changeSort=RECOMMENDED removes the sort param (default omitted)", () => {

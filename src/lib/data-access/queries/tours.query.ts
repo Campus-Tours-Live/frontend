@@ -4,10 +4,10 @@ import { apiJson } from "../http";
 import { queryKeys } from "../keys";
 import type { TourCatalogFilters, TourCatalogPage, TourDetail } from "../types";
 
-function toursPath(filters: TourCatalogFilters = {}) {
+export function toursPath(filters: TourCatalogFilters = {}) {
   const params = new URLSearchParams();
   if (filters.universityId) params.set("universityId", filters.universityId);
-  if (filters.topic) params.set("topic", filters.topic);
+  for (const id of filters.topicIds ?? []) params.append("topic", id);
   if (filters.q) params.set("q", filters.q);
   if (filters.sort) params.set("sort", filters.sort);
   if (filters.page != null && filters.page > 0) params.set("page", String(filters.page));

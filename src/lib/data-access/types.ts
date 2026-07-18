@@ -199,7 +199,8 @@ export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATI
 /** Query params for GET /v1/tours. */
 export interface TourCatalogFilters {
   universityId?: string;
-  topic?: string;
+  /** Already-canonical topic ids (see `canonicalizeTopicIds`) — never re-derived here. */
+  topicIds?: string[];
   q?: string;
   sort?: TourCatalogSort;
   /** Zero-based page index. @default 0 */

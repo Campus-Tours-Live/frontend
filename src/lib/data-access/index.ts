@@ -5,6 +5,7 @@
  * keep the barrel out of the server graph.
  */
 export { ApiError } from "./http";
+export { canonicalizeTopicIds } from "./topics";
 export { useMe } from "./hooks/use-me";
 export { useParticipantProfile } from "./hooks/use-participant-profile";
 export { useGuideProfile } from "./hooks/use-guide-profile";

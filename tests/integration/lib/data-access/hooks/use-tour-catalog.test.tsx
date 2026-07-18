@@ -48,7 +48,7 @@ describe("useTourCatalog", () => {
       () =>
         useTourCatalog({
           q: "campus",
-          topic: "GENERAL_CAMPUS",
+          topicIds: ["GENERAL_CAMPUS"],
           sort: "RATING",
           limit: 5,
         }),

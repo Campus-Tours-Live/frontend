@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { TourFiltersBar } from "@/components/tours/TourFiltersBar";
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access/topics"),
   useTourTopics: () => ({
     data: [
       { value: "GENERAL_CAMPUS", label: "Campus life" },
@@ -12,28 +13,55 @@ jest.mock("@/lib/data-access", () => ({
 }));
 
 describe("TourFiltersBar", () => {
-  it("marks the active topic and applies a chip instantly", async () => {
-    const onTopicChange = jest.fn();
+  it("toggles a topic on", async () => {
     const user = userEvent.setup();
+    const onTopicsChange = jest.fn();
+    render(
+      <TourFiltersBar topicIds={[]} onTopicsChange={onTopicsChange} onOpenFilters={() => {}} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Campus life" }));
+    expect(onTopicsChange).toHaveBeenLastCalledWith(["GENERAL_CAMPUS"]);
+  });
+
+  it("unchecking the last topic yields [] (canonical Any), Any becomes active, no topic in URL intent", async () => {
+    const user = userEvent.setup();
+    const onTopicsChange = jest.fn();
     render(
       <TourFiltersBar
-        topic="GENERAL_CAMPUS"
-        onTopicChange={onTopicChange}
-        onOpenFilters={jest.fn()}
+        topicIds={["GENERAL_CAMPUS"]}
+        onTopicsChange={onTopicsChange}
+        onOpenFilters={() => {}}
       />,
     );
+    // the only selected chip is active, Any is not
     expect(screen.getByRole("button", { name: "Campus life" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    await user.click(screen.getByRole("button", { name: "Dorms & housing" }));
-    expect(onTopicChange).toHaveBeenCalledWith("DORM_HOUSING");
+    await user.click(screen.getByRole("button", { name: "Campus life" }));
+    expect(onTopicsChange).toHaveBeenLastCalledWith([]);
+  });
+
+  it("Any clears all", async () => {
+    const user = userEvent.setup();
+    const onTopicsChange = jest.fn();
+    render(
+      <TourFiltersBar
+        topicIds={["GENERAL_CAMPUS", "DORM_HOUSING"]}
+        onTopicsChange={onTopicsChange}
+        onOpenFilters={() => {}}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Any" }));
+    expect(onTopicsChange).toHaveBeenLastCalledWith([]);
   });
 
   it("opens the filters modal", async () => {
     const onOpenFilters = jest.fn();
     const user = userEvent.setup();
-    render(<TourFiltersBar topic="" onTopicChange={jest.fn()} onOpenFilters={onOpenFilters} />);
+    render(
+      <TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onOpenFilters={onOpenFilters} />,
+    );
     await user.click(screen.getByRole("button", { name: /filters/i }));
     expect(onOpenFilters).toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Any" })).toHaveAttribute("aria-pressed", "true");

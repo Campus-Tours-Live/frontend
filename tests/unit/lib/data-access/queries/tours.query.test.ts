@@ -1,4 +1,8 @@
-import { tourCatalogOptions, tourDetailOptions } from "@/lib/data-access/queries/tours.query";
+import {
+  tourCatalogOptions,
+  tourDetailOptions,
+  toursPath,
+} from "@/lib/data-access/queries/tours.query";
 import { apiJson } from "@/lib/data-access/http";
 import { queryKeys } from "@/lib/data-access/keys";
 
@@ -8,6 +12,19 @@ const mockedApiJson = apiJson as jest.MockedFunction<typeof apiJson>;
 
 beforeEach(() => {
   mockedApiJson.mockReset();
+});
+
+describe("toursPath", () => {
+  it("emits one repeated topic param per id, in order", () => {
+    expect(toursPath({ topicIds: ["GENERAL_CAMPUS", "DORM_HOUSING"] })).toBe(
+      "/v1/tours?topic=GENERAL_CAMPUS&topic=DORM_HOUSING",
+    );
+  });
+
+  it("omits topic when empty/undefined", () => {
+    expect(toursPath({ topicIds: [] })).toBe("/v1/tours");
+    expect(toursPath({})).toBe("/v1/tours");
+  });
 });
 
 describe("tourCatalogOptions", () => {
@@ -43,7 +60,7 @@ describe("tourCatalogOptions", () => {
 
     const filters = {
       universityId: "u1",
-      topic: "GENERAL_CAMPUS",
+      topicIds: ["GENERAL_CAMPUS", "DORM_HOUSING"],
       q: "campus",
       sort: "RATING" as const,
       limit: 5,
@@ -52,7 +69,7 @@ describe("tourCatalogOptions", () => {
     await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledWith(
-      "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&q=campus&sort=RATING&limit=5",
+      "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&topic=DORM_HOUSING&q=campus&sort=RATING&limit=5",
       { interactive: false },
     );
   });

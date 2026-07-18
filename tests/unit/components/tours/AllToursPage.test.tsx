@@ -4,6 +4,7 @@ import { AllToursPage } from "@/components/tours/AllToursPage";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access/topics"),
   useTourCatalog: jest.fn(),
   useTourFeatures: jest.fn(() => ({
     byTopic: {},
@@ -114,7 +115,7 @@ describe("AllToursPage", () => {
 
     expect(mockUseTourCatalog).toHaveBeenLastCalledWith({
       q: undefined,
-      topic: undefined,
+      topicIds: undefined,
       sort: "RECOMMENDED",
       page: 0,
       limit: 24,

@@ -9,11 +9,11 @@ const QUERY_DEBOUNCE_MS = 250;
 
 export interface TourListState {
   query: string;
-  topic: string;
+  topicIds: string[];
   sort: TourCatalogSort;
   page: number;
   changeQuery: (v: string) => void;
-  changeTopic: (v: string) => void;
+  changeTopics: (ids: string[]) => void;
   changeSort: (v: TourCatalogSort) => void;
   setPage: (p: number) => void;
   reset: () => void;
@@ -22,7 +22,7 @@ export interface TourListState {
 /**
  * List state for the /tours marketplace, persisted in the URL query string so refresh,
  * back/forward, and shared links restore it. The URL is the source of truth for
- * topic/sort/page; `q` is debounced-synced local state so the search input stays responsive.
+ * topicIds/sort/page; `q` is debounced-synced local state so the search input stays responsive.
  * Filter changes replace (+ reset to page 1); page changes push (Back returns to the prior page).
  */
 export function useTourListState(): TourListState {
@@ -30,7 +30,19 @@ export function useTourListState(): TourListState {
   const pathname = usePathname();
   const params = useSearchParams();
 
-  const topic = params.get("topic") ?? "";
+  // Raw parse + dedupe only — this hook has no topic vocabulary, so it cannot apply the
+  // empty/full-set canonicalisation rule; that happens where the vocab is available
+  // (AllToursPage), via the shared `canonicalizeTopicIds`. Accepts repeated params AND comma
+  // lists (backward compatible with a single `topic=CODE`).
+  const topicIds = Array.from(
+    new Set(
+      params
+        .getAll("topic")
+        .flatMap((s) => s.split(","))
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  );
   const sortParam = params.get("sort") as TourCatalogSort | null;
   const sort = sortParam && SORTS.has(sortParam) ? sortParam : "RECOMMENDED";
   const pageParam = Number(params.get("page"));
@@ -40,12 +52,17 @@ export function useTourListState(): TourListState {
   const [query, setQuery] = useState(urlQuery);
 
   // Build a URL from a partial patch of the current params; "" / null delete the key.
+  // `topicPatch`, when provided, replaces the (possibly repeated) `topic` key wholesale.
   const buildUrl = useCallback(
-    (patch: Record<string, string | null>) => {
+    (patch: Record<string, string | null>, topicPatch?: string[]) => {
       const next = new URLSearchParams(params.toString());
       for (const [k, v] of Object.entries(patch)) {
         if (v === null || v === "") next.delete(k);
         else next.set(k, v);
+      }
+      if (topicPatch !== undefined) {
+        next.delete("topic");
+        for (const id of topicPatch) next.append("topic", id);
       }
       const qs = next.toString();
       return qs ? `${pathname}?${qs}` : pathname;
@@ -77,8 +94,8 @@ export function useTourListState(): TourListState {
     return () => clearTimeout(t);
   }, [query, urlQuery, router, buildUrl]);
 
-  const changeTopic = useCallback(
-    (v: string) => router.replace(buildUrl({ topic: v || null, page: null }), { scroll: false }),
+  const changeTopics = useCallback(
+    (ids: string[]) => router.replace(buildUrl({ page: null }, ids), { scroll: false }),
     [router, buildUrl],
   );
   const changeSort = useCallback(
@@ -99,11 +116,11 @@ export function useTourListState(): TourListState {
 
   return {
     query,
-    topic,
+    topicIds,
     sort,
     page,
     changeQuery: setQuery,
-    changeTopic,
+    changeTopics,
     changeSort,
     setPage,
     reset,
