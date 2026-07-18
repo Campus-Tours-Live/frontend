@@ -1,46 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Filter, RotateCcw, Search } from "lucide-react";
+import { ArrowRight, RotateCcw } from "lucide-react";
 import {
   Alert,
   Badge,
   Body,
   Button,
-  Caption,
   Card,
-  Chip,
   Heading,
   Link,
   Pagination,
   SectionHeading,
-  SelectField,
   Skeleton,
-  TextField,
 } from "@/components/ui";
-import {
-  useTourCatalog,
-  useTourFeatures,
-  type TourCatalogSort,
-  type TourSummary,
-} from "@/lib/data-access";
-import { cn } from "@/lib/utils";
+import { useTourCatalog, useTourFeatures, type TourSummary } from "@/lib/data-access";
 import { TourProductCard } from "./TourProductCard";
+import { TourFiltersBar } from "./TourFiltersBar";
+import { TourFiltersModal } from "./TourFiltersModal";
 import { useTourListState } from "./useTourListState";
-
-const TOPIC_FILTERS = [
-  { value: "GENERAL_CAMPUS", label: "Campus life" },
-  { value: "DORM_HOUSING", label: "Dorms & housing" },
-  { value: "DINING_STUDENT_LIFE", label: "Dining & student life" },
-  { value: "INTERNATIONAL_STUDENT", label: "International students" },
-] as const;
-
-const SORTS: { value: TourCatalogSort; label: string }[] = [
-  { value: "RECOMMENDED", label: "Recommended" },
-  { value: "RATING", label: "Top rated" },
-  { value: "PRICE_ASC", label: "Lowest price" },
-  { value: "PRICE_DESC", label: "Highest price" },
-];
 
 const UNIVERSITIES = [
   {
@@ -195,13 +173,12 @@ export function AllToursPage() {
     topic,
     sort,
     page,
-    changeQuery,
     changeTopic,
     changeSort,
     setPage,
     reset: resetState,
   } = useTourListState();
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -218,7 +195,6 @@ export function AllToursPage() {
 
   const { data, isLoading, isError, refetch } = useTourCatalog(filters);
   const tours = data?.items ?? [];
-  const activeFilterCount = Number(Boolean(query.trim())) + Number(Boolean(topic));
   const resultTitle = isLoading
     ? "Loading tours"
     : isError
@@ -264,76 +240,18 @@ export function AllToursPage() {
       </section>
 
       <section className="mx-auto max-w-content px-6 py-10">
-        <button
-          type="button"
-          className="mb-4 flex w-full items-center justify-between rounded-card border border-border bg-card px-4 py-3 text-left font-bold text-ink shadow-card lg:hidden"
-          onClick={() => setFiltersOpen((open) => !open)}
-          aria-expanded={filtersOpen}
-        >
-          <span className="inline-flex items-center gap-2">
-            <Filter size={17} strokeWidth={2} />
-            Filters
-          </span>
-          <Caption>{activeFilterCount} active</Caption>
-        </button>
-
-        <div
-          className={cn(
-            "space-y-6 rounded-panel border border-border bg-card p-5 shadow-card",
-            !filtersOpen && "hidden lg:block",
-          )}
-        >
-          <div>
-            <Heading as="h2" size="h4">
-              Filters
-            </Heading>
-            <Body size="small" color="muted" className="mt-1">
-              Refine the public catalog.
-            </Body>
-          </div>
-
-          <TextField
-            label="Search"
-            leadingIcon={<Search size={16} strokeWidth={2} />}
-            value={query}
-            onChange={(e) => changeQuery(e.target.value)}
-            placeholder="University, tour, or topic"
-            type="search"
-          />
-
-          <fieldset>
-            <Body as="legend" size="small" weight={700} className="mb-2 block">
-              Topic
-            </Body>
-            <div className="flex flex-wrap gap-2">
-              <Chip active={!topic} onClick={() => changeTopic("")}>
-                Any
-              </Chip>
-              {TOPIC_FILTERS.map((t) => (
-                <Chip key={t.value} active={topic === t.value} onClick={() => changeTopic(t.value)}>
-                  {t.label}
-                </Chip>
-              ))}
-            </div>
-          </fieldset>
-
-          <SelectField
-            label="Sort by"
-            value={sort}
-            onChange={(e) => changeSort(e.target.value as TourCatalogSort)}
-          >
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </SelectField>
-
-          <Button variant="ghost" size="small" onClick={reset} className="px-0">
-            <RotateCcw size={15} strokeWidth={2} />
-            Clear all
-          </Button>
-        </div>
+        <TourFiltersBar
+          topic={topic}
+          onTopicChange={changeTopic}
+          onOpenFilters={() => setModalOpen(true)}
+        />
+        <TourFiltersModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          sort={sort}
+          resultCount={data?.totalElements ?? tours.length}
+          onApply={({ sort: next }) => changeSort(next)}
+        />
 
         <div className="mt-8">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">

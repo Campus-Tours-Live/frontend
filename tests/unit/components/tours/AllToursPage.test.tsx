@@ -11,6 +11,12 @@ jest.mock("@/lib/data-access", () => ({
     isLoading: false,
     isError: false,
   })),
+  useTourTopics: () => ({
+    data: [
+      { value: "GENERAL_CAMPUS", label: "Campus life" },
+      { value: "DORM_HOUSING", label: "Dorms & housing" },
+    ],
+  }),
 }));
 
 const replace = jest.fn();
@@ -50,6 +56,7 @@ function mockCatalog(
   state: {
     items?: TourSummary[];
     totalPages?: number;
+    totalElements?: number;
     isLoading?: boolean;
     isError?: boolean;
   } = {},
@@ -63,8 +70,8 @@ function mockCatalog(
             items,
             page: 0,
             size: 20,
-            totalElements: items.length,
             totalPages: state.totalPages ?? (items.length > 0 ? 1 : 0),
+            totalElements: state.totalElements ?? items.length,
           },
     isLoading: state.isLoading ?? false,
     isError: state.isError ?? false,
@@ -114,13 +121,28 @@ describe("AllToursPage", () => {
     });
   });
 
-  it("writes a topic filter to the URL (replace)", async () => {
+  it("has no in-panel search box and shows topic quick-chips", () => {
+    mockCatalog({ items: [tour], totalPages: 1 });
+    render(<AllToursPage />);
+    // The only search lives in the header (not rendered here); the page has no search textbox.
+    expect(screen.queryByPlaceholderText(/university, tour, or topic/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Campus life" })).toBeInTheDocument();
+  });
+
+  it("changes topic instantly from a chip", async () => {
+    mockCatalog({ items: [tour], totalPages: 1 });
     const user = userEvent.setup();
     render(<AllToursPage />);
-
     await user.click(screen.getByRole("button", { name: "Dorms & housing" }));
-
     expect(replace).toHaveBeenCalledWith("/tours?topic=DORM_HOUSING", { scroll: false });
+  });
+
+  it("opens the Filters modal from the Filters button", async () => {
+    mockCatalog({ items: [tour], totalPages: 1, totalElements: 1 });
+    const user = userEvent.setup();
+    render(<AllToursPage />);
+    await user.click(screen.getByRole("button", { name: /filters/i }));
+    expect(screen.getByRole("button", { name: /show 1 tours/i })).toBeInTheDocument();
   });
 
   it("renders loading, empty, and fallback states", async () => {
@@ -148,14 +170,14 @@ describe("AllToursPage", () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it("clears filters and requests a refresh", async () => {
+  it("clears filters from the empty state and requests a refresh", async () => {
     const user = userEvent.setup();
+    mockCatalog({ items: [] });
     render(<AllToursPage />);
 
-    await user.type(screen.getByPlaceholderText("University, tour, or topic"), "ucla");
-    await user.click(screen.getByRole("button", { name: "Clear all" }));
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
 
-    expect(screen.getByPlaceholderText("University, tour, or topic")).toHaveValue("");
+    expect(replace).toHaveBeenCalledWith("/tours", { scroll: false });
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
