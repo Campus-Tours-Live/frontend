@@ -527,13 +527,18 @@
   position: absolute;
   inset: 0 0 auto 0;
   z-index: 0;
-  height: var(--header-expanded-height);
+  height: var(--header-row-height); /* mobile: single row (the expanded band is desktop-only) */
   background: hsl(var(--card));
   border-bottom: 1px solid hsl(var(--border) / 0.7);
   transition: height var(--header-panel-duration) var(--header-easing);
 }
-.ds-header-bg[data-collapsed="true"] {
-  height: var(--header-row-height);
+@media (min-width: 1024px) {
+  .ds-header-bg {
+    height: var(--header-expanded-height);
+  }
+  .ds-header-bg[data-collapsed="true"] {
+    height: var(--header-row-height);
+  }
 }
 
 /* The one search shell — center-anchored; sits inside the panel; only top/width/height/shadow move.
