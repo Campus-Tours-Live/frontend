@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import {
   DesktopSearchShell,
   HeaderSearchMobile,
+  TopicSectionPanel,
   UniversitySectionPanel,
 } from "@/components/site/SiteHeaderSearch";
 import { useHeaderSearch } from "@/components/site/useHeaderSearch";
@@ -54,7 +55,7 @@ function setScroll(y: number) {
 function TestHeader() {
   const state = useHeaderSearch();
   const uniRef = useRef<HTMLInputElement>(null);
-  const topicRef = useRef<HTMLSelectElement>(null);
+  const topicRef = useRef<HTMLButtonElement>(null);
   // The real header renders ONE shell (expanded form + compact section-button group cross-fading
   // inside); each layer is aria-hidden in the inactive state, so role queries resolve to the active
   // layer. Mobile is a separate control.
@@ -62,6 +63,7 @@ function TestHeader() {
     <>
       <DesktopSearchShell search={state} universityInputRef={uniRef} topicRef={topicRef} />
       <UniversitySectionPanel search={state} />
+      <TopicSectionPanel search={state} />
       <HeaderSearchMobile search={state} />
     </>
   );
@@ -150,7 +152,11 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     render(<TestHeader />);
     const form = within(screen.getByRole("search"));
     await user.type(form.getByLabelText("University"), "Berkeley");
-    await user.selectOptions(form.getByLabelText("Topic"), "DORM_HOUSING");
+    // Topic is a popover dropdown (UI-library MenuItem rows), not a native select. Scope to the
+    // Topic region so the label doesn't collide with the mobile sheet's (always-mounted) select.
+    await user.click(form.getByRole("button", { name: "Topic" }));
+    const topicPanel = within(await screen.findByRole("region", { name: "Topic" }));
+    await user.click(topicPanel.getByRole("option", { name: "Dorms & housing" }));
     await user.click(form.getByRole("button", { name: "Search" }));
     expect(push).toHaveBeenCalledWith("/tours?q=Berkeley&topic=DORM_HOUSING");
   });

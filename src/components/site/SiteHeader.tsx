@@ -10,7 +10,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { HeaderNav } from "./HeaderNav";
 import { MobileNav } from "./MobileNav";
-import { DesktopSearchShell, HeaderSearchMobile, UniversitySectionPanel } from "./SiteHeaderSearch";
+import {
+  DesktopSearchShell,
+  HeaderSearchMobile,
+  TopicSectionPanel,
+  UniversitySectionPanel,
+} from "./SiteHeaderSearch";
 import { useHeaderSearch } from "./useHeaderSearch";
 
 /** Fallback delay for focusing University after a compact-search click, used when the shell's
@@ -54,7 +59,7 @@ export function SiteHeader({
 
   const headerRef = useRef<HTMLElement>(null);
   const universityInputRef = useRef<HTMLInputElement>(null);
-  const topicRef = useRef<HTMLSelectElement>(null);
+  const topicRef = useRef<HTMLButtonElement>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus the control for the section that was opened — not always University.
@@ -209,6 +214,7 @@ export function SiteHeader({
         {/* Shared section module panel (desktop) — a header-layer sibling so outside-click is covered
             by headerRef. Its visibility is authored by activeSection + panelVisible. */}
         <UniversitySectionPanel search={search} />
+        <TopicSectionPanel search={search} />
       </header>
 
       {/* Reserves only the fixed row's height, and never animates — content never jumps. */}

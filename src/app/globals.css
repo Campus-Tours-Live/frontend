@@ -616,6 +616,13 @@
   z-index: 30;
 }
 
+/* Topic module anchors under the Topic segment (≈ 40% across the shell), narrower than the
+   University module. Same first-pass calc anchor — calibrate against the segment widths. */
+.ds-panel--topic {
+  left: max(24px, calc(50% - min(680px, 100vw - 440px) / 2 + min(680px, 100vw - 440px) * 0.4));
+  width: min(300px, calc(100vw - 48px));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ds-header-bg,
   .ds-shell,

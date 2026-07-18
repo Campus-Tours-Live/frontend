@@ -56,7 +56,11 @@ export function useHeaderSearch() {
   // Whether the section module panel is actually shown (revealed after the shell has expanded).
   const [panelVisible, setPanelVisible] = useState(false);
 
-  const { data: matches, isFetching } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
+  // Search EVERY U.S. school via the live College Scorecard directory (not just our seeded catalog).
+  const { data: matches, isFetching } = useUniversitySearch(q, {
+    enabled: q.trim().length >= 1,
+    source: "live",
+  });
   const queryHasText = q.trim().length >= 1;
   const suggestions = queryHasText ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
   const universityLoading = queryHasText && isFetching;
@@ -167,6 +171,19 @@ export function useHeaderSearch() {
     setPanelVisible(true);
   }, []);
 
+  /** Enter a section while already expanded (e.g. clicking the expanded Topic segment). */
+  const enterSection = useCallback((section: NonNullable<HeaderSection>) => {
+    setActiveSection(section);
+    setPanelVisible(true);
+  }, []);
+
+  /** Choose a topic from the Topic module: update the draft, close the panel, stay expanded. */
+  const chooseTopic = useCallback((value: string) => {
+    setTopic(value);
+    setActiveSection(null);
+    setPanelVisible(false);
+  }, []);
+
   const onSearchFocusCapture = useCallback(() => setSearchFocusWithin(true), []);
   const onSearchBlurCapture = useCallback((e: React.FocusEvent<HTMLElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSearchFocusWithin(false);
@@ -207,6 +224,8 @@ export function useHeaderSearch() {
     commitSearch,
     ensureExpanded,
     openSection,
+    enterSection,
+    chooseTopic,
     cancelEditing,
     onUniversityFocus,
     onSearchFocusCapture,

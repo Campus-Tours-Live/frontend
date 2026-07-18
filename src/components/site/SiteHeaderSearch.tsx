@@ -1,9 +1,9 @@
 "use client";
 
 import type { RefObject, TransitionEvent as ReactTransitionEvent } from "react";
-import { Search } from "lucide-react";
-import { Button, Drawer } from "@/components/ui";
-import type { HeaderSearch } from "./useHeaderSearch";
+import { MapPin, Search } from "lucide-react";
+import { Button, Drawer, MenuItem } from "@/components/ui";
+import type { HeaderSearch, TopicOption } from "./useHeaderSearch";
 
 interface SearchProps {
   search: HeaderSearch;
@@ -28,7 +28,7 @@ export function DesktopSearchShell({
   onTransitionEnd,
 }: SearchProps & {
   universityInputRef: RefObject<HTMLInputElement | null>;
-  topicRef: RefObject<HTMLSelectElement | null>;
+  topicRef: RefObject<HTMLButtonElement | null>;
   onTransitionEnd?: (e: ReactTransitionEvent<HTMLDivElement>) => void;
 }) {
   return (
@@ -55,23 +55,24 @@ function ExpandedContent({
   topicRef,
 }: SearchProps & {
   universityInputRef: RefObject<HTMLInputElement | null>;
-  topicRef: RefObject<HTMLSelectElement | null>;
+  topicRef: RefObject<HTMLButtonElement | null>;
 }) {
   const {
     q,
     setQ,
     topic,
-    setTopic,
     topicOptions,
     activeSection,
-    setActiveSection,
     panelVisible,
+    enterSection,
     commitSearch,
     collapsed,
     onUniversityFocus,
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
+
+  const draftTopicLabel = topicOptions.find((t) => t.value === topic)?.label ?? "Any topic";
 
   return (
     <form
@@ -110,27 +111,24 @@ function ExpandedContent({
 
         <span className={DIVIDER} aria-hidden />
 
-        <label
-          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 transition-colors data-[active=true]:bg-muted/60"
+        <button
+          type="button"
+          ref={topicRef}
+          aria-label="Topic"
+          aria-haspopup="listbox"
+          aria-expanded={activeSection === "topic" && panelVisible}
+          aria-controls="header-topic-panel"
+          onClick={() => enterSection("topic")}
+          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors data-[active=true]:bg-muted/60"
           data-active={activeSection === "topic"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
-          <select
-            ref={topicRef}
-            aria-label="Topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            onFocus={() => setActiveSection("topic")}
-            className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none"
+          <span
+            className={`truncate text-ui-sm leading-tight ${topic ? "text-ink" : "text-ink-soft"}`}
           >
-            <option value="">Any topic</option>
-            {topicOptions.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            {draftTopicLabel}
+          </span>
+        </button>
 
         <span className={DIVIDER} aria-hidden />
 
@@ -179,7 +177,7 @@ function CompactContent({ search }: SearchProps) {
               universityValue ? "text-ink" : "text-ink-soft"
             }`}
           >
-            {universityValue || "Choose university"}
+            {universityValue || "Search university"}
           </span>
         </button>
 
@@ -251,36 +249,105 @@ export function UniversitySectionPanel({ search }: SearchProps) {
       <div className="ds-panel-scroll max-h-[min(60vh,420px)] overflow-y-auto p-2 [overscroll-behavior:contain]">
         {universityLoading ? (
           <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">Searching…</p>
-        ) : suggestions.length > 0 ? (
-          <ul role="listbox" aria-label="University suggestions">
-            {!queryHasText ? (
-              <li className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
-                Recent searches
-              </li>
-            ) : null}
-            {suggestions.map((name) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={q === name}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setQ(name)}
-                  className="w-full rounded-field px-3 py-2 text-left text-ui-sm hover:bg-muted"
-                >
-                  {name}
-                </button>
-              </li>
-            ))}
-          </ul>
         ) : queryHasText ? (
-          <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">No schools found</p>
+          suggestions.length > 0 ? (
+            <ul
+              role="listbox"
+              aria-label="University suggestions"
+              className="flex flex-col gap-0.5"
+            >
+              {suggestions.map((name) => (
+                <li key={name}>
+                  {/* UI-library row; keep the listbox/option roles for assistive tech. */}
+                  <MenuItem
+                    role="option"
+                    active={q === name}
+                    onSelect={() => setQ(name)}
+                    className="w-full"
+                  >
+                    {name}
+                  </MenuItem>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">No schools found</p>
+          )
         ) : (
-          <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">
-            Start typing to find a school
-          </p>
+          // Empty input → recent history (if any) plus a Nearby shortcut.
+          <div className="flex flex-col gap-0.5">
+            {suggestions.length > 0 ? (
+              <>
+                <p className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+                  Recent searches
+                </p>
+                <ul
+                  role="listbox"
+                  aria-label="University suggestions"
+                  className="flex flex-col gap-0.5"
+                >
+                  {suggestions.map((name) => (
+                    <li key={name}>
+                      <MenuItem
+                        role="option"
+                        active={q === name}
+                        onSelect={() => setQ(name)}
+                        className="w-full"
+                      >
+                        {name}
+                      </MenuItem>
+                    </li>
+                  ))}
+                </ul>
+                <div className="my-1 h-px bg-border" aria-hidden />
+              </>
+            ) : null}
+            <MenuItem icon={MapPin} onSelect={() => setQ("")} className="w-full">
+              Nearby — schools around you
+            </MenuItem>
+          </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** TopicSectionPanel — the Topic module (Commit C). Same header-sibling `.ds-panel` container as
+ *  the University module, gated by `activeSection === "topic"` + `panelVisible`. Options come from the
+ *  backend topic vocabulary (`useTourTopics`) — never hard-coded — rendered with the UI-library
+ *  `MenuItem`. Choosing one updates the draft, closes the panel, and stays expanded (no auto-submit).
+ *  Desktop only. */
+export function TopicSectionPanel({ search }: SearchProps) {
+  const { activeSection, panelVisible, collapsed, topic, topicOptions, chooseTopic } = search;
+  if (collapsed || !panelVisible || activeSection !== "topic") return null;
+
+  const options: TopicOption[] = [{ value: "", label: "Any topic" }, ...topicOptions];
+
+  return (
+    <div
+      id="header-topic-panel"
+      role="region"
+      aria-label="Topic"
+      className="ds-panel ds-panel--topic hidden rounded-card border border-border bg-card shadow-lg lg:block"
+    >
+      <ul
+        role="listbox"
+        aria-label="Topics"
+        className="ds-panel-scroll flex max-h-[min(60vh,420px)] flex-col gap-0.5 overflow-y-auto p-2 [overscroll-behavior:contain]"
+      >
+        {options.map((t) => (
+          <li key={t.value || "any"}>
+            <MenuItem
+              role="option"
+              active={topic === t.value}
+              onSelect={() => chooseTopic(t.value)}
+              className="w-full"
+            >
+              {t.label}
+            </MenuItem>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
