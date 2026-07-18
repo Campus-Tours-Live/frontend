@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
@@ -29,10 +30,17 @@ jest.mock("@/lib/data-access", () => ({
   }),
 }));
 
+// Queue rAF callbacks and flush them after the scroll handler returns (mirrors real async
+// ordering so the scroll hook's frame guard clears between scrolls), inside one act().
+let rafQueue: FrameRequestCallback[] = [];
+
 function setScroll(y: number) {
   Object.defineProperty(window, "scrollY", { value: y, configurable: true, writable: true });
   act(() => {
     window.dispatchEvent(new Event("scroll"));
+    const queued = rafQueue;
+    rafQueue = [];
+    queued.forEach((cb) => cb(0));
   });
 }
 
@@ -45,16 +53,24 @@ function setScroll(y: number) {
  */
 function TestHeader() {
   const state = useHeaderSearch();
+  const uniRef = useRef<HTMLInputElement>(null);
   return (
     <>
       {state.collapsed ? <HeaderSearchPill search={state} /> : null}
       <HeaderSearchMobile search={state} />
-      {!state.collapsed ? <HeaderSearchBar search={state} /> : null}
+      {!state.collapsed ? <HeaderSearchBar search={state} universityInputRef={uniRef} /> : null}
     </>
   );
 }
 
 beforeEach(() => {
+  rafQueue = [];
+  window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+    rafQueue.push(cb);
+    return rafQueue.length;
+  }) as typeof window.requestAnimationFrame;
+  window.cancelAnimationFrame = (() => {}) as typeof window.cancelAnimationFrame;
+
   push.mockClear();
   replace.mockClear();
   pathname = "/";
@@ -100,6 +116,16 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     setScroll(120);
     await user.click(screen.getByRole("button", { name: "Edit search" }));
     expect(screen.getByRole("search")).toBeInTheDocument();
+  });
+
+  it("stays expanded while a search field is focused, even when scrolled", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByLabelText("University"));
+    setScroll(200);
+    // Interaction lock (focus) overrides scroll intent → band stays, pill never appears.
+    expect(screen.getByRole("search")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit search" })).not.toBeInTheDocument();
   });
 
   it("navigates to /tours with q and topic on submit off /tours", async () => {

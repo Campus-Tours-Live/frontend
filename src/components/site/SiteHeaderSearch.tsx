@@ -1,5 +1,6 @@
 "use client";
 
+import type { RefObject } from "react";
 import { Search } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
@@ -37,9 +38,25 @@ export function HeaderSearchPill({ search }: SearchProps) {
 }
 
 /** HeaderSearchBar — the expanded segmented desktop form: University (+ suggestions), Topic, Language. */
-export function HeaderSearchBar({ search }: SearchProps) {
-  const { q, setQ, topic, setTopic, uniFocused, setUniFocused, suggestions, topicOptions, submit } =
-    search;
+export function HeaderSearchBar({
+  search,
+  universityInputRef,
+}: SearchProps & { universityInputRef: RefObject<HTMLInputElement | null> }) {
+  const {
+    q,
+    setQ,
+    topic,
+    setTopic,
+    uniFocused,
+    setUniFocused,
+    suggestions,
+    topicOptions,
+    submit,
+    onSearchFocusCapture,
+    onSearchBlurCapture,
+  } = search;
+
+  const suggestionsOpen = uniFocused && suggestions.length > 0;
 
   return (
     <form
@@ -48,14 +65,21 @@ export function HeaderSearchBar({ search }: SearchProps) {
         e.preventDefault();
         submit();
       }}
+      onFocusCapture={onSearchFocusCapture}
+      onBlurCapture={onSearchBlurCapture}
       className="search flex w-full min-w-0 max-w-2xl items-stretch gap-0 p-1"
     >
       <div className="relative flex min-w-0 flex-1 flex-col">
         <label className="flex min-w-0 flex-col px-3 py-1">
           <span className="text-[11px] font-bold text-ink">University</span>
           <input
+            ref={universityInputRef}
             type="text"
+            role="combobox"
             aria-label="University"
+            aria-autocomplete="list"
+            aria-expanded={suggestionsOpen}
+            aria-controls="header-university-suggestions"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onFocus={() => setUniFocused(true)}
@@ -64,8 +88,9 @@ export function HeaderSearchBar({ search }: SearchProps) {
             className="min-w-0 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
           />
         </label>
-        {uniFocused && suggestions.length > 0 ? (
+        {suggestionsOpen ? (
           <ul
+            id="header-university-suggestions"
             role="listbox"
             aria-label="University suggestions"
             className="absolute left-0 top-full z-20 mt-2 max-h-72 w-72 overflow-auto rounded-card border border-border bg-card p-2 shadow-lg"

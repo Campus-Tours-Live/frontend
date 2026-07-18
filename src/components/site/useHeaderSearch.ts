@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTourTopics, useUniversitySearch } from "@/lib/data-access";
 import { pushRecentUniversity, readRecentUniversities } from "./recentUniversities";
-import { useHeaderSearchCollapse } from "./useHeaderSearchCollapse";
+import { useHeaderScrollState } from "./useHeaderScrollState";
 
 /** Build a /tours URL from the search draft; empty values are omitted. */
 function buildToursHref(q: string, topic: string): string {
@@ -21,17 +21,18 @@ export interface TopicOption {
 }
 
 /**
- * useHeaderSearch — all state and behavior behind the global, two-tier header search
- * (Airbnb-style: an expanded band that collapses to a compact pill on scroll). The band
- * (row 2) and the pill (row 1) live in different DOM rows in `SiteHeader` but must act as
- * one control, so every bit of shared state — the draft (q/topic), expand/collapse, the
- * University suggestions dropdown, the mobile sheet, and submit — is centralized here.
+ * useHeaderSearch — the shared STATE and behavior behind the global, two-tier header search.
+ * It is deliberately DOM-free (no element refs): the scroll intent comes from `useHeaderScrollState`,
+ * and the interaction lock is composed here —
+ *   interactionLocked = searchFocusWithin || uniFocused || forceExpanded
+ *   collapsed         = scrollWantsCollapsed && !interactionLocked
  *
- * Collapse is purely scroll-driven (>threshold px) on every page, including /tours; there
- * is no per-route override. `expanded` (the user explicitly reopened the band to edit)
- * always wins over the scroll position.
+ * `forceExpanded` is set by the compact pill (`openEditor`) and released by `SiteHeader`'s
+ * outside-click / Escape effect. Focusing University after the band expands (`pendingFocus`) and the
+ * outside-click release both live in `SiteHeader`, which owns the actual DOM refs — keeping this
+ * hook's return free of ref values.
  */
-export function useHeaderSearch(threshold = 80) {
+export function useHeaderSearch() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -45,14 +46,20 @@ export function useHeaderSearch(threshold = 80) {
 
   const [q, setQ] = useState(urlQ);
   const [topic, setTopic] = useState(urlTopic);
-  const [expanded, setExpanded] = useState(false);
   const [uniFocused, setUniFocused] = useState(false);
+  const [searchFocusWithin, setSearchFocusWithin] = useState(false);
+  const [forceExpanded, setForceExpanded] = useState(false);
+  const [pendingFocus, setPendingFocus] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+
   const { data: matches } = useUniversitySearch(q, { enabled: q.trim().length >= 1 });
   const suggestions =
     q.trim().length >= 1 ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
 
-  const collapsed = useHeaderSearchCollapse(threshold) && !expanded;
+  const { isCollapsed: scrollWantsCollapsed } = useHeaderScrollState();
+
+  const interactionLocked = searchFocusWithin || uniFocused || forceExpanded;
+  const collapsed = scrollWantsCollapsed && !interactionLocked;
 
   const submit = () => {
     pushRecentUniversity(q);
@@ -68,16 +75,24 @@ export function useHeaderSearch(threshold = 80) {
     } else {
       router.push(buildToursHref(q, topic));
     }
-    setExpanded(false);
+    setForceExpanded(false);
     setUniFocused(false);
     setSheetOpen(false);
   };
 
+  /** Compact-pill click: seed the draft from the URL, force the band open, and flag that University
+   *  should be focused once the band has expanded (SiteHeader performs the focus). */
   const openEditor = () => {
     setQ(urlQ);
     setTopic(urlTopic);
-    setExpanded(true);
+    setForceExpanded(true);
+    setPendingFocus(true);
   };
+
+  const onSearchFocusCapture = useCallback(() => setSearchFocusWithin(true), []);
+  const onSearchBlurCapture = useCallback((e: React.FocusEvent<HTMLElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSearchFocusWithin(false);
+  }, []);
 
   const topicLabel = topicOptions.find((t) => t.value === urlTopic)?.label;
   const summary =
@@ -88,10 +103,13 @@ export function useHeaderSearch(threshold = 80) {
     setQ,
     topic,
     setTopic,
-    expanded,
-    setExpanded,
     uniFocused,
     setUniFocused,
+    searchFocusWithin,
+    forceExpanded,
+    setForceExpanded,
+    pendingFocus,
+    setPendingFocus,
     sheetOpen,
     setSheetOpen,
     suggestions,
@@ -101,6 +119,8 @@ export function useHeaderSearch(threshold = 80) {
     collapsed,
     submit,
     openEditor,
+    onSearchFocusCapture,
+    onSearchBlurCapture,
   };
 }
 
