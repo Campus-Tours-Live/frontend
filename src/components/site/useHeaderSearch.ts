@@ -201,14 +201,6 @@ export function useHeaderSearch() {
     setPanelVisible(false);
   }, []);
 
-  /** Cancel editing: end the interaction AND revert the draft to committed. This is the EXPLICIT undo
-   *  (Escape only) — not the plain lose-focus path. */
-  const cancelEditing = useCallback(() => {
-    endInteraction();
-    setQ(urlQ);
-    setSelectedTopicIds(urlTopicIds);
-  }, [endInteraction, urlQ, urlTopicIds]);
-
   /** Focusing the University input marks the section active. The popover only opens when the field is
    *  EMPTY (so we surface recent / nearby to pick from). Merely focusing a pre-filled field — without
    *  editing — must NOT pop the results/"No schools found" panel. */
@@ -231,6 +223,14 @@ export function useHeaderSearch() {
     setQ(name);
     setActiveSection(null);
     setPanelVisible(false);
+  }, []);
+
+  /** University input blur: keep the current content and just hide the popover. Rows preventDefault
+   *  their mousedown so clicking a suggestion never routes through here (the click would otherwise be
+   *  lost when the panel unmounts). Never reverts. */
+  const onUniversityBlur = useCallback(() => {
+    setPanelVisible(false);
+    setActiveSection((prev) => (prev === "university" ? null : prev));
   }, []);
 
   /** Enter a section while already expanded (e.g. clicking the expanded Topic segment). */
@@ -302,11 +302,11 @@ export function useHeaderSearch() {
     ensureExpanded,
     openSection,
     enterSection,
-    cancelEditing,
     endInteraction,
     onUniversityFocus,
     onUniversityChange,
     selectUniversity,
+    onUniversityBlur,
     onSearchFocusCapture,
     onSearchBlurCapture,
   };

@@ -64,20 +64,20 @@ function TestHeader() {
   const state = useHeaderSearch();
   const uniRef = useRef<HTMLInputElement>(null);
   const topicRef = useRef<HTMLButtonElement>(null);
-  const { activeSection, cancelEditing } = state;
-  // Mirrors SiteHeader's document Escape listener: cancel the edit and, when the cancelled
-  // section was Topic, return focus to its trigger (the trigger opens on click, not focus, so
-  // this programmatic focus does not re-open the panel).
+  const { activeSection, endInteraction } = state;
+  // Mirrors SiteHeader's document Escape listener: close the popover (KEEP the content) and, when the
+  // cancelled section was Topic, return focus to its trigger (the trigger opens on click, not focus,
+  // so this programmatic focus does not re-open the panel).
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       const cancelledSection = activeSection;
-      cancelEditing();
+      endInteraction();
       if (cancelledSection === "topic") topicRef.current?.focus();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [activeSection, cancelEditing]);
+  }, [activeSection, endInteraction]);
   // The real header renders ONE shell (expanded form + compact section-button group cross-fading
   // inside); each layer is aria-hidden in the inactive state, so role queries resolve to the active
   // layer. Mobile is a separate control.

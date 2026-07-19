@@ -54,7 +54,6 @@ export function SiteHeader({
     setPendingFocus,
     setPanelVisible,
     activeSection,
-    cancelEditing,
     endInteraction,
   } = search;
 
@@ -143,7 +142,9 @@ export function SiteHeader({
       const active = document.activeElement as HTMLElement | null;
       if (active && headerRef.current?.contains(active)) active.blur();
       const cancelledSection = activeSection;
-      cancelEditing();
+      // Escape KEEPS the current content and only closes the popover (same as losing focus) — it does
+      // not revert to the committed value.
+      endInteraction();
       cancelPendingFocus();
       // Return focus to the trigger for the section that was cancelled. Safe only because the
       // Topic trigger opens on click (not focus) — see ExpandedContent/CompactContent — so this
@@ -157,14 +158,7 @@ export function SiteHeader({
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [
-    forceExpanded,
-    activeSection,
-    searchFocusWithin,
-    cancelEditing,
-    endInteraction,
-    cancelPendingFocus,
-  ]);
+  }, [forceExpanded, activeSection, searchFocusWithin, endInteraction, cancelPendingFocus]);
 
   return (
     <>

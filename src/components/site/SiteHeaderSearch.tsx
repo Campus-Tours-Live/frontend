@@ -8,7 +8,7 @@ import {
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
 import { MapPin, Search } from "lucide-react";
-import { Button, Checkbox, Drawer, MenuItem } from "@/components/ui";
+import { Button, Checkbox, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
 interface SearchProps {
@@ -73,6 +73,7 @@ function ExpandedContent({
     collapsed,
     onUniversityFocus,
     onUniversityChange,
+    onUniversityBlur,
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
@@ -107,6 +108,7 @@ function ExpandedContent({
             value={q}
             onChange={(e) => onUniversityChange(e.target.value)}
             onFocus={onUniversityFocus}
+            onBlur={onUniversityBlur}
             placeholder="Search a school"
             className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
           />
@@ -223,6 +225,36 @@ function CompactContent({ search }: SearchProps) {
   );
 }
 
+/** One University suggestion / recent row. Explicit `role="option"` (header-v2 §6.0), and
+ *  `onMouseDown` preventDefault so clicking it does NOT blur the input — otherwise the input's blur
+ *  would hide the panel and unmount this row before the click lands. */
+function UniversityOptionRow({
+  name,
+  active,
+  onChoose,
+}: {
+  name: string;
+  active: boolean;
+  onChoose: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        role="option"
+        aria-selected={active}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={onChoose}
+        className={`w-full rounded-field px-3 py-2 text-left text-ui-sm ${
+          active ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"
+        }`}
+      >
+        {name}
+      </button>
+    </li>
+  );
+}
+
 /** UniversitySectionPanel — the shared University module. Its visibility is authored ONLY by
  *  `activeSection === "university"` + `panelVisible` (never by focus or suggestions length), so it is
  *  a STABLE container that switches content between recent / loading / results / empty-results. It's a
@@ -261,17 +293,12 @@ export function UniversitySectionPanel({ search }: SearchProps) {
               className="flex flex-col gap-0.5"
             >
               {suggestions.map((name) => (
-                <li key={name}>
-                  {/* UI-library row; keep the listbox/option roles for assistive tech. */}
-                  <MenuItem
-                    role="option"
-                    active={q === name}
-                    onSelect={() => selectUniversity(name)}
-                    className="w-full"
-                  >
-                    {name}
-                  </MenuItem>
-                </li>
+                <UniversityOptionRow
+                  key={name}
+                  name={name}
+                  active={q === name}
+                  onChoose={() => selectUniversity(name)}
+                />
               ))}
             </ul>
           ) : (
@@ -291,24 +318,26 @@ export function UniversitySectionPanel({ search }: SearchProps) {
                   className="flex flex-col gap-0.5"
                 >
                   {suggestions.map((name) => (
-                    <li key={name}>
-                      <MenuItem
-                        role="option"
-                        active={q === name}
-                        onSelect={() => selectUniversity(name)}
-                        className="w-full"
-                      >
-                        {name}
-                      </MenuItem>
-                    </li>
+                    <UniversityOptionRow
+                      key={name}
+                      name={name}
+                      active={q === name}
+                      onChoose={() => selectUniversity(name)}
+                    />
                   ))}
                 </ul>
                 <div className="my-1 h-px bg-border" aria-hidden />
               </>
             ) : null}
-            <MenuItem icon={MapPin} onSelect={() => setQ("")} className="w-full">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setQ("")}
+              className="flex w-full items-center gap-2 rounded-field px-3 py-2 text-left text-ui-sm hover:bg-muted"
+            >
+              <MapPin size={16} strokeWidth={2} aria-hidden />
               Nearby — schools around you
-            </MenuItem>
+            </button>
           </div>
         )}
       </div>
@@ -375,7 +404,7 @@ export function TopicSectionPanel({ search }: SearchProps) {
       const opt = topicOptions[activeIdx];
       if (opt) toggleTopic(opt.value);
     }
-    // Escape: handled by SiteHeader's document keydown listener (→ cancelEditing); not re-handled here.
+    // Escape: handled by SiteHeader's document keydown listener (→ endInteraction, keeps content); not here.
   };
 
   const activeId = topicOptions[activeIdx]?.value;

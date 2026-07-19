@@ -92,7 +92,7 @@ describe("SiteHeader", () => {
     expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
   });
 
-  it("Escape explicitly reverts the typed University value to committed (empty)", async () => {
+  it("Escape keeps the typed University value and closes the popover (does not revert)", async () => {
     const user = userEvent.setup();
     renderWithQuery(<SiteHeader />);
     await flush();
@@ -100,6 +100,20 @@ describe("SiteHeader", () => {
     const uni = within(screen.getByRole("search")).getByLabelText("University");
     await user.type(uni, "Stanford");
     await user.keyboard("{Escape}");
-    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("");
+    // Content kept; popover gone.
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
+    expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
+  });
+
+  it("blurring the University field keeps its content and hides the popover", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const uni = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(uni, "Stanford");
+    await act(async () => uni.blur());
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
+    expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
   });
 });
