@@ -605,6 +605,24 @@
   min-width: 0;
 }
 
+/* Airbnb-style: the divider adjacent to a hovered/active interactive segment (University or Topic)
+   fades out, so the highlighted section reads as one continuous rounded pill. Applies on either
+   side of the divider (segment-before via `+`, segment-after via `:has`). Language is inert, so it
+   never fades a divider. */
+.ds-divider {
+  transition: opacity 150ms ease;
+}
+.ds-seg--uni:hover + .ds-divider,
+.ds-seg--topic:hover + .ds-divider,
+.ds-seg--uni[data-active="true"] + .ds-divider,
+.ds-seg--topic[data-active="true"] + .ds-divider,
+.ds-divider:has(+ .ds-seg--uni:hover),
+.ds-divider:has(+ .ds-seg--topic:hover),
+.ds-divider:has(+ .ds-seg--uni[data-active="true"]),
+.ds-divider:has(+ .ds-seg--topic[data-active="true"]) {
+  opacity: 0;
+}
+
 /* Shared section module panel — a header-layer sibling anchored under the shell's left (≈ the
    University segment). First-pass anchor via calc (not per-frame rect measurement); calibrate.
    Clamped to a left safe margin so it can't leave the viewport. */

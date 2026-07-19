@@ -19,7 +19,7 @@ interface SearchProps {
  *  same right-edge centre so it reads as one continuous anchor (size differs by state). */
 const ACTION_BASE =
   "grid shrink-0 place-items-center rounded-pill bg-primary text-primary-foreground";
-const DIVIDER = "my-2 w-px shrink-0 self-stretch bg-border";
+const DIVIDER = "ds-divider my-2 w-px shrink-0 self-stretch bg-border";
 
 /**
  * DesktopSearchShell — the single white search shell (see globals `.ds-shell`). ONE DOM node whose
@@ -93,7 +93,7 @@ function ExpandedContent({
     >
       <div className="flex min-w-0 flex-1 items-stretch">
         <div
-          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 transition-colors hover:bg-muted data-[active=true]:bg-muted"
+          className="ds-seg--uni flex flex-col justify-center self-stretch rounded-field px-3 py-1.5 transition-colors hover:bg-muted data-[active=true]:bg-muted"
           data-active={activeSection === "university"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">University</span>
@@ -124,7 +124,7 @@ function ExpandedContent({
           aria-expanded={activeSection === "topic" && panelVisible}
           aria-controls="header-topic-panel"
           onClick={() => enterSection("topic")}
-          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted data-[active=true]:bg-muted"
+          className="ds-seg--topic flex flex-col justify-center self-stretch rounded-field px-3 py-1.5 text-left transition-colors hover:bg-muted data-[active=true]:bg-muted"
           data-active={activeSection === "topic"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
