@@ -25,6 +25,7 @@ import { TourProductCard } from "./TourProductCard";
 import { TourFiltersBar } from "./TourFiltersBar";
 import { TourFiltersModal } from "./TourFiltersModal";
 import { useTourListState } from "./useTourListState";
+import { useResponsivePageWindow } from "./useResponsivePageWindow";
 
 const UNIVERSITIES = [
   {
@@ -186,6 +187,7 @@ export function AllToursPage() {
     reset: resetState,
   } = useTourListState();
   const [modalOpen, setModalOpen] = useState(false);
+  const pageWindow = useResponsivePageWindow();
 
   const { data: topics } = useTourTopics();
   const allValues = useMemo(() => (topics ?? []).map((o) => o.value), [topics]);
@@ -296,6 +298,7 @@ export function AllToursPage() {
               page={page}
               totalPages={data?.totalPages ?? 0}
               onPageChange={setPage}
+              windowSize={pageWindow}
               className="mt-10"
             />
           ) : null}
