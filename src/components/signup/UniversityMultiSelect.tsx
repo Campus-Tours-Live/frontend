@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Body, Caption } from "@/components/ui";
+import { Body, Caption, Tag } from "@/components/ui";
 import { useUniversitySearch } from "@/lib/data-access";
 
 export interface UniversityOption {
@@ -79,17 +79,16 @@ export function UniversityMultiSelect({
       {value.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {value.map((v) => (
-            <span key={v.id} className="chip active">
+            <Tag
+              key={v.id}
+              color="blue"
+              variant="primary"
+              onRemove={() => remove(v.id)}
+              removeLabel={`Remove ${v.name}`}
+              className="border-[1.5px] border-primary px-3.5 py-[7px] text-ui-sm"
+            >
               {v.shortName || v.name}
-              <button
-                type="button"
-                aria-label={`Remove ${v.name}`}
-                onClick={() => remove(v.id)}
-                className="ml-1 leading-none"
-              >
-                ×
-              </button>
-            </span>
+            </Tag>
           ))}
         </div>
       )}

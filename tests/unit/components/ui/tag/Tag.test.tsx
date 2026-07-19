@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { Tag } from "@/components/ui/tag/Tag";
 
 describe("Tag", () => {
@@ -45,6 +46,24 @@ describe("Tag", () => {
     render(<Tag leading={<svg data-testid="icon" />}>Rated</Tag>);
     expect(screen.getByTestId("icon")).toBeInTheDocument();
     expect(screen.getByText("Rated")).toBeInTheDocument();
+  });
+
+  it("renders a dismiss button when onRemove is set and calls it on click", async () => {
+    const onRemove = jest.fn();
+    const user = userEvent.setup();
+    render(
+      <Tag onRemove={onRemove} removeLabel="Remove Stanford">
+        Stanford
+      </Tag>,
+    );
+    const remove = screen.getByRole("button", { name: "Remove Stanford" });
+    await user.click(remove);
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders no dismiss button without onRemove", () => {
+    render(<Tag>Static</Tag>);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("merges a custom className", () => {

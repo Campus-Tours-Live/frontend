@@ -1,4 +1,5 @@
 import { type HTMLAttributes, type ReactNode } from "react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -75,6 +76,10 @@ export interface TagProps extends Omit<HTMLAttributes<HTMLSpanElement>, "color">
   variant?: TagVariant;
   /** Leading content (usually an icon). */
   leading?: ReactNode;
+  /** When set, renders a trailing dismiss (✕) button that calls this — a removable token. */
+  onRemove?: () => void;
+  /** Accessible name for the dismiss button (e.g. "Remove Stanford"). @default "Remove" */
+  removeLabel?: string;
 }
 
 export function Tag({
@@ -82,6 +87,8 @@ export function Tag({
   color = "blue",
   variant = "secondary",
   leading,
+  onRemove,
+  removeLabel,
   className,
   ...rest
 }: TagProps) {
@@ -98,6 +105,16 @@ export function Tag({
         <span className="inline-flex shrink-0 [&_svg]:h-3.5 [&_svg]:w-3.5">{leading}</span>
       ) : null}
       {children}
+      {onRemove ? (
+        <button
+          type="button"
+          aria-label={removeLabel ?? "Remove"}
+          onClick={onRemove}
+          className="-mr-1 ml-0.5 inline-flex shrink-0 items-center justify-center rounded-full p-0.5 leading-none transition-colors hover:bg-black/10"
+        >
+          <X className="h-3 w-3" strokeWidth={2.5} aria-hidden />
+        </button>
+      ) : null}
     </span>
   );
 }
