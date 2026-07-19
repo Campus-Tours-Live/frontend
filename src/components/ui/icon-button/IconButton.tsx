@@ -19,7 +19,7 @@ import { glassClass } from "../glass/Glass";
  *   <IconButton a11yLabel="Help" href="/help"><Icon name="info" /></IconButton>
  */
 export type IconButtonSize = "small" | "medium" | "large";
-export type IconButtonVariant = "ghost" | "soft" | "glass";
+export type IconButtonVariant = "ghost" | "soft" | "glass" | "solid" | "card";
 
 interface IconButtonOwnProps {
   /** Accessible name (icon-only button has no visible text) — required. */
@@ -56,6 +56,10 @@ const VARIANT_CLASS: Record<IconButtonVariant, string> = {
   soft: "text-ink-soft hover:bg-primary-soft hover:text-primary",
   // Frosted-glass control for photo / dark grounds — reuses the shared Glass surface.
   glass: glassClass("light", "hover:bg-ivory/40"),
+  // Filled brand action — the primary icon-only CTA (e.g. the header search submit).
+  solid: "bg-primary text-primary-foreground hover:bg-primary-dark",
+  // Bordered card pill on the page surface — brand-tinted on hover (e.g. carousel chevrons).
+  card: "border border-border bg-card text-ink shadow-card hover:border-primary hover:text-primary",
 };
 
 export const IconButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, IconButtonProps>(

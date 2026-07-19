@@ -8,17 +8,13 @@ import {
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
 import { Check, Clock, GraduationCap, MapPin, Search, X, type LucideIcon } from "lucide-react";
-import { Button, Drawer } from "@/components/ui";
+import { Button, Drawer, IconButton } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
 interface SearchProps {
   search: HeaderSearch;
 }
 
-/** The circular primary search action — same colour/icon/radius token in both layers, sharing the
- *  same right-edge centre so it reads as one continuous anchor (size differs by state). */
-const ACTION_BASE =
-  "grid shrink-0 place-items-center rounded-pill bg-primary text-primary-foreground";
 const DIVIDER = "ds-divider my-1 w-px shrink-0 self-stretch bg-border";
 
 /**
@@ -176,13 +172,14 @@ function ExpandedContent({
         </span>
       </div>
 
-      <button
+      <IconButton
         type="submit"
-        aria-label="Search"
-        className={`${ACTION_BASE} ml-1 h-10 w-10 self-center`}
+        a11yLabel="Search"
+        variant="solid"
+        className="ml-1 h-10 w-10 self-center"
       >
         <Search size={18} strokeWidth={2} aria-hidden />
-      </button>
+      </IconButton>
     </form>
   );
 }
@@ -237,14 +234,14 @@ function CompactContent({ search }: SearchProps) {
         </span>
       </span>
 
-      <button
-        type="button"
-        aria-label="Open search"
+      <IconButton
+        a11yLabel="Open search"
+        variant="solid"
         onClick={() => openSection("university")}
-        className={`${ACTION_BASE} ml-1 h-[34px] w-[34px] self-center`}
+        className="ml-1 h-[34px] w-[34px] self-center"
       >
         <Search size={17} strokeWidth={2} aria-hidden />
-      </button>
+      </IconButton>
     </div>
   );
 }

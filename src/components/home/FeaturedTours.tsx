@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Container, Link, SectionHeading } from "@/components/ui";
+import { Container, IconButton, Link, SectionHeading } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 
 /**
@@ -197,24 +197,24 @@ export function FeaturedTours() {
         />
 
         {/* Side chevrons (desktop carousel only) */}
-        <button
-          type="button"
-          aria-label="Previous tours"
+        <IconButton
+          a11yLabel="Previous tours"
+          variant="card"
           onClick={() => goToPage(active - 1)}
           disabled={active === 0}
-          className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-pill border border-border bg-card text-ink shadow-card transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 lg:grid"
+          className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 lg:inline-flex"
         >
           <Chevron dir="left" />
-        </button>
-        <button
-          type="button"
-          aria-label="Next tours"
+        </IconButton>
+        <IconButton
+          a11yLabel="Next tours"
+          variant="card"
           onClick={() => goToPage(active + 1)}
           disabled={active === pageCount - 1}
-          className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-pill border border-border bg-card text-ink shadow-card transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 lg:grid"
+          className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 lg:inline-flex"
         >
           <Chevron dir="right" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Page-based dot pagination (desktop carousel only) */}

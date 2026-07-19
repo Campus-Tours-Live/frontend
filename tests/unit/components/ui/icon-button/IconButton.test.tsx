@@ -62,6 +62,31 @@ describe("IconButton", () => {
     );
   });
 
+  it("applies the solid (filled brand) variant", () => {
+    render(
+      <IconButton a11yLabel="Search" variant="solid">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    expect(screen.getByRole("button", { name: "Search" })).toHaveClass(
+      "bg-primary",
+      "text-primary-foreground",
+    );
+  });
+
+  it("applies the card (bordered surface) variant", () => {
+    render(
+      <IconButton a11yLabel="Next" variant="card">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    expect(screen.getByRole("button", { name: "Next" })).toHaveClass(
+      "border",
+      "bg-card",
+      "shadow-card",
+    );
+  });
+
   it("renders an anchor when given href, with tab-nabbing-safe rel for target=_blank", () => {
     render(
       <IconButton a11yLabel="Help" href="https://example.com" target="_blank">
