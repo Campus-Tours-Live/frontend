@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, Body, Card, SectionHeading, Spinner, StatusBadge } from "@/components/ui";
+import { Alert, Body, Card, InlineLoading, SectionHeading, StatusBadge } from "@/components/ui";
 import { useGuideProfile, useMe } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
@@ -15,12 +15,7 @@ export function GuideProfilePage() {
   const { data: profile, isLoading, isError } = useGuideProfile();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 text-ink-soft">
-        <Spinner />
-        Loading profile…
-      </div>
-    );
+    return <InlineLoading label="Loading profile…" />;
   }
 
   if (isError || !profile) {

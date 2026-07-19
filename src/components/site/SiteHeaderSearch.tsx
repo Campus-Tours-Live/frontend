@@ -8,7 +8,7 @@ import {
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
 import { Check, Clock, GraduationCap, MapPin, Search, X, type LucideIcon } from "lucide-react";
-import { Button, Drawer, IconButton } from "@/components/ui";
+import { Body, Button, Drawer, Heading, IconButton } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
 interface SearchProps {
@@ -584,7 +584,6 @@ export function HeaderSearchMobile({ search }: SearchProps) {
   };
 
   const cardCls = "rounded-card border border-border bg-card p-5 shadow-sm";
-  const titleCls = "mb-4 font-display text-h4 font-bold text-ink";
 
   return (
     <>
@@ -634,7 +633,9 @@ export function HeaderSearchMobile({ search }: SearchProps) {
             {/* Where / University */}
             {section === "university" ? (
               <section className={cardCls}>
-                <h2 className={titleCls}>University</h2>
+                <Heading as="h2" size="h4" className="mb-4">
+                  University
+                </Heading>
                 <div className="flex items-center gap-2 rounded-pill border border-input px-4 py-3">
                   <Search
                     size={18}
@@ -724,8 +725,12 @@ export function HeaderSearchMobile({ search }: SearchProps) {
             {/* Topic */}
             {section === "topic" ? (
               <section className={cardCls}>
-                <h2 className={titleCls}>Topic</h2>
-                <p className="-mt-2 mb-3 text-ui-sm text-ink-soft">Select all that apply.</p>
+                <Heading as="h2" size="h4" className="mb-4">
+                  Topic
+                </Heading>
+                <Body as="p" size="small" color="muted" className="-mt-2 mb-3">
+                  Select all that apply.
+                </Body>
                 <div className="flex flex-col gap-1">
                   <button
                     type="button"

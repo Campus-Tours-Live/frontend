@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Heading, Icon, Link, List, ListItem } from "@/components/ui";
+import { Body, Heading, Icon, Link, List, ListItem } from "@/components/ui";
 
 /**
  * Hero — home hero from design_new (#home .home-hero).
@@ -25,10 +25,10 @@ export function Hero() {
         <Heading as="h1" size="display" className="mt-3 max-w-[720px]">
           Explore campus with someone who actually studies there.
         </Heading>
-        <p className="lead mt-5">
+        <Body as="p" size="lead" color="muted" className="mt-5">
           Ask the questions you cannot find on the university website. Book a live tour with a
           verified student guide.
-        </p>
+        </Body>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/tours" variant="primary">
