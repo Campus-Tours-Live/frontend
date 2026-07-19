@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Heading, Link } from "@/components/ui";
+import { Link, SectionHeading } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 
 /**
@@ -154,12 +154,11 @@ export function FeaturedTours() {
   return (
     <section className="mx-auto max-w-content px-6 pb-[90px] pt-8 xl:max-w-[1280px] 2xl:max-w-[1400px]">
       <div className="mb-6 flex items-end justify-between gap-5">
-        <div>
-          <div className="eyebrow">Featured tours</div>
-          <Heading as="h2" size="h2" className="mt-1">
-            Start with a campus that feels right.
-          </Heading>
-        </div>
+        <SectionHeading
+          eyebrow="Featured tours"
+          title="Start with a campus that feels right."
+          level={2}
+        />
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
         <Link href="/tours" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
           View all tours

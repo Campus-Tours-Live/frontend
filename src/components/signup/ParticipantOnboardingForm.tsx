@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
-import { Alert, Body, Button, Chip, SectionHeading, Spinner } from "@/components/ui";
+import { Alert, Body, Button, Chip, SectionHeading, Spinner, TextField } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
 import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
@@ -148,42 +148,24 @@ export function ParticipantOnboardingForm() {
           <div className="flex flex-col gap-7">
             <div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="field">
-                  <label htmlFor="firstName">First name</label>
-                  <input
-                    id="firstName"
-                    className="input"
-                    autoComplete="given-name"
-                    placeholder="Jordan"
-                    aria-invalid={!!errors.firstName}
-                    {...register("firstName", {
-                      required: "Please enter your first name.",
-                    })}
-                  />
-                  {errors.firstName && !bothNameMissing && (
-                    <Body role="alert" size="small" weight={600} color="error" className="mt-1">
-                      {errors.firstName.message}
-                    </Body>
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="lastName">Last name</label>
-                  <input
-                    id="lastName"
-                    className="input"
-                    autoComplete="family-name"
-                    placeholder="Lee"
-                    aria-invalid={!!errors.lastName}
-                    {...register("lastName", {
-                      required: "Please enter your last name.",
-                    })}
-                  />
-                  {errors.lastName && !bothNameMissing && (
-                    <Body role="alert" size="small" weight={600} color="error" className="mt-1">
-                      {errors.lastName.message}
-                    </Body>
-                  )}
-                </div>
+                <TextField
+                  label="First name"
+                  autoComplete="given-name"
+                  placeholder="Jordan"
+                  error={bothNameMissing ? undefined : errors.firstName?.message}
+                  {...register("firstName", {
+                    required: "Please enter your first name.",
+                  })}
+                />
+                <TextField
+                  label="Last name"
+                  autoComplete="family-name"
+                  placeholder="Lee"
+                  error={bothNameMissing ? undefined : errors.lastName?.message}
+                  {...register("lastName", {
+                    required: "Please enter your last name.",
+                  })}
+                />
               </div>
               {bothNameMissing && (
                 <Body role="alert" size="small" weight={600} color="error" className="mt-2">

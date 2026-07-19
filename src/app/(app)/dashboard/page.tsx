@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert } from "@/components/ui";
+import { Alert, InlineLoading } from "@/components/ui";
 import { useDashboard } from "@/lib/data-access";
 import { ParticipantSummary } from "@/components/dashboard/ParticipantSummary";
 import { GuideSummary } from "@/components/dashboard/GuideSummary";
@@ -15,7 +15,7 @@ import { GuideSummary } from "@/components/dashboard/GuideSummary";
 export default function DashboardPage() {
   const { data, isLoading, isError } = useDashboard();
 
-  if (isLoading) return <p className="text-ink-soft">Loading…</p>;
+  if (isLoading) return <InlineLoading label="Loading…" />;
   if (isError || !data) return <Alert variant="error">Failed to load your dashboard</Alert>;
 
   return data.kind === "guide" ? <GuideSummary data={data} /> : <ParticipantSummary data={data} />;

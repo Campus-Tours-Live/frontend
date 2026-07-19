@@ -1,6 +1,6 @@
 "use client";
 
-import { SectionHeading } from "@/components/ui";
+import { InlineLoading, SectionHeading } from "@/components/ui";
 import { useMe } from "@/lib/data-access";
 import { GuideProfilePage } from "@/components/profile/GuideProfilePage";
 
@@ -11,7 +11,7 @@ import { GuideProfilePage } from "@/components/profile/GuideProfilePage";
 export default function ProfilePage() {
   const { me, isLoading } = useMe();
 
-  if (isLoading) return <p className="text-ink-soft">Loading…</p>;
+  if (isLoading) return <InlineLoading label="Loading…" />;
   if (me?.activeRole === "GUIDE") return <GuideProfilePage />;
 
   return (
