@@ -186,8 +186,6 @@ export type TintStrength = keyof typeof TINT;
 /* ------------------------------------------------------------------ campus → photo / gradient */
 
 export interface CampusVisual {
-  /** Registered photo, or null → use the gradient fallback. */
-  imageSrc: string | null;
   /** Deterministic brand gradient used when no photo is registered (keeps schools distinct). */
   gradient: string;
   /** 2-letter monogram for the crest badge. */
@@ -197,56 +195,13 @@ export interface CampusVisual {
 }
 
 /**
- * Per-university photo OVERRIDES, keyed by `universityName`. By default {@link campusVisual} derives
- * the path straight from the name — `public/assets/<universityName>.png` — because the campus images
- * are stored under exactly that name (e.g. `public/assets/Stanford University.png`). Add a row here
- * only when a file's name differs from the display name. (universityId is a per-environment UUID, so
- * it is intentionally not used as a key for now.) A name with no matching file degrades to
- * {@link CAMPUS_FALLBACK_IMAGE} via the card's `<Image onError>`.
+ * Shared fallback campus photo (Cloudflare R2), used when a tour has no `universityImageUrl`
+ * (backend-provided) or the resolved photo fails to load. The card owns loading the actual photo
+ * from `tour.universityImageUrl` — this module only supplies the gradient/crest chrome plus this
+ * one shared fallback URL.
  */
-export const CAMPUS_IMAGES: Record<string, string> = {
-  // The catalog stores College Scorecard names (e.g. "University of California-Berkeley"), but the
-  // campus photos were saved under the schools' cleaner display names — so the default
-  // `/assets/<name>.png` derivation 404s (→ next/image 400). Map each Scorecard name to its file.
-  "University of California-Berkeley": "/assets/University of California, Berkeley.png",
-  "University of California-Davis": "/assets/University of California, Davis.png",
-  "University of California-Irvine": "/assets/University of California, Irvine.png",
-  "University of California-San Diego": "/assets/University of California, San Diego.png",
-  "University of California-Santa Barbara": "/assets/University of California, Santa Barbara.png",
-  "University of Michigan-Ann Arbor": "/assets/University of Michigan.png",
-  "University of Washington-Seattle Campus": "/assets/University of Washington.png",
-  "University of Minnesota-Twin Cities": "/assets/University of Minnesota.png",
-  "University of Maryland-College Park": "/assets/University of Maryland, College Park.png",
-  "University of Pittsburgh-Pittsburgh Campus": "/assets/University of Pittsburgh.png",
-  "University of Virginia-Main Campus": "/assets/University of Virginia.png",
-  "Georgia Institute of Technology-Main Campus": "/assets/Georgia Institute of Technology.png",
-  "Ohio State University-Main Campus": "/assets/Ohio State University.png",
-  "Pennsylvania State University-Main Campus": "/assets/Pennsylvania State University.png",
-  "Purdue University-Main Campus": "/assets/Purdue University.png",
-  "Rutgers University-New Brunswick": "/assets/Rutgers University.png",
-  "Texas A&M University-College Station": "/assets/Texas A&M University.png",
-  "The University of Texas at Austin": "/assets/University of Texas at Austin.png",
-  "Indiana University-Bloomington": "/assets/Indiana University Bloomington.png",
-  "Arizona State University Campus Immersion": "/assets/Arizona State University.png",
-  "Columbia University in the City of New York": "/assets/Columbia University.png",
-  // Seeded schools with no campus photo yet — point at the shared fallback so we don't request a
-  // missing file (404 → 400). Replace with a real photo when one is added.
-  "Northwestern University": "/assets/hero-campus.png",
-  "Tulane University of Louisiana": "/assets/hero-campus.png",
-  "University of Iowa": "/assets/hero-campus.png",
-};
-
-/** Campus photos live directly under `public/assets`, named by the university's display name. */
-function campusImagePath(universityName: string): string {
-  return CAMPUS_IMAGES[universityName] ?? `/assets/${universityName}.png`;
-}
-
-/**
- * Fallback campus photo, used when a university has no entry in {@link CAMPUS_IMAGES}. Must be a
- * path under `public/` (served from the site root), e.g. `/hero-campus.png` for `public/hero-campus.png`. Set to
- * `null` to fall back to the deterministic per-university gradient instead of a shared photo.
- */
-export const CAMPUS_FALLBACK_IMAGE: string | null = "/assets/hero-campus.png";
+export const CAMPUS_FALLBACK_IMAGE =
+  "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/University%20Campus.png";
 
 /** Optional curated crest overrides, keyed by universityId. Falls back to computed initials. */
 export const CAMPUS_CREST: Record<string, string> = {};
@@ -286,7 +241,6 @@ export function campusInitials(name: string): string {
 export function campusVisual(universityId: string, universityName: string): CampusVisual {
   const key = hash(universityId || universityName);
   return {
-    imageSrc: campusImagePath(universityName),
     gradient: GRADIENTS[key % GRADIENTS.length],
     crest: CAMPUS_CREST[universityId] ?? campusInitials(universityName),
     crestColor: CREST_COLORS[key % CREST_COLORS.length],

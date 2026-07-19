@@ -163,6 +163,9 @@ export interface TourSummary {
   topic: string;
   universityId: string;
   universityName: string;
+  /** Campus photo URL (Cloudflare R2), or null when the university has no photo yet — the card
+   *  falls back to {@link CAMPUS_FALLBACK_IMAGE} client-side. */
+  universityImageUrl?: string | null;
   guideId: string;
   guideDisplayName: string;
   /** Guide's field of study (major). */

@@ -66,4 +66,32 @@ describe("TourProductCard", () => {
     render(<TourProductCard tour={{ ...tour, isNew: false }} />);
     expect(screen.queryByText("New")).not.toBeInTheDocument();
   });
+
+  it("renders the backend-provided universityImageUrl as the campus photo", () => {
+    const imageUrl =
+      "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Stanford%20University.png";
+    render(<TourProductCard tour={{ ...tour, universityImageUrl: imageUrl }} />);
+    const images = screen.getAllByAltText(/campus/i);
+    expect(images.length).toBeGreaterThan(0);
+    for (const img of images) {
+      const src = img.getAttribute("src") ?? "";
+      // next/image rewrites src to `/_next/image?url=<encoded>`; the `url` param, once decoded
+      // once by URLSearchParams, is exactly the original R2 URL (itself already percent-encoded).
+      const url = new URL(src, "http://localhost").searchParams.get("url") ?? src;
+      expect(url).toBe(imageUrl);
+    }
+  });
+
+  it("falls back to CAMPUS_FALLBACK_IMAGE when universityImageUrl is null", () => {
+    render(<TourProductCard tour={{ ...tour, universityImageUrl: null }} />);
+    const images = screen.getAllByAltText(/campus/i);
+    expect(images.length).toBeGreaterThan(0);
+    for (const img of images) {
+      const src = img.getAttribute("src") ?? "";
+      const url = new URL(src, "http://localhost").searchParams.get("url") ?? src;
+      expect(url).toBe(
+        "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/University%20Campus.png",
+      );
+    }
+  });
 });

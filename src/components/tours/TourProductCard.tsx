@@ -75,9 +75,11 @@ export function TourProductCard({
   const entry = entryYear ? `Entered ${entryYear}` : undefined;
   const credentials = [degreeMajor || undefined, entry].filter(Boolean).join(" · ");
 
-  // A mapped-but-missing photo falls back to the shared image (fallback is truly last).
+  // The backend resolves the campus photo (R2); a missing/failed load falls back to the shared image.
   const [imageFailed, setImageFailed] = useState(false);
-  const imageSrc = imageFailed ? CAMPUS_FALLBACK_IMAGE : campus.imageSrc;
+  const imageSrc = imageFailed
+    ? CAMPUS_FALLBACK_IMAGE
+    : (tour.universityImageUrl ?? CAMPUS_FALLBACK_IMAGE);
 
   return (
     <article className={cn("relative flex h-full flex-col", className)}>
