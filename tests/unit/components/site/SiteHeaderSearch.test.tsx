@@ -296,6 +296,29 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(form.getByLabelText("University")).toHaveValue("Harvard");
   });
 
+  it("closes the University popover once a suggestion is chosen (no lingering results)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(input, "Stanford");
+    await user.click(await screen.findByRole("option", { name: "Stanford University" }));
+    expect(input).toHaveValue("Stanford University");
+    // The popover is gone — not still showing results or "No schools found".
+    expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
+  });
+
+  it("focusing a pre-filled University field opens no popover (no results / No schools found)", async () => {
+    pathname = "/tours";
+    search = "q=Harvard";
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    expect(input).toHaveValue("Harvard");
+    await user.click(input); // focus only, no edit
+    expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No schools found")).not.toBeInTheDocument();
+  });
+
   it("opens a mobile sheet from the pill and searches from it", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);

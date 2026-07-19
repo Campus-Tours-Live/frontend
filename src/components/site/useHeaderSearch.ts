@@ -86,9 +86,12 @@ export function useHeaderSearch() {
   // Whether the section module panel is actually shown (revealed after the shell has expanded).
   const [panelVisible, setPanelVisible] = useState(false);
 
-  // Search EVERY U.S. school via the live College Scorecard directory (not just our seeded catalog).
+  // Only hit the live College Scorecard directory while the user is actively editing University (the
+  // popover is open) — never merely because the field is pre-filled. Focusing a filled field without
+  // editing, or having just picked a school, must not fire the external API.
+  const universityEditing = activeSection === "university" && panelVisible;
   const { data: matches, isFetching } = useUniversitySearch(q, {
-    enabled: q.trim().length >= 1,
+    enabled: universityEditing && q.trim().length >= 1,
     source: "live",
   });
   const queryHasText = q.trim().length >= 1;
@@ -206,10 +209,28 @@ export function useHeaderSearch() {
     setSelectedTopicIds(urlTopicIds);
   }, [endInteraction, urlQ, urlTopicIds]);
 
-  /** Entering the University section by focusing its input (highlight + panel authority = section). */
+  /** Focusing the University input marks the section active. The popover only opens when the field is
+   *  EMPTY (so we surface recent / nearby to pick from). Merely focusing a pre-filled field — without
+   *  editing — must NOT pop the results/"No schools found" panel. */
   const onUniversityFocus = useCallback(() => {
     setActiveSection("university");
+    if (q.trim().length === 0) setPanelVisible(true);
+  }, [q]);
+
+  /** Typing in the University input: update the query AND open the popover (the user is actively
+   *  editing, so show recent / results / no-results). */
+  const onUniversityChange = useCallback((value: string) => {
+    setQ(value);
+    setActiveSection("university");
     setPanelVisible(true);
+  }, []);
+
+  /** Choosing a University row (a suggestion or recent search): fill the field and CLOSE the popover.
+   *  The value persists (it is not reverted); the header stays expanded so the user can Search. */
+  const selectUniversity = useCallback((name: string) => {
+    setQ(name);
+    setActiveSection(null);
+    setPanelVisible(false);
   }, []);
 
   /** Enter a section while already expanded (e.g. clicking the expanded Topic segment). */
@@ -284,6 +305,8 @@ export function useHeaderSearch() {
     cancelEditing,
     endInteraction,
     onUniversityFocus,
+    onUniversityChange,
+    selectUniversity,
     onSearchFocusCapture,
     onSearchBlurCapture,
   };

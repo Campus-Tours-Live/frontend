@@ -65,7 +65,6 @@ function ExpandedContent({
 }) {
   const {
     q,
-    setQ,
     topicSummary,
     activeSection,
     panelVisible,
@@ -73,6 +72,7 @@ function ExpandedContent({
     commitSearch,
     collapsed,
     onUniversityFocus,
+    onUniversityChange,
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
@@ -105,7 +105,7 @@ function ExpandedContent({
             aria-expanded={activeSection === "university" && panelVisible}
             aria-controls="header-university-panel"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => onUniversityChange(e.target.value)}
             onFocus={onUniversityFocus}
             placeholder="Search a school"
             className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
@@ -236,6 +236,7 @@ export function UniversitySectionPanel({ search }: SearchProps) {
     collapsed,
     q,
     setQ,
+    selectUniversity,
     queryHasText,
     universityLoading,
     suggestions,
@@ -265,7 +266,7 @@ export function UniversitySectionPanel({ search }: SearchProps) {
                   <MenuItem
                     role="option"
                     active={q === name}
-                    onSelect={() => setQ(name)}
+                    onSelect={() => selectUniversity(name)}
                     className="w-full"
                   >
                     {name}
@@ -294,7 +295,7 @@ export function UniversitySectionPanel({ search }: SearchProps) {
                       <MenuItem
                         role="option"
                         active={q === name}
-                        onSelect={() => setQ(name)}
+                        onSelect={() => selectUniversity(name)}
                         className="w-full"
                       >
                         {name}
