@@ -418,12 +418,12 @@ export function TopicSectionPanel({ search }: SearchProps) {
       role="region"
       aria-label="Topic"
       // Focus moving OUT of the panel closes it (keeps the draft) — same as the University field.
-      // Only act when focus lands on a real element outside the panel (Tab-away, or another header
-      // control): a null relatedTarget (e.g. clicking an option, which preventDefaults its mousedown)
-      // must not close, and a plain outside click is already handled by SiteHeader's pointer-down.
+      // Close whenever focus is not landing on a child of the panel: Tab-away, another header
+      // control, OR clicking a blank part of the header (focus → body, a null relatedTarget). Clicking
+      // an option does NOT fire this — the option buttons preventDefault their mousedown, so focus
+      // stays on the listbox and no blur occurs.
       onBlur={(e) => {
-        const next = e.relatedTarget as Node | null;
-        if (next && !panelRef.current?.contains(next)) endInteraction();
+        if (!panelRef.current?.contains(e.relatedTarget as Node | null)) endInteraction();
       }}
       className="ds-panel ds-panel--topic hidden rounded-card border border-border bg-card shadow-lg lg:block"
     >

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   DesktopSearchShell,
@@ -205,6 +205,16 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(await screen.findByRole("region", { name: "Topic" })).toBeInTheDocument();
     // Move focus to a control outside the Topic panel → the panel closes.
     await user.click(within(screen.getByRole("search")).getByLabelText("University"));
+    expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
+  });
+
+  it("closes the Topic panel when focus leaves to blank space (null relatedTarget)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+    // Clicking a blank part of the header moves focus to <body> → focusout with a null relatedTarget.
+    fireEvent.focusOut(list, { relatedTarget: null });
     expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
   });
 
