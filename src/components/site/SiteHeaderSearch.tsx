@@ -94,11 +94,11 @@ function ExpandedContent({
     >
       <div className="flex min-w-0 flex-1 items-stretch">
         <div
-          className="ds-seg--uni flex flex-col justify-center self-stretch rounded-pill px-3 py-1.5 transition-colors hover:bg-muted data-[active=true]:bg-muted"
+          className="ds-seg--uni flex items-center gap-1 self-stretch rounded-pill px-3 py-1.5 transition-colors hover:bg-muted data-[active=true]:bg-muted"
           data-active={activeSection === "university"}
         >
-          <span className="text-[11px] font-bold leading-tight text-ink">University</span>
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            <span className="text-[11px] font-bold leading-tight text-ink">University</span>
             <input
               ref={universityInputRef}
               type="text"
@@ -112,22 +112,26 @@ function ExpandedContent({
               onFocus={onUniversityFocus}
               onBlur={onUniversityBlur}
               placeholder="Search a school"
-              className="min-w-0 flex-1 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
+              className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
             />
-            {q.trim().length > 0 ? (
-              <button
-                type="button"
-                aria-label="Clear university"
-                // preventDefault keeps the input focused (no blur), so clearing doesn't collapse
-                // the panel; clearUniversity empties q without firing the schools API.
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={clearUniversity}
-                className="grid size-5 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink"
-              >
-                <X size={14} strokeWidth={2.5} aria-hidden />
-              </button>
-            ) : null}
           </div>
+          {/* Always occupies its box so the field height never jumps between empty/filled;
+                when empty it's hidden (invisible + aria-hidden + untabbable) so there's no
+                visible ✕. preventDefault keeps the input focused (no blur) so clearing doesn't
+                collapse the panel; clearUniversity empties q without firing the schools API. */}
+          <button
+            type="button"
+            aria-label="Clear university"
+            aria-hidden={q.trim().length > 0 ? undefined : true}
+            tabIndex={q.trim().length > 0 ? undefined : -1}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={clearUniversity}
+            className={`grid size-5 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink ${
+              q.trim().length > 0 ? "" : "invisible pointer-events-none"
+            }`}
+          >
+            <X size={14} strokeWidth={2.5} aria-hidden />
+          </button>
         </div>
 
         <span className={DIVIDER} aria-hidden />
