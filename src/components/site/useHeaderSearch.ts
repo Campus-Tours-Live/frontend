@@ -8,14 +8,9 @@ import { useHeaderScrollState } from "./useHeaderScrollState";
 
 /** Build a /tours URL from the search draft; `canonicalTopicIds` must already be canonical (see
  *  `canonicalizeTopicIds`) — this function never re-derives the empty/full-set rule. */
-function buildToursHref(
-  q: string,
-  canonicalTopicIds: string[],
-  universityId: string | null,
-): string {
+function buildToursHref(q: string, canonicalTopicIds: string[]): string {
   const params = new URLSearchParams();
-  if (universityId) params.set("universityId", universityId);
-  else if (q.trim()) params.set("q", q.trim());
+  if (q.trim()) params.set("q", q.trim());
   for (const id of canonicalTopicIds) params.append("topic", id);
   const qs = params.toString();
   return qs ? `/tours?${qs}` : "/tours";
@@ -95,22 +90,20 @@ export function useHeaderSearch() {
   // fetches. Set true on change; cleared on select / blur / commit / end. Focusing a pre-filled field
   // without editing, or having just picked a school, leaves it false → no external API call.
   const [uniQueryActive, setUniQueryActive] = useState(false);
-  // The chosen platform university id (UUID) — set when a suggestion is picked, cleared when the user
-  // edits the text. On Search this filters /tours by universityId (exact) rather than a free-text `q`,
-  // which never matched the Scorecard label against the catalog's names.
-  const [selectedUniversityId, setSelectedUniversityId] = useState<string | null>(null);
 
-  // Search the platform's university catalog (GET /v1/universities) — ids are the platform UUIDs the
-  // /tours filter needs, and the names match the catalog (so a pick actually resolves to its tours).
+  // Search EVERY U.S. school via the live College Scorecard directory (GET /v1/meta/universities).
+  // Its labels are "Name — City, ST"; a pick commits the bare `school.name` (suffix stripped), which
+  // matches the platform's university names — the catalog + guide-onboarding upserts both store the
+  // same Scorecard `school.name`, so a name search resolves to that school's tours.
   const { data: matches, isFetching } = useUniversitySearch(q, {
     enabled: uniQueryActive && q.trim().length >= 1,
-    source: "catalog",
+    source: "live",
   });
   const queryHasText = q.trim().length >= 1;
-  // Suggestions carry the id (results) so a pick sets universityId; recent history has no id (null).
-  const suggestions: { id: string | null; name: string }[] = queryHasText
-    ? (matches ?? []).map((m) => ({ id: m.id, name: m.name }))
-    : readRecentUniversities().map((name) => ({ id: null, name }));
+  // Display labels (results carry the "— City, ST" suffix for disambiguation); recent history is bare.
+  const suggestions: string[] = queryHasText
+    ? (matches ?? []).map((m) => m.name)
+    : readRecentUniversities();
   const universityLoading = queryHasText && isFetching;
 
   // Collapse UI is desktop-only; keep the scroll machinery off below the breakpoint.
@@ -171,22 +164,15 @@ export function useHeaderSearch() {
     const canonicalTopicIds = canonicalizeTopicIds(selectedTopicIds, allTopicValues);
     if (onTours) {
       const next = new URLSearchParams(params.toString());
-      // A picked university → exact universityId filter (no free-text q). Otherwise fall back to `q`.
-      if (selectedUniversityId) {
-        next.set("universityId", selectedUniversityId);
-        next.delete("q");
-      } else {
-        next.delete("universityId");
-        if (q.trim()) next.set("q", q.trim());
-        else next.delete("q");
-      }
+      if (q.trim()) next.set("q", q.trim());
+      else next.delete("q");
       next.delete("topic");
       for (const id of canonicalTopicIds) next.append("topic", id);
       next.delete("page");
       const qs = next.toString();
       router.replace(qs ? `/tours?${qs}` : "/tours", { scroll: false });
     } else {
-      router.push(buildToursHref(q, canonicalTopicIds, selectedUniversityId));
+      router.push(buildToursHref(q, canonicalTopicIds));
     }
     setForceExpanded(false);
     setPendingFocus(false);
@@ -194,7 +180,7 @@ export function useHeaderSearch() {
     setPanelVisible(false);
     setUniQueryActive(false);
     setSheetOpen(false);
-  }, [q, selectedUniversityId, selectedTopicIds, allTopicValues, onTours, params, router]);
+  }, [q, selectedTopicIds, allTopicValues, onTours, params, router]);
 
   /** Expand the header without choosing a section. */
   const ensureExpanded = useCallback(() => setForceExpanded(true), []);
@@ -241,18 +227,16 @@ export function useHeaderSearch() {
    *  (so the live API fetches). */
   const onUniversityChange = useCallback((value: string) => {
     setQ(value);
-    setSelectedUniversityId(null); // typing invalidates a prior pick — back to free text
     setActiveSection("university");
     setPanelVisible(true);
     setUniQueryActive(true);
   }, []);
 
-  /** Choosing a University row: fill the field, remember the platform id (so Search filters by
-   *  universityId), and CLOSE the popover. Recent-history rows have no id → fall back to a free-text
-   *  `q` (their names are catalog names, so they still match). The value persists (not reverted). */
-  const selectUniversity = useCallback((id: string | null, name: string) => {
-    setQ(name);
-    setSelectedUniversityId(id);
+  /** Choosing a University row: fill the field with the bare school name (strip the "— City, ST"
+   *  display suffix so `q` matches the platform's stored Scorecard name) and CLOSE the popover. The
+   *  value persists (not reverted). */
+  const selectUniversity = useCallback((label: string) => {
+    setQ(label.split(" — ")[0]);
     setActiveSection(null);
     setPanelVisible(false);
     setUniQueryActive(false);
