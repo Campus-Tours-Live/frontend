@@ -528,6 +528,10 @@
   .header-spacer {
     height: var(--header-expanded-height);
   }
+  /* Search hidden (onboarding/auth): the header is just the single row, so the spacer is too. */
+  .header-spacer--compact {
+    height: var(--header-row-height);
+  }
 }
 
 /* Animated white Header background panel — the header's real visual surface + bottom border. */

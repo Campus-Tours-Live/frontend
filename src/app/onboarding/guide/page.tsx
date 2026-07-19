@@ -11,7 +11,7 @@ import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
 export default function GuideOnboardingPage() {
   return (
     <main>
-      <SiteHeader showGetStarted={false} />
+      <SiteHeader showGetStarted={false} showSearch={false} />
 
       <section className="mx-auto max-w-[680px] px-6 pb-24 pt-10">
         <GuideOnboardingForm />

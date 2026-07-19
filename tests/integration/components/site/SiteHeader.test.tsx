@@ -61,6 +61,17 @@ describe("SiteHeader", () => {
     await flush();
   });
 
+  it("hides the search entirely when showSearch is false (onboarding/auth), keeping the logo", async () => {
+    renderWithQuery(<SiteHeader showSearch={false} />);
+    // No search shell, no University combobox, no Topic trigger, no mobile search pill.
+    expect(screen.queryByRole("search")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("University")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Topic" })).not.toBeInTheDocument();
+    // The rest of the header still renders.
+    expect(screen.getByAltText(/campustourslive\.ai/i)).toBeInTheDocument();
+    await flush();
+  });
+
   it("Escape closes the Topic panel and returns focus to the Topic trigger without reopening it", async () => {
     const user = userEvent.setup();
     renderWithQuery(<SiteHeader />);
