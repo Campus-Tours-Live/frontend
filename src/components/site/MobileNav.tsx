@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useMe } from "@/lib/data-access";
-import { Caption, Drawer, IconButton, Link, MenuItem } from "@/components/ui";
+import { Caption, Drawer, IconButton, Link, MenuItem, MenuSection } from "@/components/ui";
 import { AccountNav } from "./AccountNav";
 import { NAV_LINKS } from "./NavLinks";
 
@@ -73,29 +73,26 @@ export function MobileNav({
 
           {/* Primary site links (only when there are any — currently none). */}
           {NAV_LINKS.length > 0 && (
-            <div className="mt-1 border-t border-border pt-3">
-              <Caption as="div" weight={800} className="px-2.5 pb-1.5 uppercase tracking-[0.07em]">
-                Discover
-              </Caption>
-              <ul className="flex flex-col gap-0.5">
-                {NAV_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <MenuItem href={link.href} icon={link.icon} iconSize={17} onSelect={close}>
-                      {link.label}
-                    </MenuItem>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <MenuSection label="Discover" bordered>
+              {NAV_LINKS.map((link) => (
+                <li key={link.label}>
+                  <MenuItem href={link.href} icon={link.icon} iconSize={17} onSelect={close}>
+                    {link.label}
+                  </MenuItem>
+                </li>
+              ))}
+            </MenuSection>
           )}
 
           {/* Sign out (logged in only). */}
           {showAuthActions && loggedIn && (
-            <div className="mt-2 border-t border-border pt-3">
-              <MenuItem href="/auth/logout" icon={LogOut} iconSize={17} onSelect={close}>
-                Sign out
-              </MenuItem>
-            </div>
+            <MenuSection bordered>
+              <li>
+                <MenuItem href="/auth/logout" icon={LogOut} iconSize={17} onSelect={close}>
+                  Sign out
+                </MenuItem>
+              </li>
+            </MenuSection>
           )}
         </div>
       </Drawer>

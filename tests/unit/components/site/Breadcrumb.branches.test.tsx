@@ -9,20 +9,20 @@ jest.mock("next/link", () => ({
 
 import { Breadcrumb } from "@/components/site/Breadcrumb";
 
-describe("Breadcrumb link/span branches", () => {
-  it("links non-last items with an href and renders spans otherwise", () => {
+describe("Breadcrumb (items adapter over the shared UI Breadcrumb)", () => {
+  it("links non-current crumbs and marks the last as the current page", () => {
     render(
       <Breadcrumb
         items={[
-          { label: "Home", href: "/" }, // non-last + href → link
-          { label: "Mid" }, // non-last, no href → span
-          { label: "Last", href: "/last" }, // last + href → span (current page)
+          { label: "Home", href: "/" },
+          { label: "Sign up", href: "/signup/role" },
+          { label: "Guide" }, // last → current (non-link)
         ]}
       />,
     );
     expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
-    expect(screen.queryByRole("link", { name: "Mid" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Last" })).not.toBeInTheDocument();
-    expect(screen.getByText("Last")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup/role");
+    expect(screen.queryByRole("link", { name: "Guide" })).not.toBeInTheDocument();
+    expect(screen.getByText("Guide")).toHaveAttribute("aria-current", "page");
   });
 });
