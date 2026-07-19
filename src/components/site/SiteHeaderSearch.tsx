@@ -7,7 +7,7 @@ import {
   type RefObject,
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
-import { Check, Clock, GraduationCap, MapPin, Search, type LucideIcon } from "lucide-react";
+import { Clock, GraduationCap, MapPin, Search, type LucideIcon } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
@@ -346,16 +346,25 @@ export function UniversitySectionPanel({ search }: SearchProps) {
 }
 
 /** A checkbox-square for a Topic option — signals multi-select (a checkbox, not a radio/highlight).
- *  Empty bordered square when off; filled with a check when on. */
+ *  Matches the app's Checkbox visual exactly (same `control-box`, radius, tones, and check glyph) so
+ *  it is consistent with the checkboxes used elsewhere (e.g. mobile forms). */
 function TopicCheck({ checked }: { checked: boolean }) {
   return (
     <span
       aria-hidden
-      className={`grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border-2 transition-colors ${
-        checked ? "border-primary bg-primary text-primary-foreground" : "border-border"
-      }`}
+      className={`control-box rounded-[5px] ${checked ? "border-primary bg-primary text-white" : "border-border bg-white"}`}
     >
-      {checked ? <Check size={13} strokeWidth={3} /> : null}
+      {checked ? (
+        <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none">
+          <path
+            d="M3.5 8.5l3 3 6-6.5"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : null}
     </span>
   );
 }
