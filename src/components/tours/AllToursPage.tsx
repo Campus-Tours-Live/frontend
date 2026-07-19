@@ -100,7 +100,10 @@ function Results({
 
   if (loading) {
     return (
-      <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3" aria-label="Loading tours">
+      <div
+        className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3"
+        aria-label="Loading tours"
+      >
         {[0, 1, 2].map((i) => (
           <Card key={i}>
             <Skeleton height={128} className="rounded-card" />
@@ -132,7 +135,7 @@ function Results({
           </div>
         </Alert>
 
-        <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
           {UNIVERSITIES.slice(0, 3).map((u) => (
             <UniversityFallbackCard key={u.name} university={u} />
           ))}
@@ -159,7 +162,7 @@ function Results({
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
       {tours.map((tour) => (
         <TourProductCard
           key={tour.id}
@@ -233,7 +236,7 @@ export function AllToursPage() {
     <div className="pb-24">
       <section className="border-b border-border/70 bg-ivory">
         <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <SectionHeading
               eyebrow="Explore tours"
               title="Find a campus experience that matches what matters to you."
@@ -312,7 +315,7 @@ export function AllToursPage() {
             title="Browse by university"
             lead="Start with a campus, then choose a student guide and tour topic that fits your questions."
           />
-          <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
             {UNIVERSITIES.map((u) => (
               <UniversityFallbackCard key={u.name} university={u} />
             ))}
