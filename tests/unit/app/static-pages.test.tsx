@@ -25,29 +25,44 @@ jest.mock("@/components/profile/GuideProfilePage", () => ({
   GuideProfilePage: () => <div data-testid="guide-profile-page" />,
 }));
 
-import HomePage from "@/app/page";
-import ToursPage from "@/app/tours/page";
+import HomePage from "@/app/(marketing)/page";
+import ToursPage from "@/app/(marketing)/tours/page";
+import MarketingLayout from "@/app/(marketing)/layout";
+import AuthLayout from "@/app/(auth)/layout";
 import ProfilePage from "@/app/(app)/profile/page";
 import SupportPage from "@/app/(app)/support/page";
 import StaffPage from "@/app/staff/page";
-import GuideOnboardingPage from "@/app/onboarding/guide/page";
-import ParticipantOnboardingPage from "@/app/onboarding/participant/page";
+import GuideOnboardingPage from "@/app/(auth)/onboarding/guide/page";
+import ParticipantOnboardingPage from "@/app/(auth)/onboarding/participant/page";
 import { useMe } from "@/lib/data-access";
 
 const mockUseMe = useMe as jest.Mock;
 
 describe("static / shell pages", () => {
-  it("home renders header + hero + featured tours", () => {
+  // The header now lives on the (marketing) layout, not the pages themselves.
+  it("home renders hero + featured tours (no header of its own)", () => {
     render(<HomePage />);
-    expect(screen.getByTestId("site-header")).toBeInTheDocument();
+    expect(screen.queryByTestId("site-header")).not.toBeInTheDocument();
     expect(screen.getByTestId("hero")).toBeInTheDocument();
     expect(screen.getByTestId("featured")).toBeInTheDocument();
   });
 
-  it("tours page renders header + all tours content", () => {
+  it("tours page renders all tours content (no header of its own)", () => {
     render(<ToursPage />);
-    expect(screen.getByTestId("site-header")).toBeInTheDocument();
+    expect(screen.queryByTestId("site-header")).not.toBeInTheDocument();
     expect(screen.getByTestId("all-tours-page")).toBeInTheDocument();
+  });
+
+  it("(marketing) layout wraps children with the site header", () => {
+    render(<MarketingLayout>{<div data-testid="child" />}</MarketingLayout>);
+    expect(screen.getByTestId("site-header")).toBeInTheDocument();
+    expect(screen.getByTestId("child")).toBeInTheDocument();
+  });
+
+  it("(auth) layout renders its children with no header (focused funnel)", () => {
+    render(<AuthLayout>{<div data-testid="child" />}</AuthLayout>);
+    expect(screen.queryByTestId("site-header")).not.toBeInTheDocument();
+    expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 
   it("profile placeholder shows its heading", () => {

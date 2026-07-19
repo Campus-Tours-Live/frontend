@@ -1,4 +1,3 @@
-import { SiteHeader } from "@/components/site/SiteHeader";
 import { ParticipantOnboardingForm } from "@/components/signup/ParticipantOnboardingForm";
 
 /**
@@ -9,12 +8,8 @@ import { ParticipantOnboardingForm } from "@/components/signup/ParticipantOnboar
  */
 export default function ParticipantOnboardingPage() {
   return (
-    <main>
-      <SiteHeader showGetStarted={false} showSearch={false} />
-
-      <section className="mx-auto max-w-[680px] px-6 pb-24 pt-10">
-        <ParticipantOnboardingForm />
-      </section>
-    </main>
+    <section className="mx-auto max-w-[680px] px-6 pb-24 pt-10">
+      <ParticipantOnboardingForm />
+    </section>
   );
 }

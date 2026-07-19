@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { SiteHeader } from "@/components/site/SiteHeader";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
 import { Alert, Body, SectionHeading } from "@/components/ui";
 import { RoleCard, type RoleCardProps } from "@/components/signup/RoleCard";
@@ -61,47 +60,42 @@ export default async function SignupRolePage({
   const parentNoGuide = error === "parent_no_guide";
   const completeSignup = error === "complete_signup";
   return (
-    <main>
-      <SiteHeader showGetStarted={false} />
+    <section className="mx-auto max-w-content px-6 pb-24 pt-10">
+      <div className="mb-8">
+        <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign up" }]} />
+      </div>
 
-      <section className="mx-auto max-w-content px-6 pb-24 pt-10">
-        <div className="mb-8">
-          <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign up" }]} />
-        </div>
+      {parentNoGuide && (
+        <Alert variant="error" className="mx-auto mb-8 max-w-[680px]">
+          Parent or guardian accounts can&rsquo;t become guides. You can continue as a participant.
+        </Alert>
+      )}
 
-        {parentNoGuide && (
-          <Alert variant="error" className="mx-auto mb-8 max-w-[680px]">
-            Parent or guardian accounts can&rsquo;t become guides. You can continue as a
-            participant.
-          </Alert>
-        )}
+      {completeSignup && (
+        <Alert variant="error" className="mx-auto mb-8 max-w-[680px]">
+          You haven&rsquo;t finished setting up your account yet. Choose how you&rsquo;d like to
+          join to continue.
+        </Alert>
+      )}
 
-        {completeSignup && (
-          <Alert variant="error" className="mx-auto mb-8 max-w-[680px]">
-            You haven&rsquo;t finished setting up your account yet. Choose how you&rsquo;d like to
-            join to continue.
-          </Alert>
-        )}
+      <SectionHeading
+        align="center"
+        eyebrow="Choose your path"
+        title="How would you like to use CampusToursLive?"
+        lead="You can explore and book as a participant, or apply to become a verified student guide."
+        className="mx-auto max-w-[680px]"
+      />
 
-        <SectionHeading
-          align="center"
-          eyebrow="Choose your path"
-          title="How would you like to use CampusToursLive?"
-          lead="You can explore and book as a participant, or apply to become a verified student guide."
-          className="mx-auto max-w-[680px]"
-        />
+      <div className="mx-auto mt-10 grid max-w-[1040px] grid-cols-1 gap-6 md:grid-cols-2">
+        {ROLES.map((role) => (
+          <RoleCard key={role.badge} {...role} />
+        ))}
+      </div>
 
-        <div className="mx-auto mt-10 grid max-w-[1040px] grid-cols-1 gap-6 md:grid-cols-2">
-          {ROLES.map((role) => (
-            <RoleCard key={role.badge} {...role} />
-          ))}
-        </div>
-
-        <Body size="small" color="muted" className="mx-auto mt-8 max-w-[680px] text-center">
-          Under 16 users cannot self-register. Participants aged 16–17 require guardian consent and
-          live supervision.
-        </Body>
-      </section>
-    </main>
+      <Body size="small" color="muted" className="mx-auto mt-8 max-w-[680px] text-center">
+        Under 16 users cannot self-register. Participants aged 16–17 require guardian consent and
+        live supervision.
+      </Body>
+    </section>
   );
 }

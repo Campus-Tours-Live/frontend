@@ -1,4 +1,3 @@
-import { SiteHeader } from "@/components/site/SiteHeader";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
 
 /**
@@ -10,12 +9,8 @@ import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
  */
 export default function GuideOnboardingPage() {
   return (
-    <main>
-      <SiteHeader showGetStarted={false} showSearch={false} />
-
-      <section className="mx-auto max-w-[680px] px-6 pb-24 pt-10">
-        <GuideOnboardingForm />
-      </section>
-    </main>
+    <section className="mx-auto max-w-[680px] px-6 pb-24 pt-10">
+      <GuideOnboardingForm />
+    </section>
   );
 }

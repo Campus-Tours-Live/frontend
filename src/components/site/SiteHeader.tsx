@@ -39,15 +39,11 @@ export function SiteHeader({
   showGetStarted = true,
   showAuthActions = true,
   showDashboardLink = true,
-  showSearch = true,
 }: {
   showGetStarted?: boolean;
   showAuthActions?: boolean;
   /** Hide the Dashboard link in the header (e.g. on the dashboard itself). */
   showDashboardLink?: boolean;
-  /** Hide the tours search (shell + mobile pill + panels), e.g. on onboarding/auth pages where it
-   *  doesn't belong. The header collapses to the single logo/nav row. */
-  showSearch?: boolean;
 }) {
   const search = useHeaderSearch();
   const {
@@ -170,7 +166,7 @@ export function SiteHeader({
         {/* Animated white background panel — carries the header bg + bottom border and morphs its
             height (72↔146) so the header itself grows/shrinks and its bottom edge stays below the
             search shell. Absolute → out of flow, so the spacer stays 72px and content never moves. */}
-        <div className="ds-header-bg" data-collapsed={showSearch ? collapsed : true} aria-hidden />
+        <div className="ds-header-bg" data-collapsed={collapsed} aria-hidden />
 
         <div className="relative z-10 mx-auto max-w-content px-6">
           {/* Constant-height row: logo | (mobile search / empty on desktop) | nav. */}
@@ -200,7 +196,7 @@ export function SiteHeader({
 
             {/* Center: mobile search only (desktop shell overlays via the motion layer below). */}
             <div className="flex min-w-0 justify-center">
-              {showSearch ? <HeaderSearchMobile search={search} /> : null}
+              <HeaderSearchMobile search={search} />
             </div>
 
             <nav className="flex items-center gap-7">
@@ -215,27 +211,23 @@ export function SiteHeader({
 
         {/* Desktop single-shell search — motion layer (sibling of the row), centered to the header.
             The shell is absolute; this wrapper is static so the shell's containing block is <header>. */}
-        {showSearch ? (
-          <>
-            <div className="hidden lg:block">
-              <DesktopSearchShell
-                search={search}
-                universityInputRef={universityInputRef}
-                topicRef={topicRef}
-                onTransitionEnd={handleShellTransitionEnd}
-              />
-            </div>
+        <div className="hidden lg:block">
+          <DesktopSearchShell
+            search={search}
+            universityInputRef={universityInputRef}
+            topicRef={topicRef}
+            onTransitionEnd={handleShellTransitionEnd}
+          />
+        </div>
 
-            {/* Shared section module panel (desktop) — a header-layer sibling so outside-click is
-                covered by headerRef. Its visibility is authored by activeSection + panelVisible. */}
-            <UniversitySectionPanel search={search} />
-            <TopicSectionPanel search={search} />
-          </>
-        ) : null}
+        {/* Shared section module panel (desktop) — a header-layer sibling so outside-click is
+            covered by headerRef. Its visibility is authored by activeSection + panelVisible. */}
+        <UniversitySectionPanel search={search} />
+        <TopicSectionPanel search={search} />
       </header>
 
-      {/* Reserves the header footprint; --compact drops it to the single row when search is hidden. */}
-      <div className={`header-spacer${showSearch ? "" : " header-spacer--compact"}`} aria-hidden />
+      {/* Reserves the header footprint at the top of the page — never animates. */}
+      <div className="header-spacer" aria-hidden />
     </>
   );
 }
