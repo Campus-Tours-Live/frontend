@@ -93,7 +93,7 @@ function ExpandedContent({
     >
       <div className="flex min-w-0 flex-1 items-stretch">
         <div
-          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 transition-colors data-[active=true]:bg-muted/60"
+          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 transition-colors hover:bg-muted data-[active=true]:bg-muted"
           data-active={activeSection === "university"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">University</span>
@@ -124,7 +124,7 @@ function ExpandedContent({
           aria-expanded={activeSection === "topic" && panelVisible}
           aria-controls="header-topic-panel"
           onClick={() => enterSection("topic")}
-          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors data-[active=true]:bg-muted/60"
+          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted data-[active=true]:bg-muted"
           data-active={activeSection === "topic"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">Topic</span>
@@ -175,7 +175,7 @@ function CompactContent({ search }: SearchProps) {
           type="button"
           aria-label="University"
           onClick={() => openSection("university")}
-          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted/60"
+          className="ds-seg--uni flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted"
         >
           <span
             className={`truncate text-ui-sm font-semibold leading-tight ${
@@ -192,7 +192,7 @@ function CompactContent({ search }: SearchProps) {
           type="button"
           aria-label="Topic"
           onClick={() => openSection("topic")}
-          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted/60"
+          className="ds-seg--topic flex flex-col justify-center rounded-field px-3 text-left transition-colors hover:bg-muted"
         >
           <span
             className={`truncate text-ui-sm leading-tight ${topicValue === "All topics" ? "text-ink-soft" : "text-ink"}`}
