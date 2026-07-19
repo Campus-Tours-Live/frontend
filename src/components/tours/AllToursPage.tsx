@@ -9,7 +9,10 @@ import {
   Button,
   Card,
   Heading,
+  Icon,
   Link,
+  List,
+  ListItem,
   Pagination,
   SectionHeading,
   Skeleton,
@@ -52,6 +55,14 @@ const UNIVERSITIES = [
     body: "Residence halls, arts spaces, recreation, and quiet study corners.",
     href: "/universities/blue-ridge",
   },
+];
+
+// Trust signals shown under the tours hero — the marketplace's quality promise, in the app's
+// established "checkmark row" style (mirrors the home hero). Replaces the old boxed disclaimer.
+const TOUR_TRUST = [
+  "Verified current students",
+  "Live, interactive tours",
+  "Every listing reviewed",
 ];
 
 function UniversityFallbackCard({ university }: { university: (typeof UNIVERSITIES)[number] }) {
@@ -243,28 +254,25 @@ export function AllToursPage() {
     <div className="pb-24">
       <section className="border-b border-border/70 bg-ivory">
         <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
-            <SectionHeading
-              eyebrow="Explore tours"
-              title="Find a campus experience that matches what matters to you."
-              lead="Search live, student-guided tours by school, topic, budget, and the questions you want answered before you visit or apply."
-              level={1}
-            />
-            <div className="rounded-panel border border-border bg-card p-5 shadow-card">
-              <Body
-                as="div"
-                size="small"
-                weight={700}
-                color="primary-dark"
-                className="uppercase tracking-[0.08em]"
+          <SectionHeading
+            eyebrow="Explore tours"
+            title="Tour campus with a student who's already there."
+            lead="Live, student-guided tours you can search by school, topic, and budget — then ask the questions a brochure never answers."
+            level={1}
+            className="max-w-2xl"
+          />
+          <List dividers={false} className="mt-7 flex flex-wrap gap-x-6 gap-y-2">
+            {TOUR_TRUST.map((signal) => (
+              <ListItem
+                key={signal}
+                padded={false}
+                className="gap-2 text-ink-soft"
+                leading={<Icon name="success" className="text-sage-deep" />}
               >
-                Public marketplace
-              </Body>
-              <Body size="medium" color="muted" className="mt-2">
-                Only published tours from approved student guides are shown.
-              </Body>
-            </div>
-          </div>
+                {signal}
+              </ListItem>
+            ))}
+          </List>
         </div>
       </section>
 

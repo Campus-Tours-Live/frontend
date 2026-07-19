@@ -92,7 +92,7 @@ describe("AllToursPage", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Find a campus experience that matches what matters to you.",
+        name: "Tour campus with a student who's already there.",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "1 tours" })).toBeInTheDocument();
