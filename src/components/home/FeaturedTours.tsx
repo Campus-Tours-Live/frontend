@@ -153,17 +153,21 @@ export function FeaturedTours() {
 
   return (
     <Container as="section" width="wide" className="pb-[90px] pt-8">
-      <div className="mb-6 flex items-end justify-between gap-5">
-        <SectionHeading
-          eyebrow="Featured tours"
-          title="Start with a campus that feels right."
-          level={2}
-        />
-        {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
-        <Link href="/tours" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
-          View all tours
-        </Link>
-      </div>
+      <SectionHeading
+        eyebrow="Featured tours"
+        title="Start with a campus that feels right."
+        level={2}
+        className="mb-6"
+        // Desktop "View all" (mobile gets its own CTA below the stack)
+        action={
+          <Link
+            href="/tours"
+            className="hidden shrink-0 font-semibold text-primary lg:inline-block"
+          >
+            View all tours
+          </Link>
+        }
+      />
 
       <div className="relative">
         {/* < lg: vertical stack. lg+: horizontal carousel. */}

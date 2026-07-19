@@ -177,6 +177,9 @@
    ========================================================================= */
 @layer components {
   /* ---------- Typography ---------- */
+  .display {
+    @apply font-display text-display text-ink;
+  }
   .h1 {
     @apply font-display text-h1 text-ink;
   }
