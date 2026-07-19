@@ -100,10 +100,11 @@ export function useHeaderSearch() {
     source: "live",
   });
   const queryHasText = q.trim().length >= 1;
+  const recentUniversities = readRecentUniversities();
   // Display labels (results carry the "— City, ST" suffix for disambiguation); recent history is bare.
   const suggestions: string[] = queryHasText
     ? (matches ?? []).map((m) => m.name)
-    : readRecentUniversities();
+    : recentUniversities;
   const universityLoading = queryHasText && isFetching;
 
   // Collapse UI is desktop-only; keep the scroll machinery off below the breakpoint.
@@ -308,6 +309,8 @@ export function useHeaderSearch() {
     sheetOpen,
     setSheetOpen,
     suggestions,
+    recentUniversities,
+    uniQueryActive,
     queryHasText,
     universityLoading,
     topicOptions,

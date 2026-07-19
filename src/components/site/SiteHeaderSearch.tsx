@@ -533,6 +533,8 @@ export function HeaderSearchMobile({ search }: SearchProps) {
     onUniversityChange,
     selectUniversity,
     suggestions,
+    recentUniversities,
+    uniQueryActive,
     queryHasText,
     setQ,
     selectedTopicIds,
@@ -547,10 +549,9 @@ export function HeaderSearchMobile({ search }: SearchProps) {
   } = search;
   const [section, setSection] = useState<"university" | "topic">("university");
 
-  // Picking a school fills Where and advances to Topic (like Airbnb advancing to the next step).
+  // Picking a school just fills the field (no auto-advance to Topic — the user decides what's next).
   const pickUniversity = (label: string) => {
     selectUniversity(label);
-    setSection("topic");
   };
 
   const cardCls = "rounded-card border border-border bg-card p-5 shadow-sm";
@@ -630,7 +631,9 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                 </div>
 
                 <div className="mt-4 flex flex-col gap-1">
-                  {queryHasText ? (
+                  {/* Only show live results (or "No schools found") while ACTIVELY typing — a
+                      pre-filled field that hasn't been edited shows recent + Nearby, like desktop. */}
+                  {uniQueryActive && queryHasText ? (
                     suggestions.length > 0 ? (
                       suggestions.map((label) => (
                         <MobileUniRow
@@ -645,12 +648,12 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                     )
                   ) : (
                     <>
-                      {suggestions.length > 0 ? (
+                      {recentUniversities.length > 0 ? (
                         <>
                           <p className="px-1 pb-1 pt-1 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
                             Recent searches
                           </p>
-                          {suggestions.map((label) => (
+                          {recentUniversities.map((label) => (
                             <MobileUniRow
                               key={label}
                               label={label}

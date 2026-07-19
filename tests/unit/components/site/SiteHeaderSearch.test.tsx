@@ -371,18 +371,30 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(push).toHaveBeenCalledWith("/tours?q=Yale");
   });
 
-  it("mobile accordion: picking a school advances to the Topic step and collapses Where", async () => {
+  it("mobile: picking a school fills the field and stays on Where (no auto-advance)", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);
     await user.click(screen.getByRole("button", { name: "Search tours" }));
     const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
-    // Where step is expanded first.
     expect(sheet.getByRole("heading", { name: "Where?" })).toBeInTheDocument();
     await user.type(sheet.getByLabelText("University"), "Yale");
     await user.click(await sheet.findByRole("button", { name: /Yale University/ }));
-    // Advances to Topic; Where collapses to a summary row showing the pick.
-    expect(sheet.getByRole("heading", { name: "Topic" })).toBeInTheDocument();
-    expect(sheet.queryByRole("heading", { name: "Where?" })).not.toBeInTheDocument();
-    expect(sheet.getByText("Yale University")).toBeInTheDocument();
+    expect(sheet.getByLabelText("University")).toHaveValue("Yale University");
+    // Still on Where — Topic is NOT auto-opened.
+    expect(sheet.getByRole("heading", { name: "Where?" })).toBeInTheDocument();
+    expect(sheet.queryByRole("heading", { name: "Topic" })).not.toBeInTheDocument();
+  });
+
+  it("mobile: a pre-filled University field shows recent/Nearby, not 'No schools found'", async () => {
+    pathname = "/tours";
+    search = "q=Harvard";
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Harvard" })); // the pill shows the committed q
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    expect(sheet.getByLabelText("University")).toHaveValue("Harvard");
+    // Not actively editing → no results/no-results state; show Suggested (Nearby) instead.
+    expect(sheet.queryByText("No schools found")).not.toBeInTheDocument();
+    expect(sheet.getByText(/Nearby/)).toBeInTheDocument();
   });
 });
