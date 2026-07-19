@@ -16,6 +16,11 @@ jest.mock("@/lib/data-access", () => ({
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
   useTourTopics: () => ({ data: topicsData }),
   useUpdateGuideProfile: () => ({ mutateAsync }),
+  // Majors are keyed off the selected school — empty until one is picked, matching
+  // the real hook's `enabled: Boolean(schoolId)` gate.
+  useMajors: (schoolId?: string | null) => ({
+    data: schoolId ? [{ value: "computer_science", label: "Computer Science" }] : [],
+  }),
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => ({
     data:
       opts?.enabled === false
@@ -35,9 +40,12 @@ function renderWithQuery(ui: ReactElement) {
 async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/first name/i), "Jordan");
   await user.type(screen.getByLabelText(/last name/i), "Lee");
-  await user.type(screen.getByLabelText(/major/i), "Computer Science");
+  // University typeahead → pick the single mocked option. This unlocks the major
+  // select (disabled until a university is chosen, since majors are loaded live
+  // per-school via useMajors(selectedUniversity?.id)).
   await user.type(screen.getByPlaceholderText(/search universities/i), "state");
   await user.click(await screen.findByRole("button", { name: /State University/i }));
+  await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
 }
 
 beforeEach(() => {

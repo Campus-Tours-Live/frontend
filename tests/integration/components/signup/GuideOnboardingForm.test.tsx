@@ -32,6 +32,16 @@ jest.mock("@/lib/data-access", () => ({
     ],
   }),
   useUpdateGuideProfile: () => ({ mutateAsync }),
+  // Majors are keyed off the selected school — empty until one is picked, matching
+  // the real hook's `enabled: Boolean(schoolId)` gate.
+  useMajors: (schoolId?: string | null) => ({
+    data: schoolId
+      ? [
+          { value: "computer_science", label: "Computer Science" },
+          { value: "economics", label: "Economics" },
+        ]
+      : [],
+  }),
   // Used by the real UniversityMultiSelect rendered inside step 1.
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => ({
     data: opts?.enabled === false ? [] : query ? universityResults : [],
@@ -56,10 +66,12 @@ beforeEach(() => {
 async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/first name/i), "Jordan");
   await user.type(screen.getByLabelText(/last name/i), "Lee");
-  await user.type(screen.getByLabelText(/major/i), "Computer Science");
-  // University typeahead → pick the single mocked option.
+  // University typeahead → pick the single mocked option. This unlocks the major
+  // select (disabled until a university is chosen, since majors are loaded live
+  // per-school via useMajors(selectedUniversity?.id)).
   await user.type(screen.getByPlaceholderText(/search universities/i), "state");
   await user.click(await screen.findByRole("button", { name: /State University/i }));
+  await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
 }
 
 describe("GuideOnboardingForm (multi-step wizard)", () => {
@@ -67,7 +79,8 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     renderWithQuery(<GuideOnboardingForm />);
     expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/major/i)).toBeInTheDocument();
+    // Major is disabled until a university is picked (majors load live per-school).
+    expect(screen.getByLabelText(/major/i)).toBeDisabled();
     expect(screen.getByText(/your university/i)).toBeInTheDocument();
     // Step indicator reflects step 1 of 3 and the current step name.
     expect(screen.getByText(/step 1 of 3 · About you/i)).toBeInTheDocument();
@@ -89,7 +102,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(await screen.findByText(/please enter your first name/i)).toBeInTheDocument();
     expect(screen.getByText(/please enter your last name/i)).toBeInTheDocument();
     expect(screen.getByText(/select the university you currently attend/i)).toBeInTheDocument();
-    expect(screen.getByText(/please enter your major/i)).toBeInTheDocument();
+    expect(screen.getByText(/please select your major/i)).toBeInTheDocument();
     // Still on step 1 — step 2 content not shown.
     expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
     expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
@@ -138,7 +151,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
         firstName: "Jordan",
         lastName: "Lee",
         universityId: "u-1",
-        major: "Computer Science",
+        major: "computer_science",
         basePriceCents: 4000,
         verificationEmail: "jordan@university.edu",
         specialties: ["academics"],
