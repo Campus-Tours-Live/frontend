@@ -7,7 +7,7 @@ import {
   type RefObject,
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
-import { Check, Clock, GraduationCap, MapPin, Search, X, type LucideIcon } from "lucide-react";
+import { Check, Clock, GraduationCap, MapPin, Search, type LucideIcon } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
@@ -575,19 +575,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         side="bottom"
-        ariaLabel="Search tours"
-        header={
-          <div className="flex justify-end">
-            <button
-              type="button"
-              aria-label="Close"
-              onClick={() => setSheetOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-pill border border-border bg-card text-ink"
-            >
-              <X size={18} strokeWidth={2} aria-hidden />
-            </button>
-          </div>
-        }
+        title="Search tours"
         footer={
           <div className="flex items-center justify-between gap-3">
             <Button
@@ -617,7 +605,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
             {/* Where / University */}
             {section === "university" ? (
               <section className={cardCls}>
-                <h2 className={titleCls}>Where?</h2>
+                <h2 className={titleCls}>University</h2>
                 <div className="flex items-center gap-2 rounded-pill border border-input px-4 py-3">
                   <Search size={18} strokeWidth={2} className="text-ink-soft" aria-hidden />
                   <input
@@ -677,8 +665,8 @@ export function HeaderSearchMobile({ search }: SearchProps) {
               </section>
             ) : (
               <MobileCollapsedRow
-                label="Where"
-                value={q.trim() || "Add school"}
+                label="University"
+                value={q.trim() || "Add a school"}
                 onClick={() => setSection("university")}
               />
             )}

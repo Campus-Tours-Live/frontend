@@ -376,12 +376,12 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     render(<TestHeader />);
     await user.click(screen.getByRole("button", { name: "Search tours" }));
     const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
-    expect(sheet.getByRole("heading", { name: "Where?" })).toBeInTheDocument();
+    expect(sheet.getByRole("heading", { name: "University" })).toBeInTheDocument();
     await user.type(sheet.getByLabelText("University"), "Yale");
     await user.click(await sheet.findByRole("button", { name: /Yale University/ }));
     expect(sheet.getByLabelText("University")).toHaveValue("Yale University");
-    // Still on Where — Topic is NOT auto-opened.
-    expect(sheet.getByRole("heading", { name: "Where?" })).toBeInTheDocument();
+    // Still on the University step — Topic is NOT auto-opened.
+    expect(sheet.getByRole("heading", { name: "University" })).toBeInTheDocument();
     expect(sheet.queryByRole("heading", { name: "Topic" })).not.toBeInTheDocument();
   });
 
