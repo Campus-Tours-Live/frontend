@@ -9,6 +9,7 @@ import {
   Body,
   Button,
   Card,
+  Container,
   Heading,
   Icon,
   List,
@@ -256,7 +257,7 @@ export function AllToursPage() {
   return (
     <div className="pb-24">
       <section className="border-b border-border/70 bg-muted">
-        <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
+        <Container className="py-12 lg:py-16">
           <div className="grid items-center gap-10 lg:grid-cols-2">
             <div className="max-w-2xl">
               <SectionHeading
@@ -292,10 +293,10 @@ export function AllToursPage() {
               />
             </div>
           </div>
-        </div>
+        </Container>
       </section>
 
-      <section className="mx-auto max-w-content px-6 py-10">
+      <Container as="section" className="py-10">
         <TourFiltersBar
           topicIds={topicIds}
           onTopicsChange={changeTopics}
@@ -340,9 +341,9 @@ export function AllToursPage() {
             />
           ) : null}
         </div>
-      </section>
+      </Container>
 
-      <section className="mx-auto max-w-content px-6">
+      <Container as="section">
         <div className="border-t border-border pt-10">
           <SectionHeading
             eyebrow="Universities"
@@ -355,7 +356,7 @@ export function AllToursPage() {
             ))}
           </div>
         </div>
-      </section>
+      </Container>
     </div>
   );
 }

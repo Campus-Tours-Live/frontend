@@ -43,6 +43,7 @@ export {
   type MemberCardHighlight,
   type MemberRole,
 } from "./member-card/MemberCard";
+export { Container, type ContainerProps, type ContainerWidth } from "./container/Container";
 export { SectionHeading, type SectionHeadingProps } from "./page/SectionHeading";
 export { PageContainer, type PageContainerProps, type PageWidth } from "./page/PageContainer";
 export { PageHeader, type PageHeaderProps } from "./page/PageHeader";

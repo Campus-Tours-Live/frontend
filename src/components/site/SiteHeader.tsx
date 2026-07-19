@@ -8,6 +8,7 @@ import {
 } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Container } from "@/components/ui";
 import { HeaderNav } from "./HeaderNav";
 import { MobileNav } from "./MobileNav";
 import {
@@ -168,7 +169,7 @@ export function SiteHeader({
             search shell. Absolute → out of flow, so the spacer stays 72px and content never moves. */}
         <div className="ds-header-bg" data-collapsed={collapsed} aria-hidden />
 
-        <div className="relative z-10 mx-auto max-w-content px-6">
+        <Container className="relative z-10">
           {/* Constant-height row: logo | (mobile search / empty on desktop) | nav. */}
           <div className="grid h-[var(--header-row-height)] grid-cols-[auto_1fr_auto] items-center gap-4">
             <div className="flex shrink-0 items-center gap-2">
@@ -207,7 +208,7 @@ export function SiteHeader({
               />
             </nav>
           </div>
-        </div>
+        </Container>
 
         {/* Desktop single-shell search — motion layer (sibling of the row), centered to the header.
             The shell is absolute; this wrapper is static so the shell's containing block is <header>. */}

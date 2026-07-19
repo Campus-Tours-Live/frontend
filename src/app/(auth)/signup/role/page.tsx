@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Alert, Body, SectionHeading } from "@/components/ui";
+import { Alert, Body, Container, SectionHeading } from "@/components/ui";
 import { RoleCard, type RoleCardProps } from "@/components/signup/RoleCard";
 import { getServerMe } from "@/lib/http/serverMe";
 
@@ -60,7 +60,7 @@ export default async function SignupRolePage({
   const parentNoGuide = error === "parent_no_guide";
   const completeSignup = error === "complete_signup";
   return (
-    <section className="mx-auto max-w-content px-6 pb-24 pt-10">
+    <Container as="section" className="pb-24 pt-10">
       <div className="mb-8">
         <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign up" }]} />
       </div>
@@ -96,6 +96,6 @@ export default async function SignupRolePage({
         Under 16 users cannot self-register. Participants aged 16–17 require guardian consent and
         live supervision.
       </Body>
-    </section>
+    </Container>
   );
 }

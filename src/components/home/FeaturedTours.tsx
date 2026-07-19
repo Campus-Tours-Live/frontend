@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Link, SectionHeading } from "@/components/ui";
+import { Container, Link, SectionHeading } from "@/components/ui";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 
 /**
@@ -152,7 +152,7 @@ export function FeaturedTours() {
   };
 
   return (
-    <section className="mx-auto max-w-content px-6 pb-[90px] pt-8 xl:max-w-[1280px] 2xl:max-w-[1400px]">
+    <Container as="section" width="wide" className="pb-[90px] pt-8">
       <div className="mb-6 flex items-end justify-between gap-5">
         <SectionHeading
           eyebrow="Featured tours"
@@ -240,6 +240,6 @@ export function FeaturedTours() {
           View all tours
         </Link>
       </div>
-    </section>
+    </Container>
   );
 }
