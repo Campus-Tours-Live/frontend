@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { ArrowRight, RotateCcw, Telescope } from "lucide-react";
 import {
   Alert,
@@ -254,25 +255,41 @@ export function AllToursPage() {
     <div className="pb-24">
       <section className="border-b border-border/70 bg-muted">
         <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
-          <SectionHeading
-            eyebrow="Explore tours"
-            title="Tour campus with a student who's already there."
-            lead="Live, student-guided tours you can search by school, topic, and budget — then ask the questions a brochure never answers."
-            level={1}
-            className="max-w-2xl"
-          />
-          <List dividers={false} className="mt-7 flex flex-wrap gap-x-6 gap-y-2">
-            {TOUR_TRUST.map((signal) => (
-              <ListItem
-                key={signal}
-                padded={false}
-                className="gap-2 text-ink-soft"
-                leading={<Icon name="success" className="text-sage-deep" />}
-              >
-                {signal}
-              </ListItem>
-            ))}
-          </List>
+          <div className="grid items-center gap-10 lg:grid-cols-[1.4fr_1fr]">
+            <div className="max-w-2xl">
+              <SectionHeading
+                eyebrow="Explore tours"
+                title="Tour campus with a student who's already there."
+                lead="Live, student-guided tours you can search by school, topic, and budget — then ask the questions a brochure never answers."
+                level={1}
+              />
+              <List dividers={false} className="mt-7 flex flex-wrap gap-x-6 gap-y-2">
+                {TOUR_TRUST.map((signal) => (
+                  <ListItem
+                    key={signal}
+                    padded={false}
+                    className="gap-2 text-ink-soft"
+                    leading={<Icon name="success" className="text-sage-deep" />}
+                  >
+                    {signal}
+                  </ListItem>
+                ))}
+              </List>
+            </div>
+            {/* Hero illustration — scales with its column and keeps its 4:3 ratio; hidden below lg
+                where there isn't room for it beside the copy. */}
+            <div className="hidden lg:block">
+              <Image
+                src="/assets/hero-exlpore-campus.png"
+                alt=""
+                width={1448}
+                height={1086}
+                priority
+                sizes="(min-width: 1024px) 40vw, 0px"
+                className="h-auto w-full rounded-panel shadow-card"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
