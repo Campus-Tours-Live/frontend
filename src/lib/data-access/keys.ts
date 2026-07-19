@@ -5,6 +5,7 @@ import type { OverrideMultiPreviewParams, TourCatalogFilters } from "./types";
  * so reads and the mutations that invalidate them can't drift.
  */
 export const queryKeys = {
+  session: () => ["session"] as const,
   me: () => ["me"] as const,
   participantProfile: () => ["participant-profile"] as const,
   guideProfile: () => ["guide-profile"] as const,
