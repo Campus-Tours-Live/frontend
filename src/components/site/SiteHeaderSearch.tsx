@@ -7,7 +7,7 @@ import {
   type RefObject,
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
-import { Clock, GraduationCap, MapPin, Search, type LucideIcon } from "lucide-react";
+import { Check, Clock, GraduationCap, MapPin, Search, type LucideIcon } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
@@ -345,30 +345,6 @@ export function UniversitySectionPanel({ search }: SearchProps) {
   );
 }
 
-/** A checkbox-square for a Topic option — signals multi-select (a checkbox, not a radio/highlight).
- *  Matches the app's Checkbox visual exactly (same `control-box`, radius, tones, and check glyph) so
- *  it is consistent with the checkboxes used elsewhere (e.g. mobile forms). */
-function TopicCheck({ checked }: { checked: boolean }) {
-  return (
-    <span
-      aria-hidden
-      className={`control-box rounded-[5px] ${checked ? "border-primary bg-primary text-white" : "border-border bg-white"}`}
-    >
-      {checked ? (
-        <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none">
-          <path
-            d="M3.5 8.5l3 3 6-6.5"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ) : null}
-    </span>
-  );
-}
-
 /** TopicSectionPanel — the Topic module, a real multi-select listbox. Same header-sibling
  *  `.ds-panel` container as the University module, gated by `activeSection === "topic"` +
  *  `panelVisible`. Options come from the backend topic vocabulary (`useTourTopics`) — never
@@ -486,10 +462,10 @@ export function TopicSectionPanel({ search }: SearchProps) {
                 setActiveIdx(i);
                 toggleTopic(t.value);
               }}
-              className={`flex w-full items-center gap-3 rounded-field px-3 py-2 text-left text-ui-sm hover:bg-muted ${selected.has(t.value) ? "font-semibold text-ink" : "text-ink"} ${i === activeIdx ? "ring-1 ring-primary/40" : ""}`}
+              className={`flex w-full items-center justify-between rounded-field px-3 py-2 text-left text-ui-sm ${selected.has(t.value) ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"} ${i === activeIdx ? "ring-1 ring-primary/40" : ""}`}
             >
-              <TopicCheck checked={selected.has(t.value)} />
               {t.label}
+              {selected.has(t.value) ? <Check size={16} strokeWidth={2.5} aria-hidden /> : null}
             </button>
           </li>
         ))}
@@ -721,10 +697,10 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                         role="option"
                         aria-selected={on}
                         onClick={() => toggleTopic(t.value)}
-                        className={`flex items-center gap-3 rounded-field px-3 py-2.5 text-left text-ui-sm hover:bg-muted ${on ? "font-semibold text-ink" : "text-ink"}`}
+                        className={`flex items-center justify-between rounded-field px-3 py-2.5 text-left text-ui-sm ${on ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
                       >
-                        <TopicCheck checked={on} />
                         {t.label}
+                        {on ? <Check size={16} strokeWidth={2.5} aria-hidden /> : null}
                       </button>
                     );
                   })}
