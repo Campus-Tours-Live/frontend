@@ -103,4 +103,30 @@ describe("useHeaderScrollState", () => {
     expect(remove).toHaveBeenCalledWith("scroll", expect.any(Function));
     remove.mockRestore();
   });
+
+  it("coalesces multiple scroll events into a single pending frame", () => {
+    renderHook(() => useHeaderScrollState());
+    act(() => {
+      // Two scroll events before the first rAF flushes: the second must hit the
+      // frameRef-already-set guard and NOT queue a second frame.
+      window.dispatchEvent(new Event("scroll"));
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(rafQueue.length).toBe(1);
+  });
+
+  it("cancels a still-pending animation frame on unmount (unmounting mid-scroll)", () => {
+    const cancel = jest.spyOn(window, "cancelAnimationFrame");
+    const { unmount } = renderHook(() => useHeaderScrollState());
+    // Dispatch a scroll WITHOUT flushing the queued rAF callback (unlike setScroll) — the frame
+    // guard (frameRef) is still set when we unmount, so cleanup must cancel it.
+    Object.defineProperty(window, "scrollY", { value: 200, configurable: true, writable: true });
+    act(() => {
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(rafQueue.length).toBeGreaterThan(0); // queued, not yet flushed
+    unmount();
+    expect(cancel).toHaveBeenCalled();
+    cancel.mockRestore();
+  });
 });

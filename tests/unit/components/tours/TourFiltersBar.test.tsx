@@ -1,16 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TourFiltersBar } from "@/components/tours/TourFiltersBar";
+import { useTourTopics } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access/topics"),
-  useTourTopics: () => ({
+  useTourTopics: jest.fn(() => ({
     data: [
       { value: "GENERAL_CAMPUS", label: "Campus life" },
       { value: "DORM_HOUSING", label: "Dorms & housing" },
     ],
-  }),
+  })),
 }));
+
+const mockUseTourTopics = useTourTopics as jest.MockedFunction<typeof useTourTopics>;
 
 describe("TourFiltersBar", () => {
   it("toggles a topic on", async () => {
@@ -68,5 +71,15 @@ describe("TourFiltersBar", () => {
     await user.click(filters);
     expect(onOpenFilters).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Any" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("renders only the Any chip (no topic quick-chips) when the topic catalog hasn't loaded yet", () => {
+    // The component reads useTourTopics() on both the pre-mount render and the post-mount
+    // re-render (the "mounted" hydration gate), so queue the empty response for each.
+    const empty = { data: undefined } as ReturnType<typeof useTourTopics>;
+    mockUseTourTopics.mockReturnValueOnce(empty).mockReturnValueOnce(empty);
+    render(<TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onOpenFilters={() => {}} />);
+    expect(screen.getByRole("button", { name: "Any" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Campus life" })).not.toBeInTheDocument();
   });
 });

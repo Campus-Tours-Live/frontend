@@ -1,5 +1,5 @@
 import { type ReactElement } from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CreateOfferingForm } from "@/components/offerings/CreateOfferingForm";
@@ -17,13 +17,14 @@ jest.mock("next/link", () => ({
 }));
 
 const mutateAsync = jest.fn();
+const mockUseTourTopics = jest.fn(() => ({
+  data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
+  isLoading: false,
+}));
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useCreateOffering: () => ({ mutateAsync, isPending: false }),
-  useTourTopics: () => ({
-    data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
-    isLoading: false,
-  }),
+  useTourTopics: () => mockUseTourTopics(),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({
@@ -34,9 +35,17 @@ jest.mock("@/components/signup/UniversityMultiSelect", () => ({
     value: Array<{ id: string; name: string }>;
     onChange: (next: Array<{ id: string; name: string }>) => void;
   }) => (
-    <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
-      {value.length ? value[0]!.name : "Pick university"}
-    </button>
+    <>
+      <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
+        {value.length && value[0] ? value[0].name : "Pick university"}
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange([null as unknown as { id: string; name: string }])}
+      >
+        Set invalid university
+      </button>
+    </>
   ),
 }));
 
@@ -49,6 +58,10 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({ id: "o1" });
+  mockUseTourTopics.mockReturnValue({
+    data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
+    isLoading: false,
+  });
 });
 
 describe("CreateOfferingForm", () => {
@@ -99,6 +112,19 @@ describe("CreateOfferingForm", () => {
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
+  it("rejects an invalid university selection before calling the API", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.click(screen.getByRole("button", { name: "Set invalid university" }));
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(await screen.findByText("University is required")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
   it("shows a validation message for 422 responses", async () => {
     const user = userEvent.setup();
     mutateAsync.mockRejectedValue(new ApiError(422, "Unprocessable"));
@@ -112,6 +138,15 @@ describe("CreateOfferingForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Check your inputs — title, university, topic, duration, and price are required.",
     );
+  });
+
+  it("falls back to an empty topic list when useTourTopics returns no data", () => {
+    mockUseTourTopics.mockReturnValue({ data: undefined, isLoading: false } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    const topicSelect = screen.getByLabelText(/^topic$/i);
+    expect(within(topicSelect).getAllByRole("option")).toHaveLength(1);
+    expect(within(topicSelect).getByRole("option", { name: "Select a topic" })).toBeInTheDocument();
   });
 
   it("shows a generic save error for other failures", async () => {

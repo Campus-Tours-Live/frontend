@@ -137,6 +137,22 @@ describe("TourOfferingsPage", () => {
     );
   });
 
+  it("renders raw offering topic when the topics list hasn't loaded", () => {
+    setHooks({ topics: { data: undefined } });
+    render(<TourOfferingsPage />);
+
+    expect(screen.getByText("GENERAL_CAMPUS")).toBeInTheDocument();
+  });
+
+  it("passes no topic label when the offering has no topic", () => {
+    setHooks({
+      offerings: { data: [{ ...sampleOffering, topic: null }], isLoading: false, isError: false },
+    });
+    render(<TourOfferingsPage />);
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
   it("enables publish when me.guideStatus is APPROVED", () => {
     render(<TourOfferingsPage />);
 

@@ -244,6 +244,7 @@ function WheelColumn({ label, options, value, onChange, wrap }: WheelColumnProps
 
   const onScroll = () => {
     const el = ref.current;
+    /* istanbul ignore next -- defensive: onScroll only fires on this exact mounted element */
     if (!el) return;
     let raw = centeredIndex(el.scrollTop);
     if (wrap) {
@@ -455,6 +456,7 @@ export function TimePicker({
 
   const computePos = (): { left: number; top: number } | null => {
     const rect = wrapperRef.current?.getBoundingClientRect();
+    /* istanbul ignore next -- defensive: wrapperRef is always attached post-mount when this runs */
     if (!rect) return null;
     const gap = 4;
     const flipUp =
@@ -471,6 +473,8 @@ export function TimePicker({
 
   const positionPopover = () => {
     const next = computePos();
+    /* istanbul ignore next -- defensive: computePos only returns null when wrapperRef is unmounted,
+     * which never happens here (see computePos's own guard) */
     if (!next) return;
     // Bail out (same reference) when nothing moved, so a reposition event that didn't shift the
     // field costs no re-render.

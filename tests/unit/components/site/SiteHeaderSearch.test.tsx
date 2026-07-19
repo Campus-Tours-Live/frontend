@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   DesktopSearchShell,
@@ -19,6 +19,21 @@ jest.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(search),
 }));
 
+// Mutable knobs the tests below flip to reach branches the default fixtures never hit: an
+// in-flight fetch (loading state), a live search with zero matches / no data yet, and an
+// empty/not-yet-loaded topic vocab.
+let uniFetching = false;
+let uniNoResults = false;
+let uniMatchesUndefined = false;
+// When true, the mocked match's name is the query VERBATIM (no "— City, ST"-style suffix) so a
+// suggestion row can be the current query's exact match — the row's `active` (highlighted) state.
+let uniExactMatch = false;
+let topicVocab: { value: string; label: string }[] | undefined = [
+  { value: "GENERAL_CAMPUS", label: "Campus life" },
+  { value: "DORM_HOUSING", label: "Dorms & housing" },
+  { value: "DINING_STUDENT_LIFE", label: "Dining & student life" },
+];
+
 jest.mock("@/lib/data-access", () => {
   const { canonicalizeTopicIds } = jest.requireActual("@/lib/data-access/topics");
   return {
@@ -27,14 +42,19 @@ jest.mock("@/lib/data-access", () => {
       // Three options so a two-topic selection is a genuine SUBSET of the vocab — selecting every
       // option is exercised separately (see "selecting every option…") to hit the canonical
       // full-set→[] collapse (`canonicalizeTopicIds`), which two-of-three must NOT trigger.
-      data: [
-        { value: "GENERAL_CAMPUS", label: "Campus life" },
-        { value: "DORM_HOUSING", label: "Dorms & housing" },
-        { value: "DINING_STUDENT_LIFE", label: "Dining & student life" },
-      ],
+      data: topicVocab,
     }),
     useUniversitySearch: (q: string, opts?: { enabled?: boolean }) => ({
-      data: q.trim() && opts?.enabled ? [{ id: "u1", name: `${q} University` }] : [],
+      // Mirrors TanStack Query: `data` is `undefined` before the first result lands (e.g. the
+      // enabled/loading window), not `[]` — the hook's `matches ?? []` fallback exists for that.
+      data: uniMatchesUndefined
+        ? undefined
+        : q.trim() && opts?.enabled
+          ? uniNoResults
+            ? []
+            : [{ id: "u1", name: uniExactMatch ? q : `${q} University` }]
+          : [],
+      isFetching: uniFetching,
     }),
   };
 });
@@ -104,6 +124,15 @@ beforeEach(() => {
   pathname = "/";
   search = "";
   localStorage.clear();
+  uniFetching = false;
+  uniNoResults = false;
+  uniMatchesUndefined = false;
+  uniExactMatch = false;
+  topicVocab = [
+    { value: "GENERAL_CAMPUS", label: "Campus life" },
+    { value: "DORM_HOUSING", label: "Dorms & housing" },
+    { value: "DINING_STUDENT_LIFE", label: "Dining & student life" },
+  ];
   setScroll(0);
 });
 
@@ -414,5 +443,257 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     // Not actively editing → no results/no-results state; show Suggested (Nearby) instead.
     expect(sheet.queryByText("No schools found")).not.toBeInTheDocument();
     expect(sheet.getByText(/Nearby/)).toBeInTheDocument();
+  });
+
+  it("clicking the compact round search icon (collapsed state) opens the University section", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    setScroll(120);
+    expect(screen.queryByRole("search")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Open search" }));
+    // openSection('university') expanded the band (collapsed was true → forceExpanded).
+    expect(screen.getByRole("search")).toBeInTheDocument();
+  });
+
+  it("clicking Nearby with no recent history clears the query and keeps the panel open", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const form = within(screen.getByRole("search"));
+    await user.click(form.getByLabelText("University"));
+    const panel = within(await screen.findByRole("region", { name: "University search" }));
+    // No recent history → only the Nearby shortcut, no "Recent searches" heading.
+    expect(panel.queryByText("Recent searches")).not.toBeInTheDocument();
+    await user.click(panel.getByRole("button", { name: /Nearby/ }));
+    expect(form.getByLabelText("University")).toHaveValue("");
+    expect(screen.getByRole("region", { name: "University search" })).toBeInTheDocument();
+  });
+
+  it("Home/End/ArrowUp move the Topic active option (full keyboard contract)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+
+    // End → jumps to the last option.
+    await user.keyboard("{End}{Enter}");
+    expect(within(list).getByRole("option", { name: "Dining & student life" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    // ArrowUp → moves back one, to the middle option.
+    await user.keyboard("{ArrowUp}{Enter}");
+    expect(within(list).getByRole("option", { name: "Dorms & housing" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    // Home → jumps back to the first option.
+    await user.keyboard("{Home}{Enter}");
+    expect(within(list).getByRole("option", { name: "Campus life" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("mobile: closes the sheet via the header Close control", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    expect(screen.getByRole("dialog", { name: "Search tours" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "Search tours" })).not.toBeInTheDocument();
+  });
+
+  it("mobile: 'Clear all' resets the University draft (and topics)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    await user.type(sheet.getByLabelText("University"), "Yale");
+    expect(sheet.getByLabelText("University")).toHaveValue("Yale");
+    await user.click(sheet.getByRole("button", { name: "Clear all" }));
+    expect(sheet.getByLabelText("University")).toHaveValue("");
+  });
+
+  it("mobile: the inline Clear university (✕) button empties the field", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    const input = sheet.getByLabelText("University");
+    await user.type(input, "Yale");
+    await user.click(sheet.getByRole("button", { name: "Clear university" }));
+    expect(input).toHaveValue("");
+  });
+
+  it("mobile: a recent-search row (Clock icon list) fills the field", async () => {
+    localStorage.setItem("cttl:recent-universities", JSON.stringify(["Harvard", "Yale"]));
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    expect(sheet.getByText("Recent searches")).toBeInTheDocument();
+    await user.click(sheet.getByRole("button", { name: "Harvard" }));
+    expect(sheet.getByLabelText("University")).toHaveValue("Harvard");
+  });
+
+  it("mobile: the Suggested Nearby row (no recents) clears the query", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    expect(sheet.getByText("Suggested")).toBeInTheDocument();
+    expect(sheet.queryByText("Recent searches")).not.toBeInTheDocument();
+    const input = sheet.getByLabelText("University");
+    await user.click(sheet.getByRole("button", { name: /Nearby/ }));
+    expect(input).toHaveValue("");
+  });
+
+  it("mobile: switching to the Topic card (accordion), toggling options + All topics, then back to University", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    expect(sheet.getByRole("heading", { name: "University" })).toBeInTheDocument();
+
+    // Topic starts as a collapsed summary row; tapping it expands the Topic card and collapses
+    // University to its own summary row (exactly one section is a card at a time).
+    await user.click(sheet.getByRole("button", { name: /^Topic/ }));
+    expect(sheet.getByRole("heading", { name: "Topic" })).toBeInTheDocument();
+    expect(sheet.queryByRole("heading", { name: "University" })).not.toBeInTheDocument();
+
+    const opt = sheet.getByRole("option", { name: "Campus life" });
+    await user.click(opt);
+    expect(opt).toHaveAttribute("aria-selected", "true");
+
+    await user.click(sheet.getByRole("button", { name: "All topics" }));
+    expect(opt).toHaveAttribute("aria-selected", "false");
+
+    // Tap the University collapsed row to switch the accordion back.
+    await user.click(sheet.getByRole("button", { name: /^University/ }));
+    expect(sheet.getByRole("heading", { name: "University" })).toBeInTheDocument();
+    expect(sheet.queryByRole("heading", { name: "Topic" })).not.toBeInTheDocument();
+  });
+
+  it("shows a 'Searching…' state while the live University fetch is in flight", async () => {
+    uniFetching = true;
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(input, "Stanford");
+    expect(await screen.findByText("Searching…")).toBeInTheDocument();
+    expect(screen.queryByRole("option")).not.toBeInTheDocument();
+  });
+
+  it("shows 'No schools found' when the live University search returns zero matches (desktop)", async () => {
+    uniNoResults = true;
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(input, "Zzz");
+    expect(await screen.findByText("No schools found")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("listbox", { name: "University suggestions" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("mobile: shows 'No schools found' when the live University search returns zero matches", async () => {
+    uniNoResults = true;
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    await user.type(sheet.getByLabelText("University"), "Zzz");
+    expect(await sheet.findByText("No schools found")).toBeInTheDocument();
+  });
+
+  it("topic index clamp effect resets an out-of-range active index when the vocab shrinks", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+    // Move the active index to the last option (index 2) without selecting it.
+    await user.keyboard("{End}");
+    expect(list).toHaveAttribute("aria-activedescendant", "topic-opt-DINING_STUDENT_LIFE");
+
+    // The vocabulary shrinks to a single topic — the previously active index (2) is now past the
+    // new end, so the clamp effect's `i > topicOptions.length - 1` arm must reset it to 0.
+    topicVocab = [{ value: "GENERAL_CAMPUS", label: "Campus life" }];
+    rerender(<TestHeader />);
+
+    expect(list).toHaveAttribute("aria-activedescendant", "topic-opt-GENERAL_CAMPUS");
+  });
+
+  it("Topic keyboard nav is a no-op guard when the topic vocabulary hasn't loaded yet", async () => {
+    // `data: undefined` (not yet loaded) — exercises the hook's `topics ?? []` fallback, distinct
+    // from an explicit empty array.
+    topicVocab = undefined;
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+    expect(list).not.toHaveAttribute("aria-activedescendant");
+    // No options to move through or toggle — the empty-options guard returns early, no crash.
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(screen.getByRole("region", { name: "Topic" })).toBeInTheDocument();
+    expect(within(list).queryAllByRole("option")).toHaveLength(0);
+  });
+
+  it("committing an empty search from the homepage still navigates to bare /tours (no query string)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Search" }));
+    expect(push).toHaveBeenCalledWith("/tours");
+  });
+
+  it("committing an empty search while already on /tours replaces with the bare path (no trailing '?')", async () => {
+    pathname = "/tours";
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Search" }));
+    expect(replace).toHaveBeenCalledWith("/tours", { scroll: false });
+  });
+
+  it("handles a live University search whose data hasn't landed yet (matches undefined, not [])", async () => {
+    uniMatchesUndefined = true;
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(input, "Stanford");
+    // `matches ?? []` falls back to an empty list — same observable state as zero results.
+    expect(await screen.findByText("No schools found")).toBeInTheDocument();
+  });
+
+  it("highlights the University suggestion row that matches the current query exactly", async () => {
+    uniExactMatch = true;
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(input, "Stanford");
+    const option = await screen.findByRole("option", { name: "Stanford" });
+    expect(option).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+describe("useHeaderSearch — hook-level branches not reachable through the shared UI shell", () => {
+  it("openSection while already expanded (not collapsed) reveals the panel immediately", () => {
+    const { result } = renderHook(() => useHeaderSearch());
+    // Top of the page, nothing scrolled: the header starts expanded, not collapsed.
+    expect(result.current.collapsed).toBe(false);
+    act(() => result.current.openSection("university"));
+    // The "already expanded" branch reveals the panel synchronously (no transition-end to wait for).
+    expect(result.current.panelVisible).toBe(true);
+    expect(result.current.activeSection).toBe("university");
+  });
+
+  it("commitSearch on /tours with an emptied query removes q (not a blank param)", () => {
+    pathname = "/tours";
+    search = "q=Harvard&sort=RATING";
+    const { result } = renderHook(() => useHeaderSearch());
+    expect(result.current.q).toBe("Harvard");
+    act(() => result.current.setQ(""));
+    act(() => result.current.commitSearch());
+    expect(replace).toHaveBeenCalledWith("/tours?sort=RATING", { scroll: false });
   });
 });

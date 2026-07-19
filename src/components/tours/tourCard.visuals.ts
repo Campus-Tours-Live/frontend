@@ -223,6 +223,7 @@ export function campusInitials(name: string): string {
     .replace(/[^A-Za-z\s]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
+  /* istanbul ignore next -- defensive: words is .filter(Boolean)'d above, so every w is non-empty */
   const letters = words.slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "");
   return (letters.join("") || name.slice(0, 2).toUpperCase()).slice(0, 3);
 }

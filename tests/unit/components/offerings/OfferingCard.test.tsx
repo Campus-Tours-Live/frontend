@@ -93,6 +93,20 @@ describe("OfferingCard", () => {
     );
   });
 
+  it("falls back to an em dash when no topic label or topic is available", () => {
+    render(<OfferingCard offering={{ ...draftOffering, topic: null }} canPublish={false} />);
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("shows a publishing indicator while the publish mutation is pending", () => {
+    setActivate({ isPending: true });
+
+    render(<OfferingCard offering={draftOffering} canPublish />);
+
+    expect(screen.getByRole("button", { name: "Publishing…" })).toBeDisabled();
+  });
+
   it("renders published offerings without a publish action", () => {
     render(
       <OfferingCard

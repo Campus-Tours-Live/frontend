@@ -1,6 +1,12 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent, { type UserEvent } from "@testing-library/user-event";
-import { DateOverrideModal } from "@/components/availability/DateOverrideModal";
+import {
+  DateOverrideModal,
+  dateOverrideErrorMessage,
+  previewErrorMessage,
+  slotStructuralError,
+} from "@/components/availability/DateOverrideModal";
+import { toWindowMin } from "@/lib/availability/fromTo";
 import {
   ApiError,
   useAvailabilityExceptions,
@@ -15,6 +21,14 @@ import type {
   OverridePreviewResponse,
   ResolvedAvailability,
 } from "@/lib/data-access";
+
+// Wraps the REAL fromTo helpers so every existing test keeps using real time math; only the
+// specific "defensive fallback" test below arms `toWindowMin` with a one-shot throw to simulate
+// it unexpectedly rejecting exactly at Confirm-time (see that describe block).
+jest.mock("@/lib/availability/fromTo", () => {
+  const actual = jest.requireActual("@/lib/availability/fromTo");
+  return { ...actual, toWindowMin: jest.fn(actual.toWindowMin) };
+});
 
 jest.mock("@/lib/data-access", () => ({
   useAvailabilityExceptions: jest.fn(),
@@ -785,5 +799,81 @@ describe("DateOverrideModal — mobile (bottom drawer)", () => {
     expect(
       within(dialog).getByRole("heading", { name: /Date-specific hours/ }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("DateOverrideModal — slotStructuralError (pure, the exported per-row structural check)", () => {
+  it("returns null for a structurally valid from-before-to pair", () => {
+    expect(slotStructuralError("09:00", "10:00")).toBeNull();
+  });
+
+  it("returns the friendly message when start is not before end", () => {
+    expect(slotStructuralError("10:00", "09:00")).toBe("Start time must be before the end time.");
+  });
+});
+
+describe("DateOverrideModal — dateOverrideErrorMessage (pure, surfaces the write-time 422 verbatim)", () => {
+  it("surfaces a 422 ApiError's message verbatim", () => {
+    expect(
+      dateOverrideErrorMessage(new ApiError(422, "This time is outside the guide's availability")),
+    ).toBe("This time is outside the guide's availability");
+  });
+
+  it("falls back to a generic notice for a non-422 ApiError", () => {
+    expect(dateOverrideErrorMessage(new ApiError(500, "boom"))).toBe(
+      "Could not save this override. Please try again.",
+    );
+  });
+
+  it("falls back to a generic notice for a non-ApiError failure (e.g. a network error)", () => {
+    expect(dateOverrideErrorMessage(new Error("network down"))).toBe(
+      "Could not save this override. Please try again.",
+    );
+  });
+});
+
+describe("DateOverrideModal — previewErrorMessage (pure, surfaces the dry-run's rejection reason)", () => {
+  it("surfaces an ApiError's message regardless of status (not just 422)", () => {
+    expect(previewErrorMessage(new ApiError(400, "Windows cross midnight"))).toBe(
+      "Windows cross midnight",
+    );
+  });
+
+  it("falls back to a generic notice when the ApiError carries no message", () => {
+    expect(previewErrorMessage(new ApiError(500, ""))).toBe(
+      "Couldn't preview this change. Please try again.",
+    );
+  });
+
+  it("falls back to a generic notice for a non-ApiError failure", () => {
+    expect(previewErrorMessage(new Error("network down"))).toBe(
+      "Couldn't preview this change. Please try again.",
+    );
+  });
+});
+
+describe("DateOverrideModal — defensive fallback when toWindowMin throws while building the confirm payload", () => {
+  it("shows a generic error and never submits when toWindowMin unexpectedly throws exactly at Confirm-time", async () => {
+    // hasStructuralError/canConfirm are gated on the SAME toWindowMin call the live per-row check
+    // uses, so a genuinely invalid row already disables Confirm (covered elsewhere). This exercises
+    // handleConfirm's own defensive catch (never reachable via a bad row) by making the shared
+    // `toWindowMin` helper reject exactly once, for the call `handleConfirm` makes when building the
+    // atomic replace payload — e.g. a TimePicker race producing a value that passed the live check
+    // but fails at submit.
+    const user = userEvent.setup();
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: /add time slot/i }));
+    expect(within(dialog).getByRole("button", { name: "Confirm change" })).toBeEnabled();
+
+    (toWindowMin as jest.Mock).mockImplementationOnce(() => {
+      throw new Error("simulated race");
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
+
+    expect(
+      await within(dialog).findByText(/enter a valid from.to range for every slot/i),
+    ).toBeInTheDocument();
+    expect(replaceMutate).not.toHaveBeenCalled();
   });
 });

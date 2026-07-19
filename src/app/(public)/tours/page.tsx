@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Browse live, student-guided campus tours by school, topic, budget, and guide.",
 };
 
-// Header + <main> are provided by the (marketing) layout.
+// Header + <main> are provided by the (public) layout.
 export default function ToursPage() {
   return (
     <Suspense>

@@ -36,4 +36,10 @@ describe("Glass", () => {
     expect(cls).toContain("hover:bg-ivory/40");
     expect(GLASS_BASE).toContain("backdrop-blur-md");
   });
+
+  it("glassClass defaults tone to light when omitted", () => {
+    const cls = glassClass();
+    expect(cls).toContain("border-ivory/40");
+    expect(cls).toContain("bg-ivory/25");
+  });
 });

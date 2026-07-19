@@ -237,6 +237,20 @@ describe("WeeklyHoursPanel — Edit opens DayHoursModal prefilled with from–to
   });
 });
 
+describe("WeeklyHoursPanel — Cancel in DayHoursModal closes it", () => {
+  it("clicking Cancel inside the Edit modal closes it (onClose wiring)", async () => {
+    const user = userEvent.setup();
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(mondayRow()).getByRole("button", { name: /^Edit Monday hours$/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
 describe("WeeklyHoursPanel — re-activate 422 leaves the day Unavailable + notifies", () => {
   it("shows the backend message and does not flip the day when re-activation is rejected", async () => {
     const user = userEvent.setup();

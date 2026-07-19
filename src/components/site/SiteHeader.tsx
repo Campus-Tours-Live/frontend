@@ -118,7 +118,9 @@ export function SiteHeader({
     if (
       active &&
       headerRef.current?.contains(active) &&
-      (active.tagName === "INPUT" || active.tagName === "SELECT")
+      (active.tagName === "INPUT" ||
+        /* istanbul ignore next -- defensive: no <select> exists in the header subtree */
+        active.tagName === "SELECT")
     ) {
       active.blur();
     }

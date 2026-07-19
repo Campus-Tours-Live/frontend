@@ -25,6 +25,10 @@ describe("toursPath", () => {
     expect(toursPath({ topicIds: [] })).toBe("/v1/tours");
     expect(toursPath({})).toBe("/v1/tours");
   });
+
+  it("defaults filters to {} when called with no argument", () => {
+    expect(toursPath()).toBe("/v1/tours");
+  });
 });
 
 describe("tourCatalogOptions", () => {

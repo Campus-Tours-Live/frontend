@@ -22,4 +22,11 @@ describe("Rating", () => {
     expect(container.querySelectorAll("svg.fill-warning")).toHaveLength(4);
     expect(container.querySelectorAll("svg.fill-border")).toHaveLength(1);
   });
+
+  it("defaults value to 0 and size to small when omitted", () => {
+    const { container } = render(<Rating />);
+    expect(screen.getByRole("img", { name: "0 out of 5 stars" })).toBeInTheDocument();
+    expect(container.querySelectorAll("svg.fill-border")).toHaveLength(5);
+    expect(container.querySelector("svg")).toHaveAttribute("width", "16");
+  });
 });

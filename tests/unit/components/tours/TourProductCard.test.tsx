@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { TourProductCard } from "@/components/tours/TourProductCard";
 import type { TourSummary } from "@/lib/data-access";
 
@@ -93,5 +94,59 @@ describe("TourProductCard", () => {
         "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/University%20Campus.png",
       );
     }
+  });
+
+  it("swaps to the shared fallback image after the campus photo fails to load", () => {
+    const imageUrl = "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Broken.png";
+    render(<TourProductCard tour={{ ...tour, universityImageUrl: imageUrl }} />);
+    const [frontImage] = screen.getAllByAltText(/campus/i);
+
+    fireEvent.error(frontImage);
+
+    const images = screen.getAllByAltText(/campus/i);
+    for (const img of images) {
+      const src = img.getAttribute("src") ?? "";
+      const url = new URL(src, "http://localhost").searchParams.get("url") ?? src;
+      expect(url).toBe(
+        "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/University%20Campus.png",
+      );
+    }
+  });
+
+  it("calls onToggleSave with the tour id when the save control is clicked, and reflects saved state", async () => {
+    const user = userEvent.setup();
+    const onToggleSave = jest.fn();
+    render(<TourProductCard tour={tour} saved onToggleSave={onToggleSave} />);
+    const save = screen.getByRole("button", { name: "Remove from saved" });
+    expect(save).toHaveAttribute("aria-pressed", "true");
+    await user.click(save);
+    expect(onToggleSave).toHaveBeenCalledWith(tour.id);
+  });
+
+  it("shows cents in the price when priceCents is not a whole dollar amount", () => {
+    render(<TourProductCard tour={{ ...tour, priceCents: 4250 }} />);
+    expect(screen.getByText("$42.50")).toBeInTheDocument();
+  });
+
+  it("falls back to '?' initials when the guide's display name has no letters", () => {
+    render(<TourProductCard tour={{ ...tour, guideDisplayName: "   " }} />);
+    expect(screen.getByText("?")).toBeInTheDocument();
+  });
+
+  it("shows a credentials line from entry year alone, with no major icon", () => {
+    render(<TourProductCard tour={tour} entryYear={2023} />);
+    expect(screen.getByText("Entered 2023")).toBeInTheDocument();
+  });
+
+  it("hides the languages and feature-chip rows when the tour has none", () => {
+    render(<TourProductCard tour={{ ...tour, languages: [], features: [] }} />);
+    expect(screen.queryByText("English")).not.toBeInTheDocument();
+    expect(screen.queryByText("Q And A")).not.toBeInTheDocument();
+  });
+
+  it("renders a whole-number rating without a decimal", () => {
+    render(<TourProductCard tour={{ ...tour, avgRating: 5, reviewCount: 7 }} />);
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("(7)")).toBeInTheDocument();
   });
 });

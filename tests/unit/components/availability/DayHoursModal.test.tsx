@@ -1,9 +1,22 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
-import { DayHoursModal } from "@/components/availability/DayHoursModal";
+import {
+  DayHoursModal,
+  dayHoursErrorMessage,
+  structuralRangeError,
+} from "@/components/availability/DayHoursModal";
+import { toWindowMin } from "@/lib/availability/fromTo";
 import { ApiError, useReplaceRules, useUpdateAvailabilityRule } from "@/lib/data-access";
 import type { AvailabilityRule } from "@/lib/data-access";
+
+// Wraps the REAL fromTo helpers so every existing test keeps using real time math; only the
+// "defensive fallback" tests below arm `toWindowMin` with a one-shot throw to simulate it
+// unexpectedly rejecting exactly at Save-time (see that describe block).
+jest.mock("@/lib/availability/fromTo", () => {
+  const actual = jest.requireActual("@/lib/availability/fromTo");
+  return { ...actual, toWindowMin: jest.fn(actual.toWindowMin) };
+});
 
 jest.mock("@/lib/data-access", () => ({
   useUpdateAvailabilityRule: jest.fn(),
@@ -310,5 +323,70 @@ describe("DayHoursModal — Cancel", () => {
 
     expect(onClose).toHaveBeenCalled();
     expect(updateMutate).not.toHaveBeenCalled();
+  });
+});
+
+describe("DayHoursModal — structuralRangeError (pure, the exported per-row structural check)", () => {
+  it("returns null for a structurally valid from-before-to pair", () => {
+    expect(structuralRangeError("09:00", "17:00")).toBeNull();
+  });
+
+  it("returns the friendly message when start is not before end", () => {
+    expect(structuralRangeError("17:00", "09:00")).toBe("Start time must be before the end time.");
+  });
+});
+
+describe("DayHoursModal — dayHoursErrorMessage (pure, surfaces the write-time 422 verbatim)", () => {
+  it("surfaces a 422 ApiError's message verbatim", () => {
+    expect(dayHoursErrorMessage(new ApiError(422, "This range overlaps another one."))).toBe(
+      "This range overlaps another one.",
+    );
+  });
+
+  it("falls back to the overlap notice when a 422 ApiError carries no message", () => {
+    expect(dayHoursErrorMessage(new ApiError(422, ""))).toBe(
+      "That range overlaps another one on this day.",
+    );
+  });
+
+  it("falls back to a generic notice for a non-422 ApiError", () => {
+    expect(dayHoursErrorMessage(new ApiError(500, "boom"))).toBe(
+      "Could not save these hours. Please try again.",
+    );
+  });
+});
+
+describe("DayHoursModal — defensive fallback when toWindowMin throws while building the save payload", () => {
+  it("shows the thrown Error's own message when toWindowMin unexpectedly throws an Error exactly at Save-time", async () => {
+    // hasStructuralError already disables Save for a genuinely invalid row (covered elsewhere), so
+    // this exercises handleSave's own defensive catch by making the shared `toWindowMin` helper
+    // reject exactly once, for the call handleSave makes when building the atomic replace payload —
+    // e.g. a TimePicker race producing a value that passed the live check but fails at submit.
+    const user = userEvent.setup();
+    renderModal([mondayRule]);
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Save" })).toBeEnabled();
+
+    (toWindowMin as jest.Mock).mockImplementationOnce(() => {
+      throw new Error("simulated race");
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    expect(await within(dialog).findByText("simulated race")).toBeInTheDocument();
+    expect(replaceMutate).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a generic message when toWindowMin throws a non-Error value at Save-time", async () => {
+    const user = userEvent.setup();
+    renderModal([mondayRule]);
+    const dialog = screen.getByRole("dialog");
+
+    (toWindowMin as jest.Mock).mockImplementationOnce(() => {
+      throw "not an Error instance";
+    });
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    expect(await within(dialog).findByText(/enter a valid from.to range/i)).toBeInTheDocument();
+    expect(replaceMutate).not.toHaveBeenCalled();
   });
 });

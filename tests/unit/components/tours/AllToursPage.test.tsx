@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AllToursPage } from "@/components/tours/AllToursPage";
-import { useTourCatalog, type TourSummary } from "@/lib/data-access";
+import { useTourCatalog, useTourTopics, type TourSummary } from "@/lib/data-access";
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access/topics"),
@@ -12,23 +12,25 @@ jest.mock("@/lib/data-access", () => ({
     isLoading: false,
     isError: false,
   })),
-  useTourTopics: () => ({
+  useTourTopics: jest.fn(() => ({
     data: [
       { value: "GENERAL_CAMPUS", label: "Campus life" },
       { value: "DORM_HOUSING", label: "Dorms & housing" },
     ],
-  }),
+  })),
 }));
 
 const replace = jest.fn();
 const push = jest.fn();
+let search = "";
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace, push }),
   usePathname: () => "/tours",
-  useSearchParams: () => new URLSearchParams(""),
+  useSearchParams: () => new URLSearchParams(search),
 }));
 
 const mockUseTourCatalog = useTourCatalog as jest.MockedFunction<typeof useTourCatalog>;
+const mockUseTourTopics = useTourTopics as jest.MockedFunction<typeof useTourTopics>;
 const refetch = jest.fn();
 
 const tour: TourSummary = {
@@ -82,6 +84,7 @@ function mockCatalog(
 
 beforeEach(() => {
   jest.clearAllMocks();
+  search = "";
   mockCatalog({ items: [tour] });
 });
 
@@ -195,5 +198,44 @@ describe("AllToursPage", () => {
     expect(screen.getByRole("navigation", { name: "Pagination" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Next page" }));
     expect(push).toHaveBeenCalledWith("/tours?page=2", { scroll: false });
+  });
+
+  it("passes undefined degree/entryYear through to the card when the guide has none on file", () => {
+    mockCatalog({ items: [{ ...tour, guideDegree: null, guideEntryYear: null }] });
+    render(<AllToursPage />);
+    // No credentials line renders without degree/major/entryYear (TourProductCard's own concern);
+    // this just proves AllToursPage doesn't coerce the nullish backend fields into a truthy prop.
+    expect(screen.queryByText(/Entered/)).not.toBeInTheDocument();
+  });
+
+  it("requests the catalog with topicIds from the URL when a topic filter is active", () => {
+    search = "topic=GENERAL_CAMPUS";
+    render(<AllToursPage />);
+
+    expect(mockUseTourCatalog).toHaveBeenLastCalledWith(
+      expect.objectContaining({ topicIds: ["GENERAL_CAMPUS"] }),
+    );
+  });
+
+  it("treats a URL with no topic vocabulary loaded yet as having no university entries to filter by", () => {
+    mockUseTourTopics.mockReturnValueOnce({ data: undefined } as ReturnType<typeof useTourTopics>);
+    render(<AllToursPage />);
+
+    // With no topic vocabulary available, canonicalization has nothing to canonicalize against —
+    // the request still goes out with no topic filter.
+    expect(mockUseTourCatalog).toHaveBeenLastCalledWith(
+      expect.objectContaining({ topicIds: undefined }),
+    );
+  });
+
+  it("falls back to a 0-result title and totalPages when the catalog resolves with no data", () => {
+    mockUseTourCatalog.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      refetch,
+    } as unknown as ReturnType<typeof useTourCatalog>);
+    render(<AllToursPage />);
+    expect(screen.getByRole("heading", { name: "0 tours" })).toBeInTheDocument();
   });
 });

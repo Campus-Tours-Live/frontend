@@ -30,6 +30,25 @@ describe("Textarea", () => {
     expect(screen.getByText("5 / 200")).toBeInTheDocument();
   });
 
+  it("counts a controlled value's length (not the uncontrolled fallback)", () => {
+    render(<Textarea label="Bio" maxLength={200} value="hello" onChange={() => {}} />);
+    expect(screen.getByText("5 / 200")).toBeInTheDocument();
+  });
+
+  it("treats a controlled but nullish value as zero length", () => {
+    // `value` is defined (not `undefined`), so this stays controlled, but is `null` — the
+    // `value ?? ""` fallback inside the length calc must still count it as 0.
+    render(
+      <Textarea
+        label="Bio"
+        maxLength={200}
+        value={null as unknown as string}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText("0 / 200")).toBeInTheDocument();
+  });
+
   it("shows no counter without maxLength", () => {
     render(<Textarea label="Bio" />);
     expect(screen.queryByText(/\/\s*\d+$/)).not.toBeInTheDocument();

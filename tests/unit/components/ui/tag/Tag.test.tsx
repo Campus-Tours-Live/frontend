@@ -61,6 +61,11 @@ describe("Tag", () => {
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
+  it("defaults the dismiss button's accessible name to 'Remove' without removeLabel", () => {
+    render(<Tag onRemove={() => {}}>Stanford</Tag>);
+    expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
+  });
+
   it("renders no dismiss button without onRemove", () => {
     render(<Tag>Static</Tag>);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();

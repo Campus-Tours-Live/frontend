@@ -83,4 +83,44 @@ describe("useTourListState", () => {
     act(() => result.current.reset());
     expect(replace).toHaveBeenCalledWith("/tours", { scroll: false });
   });
+
+  it("syncs the local query when the URL's q changes externally (e.g. back/forward)", () => {
+    search = "q=first";
+    const { result, rerender } = renderHook(() => useTourListState());
+    expect(result.current.query).toBe("first");
+
+    search = "q=second";
+    rerender();
+    expect(result.current.query).toBe("second");
+  });
+
+  describe("debounced query -> URL sync", () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+    });
+
+    it("writes a non-empty query to the URL after the debounce delay", () => {
+      const { result } = renderHook(() => useTourListState());
+      act(() => result.current.changeQuery("boston"));
+      expect(replace).not.toHaveBeenCalled(); // not yet — still debouncing
+
+      act(() => jest.advanceTimersByTime(250));
+      expect(replace).toHaveBeenCalledWith("/tours?q=boston", { scroll: false });
+    });
+
+    it("clears the q param from the URL when the query is emptied", () => {
+      search = "q=boston";
+      const { result } = renderHook(() => useTourListState());
+      expect(result.current.query).toBe("boston");
+
+      act(() => result.current.changeQuery(""));
+      act(() => jest.advanceTimersByTime(250));
+      expect(replace).toHaveBeenLastCalledWith("/tours", { scroll: false });
+    });
+  });
 });

@@ -44,6 +44,20 @@ function mockRects() {
   });
 }
 
+/** Mock layout with the anchor pinned near the bottom of the viewport, forcing a flip-up. */
+function mockRectsNearBottom() {
+  const bottom = window.innerHeight - 10;
+  return jest.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+    this: Element,
+  ) {
+    const dialog = this.getAttribute("role") === "dialog";
+    const r = dialog
+      ? { left: 0, right: 80, top: 0, bottom: 40, width: 80, height: 40 }
+      : { left: 100, right: 300, top: bottom - 20, bottom, width: 200, height: 20 };
+    return { ...r, x: r.left, y: r.top, toJSON: () => ({}) } as DOMRect;
+  });
+}
+
 describe("Popover", () => {
   it("renders its children when open and anchored", () => {
     render(<Harness />);
@@ -116,5 +130,35 @@ describe("Popover", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it("flips above the anchor when there isn't room below but there is above", () => {
+    const spy = mockRectsNearBottom();
+    try {
+      render(<Harness />);
+      const anchorBottom = window.innerHeight - 10;
+      const anchorTop = anchorBottom - 20;
+      // Flipped up: top = anchor.top − popover.height(40) − GAP(6), not anchor.bottom + GAP.
+      const expectedTop = anchorTop - 40 - 6;
+      expect(screen.getByRole("dialog")).toHaveStyle({ top: `${expectedTop}px` });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("does not dismiss when clicking inside the popover", async () => {
+    const user = userEvent.setup();
+    render(<Harness withClose />);
+    expect(screen.getByText("popover body")).toBeInTheDocument();
+    await user.click(screen.getByText("popover body"));
+    expect(screen.getByText("popover body")).toBeInTheDocument();
+  });
+
+  it("does not dismiss when clicking the anchor itself", async () => {
+    const user = userEvent.setup();
+    render(<Harness withClose />);
+    expect(screen.getByText("popover body")).toBeInTheDocument();
+    await user.click(screen.getByText("anchor"));
+    expect(screen.getByText("popover body")).toBeInTheDocument();
   });
 });

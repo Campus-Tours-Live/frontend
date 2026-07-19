@@ -50,6 +50,7 @@ export function toWindowMin(from: string, to: string): number {
   }
 
   const windowMin = toMin - fromMin;
+  /* istanbul ignore next -- defensive: fromMin+windowMin === toMin, already ≤ 1440 by HHMM regex/sentinel */
   if (fromMin + windowMin > 1440) {
     throw new Error(`a same-day range cannot cross midnight (from "${from}" for ${windowMin}min)`);
   }

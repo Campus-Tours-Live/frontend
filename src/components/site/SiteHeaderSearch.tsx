@@ -398,7 +398,15 @@ export function TopicSectionPanel({ search }: SearchProps) {
   useEffect(() => {
     const firstSel = topicOptions.findIndex((t) => selectedTopicIds.includes(t.value));
     /* eslint-disable react-hooks/set-state-in-effect */
-    setActiveIdx((i) => (i > topicOptions.length - 1 ? 0 : i < 0 ? Math.max(0, firstSel) : i));
+    setActiveIdx((i) =>
+      i > topicOptions.length - 1
+        ? 0
+        : /* istanbul ignore next -- defensive: setActiveIdx never receives a negative index (all
+           * setters below clamp to >= 0), so this arm's negative-index branch is unreachable */
+          i < 0
+          ? Math.max(0, firstSel)
+          : i,
+    );
     /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicOptions.length]);

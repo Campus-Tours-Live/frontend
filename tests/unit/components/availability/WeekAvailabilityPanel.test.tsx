@@ -114,6 +114,17 @@ describe("WeekAvailabilityPanel", () => {
     expect(next()).toBeDisabled();
   });
 
+  it("renders 'No hours this day' while resolvedQuery/exceptionsQuery data are still loading", () => {
+    // Both queries loading (data undefined) — the `?? []` fallbacks on occurrences/exceptions must
+    // keep the panel rendering (empty-day state) instead of throwing on an undefined array.
+    mockResolved.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    mockExceptions.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    render(<WeekAvailabilityPanel />);
+
+    const region = screen.getByRole("region", { name: "Availability by day" });
+    expect(within(region).getByText(/no hours this day/i)).toBeInTheDocument();
+  });
+
   it("flags an ADDITIONAL-covered window as Extra", () => {
     setResolved([{ startAt: "2026-07-16T14:00:00Z", endAt: "2026-07-16T16:00:00Z" }]);
     setExceptions([

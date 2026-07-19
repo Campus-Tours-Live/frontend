@@ -97,4 +97,22 @@ describe("IconButton", () => {
     expect(link).toHaveAttribute("href", "https://example.com");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
+
+  it("respects an explicit rel on an anchor instead of the tab-nabbing default", () => {
+    render(
+      <IconButton a11yLabel="Help" href="https://example.com" target="_blank" rel="noopener">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    expect(screen.getByRole("link", { name: "Help" })).toHaveAttribute("rel", "noopener");
+  });
+
+  it("leaves rel unset on an anchor without target=_blank", () => {
+    render(
+      <IconButton a11yLabel="Docs" href="/docs">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    expect(screen.getByRole("link", { name: "Docs" })).not.toHaveAttribute("rel");
+  });
 });

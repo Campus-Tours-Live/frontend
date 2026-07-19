@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Home } from "lucide-react";
 import { MobileNav } from "@/components/site/MobileNav";
 import { useMe } from "@/lib/data-access";
 
@@ -15,6 +16,18 @@ jest.mock("@/components/site/AccountNav", () => ({
   AccountNav: () => <div data-testid="account-nav" />,
 }));
 
+// NAV_LINKS is intentionally [] in production (see NavLinks.ts — "the header keeps only the
+// global search + account menu"), which every other test in this file relies on. A getter (read
+// fresh on each property access, unlike a destructured import) lets one test below flip it to a
+// non-empty vocabulary to exercise the Discover-section render branch the real data never reaches
+// today, without disturbing the empty default the rest of the suite exercises.
+let navLinks: { label: string; href: string; icon: typeof Home }[] = [];
+jest.mock("@/components/site/NavLinks", () => ({
+  get NAV_LINKS() {
+    return navLinks;
+  },
+}));
+
 function setupMe(opts?: { isLoading?: boolean; isOnboarded?: boolean }) {
   (useMe as jest.Mock).mockReturnValue({
     me: opts?.isOnboarded ? { displayName: "Ada" } : null,
@@ -25,6 +38,7 @@ function setupMe(opts?: { isLoading?: boolean; isOnboarded?: boolean }) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  navLinks = [];
 });
 
 describe("MobileNav — drawer toggle", () => {
@@ -80,6 +94,20 @@ describe("MobileNav — primary links (removed)", () => {
     expect(screen.queryByRole("link", { name: "Explore tours" })).not.toBeInTheDocument();
     expect(screen.queryByText("How it works")).not.toBeInTheDocument();
     expect(screen.queryByText("For students & parents")).not.toBeInTheDocument();
+  });
+});
+
+describe("MobileNav — primary links present (future-proofing the Discover section)", () => {
+  it("renders a Discover section item when NAV_LINKS has entries", async () => {
+    navLinks = [{ label: "Explore tours", href: "/tours", icon: Home }];
+    const user = userEvent.setup();
+    setupMe({ isOnboarded: false });
+
+    render(<MobileNav />);
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+
+    expect(screen.getByText("Discover")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
   });
 });
 

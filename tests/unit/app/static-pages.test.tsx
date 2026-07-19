@@ -25,9 +25,9 @@ jest.mock("@/components/profile/GuideProfilePage", () => ({
   GuideProfilePage: () => <div data-testid="guide-profile-page" />,
 }));
 
-import HomePage from "@/app/(marketing)/page";
-import ToursPage from "@/app/(marketing)/tours/page";
-import MarketingLayout from "@/app/(marketing)/layout";
+import HomePage from "@/app/(public)/page";
+import ToursPage, { metadata as toursMetadata } from "@/app/(public)/tours/page";
+import PublicLayout from "@/app/(public)/layout";
 import AuthLayout from "@/app/(auth)/layout";
 import ProfilePage from "@/app/(app)/profile/page";
 import SupportPage from "@/app/(app)/support/page";
@@ -39,7 +39,7 @@ import { useMe } from "@/lib/data-access";
 const mockUseMe = useMe as jest.Mock;
 
 describe("static / shell pages", () => {
-  // The header now lives on the (marketing) layout, not the pages themselves.
+  // The header now lives on the (public) layout, not the pages themselves.
   it("home renders hero + featured tours (no header of its own)", () => {
     render(<HomePage />);
     expect(screen.queryByTestId("site-header")).not.toBeInTheDocument();
@@ -53,8 +53,13 @@ describe("static / shell pages", () => {
     expect(screen.getByTestId("all-tours-page")).toBeInTheDocument();
   });
 
-  it("(marketing) layout wraps children with the site header", () => {
-    render(<MarketingLayout>{<div data-testid="child" />}</MarketingLayout>);
+  it("tours page exports discovery-oriented metadata", () => {
+    expect(toursMetadata.title).toBe("Explore tours — CampusToursLive.ai");
+    expect(toursMetadata.description).toContain("campus tours");
+  });
+
+  it("(public) layout wraps children with the site header", () => {
+    render(<PublicLayout>{<div data-testid="child" />}</PublicLayout>);
     expect(screen.getByTestId("site-header")).toBeInTheDocument();
     expect(screen.getByTestId("child")).toBeInTheDocument();
   });

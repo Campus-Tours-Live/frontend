@@ -16,6 +16,15 @@ describe("Collapse", () => {
     expect(screen.getByText("Details").parentElement).toHaveClass("invisible");
   });
 
+  it("defaults isOpen to false when omitted", () => {
+    const { container } = render(
+      <Collapse>
+        <p>Details</p>
+      </Collapse>,
+    );
+    expect(container.firstChild).toHaveClass("grid-rows-[0fr]");
+  });
+
   it("expands to 1fr and shows the content when open", () => {
     const { container } = render(
       <Collapse isOpen>

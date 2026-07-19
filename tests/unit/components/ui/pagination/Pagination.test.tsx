@@ -58,4 +58,13 @@ describe("Pagination", () => {
     await user.click(screen.getByRole("button", { name: "Go to page 4" }));
     expect(onPageChange).toHaveBeenLastCalledWith(3);
   });
+
+  it("fires onPageChange when the enabled previous button is clicked", async () => {
+    const onPageChange = jest.fn();
+    const user = userEvent.setup();
+    render(<Pagination page={2} totalPages={5} onPageChange={onPageChange} />);
+
+    await user.click(screen.getByRole("button", { name: "Previous page" }));
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
 });

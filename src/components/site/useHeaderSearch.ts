@@ -22,6 +22,8 @@ function buildToursHref(q: string, canonicalTopicIds: string[]): string {
 function summarizeTopics(canonicalIds: string[], topicOptions: TopicOption[]): string {
   if (canonicalIds.length === 0) return "All topics";
   if (canonicalIds.length === 1) {
+    /* istanbul ignore next -- defensive: canonicalIds only ever contains ids already filtered
+     * against topicOptions (see canonicalizeTopicIds), so find() always succeeds here */
     return topicOptions.find((t) => t.value === canonicalIds[0])?.label ?? "1 topic";
   }
   return `${canonicalIds.length} topics`;
