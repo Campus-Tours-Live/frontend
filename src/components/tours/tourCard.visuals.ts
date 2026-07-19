@@ -205,7 +205,35 @@ export interface CampusVisual {
  * {@link CAMPUS_FALLBACK_IMAGE} via the card's `<Image onError>`.
  */
 export const CAMPUS_IMAGES: Record<string, string> = {
-  // "Display name that differs from its file": "/assets/custom-file.png",
+  // The catalog stores College Scorecard names (e.g. "University of California-Berkeley"), but the
+  // campus photos were saved under the schools' cleaner display names — so the default
+  // `/assets/<name>.png` derivation 404s (→ next/image 400). Map each Scorecard name to its file.
+  "University of California-Berkeley": "/assets/University of California, Berkeley.png",
+  "University of California-Davis": "/assets/University of California, Davis.png",
+  "University of California-Irvine": "/assets/University of California, Irvine.png",
+  "University of California-San Diego": "/assets/University of California, San Diego.png",
+  "University of California-Santa Barbara": "/assets/University of California, Santa Barbara.png",
+  "University of Michigan-Ann Arbor": "/assets/University of Michigan.png",
+  "University of Washington-Seattle Campus": "/assets/University of Washington.png",
+  "University of Minnesota-Twin Cities": "/assets/University of Minnesota.png",
+  "University of Maryland-College Park": "/assets/University of Maryland, College Park.png",
+  "University of Pittsburgh-Pittsburgh Campus": "/assets/University of Pittsburgh.png",
+  "University of Virginia-Main Campus": "/assets/University of Virginia.png",
+  "Georgia Institute of Technology-Main Campus": "/assets/Georgia Institute of Technology.png",
+  "Ohio State University-Main Campus": "/assets/Ohio State University.png",
+  "Pennsylvania State University-Main Campus": "/assets/Pennsylvania State University.png",
+  "Purdue University-Main Campus": "/assets/Purdue University.png",
+  "Rutgers University-New Brunswick": "/assets/Rutgers University.png",
+  "Texas A&M University-College Station": "/assets/Texas A&M University.png",
+  "The University of Texas at Austin": "/assets/University of Texas at Austin.png",
+  "Indiana University-Bloomington": "/assets/Indiana University Bloomington.png",
+  "Arizona State University Campus Immersion": "/assets/Arizona State University.png",
+  "Columbia University in the City of New York": "/assets/Columbia University.png",
+  // Seeded schools with no campus photo yet — point at the shared fallback so we don't request a
+  // missing file (404 → 400). Replace with a real photo when one is added.
+  "Northwestern University": "/assets/hero-campus.png",
+  "Tulane University of Louisiana": "/assets/hero-campus.png",
+  "University of Iowa": "/assets/hero-campus.png",
 };
 
 /** Campus photos live directly under `public/assets`, named by the university's display name. */
