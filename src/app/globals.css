@@ -517,9 +517,17 @@
   --header-fade-duration: 180ms;
 }
 
-/* Constant spacer — reserves the fixed header row only; deliberately does NOT animate. */
+/* Constant spacer — reserves the header's footprint at the top of the page so content never sits
+   under the fixed header. Deliberately does NOT animate: on desktop the header collapses on scroll,
+   but at scroll top it is fully expanded, so we reserve the expanded height there. Mobile is a single
+   row. (This is the page safe-area the shell overlay was always meant to have.) */
 .header-spacer {
   height: var(--header-row-height);
+}
+@media (min-width: 1024px) {
+  .header-spacer {
+    height: var(--header-expanded-height);
+  }
 }
 
 /* Animated white Header background panel — the header's real visual surface + bottom border. */
