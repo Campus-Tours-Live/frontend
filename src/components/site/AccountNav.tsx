@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Calendar,
   Clock,
+  Compass,
   List,
   User,
   CreditCard,
@@ -52,6 +53,7 @@ const PARTICIPANT_NAV: NavGroup[] = [
   {
     label: "Tours",
     items: [
+      { label: "Explore tours", icon: Compass, href: "/tours" },
       { label: "My bookings", icon: Calendar },
       { label: "Tour history", icon: Clock },
     ],
@@ -80,6 +82,7 @@ const GUIDE_NAV: NavGroup[] = [
   {
     label: "Tours",
     items: [
+      { label: "Explore tours", icon: Compass, href: "/tours" },
       { label: "Upcoming tours", icon: Calendar },
       { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
