@@ -462,7 +462,7 @@ export function TopicSectionPanel({ search }: SearchProps) {
                 setActiveIdx(i);
                 toggleTopic(t.value);
               }}
-              className={`flex w-full items-center justify-between rounded-field px-3 py-2 text-left text-ui-sm ${selected.has(t.value) ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"} ${i === activeIdx ? "ring-1 ring-primary/40" : ""}`}
+              className={`flex w-full items-center justify-between rounded-field px-3 py-2 text-left text-ui-sm ${selected.has(t.value) ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
             >
               {t.label}
               {selected.has(t.value) ? <Check size={16} strokeWidth={2.5} aria-hidden /> : null}
