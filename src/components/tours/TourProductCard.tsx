@@ -121,9 +121,13 @@ export function TourProductCard({
             <div className={cn("absolute inset-0", campus.gradient)} aria-hidden />
           )}
           {tour.isNew ? (
-            <span className="absolute left-3 top-3 z-10 rounded-pill bg-coral-foreground px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] text-ivory shadow-sm">
+            <Tag
+              color="coral"
+              variant="inverse"
+              className="absolute left-3 top-3 z-10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] shadow-sm"
+            >
               New
-            </span>
+            </Tag>
           ) : null}
           <IconButton
             variant="glass"
@@ -185,16 +189,15 @@ export function TourProductCard({
             </span>
           </div>
 
-          {/* Topic — shown once, as a single scannable chip. */}
-          <span
-            className={cn(
-              "inline-flex w-fit items-center gap-1.5 rounded-pill px-3 py-1.5 text-[12.5px] font-bold text-ivory",
-              t.solid,
-            )}
+          {/* Topic — shown once, as a single scannable chip (deep topic colour, light text). */}
+          <Tag
+            color={t.tagColor}
+            variant="inverse"
+            leading={<TopicIcon size={14} strokeWidth={2} aria-hidden />}
+            className="w-fit gap-1.5 px-3 py-1.5 text-[12.5px] font-bold"
           >
-            <TopicIcon size={14} strokeWidth={2} aria-hidden />
             {t.label}
-          </span>
+          </Tag>
 
           {/* Languages — their own row (all shown; the globe leads the group). */}
           {tour.languages.length > 0 ? (

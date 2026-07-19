@@ -11,50 +11,59 @@ import { cn } from "@/lib/utils";
  *   <Tag color="spark" variant="primary">New</Tag>
  */
 export type TagColor = "blue" | "gray" | "green" | "red" | "purple" | "spark" | "coral" | "sage";
-export type TagVariant = "primary" | "secondary" | "tertiary";
+export type TagVariant = "primary" | "secondary" | "tertiary" | "inverse";
 
 // Literal class strings (Tailwind can't JIT interpolated `bg-${color}-…`), all mapped to the app's
-// theme tokens. primary = solid emphasis, secondary = soft tint (default), tertiary = softest.
+// theme tokens. primary = solid emphasis, secondary = soft tint (default), tertiary = softest,
+// inverse = deep colour fill with light text (a bold, high-contrast chip — e.g. a category pill).
 const TAG_STYLES: Record<TagColor, Record<TagVariant, string>> = {
   blue: {
     primary: "bg-primary text-primary-foreground",
     secondary: "bg-primary-soft text-primary-dark",
     tertiary: "bg-primary-soft/60 text-primary-dark",
+    inverse: "bg-primary-dark text-ivory",
   },
   gray: {
     primary: "bg-ink text-white",
     secondary: "bg-muted text-ink",
     tertiary: "bg-muted/60 text-ink-soft",
+    inverse: "bg-ink text-white",
   },
   green: {
     primary: "bg-success text-success-foreground",
     secondary: "bg-success-soft text-success-foreground",
     tertiary: "bg-success-soft/60 text-success-foreground",
+    inverse: "bg-success-foreground text-ivory",
   },
   red: {
     primary: "bg-error text-error-foreground",
     secondary: "bg-error-soft text-error-foreground",
     tertiary: "bg-error-soft/60 text-error-foreground",
+    inverse: "bg-error-foreground text-ivory",
   },
   purple: {
     primary: "bg-purple text-purple-foreground",
     secondary: "bg-purple-soft text-purple-foreground",
     tertiary: "bg-purple-soft/60 text-purple-foreground",
+    inverse: "bg-purple-foreground text-ivory",
   },
   spark: {
     primary: "bg-warning text-warning-foreground",
     secondary: "bg-warning-soft text-warning-foreground",
     tertiary: "bg-warning-soft/60 text-warning-foreground",
+    inverse: "bg-warning-foreground text-ivory",
   },
   coral: {
     primary: "bg-coral text-coral-foreground",
     secondary: "bg-coral-soft text-coral-foreground",
     tertiary: "bg-coral-soft/60 text-coral-foreground",
+    inverse: "bg-coral-foreground text-ivory",
   },
   sage: {
     primary: "bg-sage text-sage-foreground",
     secondary: "bg-sage-soft text-sage-foreground",
     tertiary: "bg-sage-soft/60 text-sage-foreground",
+    inverse: "bg-sage-foreground text-ivory",
   },
 };
 

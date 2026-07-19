@@ -32,6 +32,15 @@ describe("Tag", () => {
     expect(screen.getByText("International")).toHaveClass("bg-sage-soft", "text-sage-foreground");
   });
 
+  it("inverse variant fills with the deep colour and light text", () => {
+    render(
+      <Tag color="coral" variant="inverse">
+        Campus life
+      </Tag>,
+    );
+    expect(screen.getByText("Campus life")).toHaveClass("bg-coral-foreground", "text-ivory");
+  });
+
   it("renders leading content before the children", () => {
     render(<Tag leading={<svg data-testid="icon" />}>Rated</Tag>);
     expect(screen.getByTestId("icon")).toBeInTheDocument();

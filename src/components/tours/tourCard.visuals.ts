@@ -60,8 +60,6 @@ export interface TopicStyle {
   icon: LucideIcon;
   /** Leading dot on the pill + guide avatar tint. */
   dot: string;
-  /** A deep, white-text-legible fill — the card's topic accent bar + the body chip. */
-  solid: string;
   /** Pill text colour. */
   text: string;
   /** Soft tag chip (bg + text). */
@@ -83,7 +81,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "coral",
     icon: Sparkles,
     dot: "bg-coral",
-    solid: "bg-coral-foreground",
     text: "text-coral-foreground",
     tag: "bg-coral-soft text-coral-foreground",
     mask: "from-coral/55 to-coral-foreground/20",
@@ -93,7 +90,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "blue",
     icon: BedDouble,
     dot: "bg-primary",
-    solid: "bg-primary-dark",
     text: "text-primary-dark",
     tag: "bg-primary-soft text-primary-dark",
     mask: "from-primary/55 to-primary-dark/25",
@@ -103,7 +99,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "spark",
     icon: UtensilsCrossed,
     dot: "bg-amber",
-    solid: "bg-warning-foreground",
     text: "text-warning-foreground",
     tag: "bg-warning-soft text-warning-foreground",
     mask: "from-amber/55 to-warning-foreground/20",
@@ -113,7 +108,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "sage",
     icon: Globe,
     dot: "bg-sage-deep",
-    solid: "bg-sage-foreground",
     text: "text-sage-foreground",
     tag: "bg-sage-soft text-sage-foreground",
     mask: "from-sage/60 to-sage-foreground/20",
@@ -123,7 +117,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "purple",
     icon: GraduationCap,
     dot: "bg-purple",
-    solid: "bg-purple-foreground",
     text: "text-purple-foreground",
     tag: "bg-purple-soft text-purple-foreground",
     mask: "from-purple/50 to-purple-foreground/20",
@@ -133,7 +126,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "purple",
     icon: Users,
     dot: "bg-purple",
-    solid: "bg-purple-foreground",
     text: "text-purple-foreground",
     tag: "bg-purple-soft text-purple-foreground",
     mask: "from-purple/45 to-purple-foreground/15",
@@ -143,7 +135,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "green",
     icon: Sprout,
     dot: "bg-success",
-    solid: "bg-success-foreground",
     text: "text-success-foreground",
     tag: "bg-success-soft text-success-foreground",
     mask: "from-success/55 to-success-foreground/20",
@@ -153,7 +144,6 @@ export const TOPIC_STYLE: Record<string, TopicStyle> = {
     tagColor: "blue",
     icon: ArrowRightLeft,
     dot: "bg-primary",
-    solid: "bg-primary-dark",
     text: "text-primary-dark",
     tag: "bg-primary-soft text-primary-dark",
     mask: "from-primary/45 to-primary-dark/15",
@@ -165,7 +155,6 @@ const TOPIC_FALLBACK: TopicStyle = {
   tagColor: "gray",
   icon: MapPin,
   dot: "bg-ink-soft",
-  solid: "bg-ink-soft",
   text: "text-ink-soft",
   tag: "bg-muted text-ink-soft",
   mask: "from-ink/35 to-ink/10",
