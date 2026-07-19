@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
 import { Body, Caption, Container, Heading, Link, StatusBadge } from "@/components/ui";
 import { AuthOptions } from "@/components/signup/AuthOptions";
+import { assetUrl } from "@/lib/assets";
 
 /**
  * Sign Up · Participant — route "/signup/participant" from design_new (#auth-flow).
@@ -32,7 +33,7 @@ export default function SignupParticipantPage() {
               both short and uncropped). */}
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[16/9] lg:hidden">
           <Image
-            src="/assets/participant_signup.png"
+            src={assetUrl("participant_signup.png")}
             alt="A student guide showing a prospective student around campus"
             fill
             sizes="100vw"
@@ -46,7 +47,7 @@ export default function SignupParticipantPage() {
         {/* Large: flush image filling the left half of the card. */}
         <div className="relative hidden overflow-hidden lg:block">
           <Image
-            src="/assets/participant_signup.png"
+            src={assetUrl("participant_signup.png")}
             alt=""
             fill
             sizes="50vw"

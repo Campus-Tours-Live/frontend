@@ -9,6 +9,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui";
+import { assetUrl } from "@/lib/assets";
 import { HeaderNav } from "./HeaderNav";
 import { MobileNav } from "./MobileNav";
 import {
@@ -186,7 +187,7 @@ export function SiteHeader({
                 aria-label="CampusToursLive.ai home"
               >
                 <Image
-                  src="/assets/logo.svg"
+                  src={assetUrl("logo.svg")}
                   alt="CampusToursLive.ai"
                   width={144}
                   height={36}

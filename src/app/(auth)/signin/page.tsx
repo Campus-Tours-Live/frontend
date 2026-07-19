@@ -14,6 +14,7 @@ import {
 // which a Server Component (this page) must not pull in.
 import { sanitizeReturnTo } from "@/lib/auth/returnTo";
 import { AuthOptions } from "@/components/signup/AuthOptions";
+import { assetUrl } from "@/lib/assets";
 
 /**
  * Sign In — route "/signin" from design_new (#auth-flow).
@@ -45,7 +46,7 @@ export default async function SignInPage({
               the students). A portrait image can't be both short and uncropped. */}
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[16/9] lg:hidden">
           <Image
-            src="/assets/signin.png"
+            src={assetUrl("signin.png")}
             alt="Student guides walking through a sunlit campus"
             fill
             sizes="100vw"
@@ -59,7 +60,7 @@ export default async function SignInPage({
         {/* Large: flush image filling the left half of the card. */}
         <div className="relative hidden overflow-hidden lg:block">
           <Image
-            src="/assets/signin.png"
+            src={assetUrl("signin.png")}
             alt=""
             fill
             sizes="50vw"

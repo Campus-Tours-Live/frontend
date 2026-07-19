@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useMe } from "@/lib/data-access";
 import { Body, Heading, MenuItem, MenuSection } from "@/components/ui";
+import { assetUrl } from "@/lib/assets";
 import { RoleSwitcher } from "./RoleSwitcher";
 
 /**
@@ -137,7 +138,7 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
         <Heading as="div" size="large" className="flex items-center gap-2">
           <span>Hi{name ? `, ${name}` : ""}!</span>
           <Image
-            src="/assets/wave-hand.svg"
+            src={assetUrl("wave_hand.svg")}
             alt=""
             width={22}
             height={22}

@@ -6,11 +6,14 @@ const BFF_URL = process.env.BFF_URL;
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Campus photos are served from a public Cloudflare R2 bucket (tour.universityImageUrl) —
-  // next/image only optimizes remote hosts explicitly allow-listed here.
+  // Remote images served from public Cloudflare R2 buckets — next/image only optimizes hosts
+  // explicitly allow-listed here.
   images: {
     remotePatterns: [
+      // University campus photos (backend-provided tour.universityImageUrl).
       { protocol: "https", hostname: "pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev" },
+      // Static app assets (hero/signup/logo images — see @/lib/assets).
+      { protocol: "https", hostname: "pub-211d5907b19d42af9733080e09f8ebbb.r2.dev" },
     ],
   },
   // Next.js 16 uses Turbopack by default for dev and build (Webpack-compatible,

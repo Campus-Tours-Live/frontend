@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { RotateCcw, Telescope } from "lucide-react";
+import { assetUrl } from "@/lib/assets";
 import {
   Alert,
   Badge,
@@ -283,7 +284,7 @@ export function AllToursPage() {
                 where there isn't room for it beside the copy. */}
             <div className="hidden lg:block">
               <Image
-                src="/assets/hero-exlpore-campus.png"
+                src={assetUrl("hero_explore_campus.png")}
                 alt=""
                 width={1448}
                 height={1086}

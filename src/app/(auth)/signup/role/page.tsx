@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
 import { Alert, Body, Container, SectionHeading } from "@/components/ui";
 import { RoleCard, type RoleCardProps } from "@/components/signup/RoleCard";
+import { assetUrl } from "@/lib/assets";
 import { getServerMe } from "@/lib/http/serverMe";
 
 /**
@@ -11,7 +12,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  */
 const ROLES: RoleCardProps[] = [
   {
-    image: "/assets/participant.png",
+    image: assetUrl("participant.png"),
     imageAlt: "Participant onboarding illustration",
     badge: "Participant",
     badgeVariant: "info",
@@ -27,7 +28,7 @@ const ROLES: RoleCardProps[] = [
     ctaHref: "/signup/participant",
   },
   {
-    image: "/assets/guide.png",
+    image: assetUrl("guide.png"),
     imageAlt: "Guide application illustration",
     badge: "Guide application",
     badgeVariant: "warning",
