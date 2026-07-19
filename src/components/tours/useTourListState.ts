@@ -9,6 +9,7 @@ const QUERY_DEBOUNCE_MS = 250;
 
 export interface TourListState {
   query: string;
+  universityId: string;
   topicIds: string[];
   sort: TourCatalogSort;
   page: number;
@@ -43,6 +44,7 @@ export function useTourListState(): TourListState {
         .filter(Boolean),
     ),
   );
+  const universityId = params.get("universityId") ?? "";
   const sortParam = params.get("sort") as TourCatalogSort | null;
   const sort = sortParam && SORTS.has(sortParam) ? sortParam : "RECOMMENDED";
   const pageParam = Number(params.get("page"));
@@ -116,6 +118,7 @@ export function useTourListState(): TourListState {
 
   return {
     query,
+    universityId,
     topicIds,
     sort,
     page,

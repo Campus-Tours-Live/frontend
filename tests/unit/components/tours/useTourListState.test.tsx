@@ -40,6 +40,12 @@ describe("useTourListState", () => {
     expect(result.current.topicIds).toEqual(["GENERAL_CAMPUS", "DORM_HOUSING"]);
   });
 
+  it("reads universityId from the URL", () => {
+    search = "universityId=abc-123";
+    const { result } = renderHook(() => useTourListState());
+    expect(result.current.universityId).toBe("abc-123");
+  });
+
   it("changeTopics writes repeated params and resets page", () => {
     const { result } = renderHook(() => useTourListState());
     act(() => result.current.changeTopics(["GENERAL_CAMPUS", "DORM_HOUSING"]));

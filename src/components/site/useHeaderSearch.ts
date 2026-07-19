@@ -8,9 +8,14 @@ import { useHeaderScrollState } from "./useHeaderScrollState";
 
 /** Build a /tours URL from the search draft; `canonicalTopicIds` must already be canonical (see
  *  `canonicalizeTopicIds`) — this function never re-derives the empty/full-set rule. */
-function buildToursHref(q: string, canonicalTopicIds: string[]): string {
+function buildToursHref(
+  q: string,
+  canonicalTopicIds: string[],
+  universityId: string | null,
+): string {
   const params = new URLSearchParams();
-  if (q.trim()) params.set("q", q.trim());
+  if (universityId) params.set("universityId", universityId);
+  else if (q.trim()) params.set("q", q.trim());
   for (const id of canonicalTopicIds) params.append("topic", id);
   const qs = params.toString();
   return qs ? `/tours?${qs}` : "/tours";
@@ -90,13 +95,22 @@ export function useHeaderSearch() {
   // fetches. Set true on change; cleared on select / blur / commit / end. Focusing a pre-filled field
   // without editing, or having just picked a school, leaves it false → no external API call.
   const [uniQueryActive, setUniQueryActive] = useState(false);
+  // The chosen platform university id (UUID) — set when a suggestion is picked, cleared when the user
+  // edits the text. On Search this filters /tours by universityId (exact) rather than a free-text `q`,
+  // which never matched the Scorecard label against the catalog's names.
+  const [selectedUniversityId, setSelectedUniversityId] = useState<string | null>(null);
 
+  // Search the platform's university catalog (GET /v1/universities) — ids are the platform UUIDs the
+  // /tours filter needs, and the names match the catalog (so a pick actually resolves to its tours).
   const { data: matches, isFetching } = useUniversitySearch(q, {
     enabled: uniQueryActive && q.trim().length >= 1,
-    source: "live",
+    source: "catalog",
   });
   const queryHasText = q.trim().length >= 1;
-  const suggestions = queryHasText ? (matches ?? []).map((m) => m.name) : readRecentUniversities();
+  // Suggestions carry the id (results) so a pick sets universityId; recent history has no id (null).
+  const suggestions: { id: string | null; name: string }[] = queryHasText
+    ? (matches ?? []).map((m) => ({ id: m.id, name: m.name }))
+    : readRecentUniversities().map((name) => ({ id: null, name }));
   const universityLoading = queryHasText && isFetching;
 
   // Collapse UI is desktop-only; keep the scroll machinery off below the breakpoint.
@@ -157,15 +171,22 @@ export function useHeaderSearch() {
     const canonicalTopicIds = canonicalizeTopicIds(selectedTopicIds, allTopicValues);
     if (onTours) {
       const next = new URLSearchParams(params.toString());
-      if (q.trim()) next.set("q", q.trim());
-      else next.delete("q");
+      // A picked university → exact universityId filter (no free-text q). Otherwise fall back to `q`.
+      if (selectedUniversityId) {
+        next.set("universityId", selectedUniversityId);
+        next.delete("q");
+      } else {
+        next.delete("universityId");
+        if (q.trim()) next.set("q", q.trim());
+        else next.delete("q");
+      }
       next.delete("topic");
       for (const id of canonicalTopicIds) next.append("topic", id);
       next.delete("page");
       const qs = next.toString();
       router.replace(qs ? `/tours?${qs}` : "/tours", { scroll: false });
     } else {
-      router.push(buildToursHref(q, canonicalTopicIds));
+      router.push(buildToursHref(q, canonicalTopicIds, selectedUniversityId));
     }
     setForceExpanded(false);
     setPendingFocus(false);
@@ -173,7 +194,7 @@ export function useHeaderSearch() {
     setPanelVisible(false);
     setUniQueryActive(false);
     setSheetOpen(false);
-  }, [q, selectedTopicIds, allTopicValues, onTours, params, router]);
+  }, [q, selectedUniversityId, selectedTopicIds, allTopicValues, onTours, params, router]);
 
   /** Expand the header without choosing a section. */
   const ensureExpanded = useCallback(() => setForceExpanded(true), []);
@@ -220,15 +241,18 @@ export function useHeaderSearch() {
    *  (so the live API fetches). */
   const onUniversityChange = useCallback((value: string) => {
     setQ(value);
+    setSelectedUniversityId(null); // typing invalidates a prior pick — back to free text
     setActiveSection("university");
     setPanelVisible(true);
     setUniQueryActive(true);
   }, []);
 
-  /** Choosing a University row (a suggestion or recent search): fill the field and CLOSE the popover.
-   *  The value persists (it is not reverted); the header stays expanded so the user can Search. */
-  const selectUniversity = useCallback((name: string) => {
+  /** Choosing a University row: fill the field, remember the platform id (so Search filters by
+   *  universityId), and CLOSE the popover. Recent-history rows have no id → fall back to a free-text
+   *  `q` (their names are catalog names, so they still match). The value persists (not reverted). */
+  const selectUniversity = useCallback((id: string | null, name: string) => {
     setQ(name);
+    setSelectedUniversityId(id);
     setActiveSection(null);
     setPanelVisible(false);
     setUniQueryActive(false);

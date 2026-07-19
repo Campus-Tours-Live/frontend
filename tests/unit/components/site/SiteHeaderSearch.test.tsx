@@ -296,6 +296,18 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(form.getByLabelText("University")).toHaveValue("Harvard");
   });
 
+  it("commits a picked university as an exact universityId filter (not free-text q)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const input = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(input, "Stanford");
+    await user.click(await screen.findByRole("option", { name: "Stanford University" }));
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Search" }));
+    const url = push.mock.calls.at(-1)![0] as string;
+    expect(url).toContain("universityId=u1"); // the mock suggestion's id
+    expect(url).not.toContain("q=");
+  });
+
   it("closes the University popover once a suggestion is chosen (no lingering results)", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);

@@ -176,6 +176,7 @@ function Results({
 export function AllToursPage() {
   const {
     query,
+    universityId,
     topicIds: rawTopicIds,
     sort,
     page,
@@ -198,6 +199,7 @@ export function AllToursPage() {
   const filters = useMemo(
     () => ({
       q: query.trim() || undefined,
+      universityId: universityId || undefined,
       topicIds: topicIds.length ? topicIds : undefined,
       sort,
       page,
@@ -205,7 +207,7 @@ export function AllToursPage() {
       // rows at any width — no empty bottom-right cell on the 3-column desktop layout.
       limit: 24,
     }),
-    [query, sort, topicIds, page],
+    [query, universityId, sort, topicIds, page],
   );
 
   const { data, isLoading, isError, refetch } = useTourCatalog(filters);

@@ -292,12 +292,12 @@ export function UniversitySectionPanel({ search }: SearchProps) {
               aria-label="University suggestions"
               className="flex flex-col gap-0.5"
             >
-              {suggestions.map((name) => (
+              {suggestions.map((s) => (
                 <UniversityOptionRow
-                  key={name}
-                  name={name}
-                  active={q === name}
-                  onChoose={() => selectUniversity(name)}
+                  key={s.name}
+                  name={s.name}
+                  active={q === s.name}
+                  onChoose={() => selectUniversity(s.id, s.name)}
                 />
               ))}
             </ul>
@@ -317,12 +317,12 @@ export function UniversitySectionPanel({ search }: SearchProps) {
                   aria-label="University suggestions"
                   className="flex flex-col gap-0.5"
                 >
-                  {suggestions.map((name) => (
+                  {suggestions.map((s) => (
                     <UniversityOptionRow
-                      key={name}
-                      name={name}
-                      active={q === name}
-                      onChoose={() => selectUniversity(name)}
+                      key={s.name}
+                      name={s.name}
+                      active={q === s.name}
+                      onChoose={() => selectUniversity(s.id, s.name)}
                     />
                   ))}
                 </ul>
