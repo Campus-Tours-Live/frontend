@@ -8,6 +8,7 @@ import {
   Button,
   Caption,
   Drawer,
+  Heading,
   IconButton,
   Modal,
   SegmentedControl,
@@ -564,9 +565,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
   };
 
   const header = (
-    <h2 id="date-override-modal-title" className="font-display text-[22px] font-bold text-ink">
+    <Heading as="h2" id="date-override-modal-title" size="xlarge" weight={700} color="ink">
       Date-specific hours · {formatDayHeader(date)}
-    </h2>
+    </Heading>
   );
 
   const footer =
@@ -710,7 +711,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
                     <li key={index}>{message}</li>
                   ))}
                 </ul>
-                <p className="mt-1 font-medium">Confirm the change?</p>
+                <Body as="p" size="small" weight={500} color="inherit" className="mt-1">
+                  Confirm the change?
+                </Body>
               </Alert>
             ) : null}
             <ul className="mt-3 space-y-4">

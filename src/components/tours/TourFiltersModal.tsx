@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Modal, SelectField } from "@/components/ui";
+import { Button, Heading, Modal, SelectField } from "@/components/ui";
 import type { TourCatalogSort } from "@/lib/data-access";
 
 const SORTS: { value: TourCatalogSort; label: string }[] = [
@@ -52,9 +52,9 @@ export function TourFiltersModal({
       onClose={onClose}
       labelledBy="tour-filters-title"
       header={
-        <h2 id="tour-filters-title" className="font-display text-h4 text-ink">
+        <Heading as="h2" size="h4" id="tour-filters-title">
           Filters
-        </h2>
+        </Heading>
       }
       footer={
         <div className="flex items-center justify-between gap-3">

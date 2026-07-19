@@ -37,19 +37,25 @@ export function GuideProfilePage() {
             <Body as="dt" size="small" color="muted">
               Display name
             </Body>
-            <dd className="font-semibold text-ink">{profile.displayName ?? "—"}</dd>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {profile.displayName ?? "—"}
+            </Body>
           </div>
           <div>
             <Body as="dt" size="small" color="muted">
               Email
             </Body>
-            <dd className="font-semibold text-ink">{profile.email ?? "—"}</dd>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {profile.email ?? "—"}
+            </Body>
           </div>
           <div>
             <Body as="dt" size="small" color="muted">
               Member since
             </Body>
-            <dd className="font-semibold text-ink">{formatMonthYear(me?.createdAt)}</dd>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {formatMonthYear(me?.createdAt)}
+            </Body>
           </div>
           <div>
             <Body as="dt" size="small" color="muted">
@@ -65,9 +71,9 @@ export function GuideProfilePage() {
             <Body as="dt" size="small" color="muted">
               Verification
             </Body>
-            <dd className="font-semibold text-ink">
+            <Body as="dd" size="small" weight={600} color="ink">
               {verificationStatusLabel(profile.verificationStatus)}
-            </dd>
+            </Body>
           </div>
         </dl>
       </Card>
