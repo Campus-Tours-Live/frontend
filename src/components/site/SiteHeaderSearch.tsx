@@ -7,7 +7,7 @@ import {
   type RefObject,
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
-import { Check, Clock, GraduationCap, MapPin, Search, type LucideIcon } from "lucide-react";
+import { Check, Clock, GraduationCap, MapPin, Search, X, type LucideIcon } from "lucide-react";
 import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
@@ -74,6 +74,7 @@ function ExpandedContent({
     onUniversityFocus,
     onUniversityChange,
     onUniversityBlur,
+    clearUniversity,
     onSearchFocusCapture,
     onSearchBlurCapture,
   } = search;
@@ -97,21 +98,36 @@ function ExpandedContent({
           data-active={activeSection === "university"}
         >
           <span className="text-[11px] font-bold leading-tight text-ink">University</span>
-          <input
-            ref={universityInputRef}
-            type="text"
-            role="combobox"
-            aria-label="University"
-            aria-autocomplete="list"
-            aria-expanded={activeSection === "university" && panelVisible}
-            aria-controls="header-university-panel"
-            value={q}
-            onChange={(e) => onUniversityChange(e.target.value)}
-            onFocus={onUniversityFocus}
-            onBlur={onUniversityBlur}
-            placeholder="Search a school"
-            className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              ref={universityInputRef}
+              type="text"
+              role="combobox"
+              aria-label="University"
+              aria-autocomplete="list"
+              aria-expanded={activeSection === "university" && panelVisible}
+              aria-controls="header-university-panel"
+              value={q}
+              onChange={(e) => onUniversityChange(e.target.value)}
+              onFocus={onUniversityFocus}
+              onBlur={onUniversityBlur}
+              placeholder="Search a school"
+              className="min-w-0 flex-1 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
+            />
+            {q.trim().length > 0 ? (
+              <button
+                type="button"
+                aria-label="Clear university"
+                // preventDefault keeps the input focused (no blur), so clearing doesn't collapse
+                // the panel; clearUniversity empties q without firing the schools API.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={clearUniversity}
+                className="grid size-5 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink"
+              >
+                <X size={14} strokeWidth={2.5} aria-hidden />
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <span className={DIVIDER} aria-hidden />
@@ -536,6 +552,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
     q,
     onUniversityChange,
     selectUniversity,
+    clearUniversity,
     suggestions,
     recentUniversities,
     uniQueryActive,
@@ -625,6 +642,16 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                     placeholder="Search a school"
                     className="min-w-0 flex-1 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
                   />
+                  {q.trim().length > 0 ? (
+                    <button
+                      type="button"
+                      aria-label="Clear university"
+                      onClick={clearUniversity}
+                      className="grid size-6 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink"
+                    >
+                      <X size={16} strokeWidth={2.5} aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="mt-4 flex flex-col gap-1">

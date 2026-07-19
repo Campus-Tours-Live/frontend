@@ -349,6 +349,24 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
   });
 
+  it("shows an inline ✕ only when the University field has content, and clearing empties it without firing the API", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    const form = within(screen.getByRole("search"));
+    const input = form.getByLabelText("University");
+    // Empty field → no clear affordance.
+    expect(form.queryByRole("button", { name: "Clear university" })).not.toBeInTheDocument();
+    await user.type(input, "Stanford");
+    expect(await screen.findByRole("option", { name: "Stanford University" })).toBeInTheDocument();
+    // ✕ appears with content; clicking it empties the field and removes itself again.
+    await user.click(form.getByRole("button", { name: "Clear university" }));
+    expect(input).toHaveValue("");
+    expect(form.queryByRole("button", { name: "Clear university" })).not.toBeInTheDocument();
+    // The now-empty field does not fire the schools API (no results / "No schools found").
+    expect(screen.queryByRole("option", { name: "Stanford University" })).not.toBeInTheDocument();
+    expect(screen.queryByText("No schools found")).not.toBeInTheDocument();
+  });
+
   it("focusing a pre-filled University field opens no popover (no results / No schools found)", async () => {
     pathname = "/tours";
     search = "q=Harvard";

@@ -254,6 +254,16 @@ export function useHeaderSearch() {
     setActiveSection((prev) => (prev === "university" ? null : prev));
   }, []);
 
+  /** Clear the University field via the inline ✕. Empties `q` WITHOUT enabling the live typeahead
+   *  (an empty field must not fire the schools API); keeps the section focused and re-surfaces the
+   *  recent / nearby panel, exactly like focusing an empty field. */
+  const clearUniversity = useCallback(() => {
+    setQ("");
+    setUniQueryActive(false);
+    setActiveSection("university");
+    setPanelVisible(true);
+  }, []);
+
   /** Enter a section while already expanded (e.g. clicking the expanded Topic segment). */
   const enterSection = useCallback((section: NonNullable<HeaderSection>) => {
     setActiveSection(section);
@@ -329,6 +339,7 @@ export function useHeaderSearch() {
     onUniversityFocus,
     onUniversityChange,
     selectUniversity,
+    clearUniversity,
     onUniversityBlur,
     onSearchFocusCapture,
     onSearchBlurCapture,
