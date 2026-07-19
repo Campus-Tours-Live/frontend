@@ -345,6 +345,21 @@ export function UniversitySectionPanel({ search }: SearchProps) {
   );
 }
 
+/** A checkbox-square for a Topic option — signals multi-select (a checkbox, not a radio/highlight).
+ *  Empty bordered square when off; filled with a check when on. */
+function TopicCheck({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`grid h-5 w-5 shrink-0 place-items-center rounded-[6px] border-2 transition-colors ${
+        checked ? "border-primary bg-primary text-primary-foreground" : "border-border"
+      }`}
+    >
+      {checked ? <Check size={13} strokeWidth={3} /> : null}
+    </span>
+  );
+}
+
 /** TopicSectionPanel — the Topic module, a real multi-select listbox. Same header-sibling
  *  `.ds-panel` container as the University module, gated by `activeSection === "topic"` +
  *  `panelVisible`. Options come from the backend topic vocabulary (`useTourTopics`) — never
@@ -427,7 +442,10 @@ export function TopicSectionPanel({ search }: SearchProps) {
       }}
       className="ds-panel ds-panel--topic hidden rounded-card border border-border bg-card shadow-lg lg:block"
     >
-      <div className="p-2">
+      <p className="px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+        Topic · select all that apply
+      </p>
+      <div className="px-2 pb-1">
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
@@ -459,8 +477,9 @@ export function TopicSectionPanel({ search }: SearchProps) {
                 setActiveIdx(i);
                 toggleTopic(t.value);
               }}
-              className={`w-full rounded-field px-3 py-2 text-left text-ui-sm ${selected.has(t.value) ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"} ${i === activeIdx ? "ring-1 ring-primary/40" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-field px-3 py-2 text-left text-ui-sm hover:bg-muted ${selected.has(t.value) ? "font-semibold text-ink" : "text-ink"} ${i === activeIdx ? "ring-1 ring-primary/40" : ""}`}
             >
+              <TopicCheck checked={selected.has(t.value)} />
               {t.label}
             </button>
           </li>
@@ -675,6 +694,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
             {section === "topic" ? (
               <section className={cardCls}>
                 <h2 className={titleCls}>Topic</h2>
+                <p className="-mt-2 mb-3 text-ui-sm text-ink-soft">Select all that apply.</p>
                 <div className="flex flex-col gap-1">
                   <button
                     type="button"
@@ -692,10 +712,10 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                         role="option"
                         aria-selected={on}
                         onClick={() => toggleTopic(t.value)}
-                        className={`flex items-center justify-between rounded-field px-3 py-2.5 text-left text-ui-sm ${on ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
+                        className={`flex items-center gap-3 rounded-field px-3 py-2.5 text-left text-ui-sm hover:bg-muted ${on ? "font-semibold text-ink" : "text-ink"}`}
                       >
+                        <TopicCheck checked={on} />
                         {t.label}
-                        {on ? <Check size={16} strokeWidth={2.5} aria-hidden /> : null}
                       </button>
                     );
                   })}
