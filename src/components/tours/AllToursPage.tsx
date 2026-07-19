@@ -252,7 +252,7 @@ export function AllToursPage() {
 
   return (
     <div className="pb-24">
-      <section className="border-b border-border/70 bg-sage-soft">
+      <section className="border-b border-border/70 bg-muted">
         <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
           <SectionHeading
             eyebrow="Explore tours"
