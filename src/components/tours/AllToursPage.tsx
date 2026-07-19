@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { ArrowRight, RotateCcw, Telescope } from "lucide-react";
+import { RotateCcw, Telescope } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -11,7 +11,6 @@ import {
   Card,
   Heading,
   Icon,
-  Link,
   List,
   ListItem,
   Pagination,
@@ -81,15 +80,18 @@ function UniversityFallbackCard({ university }: { university: (typeof UNIVERSITI
       <Body size="medium" color="muted" className="mt-3 flex-1">
         {university.body}
       </Body>
-      <Link
-        href={university.href}
+      <Button
         variant="secondary"
         size="small"
-        className="mt-5 w-full sm:w-auto"
+        disabled
+        title="Coming soon"
+        className="mt-5 inline-flex w-full items-center justify-center gap-1.5 sm:w-auto"
       >
         Explore university
-        <ArrowRight size={15} strokeWidth={2} />
-      </Link>
+        <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-ink-soft">
+          Soon
+        </span>
+      </Button>
     </Card>
   );
 }

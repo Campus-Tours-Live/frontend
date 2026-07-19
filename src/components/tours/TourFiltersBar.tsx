@@ -46,10 +46,15 @@ export function TourFiltersBar({
         variant="secondary"
         size="small"
         onClick={onOpenFilters}
+        disabled
+        title="Coming soon"
         className="inline-flex shrink-0 items-center gap-1.5"
       >
         <SlidersHorizontal size={15} strokeWidth={2} aria-hidden />
         Filters
+        <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-ink-soft">
+          Soon
+        </span>
       </Button>
       <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden />
       <Chip

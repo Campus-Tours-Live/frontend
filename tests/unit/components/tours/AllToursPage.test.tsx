@@ -138,12 +138,15 @@ describe("AllToursPage", () => {
     expect(replace).toHaveBeenCalledWith("/tours?topic=DORM_HOUSING", { scroll: false });
   });
 
-  it("opens the Filters modal from the Filters button", async () => {
+  it("disables the Filters button (coming soon) — it does not open the modal", async () => {
     mockCatalog({ items: [tour], totalPages: 1, totalElements: 1 });
     const user = userEvent.setup();
     render(<AllToursPage />);
-    await user.click(screen.getByRole("button", { name: /filters/i }));
-    expect(screen.getByRole("button", { name: /show 1 tours/i })).toBeInTheDocument();
+    const filters = screen.getByRole("button", { name: /filters/i });
+    expect(filters).toBeDisabled();
+    expect(filters).toHaveTextContent(/soon/i);
+    await user.click(filters);
+    expect(screen.queryByRole("button", { name: /show 1 tours/i })).not.toBeInTheDocument();
   });
 
   it("renders loading, empty, and fallback states", async () => {
@@ -163,7 +166,9 @@ describe("AllToursPage", () => {
     expect(
       screen.getByRole("heading", { name: "Showing university suggestions" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /Explore university/i })).toHaveLength(7);
+    const exploreButtons = screen.getAllByRole("button", { name: /Explore university/i });
+    expect(exploreButtons).toHaveLength(7);
+    exploreButtons.forEach((b) => expect(b).toBeDisabled());
     expect(screen.getAllByText("North Coast University")).toHaveLength(2);
     expect(screen.getAllByText("Harborview University")).toHaveLength(2);
 

@@ -56,14 +56,17 @@ describe("TourFiltersBar", () => {
     expect(onTopicsChange).toHaveBeenLastCalledWith([]);
   });
 
-  it("opens the filters modal", async () => {
+  it("disables the Filters button (coming soon) and does not open the modal", async () => {
     const onOpenFilters = jest.fn();
     const user = userEvent.setup();
     render(
       <TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onOpenFilters={onOpenFilters} />,
     );
-    await user.click(screen.getByRole("button", { name: /filters/i }));
-    expect(onOpenFilters).toHaveBeenCalled();
+    const filters = screen.getByRole("button", { name: /filters/i });
+    expect(filters).toBeDisabled();
+    expect(filters).toHaveTextContent(/soon/i);
+    await user.click(filters);
+    expect(onOpenFilters).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Any" })).toHaveAttribute("aria-pressed", "true");
   });
 });
