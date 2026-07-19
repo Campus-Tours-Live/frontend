@@ -7,8 +7,8 @@ import {
   type RefObject,
   type TransitionEvent as ReactTransitionEvent,
 } from "react";
-import { MapPin, Search } from "lucide-react";
-import { Button, Checkbox, Drawer } from "@/components/ui";
+import { Check, Clock, GraduationCap, MapPin, Search, X, type LucideIcon } from "lucide-react";
+import { Button, Drawer } from "@/components/ui";
 import type { HeaderSearch } from "./useHeaderSearch";
 
 interface SearchProps {
@@ -472,25 +472,98 @@ export function TopicSectionPanel({ search }: SearchProps) {
 
 /** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet.
  *  Kept as-is for now; a dedicated mobile visual is a later step. */
+/** A destination row in the mobile "Where?" card (a live match or a recent search). Shows the bare
+ *  school name, with the city/state (from a live "Name — City, ST" label) as a secondary line. */
+function MobileUniRow({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+}) {
+  const [name, place] = label.split(" — ");
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-3 rounded-field px-1 py-2 text-left hover:bg-muted"
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-muted text-ink-soft">
+        <Icon size={18} strokeWidth={2} aria-hidden />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-ui-sm font-semibold text-ink">{name}</span>
+        {place ? <span className="block truncate text-ui-sm text-ink-soft">{place}</span> : null}
+      </span>
+    </button>
+  );
+}
+
+/** A collapsed accordion row (label left, current value right) — tap to expand that section. */
+function MobileCollapsedRow({
+  label,
+  value,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center justify-between rounded-card border border-border bg-card px-5 py-4 text-left shadow-sm"
+    >
+      <span className="text-ui-sm font-semibold text-ink-soft">{label}</span>
+      <span className="truncate pl-4 text-ui-sm font-semibold text-ink">{value}</span>
+    </button>
+  );
+}
+
+/** HeaderSearchMobile — the mobile control: a full-width pill that opens an Airbnb-style bottom-sheet
+ *  accordion. Exactly one section (Where / Topic) is expanded as a white card; the other collapses to
+ *  a summary row. Footer: Clear all + Search. Desktop uses the morphing shell instead (this is hidden
+ *  at lg). */
 export function HeaderSearchMobile({ search }: SearchProps) {
   const {
     q,
+    onUniversityChange,
+    selectUniversity,
+    suggestions,
+    queryHasText,
     setQ,
     selectedTopicIds,
     toggleTopic,
     clearTopics,
     topicOptions,
+    topicSummary,
     summary,
     sheetOpen,
     setSheetOpen,
     commitSearch,
   } = search;
+  const [section, setSection] = useState<"university" | "topic">("university");
+
+  // Picking a school fills Where and advances to Topic (like Airbnb advancing to the next step).
+  const pickUniversity = (label: string) => {
+    selectUniversity(label);
+    setSection("topic");
+  };
+
+  const cardCls = "rounded-card border border-border bg-card p-5 shadow-sm";
+  const titleCls = "mb-4 font-display text-h4 font-bold text-ink";
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setSheetOpen(true)}
+        onClick={() => {
+          setSection("university");
+          setSheetOpen(true);
+        }}
         className="search flex min-w-0 flex-1 items-center gap-2 text-left lg:hidden"
       >
         <Search size={18} strokeWidth={2} aria-hidden />
@@ -501,7 +574,19 @@ export function HeaderSearchMobile({ search }: SearchProps) {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         side="bottom"
-        title="Search tours"
+        ariaLabel="Search tours"
+        header={
+          <div className="flex justify-end">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setSheetOpen(false)}
+              className="grid h-9 w-9 place-items-center rounded-pill border border-border bg-card text-ink"
+            >
+              <X size={18} strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        }
         footer={
           <div className="flex items-center justify-between gap-3">
             <Button
@@ -514,51 +599,126 @@ export function HeaderSearchMobile({ search }: SearchProps) {
             >
               Clear all
             </Button>
-            <Button variant="primary" size="small" onClick={commitSearch}>
+            <Button
+              variant="primary"
+              size="small"
+              onClick={commitSearch}
+              className="inline-flex items-center gap-1.5"
+            >
+              <Search size={16} strokeWidth={2} aria-hidden />
               Search
             </Button>
           </div>
         }
       >
-        <div className="space-y-4">
-          <label className="block">
-            <span className="mb-1 block text-ui-sm font-bold text-ink">University</span>
-            <input
-              type="text"
-              aria-label="University"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search a school"
-              className="w-full rounded-field border border-input bg-white px-3 py-2 text-ui-sm outline-none"
-            />
-          </label>
-          <fieldset className="block">
-            <legend className="mb-1 block text-ui-sm font-bold text-ink">Topic</legend>
-            <div className="flex flex-col gap-2">
-              {topicOptions.map((t) => (
-                <Checkbox
-                  key={t.value}
-                  label={t.label}
-                  checked={selectedTopicIds.includes(t.value)}
-                  onChange={() => toggleTopic(t.value)}
-                />
-              ))}
-            </div>
-          </fieldset>
-          <div
-            className="flex items-center justify-between opacity-50"
-            aria-disabled="true"
-            aria-label="Language — coming soon"
-          >
-            <span className="text-ui-sm font-bold text-ink">Language</span>
-            <span className="inline-flex items-center gap-1.5 text-ui-sm text-ink-soft">
-              Any language
-              <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                Soon
-              </span>
-            </span>
+        {sheetOpen ? (
+          <div className="flex flex-col gap-3">
+            {/* Where / University */}
+            {section === "university" ? (
+              <section className={cardCls}>
+                <h2 className={titleCls}>Where?</h2>
+                <div className="flex items-center gap-2 rounded-pill border border-input px-4 py-3">
+                  <Search size={18} strokeWidth={2} className="text-ink-soft" aria-hidden />
+                  <input
+                    type="text"
+                    aria-label="University"
+                    value={q}
+                    onChange={(e) => onUniversityChange(e.target.value)}
+                    placeholder="Search a school"
+                    className="min-w-0 flex-1 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-col gap-1">
+                  {queryHasText ? (
+                    suggestions.length > 0 ? (
+                      suggestions.map((label) => (
+                        <MobileUniRow
+                          key={label}
+                          label={label}
+                          icon={GraduationCap}
+                          onClick={() => pickUniversity(label)}
+                        />
+                      ))
+                    ) : (
+                      <p className="px-1 py-3 text-ui-sm text-ink-soft">No schools found</p>
+                    )
+                  ) : (
+                    <>
+                      {suggestions.length > 0 ? (
+                        <>
+                          <p className="px-1 pb-1 pt-1 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+                            Recent searches
+                          </p>
+                          {suggestions.map((label) => (
+                            <MobileUniRow
+                              key={label}
+                              label={label}
+                              icon={Clock}
+                              onClick={() => pickUniversity(label)}
+                            />
+                          ))}
+                        </>
+                      ) : null}
+                      <p className="px-1 pb-1 pt-3 text-[11px] font-bold uppercase tracking-[0.06em] text-ink-soft">
+                        Suggested
+                      </p>
+                      <MobileUniRow
+                        label="Nearby — Find what's around you"
+                        icon={MapPin}
+                        onClick={() => setQ("")}
+                      />
+                    </>
+                  )}
+                </div>
+              </section>
+            ) : (
+              <MobileCollapsedRow
+                label="Where"
+                value={q.trim() || "Add school"}
+                onClick={() => setSection("university")}
+              />
+            )}
+
+            {/* Topic */}
+            {section === "topic" ? (
+              <section className={cardCls}>
+                <h2 className={titleCls}>Topic</h2>
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={clearTopics}
+                    className={`rounded-field px-3 py-2.5 text-left text-ui-sm ${selectedTopicIds.length === 0 ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
+                  >
+                    All topics
+                  </button>
+                  {topicOptions.map((t) => {
+                    const on = selectedTopicIds.includes(t.value);
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        role="option"
+                        aria-selected={on}
+                        onClick={() => toggleTopic(t.value)}
+                        className={`flex items-center justify-between rounded-field px-3 py-2.5 text-left text-ui-sm ${on ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
+                      >
+                        {t.label}
+                        {on ? <Check size={16} strokeWidth={2.5} aria-hidden /> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : (
+              <MobileCollapsedRow
+                label="Topic"
+                value={topicSummary}
+                onClick={() => setSection("topic")}
+              />
+            )}
           </div>
-        </div>
+        ) : null}
       </Drawer>
     </>
   );

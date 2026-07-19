@@ -370,4 +370,19 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     await user.click(within(sheet).getByRole("button", { name: "Search" }));
     expect(push).toHaveBeenCalledWith("/tours?q=Yale");
   });
+
+  it("mobile accordion: picking a school advances to the Topic step and collapses Where", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(screen.getByRole("button", { name: "Search tours" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Search tours" }));
+    // Where step is expanded first.
+    expect(sheet.getByRole("heading", { name: "Where?" })).toBeInTheDocument();
+    await user.type(sheet.getByLabelText("University"), "Yale");
+    await user.click(await sheet.findByRole("button", { name: /Yale University/ }));
+    // Advances to Topic; Where collapses to a summary row showing the pick.
+    expect(sheet.getByRole("heading", { name: "Topic" })).toBeInTheDocument();
+    expect(sheet.queryByRole("heading", { name: "Where?" })).not.toBeInTheDocument();
+    expect(sheet.getByText("Yale University")).toBeInTheDocument();
+  });
 });
