@@ -155,7 +155,7 @@ describe("AllToursPage", () => {
     mockCatalog({ items: [] });
     rerender(<AllToursPage />);
     expect(
-      screen.getByRole("heading", { name: "No tours match these filters" }),
+      screen.getByRole("heading", { name: "No tours match your filters yet" }),
     ).toBeInTheDocument();
 
     mockCatalog({ isError: true });
@@ -176,7 +176,7 @@ describe("AllToursPage", () => {
     mockCatalog({ items: [] });
     render(<AllToursPage />);
 
-    await user.click(screen.getByRole("button", { name: "Clear filters" }));
+    await user.click(screen.getByRole("button", { name: "Clear all filters" }));
 
     expect(replace).toHaveBeenCalledWith("/tours", { scroll: false });
     expect(refetch).toHaveBeenCalledTimes(1);

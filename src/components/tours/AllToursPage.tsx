@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, RotateCcw, Telescope } from "lucide-react";
 import {
   Alert,
   Badge,
@@ -146,16 +146,23 @@ function Results({
 
   if (tours.length === 0) {
     return (
-      <Card padded={false} className="p-8">
-        <Heading as="h2" size="h3">
-          No tours match these filters
+      <Card padded={false} className="flex flex-col items-center px-6 py-16 text-center sm:py-20">
+        <span
+          className="grid size-16 place-items-center rounded-pill bg-primary-soft text-primary"
+          aria-hidden
+        >
+          <Telescope size={28} strokeWidth={1.75} />
+        </span>
+        <Heading as="h2" size="h3" className="mt-5">
+          No tours match your filters yet
         </Heading>
-        <Body size="medium" color="muted" className="mt-2 max-w-xl">
-          Try broadening your date, topic, or university selection.
+        <Body size="medium" color="muted" className="mt-2 max-w-md">
+          Try a different topic or university, widen your dates, or clear your filters to see every
+          live student-guided tour.
         </Body>
-        <Button variant="secondary" size="small" onClick={onReset} className="mt-5">
+        <Button variant="secondary" size="small" onClick={onReset} className="mt-6">
           <RotateCcw size={15} strokeWidth={2} />
-          Clear filters
+          Clear all filters
         </Button>
       </Card>
     );
