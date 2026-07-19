@@ -85,13 +85,14 @@ export function useHeaderSearch() {
   const [activeSection, setActiveSection] = useState<HeaderSection>(null);
   // Whether the section module panel is actually shown (revealed after the shell has expanded).
   const [panelVisible, setPanelVisible] = useState(false);
+  // Whether the user is actively TYPING a University query. Drives the live API independently of
+  // panelVisible (which SiteHeader's transition/focus effects also touch) so a keystroke reliably
+  // fetches. Set true on change; cleared on select / blur / commit / end. Focusing a pre-filled field
+  // without editing, or having just picked a school, leaves it false → no external API call.
+  const [uniQueryActive, setUniQueryActive] = useState(false);
 
-  // Only hit the live College Scorecard directory while the user is actively editing University (the
-  // popover is open) — never merely because the field is pre-filled. Focusing a filled field without
-  // editing, or having just picked a school, must not fire the external API.
-  const universityEditing = activeSection === "university" && panelVisible;
   const { data: matches, isFetching } = useUniversitySearch(q, {
-    enabled: universityEditing && q.trim().length >= 1,
+    enabled: uniQueryActive && q.trim().length >= 1,
     source: "live",
   });
   const queryHasText = q.trim().length >= 1;
@@ -121,6 +122,7 @@ export function useHeaderSearch() {
     setSearchFocusWithin(false);
     setActiveSection(null);
     setPanelVisible(false);
+    setUniQueryActive(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [pathname]);
 
@@ -142,6 +144,7 @@ export function useHeaderSearch() {
     setPendingFocus(false);
     setActiveSection(null);
     setPanelVisible(false);
+    setUniQueryActive(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [scrollWantsCollapsed, activeSection, searchFocusWithin, forceExpanded]);
 
@@ -168,6 +171,7 @@ export function useHeaderSearch() {
     setPendingFocus(false);
     setActiveSection(null);
     setPanelVisible(false);
+    setUniQueryActive(false);
     setSheetOpen(false);
   }, [q, selectedTopicIds, allTopicValues, onTours, params, router]);
 
@@ -199,22 +203,26 @@ export function useHeaderSearch() {
     setSearchFocusWithin(false);
     setActiveSection(null);
     setPanelVisible(false);
+    setUniQueryActive(false);
   }, []);
 
-  /** Focusing the University input marks the section active. The popover only opens when the field is
-   *  EMPTY (so we surface recent / nearby to pick from). Merely focusing a pre-filled field — without
-   *  editing — must NOT pop the results/"No schools found" panel. */
+  /** Focusing the University input marks the section active. Focus is NOT editing, so the live query
+   *  is not (re)enabled here — typing enables it. The popover only opens when the field is EMPTY (so we
+   *  surface recent / nearby); merely focusing a pre-filled field must NOT pop the results panel or
+   *  fire the API. */
   const onUniversityFocus = useCallback(() => {
     setActiveSection("university");
+    setUniQueryActive(false);
     if (q.trim().length === 0) setPanelVisible(true);
   }, [q]);
 
-  /** Typing in the University input: update the query AND open the popover (the user is actively
-   *  editing, so show recent / results / no-results). */
+  /** Typing in the University input: update the query, open the popover, and mark the typeahead active
+   *  (so the live API fetches). */
   const onUniversityChange = useCallback((value: string) => {
     setQ(value);
     setActiveSection("university");
     setPanelVisible(true);
+    setUniQueryActive(true);
   }, []);
 
   /** Choosing a University row (a suggestion or recent search): fill the field and CLOSE the popover.
@@ -223,12 +231,16 @@ export function useHeaderSearch() {
     setQ(name);
     setActiveSection(null);
     setPanelVisible(false);
+    setUniQueryActive(false);
   }, []);
 
   /** University input blur: keep the current content and just hide the popover. Rows preventDefault
    *  their mousedown so clicking a suggestion never routes through here (the click would otherwise be
    *  lost when the panel unmounts). Never reverts. */
   const onUniversityBlur = useCallback(() => {
+    // Only hide the popover on blur; do NOT clear `uniQueryActive` here — a blur that races the
+    // debounce settling must not cancel an in-flight fetch. Re-focus (onUniversityFocus) resets it,
+    // which is what suppresses the API on a pre-filled / just-picked field.
     setPanelVisible(false);
     setActiveSection((prev) => (prev === "university" ? null : prev));
   }, []);
