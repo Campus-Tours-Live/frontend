@@ -571,7 +571,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
         }}
         className="search flex min-w-0 flex-1 items-center gap-2 text-left lg:hidden"
       >
-        <Search size={18} strokeWidth={2} aria-hidden />
+        <Search size={18} strokeWidth={2} className="shrink-0" aria-hidden />
         <span className="truncate text-ink-soft">{summary}</span>
       </button>
 
@@ -611,7 +611,12 @@ export function HeaderSearchMobile({ search }: SearchProps) {
               <section className={cardCls}>
                 <h2 className={titleCls}>University</h2>
                 <div className="flex items-center gap-2 rounded-pill border border-input px-4 py-3">
-                  <Search size={18} strokeWidth={2} className="text-ink-soft" aria-hidden />
+                  <Search
+                    size={18}
+                    strokeWidth={2}
+                    className="shrink-0 text-ink-soft"
+                    aria-hidden
+                  />
                   <input
                     type="text"
                     aria-label="University"
