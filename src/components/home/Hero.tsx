@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button, Heading, Icon, List, ListItem } from "@/components/ui";
+import { Heading, Icon, Link, List, ListItem } from "@/components/ui";
 
 /**
  * Hero — home hero from design_new (#home .home-hero).
@@ -31,8 +31,12 @@ export function Hero() {
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button variant="primary">Explore live tours</Button>
-          <Button variant="secondary">Become a guide</Button>
+          <Link href="/tours" variant="primary">
+            Explore tours
+          </Link>
+          <Link href="/signup/guide" variant="secondary">
+            Become a guide
+          </Link>
         </div>
 
         <List dividers={false} className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
