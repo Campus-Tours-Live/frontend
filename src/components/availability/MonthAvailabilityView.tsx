@@ -359,9 +359,9 @@ function SummaryPopover({ cell, timeZone }: { cell: DayCell; timeZone: string })
   const status = available ? "Available" : "Unavailable";
   return (
     <div className="rounded-card border border-border bg-popover p-3 text-ui-sm shadow-lg">
-      <p className="font-semibold text-ink">
+      <Body as="p" size="small" weight={600} color="ink">
         {formatDayHeader(cell.iso)} · {status}
-      </p>
+      </Body>
       {available ? (
         <ul aria-label={`Windows on ${cell.iso}`} className="mt-2 space-y-1">
           {cell.windows.map(({ window, additional }, index) => (
@@ -377,7 +377,9 @@ function SummaryPopover({ cell, timeZone }: { cell: DayCell; timeZone: string })
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-ink-soft">No hours</p>
+        <Body as="p" size="small" color="muted" className="mt-2">
+          No hours
+        </Body>
       )}
       <Caption as="p" size="xs" className="mt-2 border-t border-border pt-2">
         Summary from resolved availability — not recomputed.

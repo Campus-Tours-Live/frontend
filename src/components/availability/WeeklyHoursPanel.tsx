@@ -173,13 +173,14 @@ export function WeeklyHoursPanel() {
                   {dayLabel}
                 </Body>
                 <div className="flex shrink-0 items-center gap-5">
-                  <span
-                    className={
-                      "text-ui font-bold " + (isAvailable ? "text-primary" : "text-ink-soft")
-                    }
+                  <Body
+                    as="span"
+                    size="medium"
+                    weight={700}
+                    color={isAvailable ? "primary" : "muted"}
                   >
                     {isToggling ? "Saving…" : isAvailable ? "Available" : "Unavailable"}
-                  </span>
+                  </Body>
                   <Switch
                     checked={isAvailable}
                     onChange={(next) => void handleToggle(dayIndex, next)}
