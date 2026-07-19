@@ -56,6 +56,9 @@ describe("FeaturedTours carousel interactions", () => {
     );
     if (!scroller) throw new Error("scroller not found");
     Object.defineProperty(scroller, "clientWidth", { configurable: true, value: 320 });
+    // Real browsers derive the max scroll position from scrollWidth; jsdom doesn't
+    // lay anything out, so it must be stubbed too (9 single-card pages @ 320px each).
+    Object.defineProperty(scroller, "scrollWidth", { configurable: true, value: 9 * 320 });
     Array.from(scroller.children).forEach((c, i) =>
       Object.defineProperty(c, "offsetLeft", { configurable: true, value: i * 320 }),
     );

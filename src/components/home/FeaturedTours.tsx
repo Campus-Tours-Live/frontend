@@ -1,21 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Alert, Icon, IconButton, Link, SectionHeading } from "@/components/ui";
-import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
+import { Alert, Link, SectionHeading } from "@/components/ui";
+import { type TourCardProps } from "@/components/tours/TourCard";
+import { TourCarousel } from "@/components/tours/TourCarousel";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 
 /**
  * FeaturedTours — featured section from design_new (#home .featured).
- *
- * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
- * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
- * so the cut-off cards peek through.
- *
- * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
- * shown, followed by a "View all tours" CTA.
+ * Renders the shared {@link TourCarousel} layout over the live tour catalog;
+ * see that component for the carousel/mobile-stack behavior.
  *
  * Data comes from GET /v1/tours (public marketplace catalog); "View all" /
  * "View tour" CTAs are inert for now.
@@ -30,58 +25,10 @@ function toCardProps(tour: TourSummary): TourCardProps {
   };
 }
 
-/**
- * Page metrics from the live DOM: one "page" is however many whole cards are
- * currently visible, so paging advances by a full screenful (not one card).
- */
-function pageMetrics(el: HTMLDivElement, count: number): { stride: number; pageCount: number } {
-  const kids = el.children;
-  if (kids.length < 2) return { stride: el.clientWidth || 1, pageCount: 1 };
-  const step = (kids[1] as HTMLElement).offsetLeft - (kids[0] as HTMLElement).offsetLeft;
-  if (step <= 0) return { stride: el.clientWidth || 1, pageCount: 1 };
-  const perView = Math.max(1, Math.round(el.clientWidth / step));
-  return {
-    stride: perView * step,
-    pageCount: Math.max(1, Math.ceil(count / perView)),
-  };
-}
-
 export function FeaturedTours() {
   const { data: tours, isLoading, isError } = useTourCatalog();
   const list = tours ?? [];
-  const count = list.length;
-
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-  const [pageCount, setPageCount] = useState(1);
-
-  const update = useCallback(() => {
-    const el = scrollerRef.current;
-    /* istanbul ignore next -- ref is always attached once mounted */
-    if (!el) return;
-    const { stride, pageCount } = pageMetrics(el, count);
-    setPageCount(pageCount);
-    setActive(Math.min(pageCount - 1, Math.max(0, Math.round(el.scrollLeft / stride))));
-  }, [count]);
-
-  useEffect(() => {
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [update]);
-
-  // Jump a whole page at a time, with a smooth scroll transition.
-  const goToPage = (page: number) => {
-    const el = scrollerRef.current;
-    /* istanbul ignore next -- ref is always attached once mounted */
-    if (!el) return;
-    const { stride, pageCount } = pageMetrics(el, count);
-    /* istanbul ignore next -- callers (chevrons/dots) only pass in-range pages */
-    const i = Math.min(pageCount - 1, Math.max(0, page));
-    el.scrollTo({ left: i * stride, behavior: "smooth" });
-  };
-
-  const showCarousel = !isLoading && !isError && count > 0;
+  const showCarousel = !isLoading && !isError && list.length > 0;
 
   return (
     <section className="mx-auto max-w-content px-6 pb-[90px] pt-8 xl:max-w-[1280px] 2xl:max-w-[1400px]">
@@ -109,86 +56,10 @@ export function FeaturedTours() {
             />
           ))}
         </div>
-      ) : count === 0 ? (
+      ) : list.length === 0 ? (
         <p className="text-ink-soft">No featured tours yet — check back soon.</p>
       ) : (
-        <>
-          <div className="relative">
-            {/* < lg: vertical stack. lg+: horizontal carousel. */}
-            <div
-              ref={scrollerRef}
-              onScroll={update}
-              className="flex flex-col gap-5 lg:flex-row lg:overflow-x-auto lg:scroll-smooth lg:pb-3 lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden"
-            >
-              {list.map((tour, i) => (
-                <div
-                  key={tour.id}
-                  className={cn(
-                    "w-full lg:w-[320px] lg:shrink-0",
-                    // mobile vertical view shows only the first 3
-                    i >= 3 && "hidden lg:block",
-                  )}
-                >
-                  <TourCard {...toCardProps(tour)} />
-                </div>
-              ))}
-            </div>
-
-            {/* Blurred peek edges (desktop carousel only) */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-14 bg-gradient-to-r from-background/40 to-transparent backdrop-blur-[2px] [mask-image:linear-gradient(to_right,black,transparent)] lg:block"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-14 bg-gradient-to-l from-background/40 to-transparent backdrop-blur-[2px] [mask-image:linear-gradient(to_left,black,transparent)] lg:block"
-            />
-
-            {/* Side chevrons (desktop carousel only) */}
-            <IconButton
-              a11yLabel="Previous tours"
-              variant="soft"
-              onClick={() => goToPage(active - 1)}
-              disabled={active === 0}
-              className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 border border-border bg-card text-ink shadow-card transition hover:border-primary hover:bg-card hover:text-primary lg:grid"
-            >
-              <Icon name="chevronLeft" size={20} strokeWidth={2.2} />
-            </IconButton>
-            <IconButton
-              a11yLabel="Next tours"
-              variant="soft"
-              onClick={() => goToPage(active + 1)}
-              disabled={active === pageCount - 1}
-              className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 border border-border bg-card text-ink shadow-card transition hover:border-primary hover:bg-card hover:text-primary lg:grid"
-            >
-              <Icon name="chevronRight" size={20} strokeWidth={2.2} />
-            </IconButton>
-          </div>
-
-          {/* Page-based dot pagination (desktop carousel only) */}
-          <div className="mt-5 hidden justify-center gap-2 lg:flex">
-            {Array.from({ length: pageCount }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                aria-label={`Go to page ${i + 1}`}
-                aria-current={i === active}
-                onClick={() => goToPage(i)}
-                className={cn(
-                  "h-2 rounded-pill transition-all",
-                  i === active ? "w-5 bg-primary" : "w-2 bg-border hover:bg-ink-soft",
-                )}
-              />
-            ))}
-          </div>
-
-          {/* Mobile "View all" CTA (vertical stack only) */}
-          <div className="mt-6 flex justify-center lg:hidden">
-            <Link href="#" className="font-semibold text-primary">
-              View all tours
-            </Link>
-          </div>
-        </>
+        <TourCarousel tours={list.map(toCardProps)} />
       )}
     </section>
   );

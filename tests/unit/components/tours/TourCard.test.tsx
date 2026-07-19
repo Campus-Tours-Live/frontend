@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 
 const base: TourCardProps = {
@@ -51,6 +51,30 @@ describe("TourCard", () => {
 
     expect(screen.getByText("Verified guide")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View tour" })).toBeInTheDocument();
+  });
+
+  it("links the university name to the university profile page", () => {
+    renderCard();
+
+    const link = screen.getByRole("link", { name: /stanford university/i });
+    expect(link).toHaveAttribute("href", "/university");
+  });
+
+  it("stops the university link click from reaching a wrapping click handler", () => {
+    // The link sits inside a would-be-clickable card, so its own onClick calls
+    // stopPropagation() — verified by wrapping it in a React onClick (rather than a
+    // raw DOM listener, which fires during native bubbling before React ever
+    // dispatches this component's synthetic handler and so can't observe the effect).
+    const onWrapperClick = jest.fn();
+    render(
+      <div onClick={onWrapperClick}>
+        <TourCard {...base} />
+      </div>,
+    );
+
+    fireEvent.click(screen.getByRole("link", { name: /stanford university/i }));
+
+    expect(onWrapperClick).not.toHaveBeenCalled();
   });
 
   it("reflects different prop values (prop variation)", () => {

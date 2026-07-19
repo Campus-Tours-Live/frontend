@@ -1,5 +1,7 @@
+"use client";
+
 import { Clock, GraduationCap, ImageIcon, MoveRight } from "lucide-react";
-import { Body, Button, Card, Heading, Icon, LineClamp, StatusBadge } from "@/components/ui";
+import { Body, Button, Card, Heading, Icon, LineClamp, Link, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -39,8 +41,14 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
           <LineClamp lines={2}>{title}</LineClamp>
         </Heading>
         <Body as="div" size="small" color="muted" className="flex items-center gap-1.5">
-          <Icon icon={GraduationCap} size={14} className="shrink-0 text-sage-deep" />
-          <span className="min-w-0 flex-1 truncate">{university}</span>
+          <Link
+            href="/university"
+            onClick={(e) => e.stopPropagation()}
+            className="flex min-w-0 flex-1 items-center gap-1.5 hover:text-primary hover:underline"
+          >
+            <Icon icon={GraduationCap} size={14} className="shrink-0 text-sage-deep" />
+            <span className="min-w-0 flex-1 truncate">{university}</span>
+          </Link>
           <span className="shrink-0">· {guide}</span>
         </Body>
 
