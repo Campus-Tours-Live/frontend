@@ -1,5 +1,14 @@
 import Image from "next/image";
-import { Alert, Body, Icon, Link, List, ListItem, SectionHeading } from "@/components/ui";
+import {
+  Alert,
+  Body,
+  Container,
+  Icon,
+  Link,
+  List,
+  ListItem,
+  SectionHeading,
+} from "@/components/ui";
 // Import directly from the server-safe module, not the "@/lib/auth" barrel —
 // the barrel also re-exports the client-only authGate ('import "client-only"'),
 // which a Server Component (this page) must not pull in.
@@ -30,7 +39,7 @@ export default async function SignInPage({
   const safeReturnTo = sanitizeReturnTo(returnTo);
 
   return (
-    <section className="mx-auto flex min-h-dvh max-w-content items-center px-6 py-10">
+    <Container as="section" className="flex min-h-dvh items-center py-10">
       <div className="mx-auto grid w-full max-w-[1000px] grid-cols-1 overflow-hidden rounded-panel bg-card shadow-card lg:grid-cols-2 lg:items-stretch">
         {/* Small/medium: controlled-height banner (fills cleanly, centered on
               the students). A portrait image can't be both short and uncropped. */}
@@ -105,6 +114,6 @@ export default async function SignInPage({
           </Body>
         </div>
       </div>
-    </section>
+    </Container>
   );
 }

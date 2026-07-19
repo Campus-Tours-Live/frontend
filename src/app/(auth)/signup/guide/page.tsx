@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Breadcrumb } from "@/components/site/Breadcrumb";
-import { Body, Caption, Heading, Link, StatusBadge } from "@/components/ui";
+import { Body, Caption, Container, Heading, Link, StatusBadge } from "@/components/ui";
 import { AuthOptions } from "@/components/signup/AuthOptions";
 
 /**
@@ -15,7 +15,7 @@ import { AuthOptions } from "@/components/signup/AuthOptions";
  */
 export default function SignupGuidePage() {
   return (
-    <section className="relative mx-auto flex min-h-dvh max-w-content items-center px-6 py-10">
+    <Container as="section" className="relative flex min-h-dvh items-center py-10">
       {/* Breadcrumb floats at the top so the card stays centered like /signin. */}
       <div className="absolute inset-x-6 top-6">
         <Breadcrumb
@@ -88,6 +88,6 @@ export default function SignupGuidePage() {
           </Body>
         </div>
       </div>
-    </section>
+    </Container>
   );
 }
