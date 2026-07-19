@@ -423,6 +423,14 @@
   .tp-col::-webkit-scrollbar {
     display: none;
   }
+  /* Keep horizontal scroll but hide the scrollbar (chip rows) — desktop + mobile. */
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE / legacy Edge */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
+  }
   .tp-item {
     scroll-snap-align: center;
   }

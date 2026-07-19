@@ -41,7 +41,7 @@ export function TourFiltersBar({
   };
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+    <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1">
       <Button
         variant="secondary"
         size="small"
