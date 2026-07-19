@@ -255,7 +255,7 @@ export function AllToursPage() {
     <div className="pb-24">
       <section className="border-b border-border/70 bg-muted">
         <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
-          <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
             <div className="max-w-2xl">
               <SectionHeading
                 eyebrow="Explore tours"
@@ -285,7 +285,7 @@ export function AllToursPage() {
                 width={1448}
                 height={1086}
                 priority
-                sizes="(min-width: 1024px) 44vw, 0px"
+                sizes="(min-width: 1024px) 48vw, 0px"
                 className="h-auto w-full rounded-panel shadow-card"
               />
             </div>
