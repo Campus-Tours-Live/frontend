@@ -198,6 +198,26 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
     expect(opt).toHaveAttribute("aria-selected", "false");
   });
 
+  it("closes the Topic panel when focus moves out of it (blur)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    expect(await screen.findByRole("region", { name: "Topic" })).toBeInTheDocument();
+    // Move focus to a control outside the Topic panel → the panel closes.
+    await user.click(within(screen.getByRole("search")).getByLabelText("University"));
+    expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the Topic panel open while toggling options (clicks don't blur it closed)", async () => {
+    const user = userEvent.setup();
+    render(<TestHeader />);
+    await user.click(within(screen.getByRole("search")).getByRole("button", { name: "Topic" }));
+    const list = await screen.findByRole("listbox", { name: "Topics" });
+    await user.click(within(list).getByRole("option", { name: "Campus life" }));
+    // Still open after a toggle.
+    expect(screen.getByRole("region", { name: "Topic" })).toBeInTheDocument();
+  });
+
   it("ArrowDown+Enter toggles the second option", async () => {
     const user = userEvent.setup();
     render(<TestHeader />);

@@ -363,9 +363,11 @@ export function TopicSectionPanel({ search }: SearchProps) {
     topicOptions,
     toggleTopic,
     clearTopics,
+    endInteraction,
   } = search;
   const [activeIdx, setActiveIdx] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeSection === "topic" && panelVisible) listRef.current?.focus();
@@ -411,14 +413,24 @@ export function TopicSectionPanel({ search }: SearchProps) {
 
   return (
     <div
+      ref={panelRef}
       id="header-topic-panel"
       role="region"
       aria-label="Topic"
+      // Focus moving OUT of the panel closes it (keeps the draft) — same as the University field.
+      // Only act when focus lands on a real element outside the panel (Tab-away, or another header
+      // control): a null relatedTarget (e.g. clicking an option, which preventDefaults its mousedown)
+      // must not close, and a plain outside click is already handled by SiteHeader's pointer-down.
+      onBlur={(e) => {
+        const next = e.relatedTarget as Node | null;
+        if (next && !panelRef.current?.contains(next)) endInteraction();
+      }}
       className="ds-panel ds-panel--topic hidden rounded-card border border-border bg-card shadow-lg lg:block"
     >
       <div className="p-2">
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={clearTopics}
           className={`w-full rounded-field px-3 py-2 text-left text-ui-sm ${selected.size === 0 ? "bg-primary-soft font-bold text-primary" : "hover:bg-muted"}`}
         >
