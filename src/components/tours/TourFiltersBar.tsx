@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { Button, Chip } from "@/components/ui";
 import { canonicalizeTopicIds, useTourTopics } from "@/lib/data-access";
@@ -21,6 +22,16 @@ export function TourFiltersBar({
   const options = topics ?? [];
   const allValues = options.map((o) => o.value);
   const selected = new Set(topicIds);
+
+  // Topic chips depend on client-fetched data the server can't render (the SSR HTML has only the
+  // "Any" chip). If that fetch wins the race before this subtree hydrates, the client's first render
+  // would have extra chips → hydration mismatch. Gate the topic chips on mount so the first client
+  // render matches SSR; they appear a tick later once mounted.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client-mount flag
+    setMounted(true);
+  }, []);
 
   const toggle = (value: string) => {
     const next = new Set(selected);
@@ -49,17 +60,19 @@ export function TourFiltersBar({
       >
         Any
       </Chip>
-      {options.map((t) => (
-        <Chip
-          key={t.value}
-          active={selected.has(t.value)}
-          aria-pressed={selected.has(t.value)}
-          onClick={() => toggle(t.value)}
-          className="shrink-0"
-        >
-          {t.label}
-        </Chip>
-      ))}
+      {mounted
+        ? options.map((t) => (
+            <Chip
+              key={t.value}
+              active={selected.has(t.value)}
+              aria-pressed={selected.has(t.value)}
+              onClick={() => toggle(t.value)}
+              className="shrink-0"
+            >
+              {t.label}
+            </Chip>
+          ))
+        : null}
     </div>
   );
 }
