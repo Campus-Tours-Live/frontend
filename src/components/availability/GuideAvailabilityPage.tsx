@@ -101,6 +101,9 @@ export function GuideAvailabilityPage() {
   // "Add/Edit override" from the day sheet: swap the sheet for the editor, remembering to return.
   // Guarded — the sheet's button is disabled while weekly hours are missing, so this never fires then.
   const handleEditOverride = (date: string) => {
+    /* istanbul ignore next -- defensive: the day sheet's "Add/Edit override" button is disabled
+     * while weeklyHoursMissing (MonthAvailabilityView), and a disabled <button> never dispatches a
+     * click event (DOM spec), so this guard never actually fires via user interaction. */
     if (weeklyHoursMissing) return;
     setDaySheetDate(null);
     setReturnToDaySheet(true);

@@ -570,6 +570,153 @@ describe("DateOverrideModal — conflict warning fires only when availability SH
   });
 });
 
+describe("DateOverrideModal — conflict coverage merges overlapping resulting windows (mergeInstantIntervals)", () => {
+  it("does NOT warn when before is only covered by the UNION of two overlapping after-windows (neither covers it alone)", async () => {
+    // after = A(9:00-10:00) overlapping B(9:30-11:00) [merge required], plus a disjoint C(12:00-13:00)
+    // [exercises the non-overlap push branch too]. before = 9:15-10:45: NOT covered by A alone (ends
+    // 10:00) and NOT covered by B alone (starts 9:30) — only the MERGED span 9:00-11:00 covers it. If
+    // mergeInstantIntervals failed to merge A+B, this would wrongly show a conflict warning.
+    mockUseResolvedAvailability.mockReturnValue({
+      data: resolved([{ startAt: "2026-07-20T09:15:00Z", endAt: "2026-07-20T10:45:00Z" }]),
+      isLoading: false,
+    });
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: {
+        valid: true,
+        message: null,
+        days: [
+          {
+            date: "2026-07-20",
+            resultingWindows: [
+              { startAt: "2026-07-20T09:00:00Z", endAt: "2026-07-20T10:00:00Z" },
+              { startAt: "2026-07-20T09:30:00Z", endAt: "2026-07-20T11:00:00Z" },
+              { startAt: "2026-07-20T12:00:00Z", endAt: "2026-07-20T13:00:00Z" },
+            ],
+            trimmed: [],
+            inert: false,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await within(dialog).findByRole("group", { name: "After applying on 2026-07-20 (AM)" });
+    expect(within(dialog).queryByText(/This blocks time on/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/Confirm the change\?/)).not.toBeInTheDocument();
+  });
+});
+
+describe("DateOverrideModal — settings/resolved queries still loading (fallback tz + empty before)", () => {
+  it("uses the fallback timezone and renders an empty 'Now' bar while settings/resolved are still loading", async () => {
+    mockUseAvailabilitySettings.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseResolvedAvailability.mockReturnValue({ data: undefined, isLoading: true });
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: {
+        valid: true,
+        message: null,
+        days: [
+          {
+            date: "2026-07-20",
+            resultingWindows: [{ startAt: "2026-07-20T14:00:00Z", endAt: "2026-07-20T15:00:00Z" }],
+            trimmed: [],
+            inert: false,
+          },
+        ],
+      },
+      isLoading: false,
+      isFetching: false,
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    // FALLBACK_TIMEZONE (America/Los_Angeles, UTC-7 in July) reads 14:00Z as 7:00 AM — Chicago
+    // (the settings tz used everywhere else in this file) would read it as 9:00 AM.
+    const afterBar = await within(dialog).findByRole("group", {
+      name: "After applying on 2026-07-20 (AM)",
+    });
+    expect(within(afterBar).getByTitle(/Available · 7:00 AM – 8:00 AM/)).toBeInTheDocument();
+
+    // resolvedQuery.data is undefined -> occurrences falls back to [] -> this date has no bucketed
+    // "before" windows -> the Now bar renders with no segments.
+    const nowBar = within(dialog).getByRole("group", {
+      name: "Current hours on 2026-07-20 (AM)",
+    });
+    expect(within(nowBar).queryByTitle(/Available/)).not.toBeInTheDocument();
+  });
+});
+
+describe("DateOverrideModal — preview loading state", () => {
+  it("shows 'Loading preview…' while the dry-run request is in flight", () => {
+    mockUseOverrideMultiPreview.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isFetching: false,
+    });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    const region = within(dialog).getByRole("region", { name: "Preview" });
+    expect(within(region).getByText("Loading preview…")).toBeInTheDocument();
+  });
+});
+
+describe("DateOverrideModal — exceptions query still loading", () => {
+  it("renders the empty-day default (zero slots, Block time off) while exceptions are still loading", () => {
+    mockUseAvailabilityExceptions.mockReturnValue({ data: undefined, isLoading: true });
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Block time off" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(dialog).queryAllByRole("group", { name: /^Time slot \d+$/ })).toHaveLength(0);
+  });
+});
+
+describe("DateOverrideModal — selecting the already-active kind is a no-op", () => {
+  it("clicking the already-selected toggle does not clear in-progress state (e.g. a shown error)", async () => {
+    const user = userEvent.setup();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60)]);
+    replaceMutate.mockRejectedValueOnce(
+      new ApiError(422, "This time is outside the guide's availability"),
+    );
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    // Trigger a save failure to populate the error state.
+    await user.click(within(dialog).getByRole("button", { name: "Confirm change" }));
+    expect(
+      await within(dialog).findByText(/outside the guide's availability/i),
+    ).toBeInTheDocument();
+
+    // Re-clicking the already-active "Block time off" toggle must be a no-op (SegmentedControl
+    // itself never fires onChange for the already-selected option) — it must NOT clear the error
+    // the way switching to the OTHER kind does.
+    await user.click(within(dialog).getByRole("button", { name: "Block time off" }));
+    expect(within(dialog).getByText(/outside the guide's availability/i)).toBeInTheDocument();
+  });
+});
+
+describe("DateOverrideModal — editing one slot leaves sibling slots untouched", () => {
+  it("editing Time slot 1 does not alter Time slot 2's values", async () => {
+    const user = userEvent.setup();
+    setExceptions([exc("u1", "UNAVAILABLE", "13:00", 60), exc("u2", "UNAVAILABLE", "16:00", 60)]);
+    renderModal();
+    const dialog = screen.getByRole("dialog");
+
+    await typeSegment(user, dialog, "Time slot 1 to hour", "3");
+
+    const slot2 = within(dialog).getByRole("group", { name: "Time slot 2" });
+    expect(within(slot2).getByRole("textbox", { name: "Time slot 2 from hour" })).toHaveValue("4");
+    expect(within(slot2).getByRole("textbox", { name: "Time slot 2 from AM/PM" })).toHaveValue(
+      "PM",
+    );
+    expect(within(slot2).getByRole("textbox", { name: "Time slot 2 to hour" })).toHaveValue("5");
+  });
+});
+
 describe("DateOverrideModal — Confirm saves the day as ONE atomic replace", () => {
   it("saves the day as ONE atomic replace call, not delete-then-create", async () => {
     const user = userEvent.setup();
@@ -817,6 +964,12 @@ describe("DateOverrideModal — dateOverrideErrorMessage (pure, surfaces the wri
     expect(
       dateOverrideErrorMessage(new ApiError(422, "This time is outside the guide's availability")),
     ).toBe("This time is outside the guide's availability");
+  });
+
+  it("falls back to a generic 422 notice when the ApiError carries no message", () => {
+    expect(dateOverrideErrorMessage(new ApiError(422, ""))).toBe(
+      "This override could not be applied.",
+    );
   });
 
   it("falls back to a generic notice for a non-422 ApiError", () => {

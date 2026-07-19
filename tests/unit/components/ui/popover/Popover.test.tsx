@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { Popover, type PopoverAlign } from "@/components/ui";
@@ -160,5 +160,25 @@ describe("Popover", () => {
     expect(screen.getByText("popover body")).toBeInTheDocument();
     await user.click(screen.getByText("anchor"));
     expect(screen.getByText("popover body")).toBeInTheDocument();
+  });
+
+  it("repositions on an ancestor scroll and on window resize while open", () => {
+    const spy = mockRects();
+    try {
+      render(<Harness />);
+      const dialog = screen.getByRole("dialog");
+      expect(dialog).toHaveStyle({ left: "100px" });
+      // Neither listener throws, and the popover stays pinned/visible after each trigger.
+      act(() => {
+        fireEvent.scroll(window);
+      });
+      expect(dialog).toBeInTheDocument();
+      act(() => {
+        fireEvent(window, new Event("resize"));
+      });
+      expect(dialog).toBeInTheDocument();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

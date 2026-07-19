@@ -366,6 +366,10 @@ function buildDayView(
  *  block-framed: it names the current windows and what they become once the block is applied. */
 function conflictSentences(conflictDays: DayView[], timeZone: string): string[] {
   return conflictDays.map((view) => {
+    /* istanbul ignore next -- defensive: only called with conflictDays (conflict===true), which
+     * requires !coversAvailability(before, after); coversAvailability(before=[], after) is
+     * vacuously true (every() on an empty array), so before.length is always >0 whenever a view
+     * reaches here — the "no hours" fallback is algebraically unreachable. */
     const currently =
       view.before.length > 0
         ? view.before.map((win) => formatOccurrence(win, timeZone)).join(", ")
@@ -439,6 +443,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
 
   // Switching the toggle re-loads THAT kind's existing slots (an empty list when the day has none).
   const selectMode = (next: AvailabilityExceptionKind) => {
+    /* istanbul ignore next -- defensive: SegmentedControl's own `select` already guards
+     * `if (next !== selected) onChange?.(next)`, so it never calls this `onChange` handler for the
+     * already-selected option in the first place — this early return is unreachable via the UI. */
     if (next === mode) return;
     setMode(next);
     setSlots(slotsFromExceptions(dayExceptions, next));

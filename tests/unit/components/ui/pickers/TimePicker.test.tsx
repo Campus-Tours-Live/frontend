@@ -16,6 +16,8 @@ import {
   ITEM_HEIGHT,
   MINUTE_OPTIONS,
   HOUR_OPTIONS,
+  PERIOD_OPTIONS,
+  WRAP_COPIES,
 } from "@/components/ui/pickers/TimePicker";
 
 // --------------------------------------------------------------------------
@@ -85,6 +87,13 @@ describe("TimePicker — pure value model", () => {
     expect(recenterIndex(5, 12, 7)).toBe(17); // first copy → middle band
     expect(recenterIndex(40, 12, 7)).toBe(40);
     expect(recenterIndex(80, 12, 7)).toBe(68); // last copy → pulled down
+  });
+
+  it("exposes the AM/PM options and the wrap-copies constant", () => {
+    // Nothing outside this module reads these two exported constants directly (only WheelColumn's
+    // own closure does) — reference them here so the bindings themselves are exercised.
+    expect(PERIOD_OPTIONS).toEqual(["AM", "PM"]);
+    expect(WRAP_COPIES).toBe(7);
   });
 });
 

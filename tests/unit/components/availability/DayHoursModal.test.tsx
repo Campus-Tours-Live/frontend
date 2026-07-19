@@ -154,6 +154,33 @@ describe("DayHoursModal — add / remove ranges", () => {
   });
 });
 
+describe("DayHoursModal — editing one range leaves sibling ranges untouched", () => {
+  it("editing Range 1 does not alter Range 2's values", async () => {
+    const user = userEvent.setup();
+    const secondRule: AvailabilityRule = {
+      id: "rule-mon-2",
+      dayOfWeek: 1,
+      startLocal: "15:00",
+      windowMin: 60,
+      timezone: "America/Chicago",
+      effectiveFrom: null,
+      effectiveTo: null,
+      active: true,
+    };
+    renderModal([mondayRule, secondRule]);
+    const dialog = screen.getByRole("dialog");
+    const range1 = within(dialog).getByRole("group", { name: "Range 1" });
+
+    await typeSegment(user, range1, "Range 1 from hour", "8");
+
+    const range2 = within(dialog).getByRole("group", { name: "Range 2" });
+    expect(within(range2).getByRole("textbox", { name: "Range 2 from hour" })).toHaveValue("3");
+    expect(within(range2).getByRole("textbox", { name: "Range 2 from AM/PM" })).toHaveValue("PM");
+    expect(within(range2).getByRole("textbox", { name: "Range 2 to hour" })).toHaveValue("4");
+    expect(within(range2).getByRole("textbox", { name: "Range 2 to AM/PM" })).toHaveValue("PM");
+  });
+});
+
 describe("DayHoursModal — Save via ONE atomic useReplaceRules call", () => {
   it("adding a range and Save submits the weekday as ONE {dayOfWeek, windows} replace", async () => {
     const user = userEvent.setup();

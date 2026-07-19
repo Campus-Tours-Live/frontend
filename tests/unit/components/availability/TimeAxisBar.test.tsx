@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import {
+  SEGMENT_NAME,
   TimeAxis,
   TimeAxisBar,
   TimeAxisLegend,
@@ -7,6 +8,12 @@ import {
   resolveAxisDomain,
   type TimeAxisSegment,
 } from "@/components/availability/TimeAxisBar";
+
+describe("SEGMENT_NAME", () => {
+  it("maps each segment kind to its legend-facing label", () => {
+    expect(SEGMENT_NAME).toEqual({ available: "Available", off: "Time off", extra: "Extra" });
+  });
+});
 
 describe("minToPercent", () => {
   it("maps a minute-of-day to a clamped percentage across the range", () => {

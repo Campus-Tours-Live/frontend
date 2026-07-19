@@ -12,7 +12,9 @@ const mockUseTourTopics = jest.fn(() => ({
   isLoading: false,
 }));
 
-const mockUseMajors = jest.fn(() => ({ data: [] as { value: string; label: string }[] }));
+const mockUseMajors = jest.fn((_schoolId?: string | null) => ({
+  data: [] as { value: string; label: string }[],
+}));
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),

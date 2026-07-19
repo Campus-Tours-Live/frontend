@@ -324,6 +324,9 @@ export function MonthAvailabilityView({
  *  green, ADDITIONAL-matching windows blue. Positions are `left`/`width` percentages of
  *  the day span — a pure time→x mapping, no availability math. */
 function DensityBar({ cell, timeZone }: { cell: DayCell; timeZone: string }) {
+  /* istanbul ignore next -- defensive: Calendar only renders a day's `content` when `!muted`
+   * (muted = totalMinutes<=0), and totalMinutes sums `windows`, so windows.length===0 always
+   * implies muted===true — DensityBar never mounts for a zero-window day in the first place. */
   if (cell.windows.length === 0) return null;
   return (
     <div

@@ -283,4 +283,29 @@ describe("WeeklyHoursPanel — re-activate 422 leaves the day Unavailable + noti
       await screen.findByText(/could not update this day's availability/i),
     ).toBeInTheDocument();
   });
+
+  it("falls back to the generic overlap notice when a 422 rejection carries no message", async () => {
+    const user = userEvent.setup();
+    const updateMutate = jest.fn().mockRejectedValue(new ApiError(422, ""));
+    mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(tuesdayRow()).getByRole("switch", { name: /tuesday availability/i }));
+
+    expect(
+      await screen.findByText(/one of its hours now overlaps another active rule/i),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("WeeklyHoursPanel — rules query still loading", () => {
+  it("renders every day as Unavailable while rulesQuery.data is still loading (no rules yet)", () => {
+    mockUseAvailabilityRules.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    render(<WeeklyHoursPanel />);
+
+    expect(
+      within(mondayRow()).getByRole("switch", { name: /monday availability/i }),
+    ).toHaveAttribute("aria-checked", "false");
+    expect(within(mondayRow()).getByText(/no hours set/i)).toBeInTheDocument();
+  });
 });

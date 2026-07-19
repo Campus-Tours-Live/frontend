@@ -677,6 +677,14 @@ describe("SiteHeaderSearch (two-tier: band + pill sharing useHeaderSearch)", () 
 });
 
 describe("useHeaderSearch — hook-level branches not reachable through the shared UI shell", () => {
+  it("ensureExpanded forces the header expanded without choosing a section", () => {
+    const { result } = renderHook(() => useHeaderSearch());
+    expect(result.current.forceExpanded).toBe(false);
+    act(() => result.current.ensureExpanded());
+    expect(result.current.forceExpanded).toBe(true);
+    expect(result.current.activeSection).toBeNull();
+  });
+
   it("openSection while already expanded (not collapsed) reveals the panel immediately", () => {
     const { result } = renderHook(() => useHeaderSearch());
     // Top of the page, nothing scrolled: the header starts expanded, not collapsed.

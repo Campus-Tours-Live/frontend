@@ -97,6 +97,10 @@ export function WeeklyHoursPanel() {
     }
 
     const rulesToFlip = dayRules.filter((rule) => rule.active !== nextAvailable);
+    /* istanbul ignore next -- defensive: Switch always calls onChange(!checked), so nextAvailable
+     * is always the negation of isAvailable; combined with the dayRules.length===0 guard above
+     * (isAvailable===false implies every dayRule is inactive), rulesToFlip is always non-empty
+     * whenever this line runs — unreachable via genuine Switch interaction. */
     if (rulesToFlip.length === 0) return;
 
     setTogglingDay(dayOfWeek);
