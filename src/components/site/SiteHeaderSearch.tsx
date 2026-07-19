@@ -79,6 +79,10 @@ function ExpandedContent({
     onSearchBlurCapture,
   } = search;
 
+  // The clear ✕ shows only when the University field both has content AND is the active/focused
+  // section — not on an idle, unfocused pill.
+  const showClearUniversity = q.trim().length > 0 && activeSection === "university";
+
   return (
     <form
       role="search"
@@ -122,12 +126,12 @@ function ExpandedContent({
           <button
             type="button"
             aria-label="Clear university"
-            aria-hidden={q.trim().length > 0 ? undefined : true}
-            tabIndex={q.trim().length > 0 ? undefined : -1}
+            aria-hidden={showClearUniversity ? undefined : true}
+            tabIndex={showClearUniversity ? undefined : -1}
             onMouseDown={(e) => e.preventDefault()}
             onClick={clearUniversity}
             className={`grid size-5 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink ${
-              q.trim().length > 0 ? "" : "invisible pointer-events-none"
+              showClearUniversity ? "" : "invisible pointer-events-none"
             }`}
           >
             <X size={14} strokeWidth={2.5} aria-hidden />
@@ -573,6 +577,9 @@ export function HeaderSearchMobile({ search }: SearchProps) {
     commitSearch,
   } = search;
   const [section, setSection] = useState<"university" | "topic">("university");
+  // The clear ✕ shows only while the University input has content AND is focused (tapped).
+  const [uniFocused, setUniFocused] = useState(false);
+  const showClearUniversity = q.trim().length > 0 && uniFocused;
 
   // Picking a school just fills the field (no auto-advance to Topic — the user decides what's next).
   const pickUniversity = (label: string) => {
@@ -643,19 +650,25 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                     aria-label="University"
                     value={q}
                     onChange={(e) => onUniversityChange(e.target.value)}
+                    onFocus={() => setUniFocused(true)}
+                    onBlur={() => setUniFocused(false)}
                     placeholder="Search a school"
                     className="min-w-0 flex-1 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
                   />
-                  {q.trim().length > 0 ? (
-                    <button
-                      type="button"
-                      aria-label="Clear university"
-                      onClick={clearUniversity}
-                      className="grid size-6 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink"
-                    >
-                      <X size={16} strokeWidth={2.5} aria-hidden />
-                    </button>
-                  ) : null}
+                  {/* Always occupies its box (height stays constant); hidden unless content + focused. */}
+                  <button
+                    type="button"
+                    aria-label="Clear university"
+                    aria-hidden={showClearUniversity ? undefined : true}
+                    tabIndex={showClearUniversity ? undefined : -1}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={clearUniversity}
+                    className={`grid size-6 shrink-0 place-items-center rounded-full text-ink-soft transition-colors hover:bg-border hover:text-ink ${
+                      showClearUniversity ? "" : "invisible pointer-events-none"
+                    }`}
+                  >
+                    <X size={16} strokeWidth={2.5} aria-hidden />
+                  </button>
                 </div>
 
                 <div className="mt-4 flex flex-col gap-1">
