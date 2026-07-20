@@ -146,7 +146,7 @@ export interface TourTopic {
   label: string;
 }
 
-/** Public marketplace card (Core TourSummaryResponse). */
+/** GET /v1/tours — public marketplace card (Core TourSummaryResponse). */
 export interface TourSummary {
   id: string;
   title: string;
