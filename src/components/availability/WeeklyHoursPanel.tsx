@@ -105,26 +105,30 @@ export function WeeklyHoursPanel() {
 
     setTogglingDay(dayOfWeek);
     try {
-      // Batch update — every rule for the day flips together. NOTE: not transactional (Core has
-      // no bulk endpoint); if a multi-rule day partially fails mid-Promise.all, the ones that
-      // already resolved stay flipped. The tested/expected scenario (re-activating a single-rule
-      // day) can't partially succeed, and any 422 still surfaces here rather than being swallowed.
-      const envelopes = await Promise.all(
+      // Batch update — every rule for the day flips together. NOT transactional (Core has no bulk
+      // endpoint), so a multi-rule day CAN partially fail: a rule that already flipped stays
+      // flipped (and its onSuccess invalidates the query) even if a sibling rejects. Settle ALL of
+      // them so a failure can't discard the succeeded rules' results.
+      const results = await Promise.allSettled(
         rulesToFlip.map((rule) =>
           updateRule.mutateAsync({ id: rule.id, body: { active: nextAvailable } }),
         ),
       );
-      // Allow + notify: the flip is saved. If turning this day off overlapped existing bookings,
-      // surface them under the day's row (they are never auto-cancelled) so the guide can follow up.
-      const bookings = dedupeBookings(envelopes.flatMap((envelope) => envelope.affectedBookings));
+      // Allow + notify: any rule that DID flip may have stranded existing bookings (never
+      // auto-cancelled) — surface them under the day's row even when a sibling failed, so a partial
+      // failure doesn't swallow them.
+      const bookings = dedupeBookings(
+        results.flatMap((r) => (r.status === "fulfilled" ? r.value.affectedBookings : [])),
+      );
       if (bookings.length > 0) {
         setAffected({ day: dayOfWeek, bookings });
       }
-    } catch (err) {
-      // Leave the day Unavailable: the failed mutation never invalidates the rules query, so
-      // `rulesQuery.data` (and therefore `isAvailable` below) stays exactly as it was — no silent
-      // partial success.
-      setToggleError(toggleErrorMessage(err));
+      // Report a partial (or total) failure: some ranges did not flip. The succeeded ones stay
+      // flipped — this is a genuine partial success, so we both notify above AND surface the error.
+      const failure = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
+      if (failure) {
+        setToggleError(toggleErrorMessage(failure.reason));
+      }
     } finally {
       setTogglingDay(null);
     }

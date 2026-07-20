@@ -185,6 +185,35 @@ describe("WeeklyHoursPanel — toggle drives rule `active` (deactivate-preserve)
     expect(within(tuesdayRow()).queryByText("BK-99")).not.toBeInTheDocument();
   });
 
+  it("on a PARTIAL multi-rule failure still surfaces the succeeded rule's booking AND reports the error", async () => {
+    const user = userEvent.setup();
+    // Monday flips two rules. The 2nd rejects; the 1st succeeds and stranded a live booking.
+    // The stranded booking must NOT be swallowed by the sibling's failure (Promise.allSettled).
+    const updateMutate = jest.fn().mockImplementation(({ id }: { id: string }) =>
+      id === "rule-mon-2"
+        ? Promise.reject(new ApiError(422, "This range overlaps another active rule."))
+        : Promise.resolve({
+            data: {},
+            affectedBookings: [
+              {
+                bookingId: "bk1",
+                bookingNumber: "BK-77",
+                status: "CONFIRMED",
+                scheduledStartAt: "2026-07-20T15:00:00Z",
+                scheduledEndAt: "2026-07-20T16:00:00Z",
+              },
+            ],
+          }),
+    );
+    mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(mondayRow()).getByRole("switch", { name: /monday availability/i }));
+
+    expect(await within(mondayRow()).findByText("BK-77")).toBeInTheDocument();
+    expect(await screen.findByText(/this range overlaps another active rule/i)).toBeInTheDocument();
+  });
+
   it("toggling an Unavailable day (with existing inactive rules) to Available re-activates them", async () => {
     const user = userEvent.setup();
     const updateMutate = jest.fn().mockResolvedValue({ data: {}, affectedBookings: [] });
