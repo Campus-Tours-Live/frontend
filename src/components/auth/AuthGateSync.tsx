@@ -35,11 +35,11 @@ export function AuthGateSync() {
   // rendering signed-in behind the banner.
   useEffect(
     () =>
-      subscribeAuthNotice((notice) => {
+      subscribeAuthNotice((state) => {
         // ONLY `expired`. On `unverifiable` the session is intact and the server said so
         // (N2's 503); going anonymous there would be a false sign-out — the exact outcome
         // N2 preserved the session to prevent.
-        if (notice !== "expired") return;
+        if (state?.notice !== "expired") return;
         queryClient.setQueryData(queryKeys.session(), false);
         queryClient.removeQueries({ queryKey: queryKeys.me() });
       }),

@@ -55,7 +55,9 @@ async function fetchMe(): Promise<Me | null> {
       // N2's 503: Google was unreachable, so the BFF could not refresh — but it deliberately
       // PRESERVED the session and said so. The user is still signed in.
       if (isSessionUnverifiable(error)) {
-        notifyAuthNotice("unverifiable");
+        // Carry the server's pace through, so the banner's "Try again" cools down for as
+        // long as the BFF asked instead of guessing.
+        notifyAuthNotice("unverifiable", error.retryAfterMs);
         // Rethrow rather than resolving null: null asserts "signed out", which is false and
         // would flip the header to logged-out — M4's original symptom via a new trigger.
         // Throwing leaves React Query's last good `data` in place.

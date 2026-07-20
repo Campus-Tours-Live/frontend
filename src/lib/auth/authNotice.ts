@@ -24,10 +24,22 @@ import "client-only";
  */
 export type AuthNotice = "expired" | "unverifiable";
 
-type Listener = (notice: AuthNotice | null) => void;
+/**
+ * A notice plus whatever the server told us about pacing.
+ *
+ * `retryAfterMs` exists so a user-facing "try again" control can respect the pace the
+ * server actually asked for (N2 sends `Retry-After: 5`) instead of inventing its own
+ * cooldown that silently drifts from the BFF.
+ */
+export interface AuthNoticeState {
+  notice: AuthNotice;
+  retryAfterMs?: number;
+}
+
+type Listener = (state: AuthNoticeState | null) => void;
 
 let listeners: Listener[] = [];
-let current: AuthNotice | null = null;
+let current: AuthNoticeState | null = null;
 
 /**
  * Subscribe to notice changes. The current notice is replayed immediately, because a notice
@@ -43,10 +55,10 @@ export function subscribeAuthNotice(listener: Listener): () => void {
 }
 
 /** Raise a notice. Repeating the current one is a no-op, so a retry storm can't thrash the UI. */
-export function notifyAuthNotice(notice: AuthNotice): void {
-  if (current === notice) return;
-  current = notice;
-  for (const l of listeners) l(notice);
+export function notifyAuthNotice(notice: AuthNotice, retryAfterMs?: number): void {
+  if (current?.notice === notice && current.retryAfterMs === retryAfterMs) return;
+  current = { notice, retryAfterMs };
+  for (const l of listeners) l(current);
 }
 
 /** Drop the notice (recovered, or the user acted on it). */
@@ -58,5 +70,5 @@ export function clearAuthNotice(): void {
 
 /** Current notice — for tests and for a consumer that needs it outside React. */
 export function getAuthNotice(): AuthNotice | null {
-  return current;
+  return current?.notice ?? null;
 }

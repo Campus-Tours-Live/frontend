@@ -24,5 +24,6 @@ export {
   notifyAuthNotice,
   clearAuthNotice,
   getAuthNotice,
+  type AuthNoticeState,
   type AuthNotice,
 } from "./authNotice";

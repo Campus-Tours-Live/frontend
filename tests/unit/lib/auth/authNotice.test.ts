@@ -25,7 +25,7 @@ describe("auth notice channel", () => {
     notifyAuthNotice("expired");
 
     // The leading null is the immediate replay of "no notice yet" — see the next test.
-    expect(seen).toEqual([null, "expired"]);
+    expect(seen).toEqual([null, { notice: "expired", retryAfterMs: undefined }]);
     unsubscribe();
   });
 
@@ -37,7 +37,7 @@ describe("auth notice channel", () => {
     const seen: unknown[] = [];
     const unsubscribe = subscribeAuthNotice((n) => seen.push(n));
 
-    expect(seen).toEqual(["expired"]);
+    expect(seen).toEqual([{ notice: "expired", retryAfterMs: undefined }]);
     unsubscribe();
   });
 
@@ -48,7 +48,7 @@ describe("auth notice channel", () => {
 
     clearAuthNotice();
 
-    expect(seen).toEqual(["expired", null]);
+    expect(seen).toEqual([{ notice: "expired", retryAfterMs: undefined }, null]);
     unsubscribe();
   });
 
@@ -62,7 +62,11 @@ describe("auth notice channel", () => {
     notifyAuthNotice("unverifiable");
     notifyAuthNotice("expired");
 
-    expect(seen).toEqual([null, "unverifiable", "expired"]);
+    expect(seen).toEqual([
+      null,
+      { notice: "unverifiable", retryAfterMs: undefined },
+      { notice: "expired", retryAfterMs: undefined },
+    ]);
     unsubscribe();
   });
 
@@ -86,5 +90,17 @@ describe("auth notice channel", () => {
     notifyAuthNotice("expired");
 
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("carries the server's requested pace through to consumers", () => {
+    // The banner's "Try again" cooldown borrows this instead of inventing its own, so it
+    // cannot drift from whatever Retry-After the BFF actually sends.
+    const seen: unknown[] = [];
+    const unsubscribe = subscribeAuthNotice((s) => seen.push(s));
+
+    notifyAuthNotice("unverifiable", 5000);
+
+    expect(seen).toEqual([null, { notice: "unverifiable", retryAfterMs: 5000 }]);
+    unsubscribe();
   });
 });
