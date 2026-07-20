@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
@@ -149,7 +150,11 @@ export function GuideOnboardingForm() {
       router.push("/dashboard");
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again.",
+        isAuthCancelled(err)
+          ? SIGN_IN_AGAIN_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong. Please try again.",
       );
     }
   };

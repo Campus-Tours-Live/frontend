@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formSubmitErrorMessage } from "@/lib/errors";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -135,10 +136,10 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
       });
       setSaveMessage("Profile saved.");
     } catch (err) {
-      const message =
-        err instanceof ApiError && err.status === 422
-          ? "Check your inputs — name, university, and major are required."
-          : "Could not save your profile. Please try again.";
+      const message = formSubmitErrorMessage(err, {
+        invalid: "Check your inputs — name, university, and major are required.",
+        generic: "Could not save your profile. Please try again.",
+      });
       setError("root", { message });
     }
   });

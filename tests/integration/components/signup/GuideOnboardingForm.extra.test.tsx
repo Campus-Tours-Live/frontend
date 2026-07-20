@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
+import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 // Variants the main suite's fixed mock can't express: empty tour-topics, a
 // non-Error rejection, an empty base price, and the majors-hook edge cases below.
@@ -110,6 +111,23 @@ describe("GuideOnboardingForm edge cases", () => {
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
     expect(mutateAsync.mock.calls[0][0].basePriceCents).toBeUndefined();
+  });
+
+  it("attributes a dismissed sign-in prompt to auth, not to onboarding failing", async () => {
+    // AuthCancelledError IS an Error, so the old `err.message` path showed "Sign-in was
+    // cancelled." — attributed correctly but unactionable, and worded unlike every other
+    // site. Route it through the canonical message.
+    mutateAsync.mockRejectedValueOnce(new AuthCancelledError());
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await user.click(await screen.findByRole("button", { name: /continue/i }));
+    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+
+    expect(await screen.findByText(SIGN_IN_AGAIN_MESSAGE)).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("shows a generic message when the rejection is not an Error", async () => {

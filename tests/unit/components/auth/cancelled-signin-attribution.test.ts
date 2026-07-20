@@ -6,6 +6,7 @@ import {
 } from "@/components/availability/DateOverrideModal";
 import { toggleErrorMessage } from "@/components/availability/WeeklyHoursPanel";
 import { ApiError } from "@/lib/data-access";
+import { formSubmitErrorMessage } from "@/lib/errors";
 
 /**
  * N1a Symptom A′, MUTATION half — the part the first pass missed.
@@ -30,6 +31,27 @@ describe("isAuthCancelled", () => {
     expect(isAuthCancelled(new Error("boom"))).toBe(false);
     expect(isAuthCancelled(new ApiError(500, "Server error"))).toBe(false);
     expect(isAuthCancelled(null)).toBe(false);
+  });
+});
+
+describe("formSubmitErrorMessage", () => {
+  const copy = { invalid: "Check your inputs — title is required.", generic: "Could not save." };
+
+  it("attributes a cancelled sign-in to auth, not to the save failing", () => {
+    // The most expensive instance of this bug: these are LONG FORMS, and the full-page
+    // redirect that follows the prompt destroys whatever the user had typed. Telling them
+    // "could not save, please try again" — when the request was never sent — is the worst
+    // version of the mis-attribution.
+    expect(formSubmitErrorMessage(cancelled, copy)).toBe(SIGN_IN_AGAIN_MESSAGE);
+  });
+
+  it("keeps the 422 validation copy", () => {
+    expect(formSubmitErrorMessage(new ApiError(422, "Unprocessable"), copy)).toBe(copy.invalid);
+  });
+
+  it("falls back to the generic copy for anything else", () => {
+    expect(formSubmitErrorMessage(new Error("network"), copy)).toBe(copy.generic);
+    expect(formSubmitErrorMessage(new ApiError(500, "Server"), copy)).toBe(copy.generic);
   });
 });
 

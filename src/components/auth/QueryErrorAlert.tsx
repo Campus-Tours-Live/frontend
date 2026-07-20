@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AuthCancelledError, requireAuth } from "@/lib/auth";
+import { isAuthCancelled, requireAuth, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Alert, Button } from "@/components/ui";
 
 /**
@@ -16,11 +16,11 @@ import { Alert, Button } from "@/components/ui";
  * gets an actionable prompt instead.
  */
 export function QueryErrorAlert({ error, children }: { error: unknown; children: ReactNode }) {
-  if (error instanceof AuthCancelledError) {
+  if (isAuthCancelled(error)) {
     return (
       <Alert variant="error">
         <span className="flex flex-wrap items-center gap-2">
-          Please sign in again to see this.
+          {SIGN_IN_AGAIN_MESSAGE}
           {/* `force`: the user's own cancel suppressed this epoch's prompts, so without it
               their explicit click would be swallowed and the button would look broken. */}
           <Button
