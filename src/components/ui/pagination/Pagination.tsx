@@ -36,7 +36,7 @@ const LAST =
 
 /**
  * Pagination — a numbered pager: ‹ chevron · a sliding window of up to `windowSize` page numbers · ›
- * chevron. The window slides so the current page stays in view (page 1 → 1…5; next → 2…6; near the
+ * chevron. The window centers on the current page (page 1 → 1…5; page 5 of 20 → 3…7; near the
  * end it pins to the last `windowSize`). When the window doesn't reach the end, a trailing "… N"
  * shows the last page as a NON-clickable label (context, not a jump target). Chevrons disable at the
  * first / last page. Page indices are zero-based to match the API; buttons display 1-based labels.
@@ -53,7 +53,9 @@ export function Pagination({
 
   const current = page + 1; // 1-based for display
   const maxStart = Math.max(1, totalPages - windowSize + 1);
-  const start = Math.min(Math.max(current, 1), maxStart);
+  // Center the window on the current page (clamped to [1, maxStart]) so earlier pages stay
+  // reachable — a left-anchored window would hide every page before the current one.
+  const start = Math.min(Math.max(current - Math.floor(windowSize / 2), 1), maxStart);
   const end = Math.min(start + windowSize - 1, totalPages);
   const numbers = Array.from({ length: end - start + 1 }, (_, i) => start + i);
 

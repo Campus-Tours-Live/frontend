@@ -18,11 +18,19 @@ describe("Pagination", () => {
     expect(screen.queryByRole("button", { name: "Go to page 6" })).not.toBeInTheDocument();
   });
 
-  it("slides the window forward with the current page (page 3 → 3…7)", () => {
-    render(<Pagination page={2} totalPages={10} onPageChange={noop} />);
+  it("centers the window on the current page (page 5 of 20 → 3…7)", () => {
+    render(<Pagination page={4} totalPages={20} onPageChange={noop} />);
     expect(screen.getByRole("button", { name: "Go to page 3" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Go to page 7" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Go to page 2" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Go to page 8" })).not.toBeInTheDocument();
+  });
+
+  it("clamps the window to the start for early pages (page 2 of 10 → 1…5)", () => {
+    render(<Pagination page={1} totalPages={10} onPageChange={noop} />);
+    expect(screen.getByRole("button", { name: "Go to page 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Go to page 5" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Go to page 6" })).not.toBeInTheDocument();
   });
 
   it("pins to the last window near the end (page 10 → 6…10)", () => {
