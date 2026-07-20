@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { meOptions } from "../queries/me.query";
+import { isSessionUnverifiable, meOptions } from "../queries/me.query";
 import { sessionOptions } from "../queries/session.query";
 import type { Role } from "../types";
 
@@ -13,12 +13,29 @@ import type { Role } from "../types";
  */
 export function useMe() {
   const { data: authenticated, isLoading: sessionLoading } = useQuery(sessionOptions());
-  const { data, isLoading: meLoading } = useQuery({
+  const {
+    data,
+    isLoading: meLoading,
+    error: meError,
+  } = useQuery({
     ...meOptions(),
     enabled: authenticated === true,
   });
+
+  /**
+   * COLD START during a Google outage: the session is fine, but we have never managed to
+   * read the principal, so `data` is undefined. Reporting that as `me = null` would render
+   * the signed-out header — underneath a banner telling the user they are still signed in.
+   *
+   * With a cached principal this cannot happen (the query keeps its last good `data`); this
+   * is only the no-cache path. The honest state is neither signed-in nor signed-out: we do
+   * not know yet, so it stays "resolving" and the header shows neither identity nor a
+   * sign-out affordance until we do.
+   */
+  const unverified = data === undefined && isSessionUnverifiable(meError);
+
   const me = authenticated ? (data ?? null) : null;
-  const isLoading = sessionLoading || (authenticated === true && meLoading);
+  const isLoading = sessionLoading || (authenticated === true && (meLoading || unverified));
   return {
     me,
     isLoading,

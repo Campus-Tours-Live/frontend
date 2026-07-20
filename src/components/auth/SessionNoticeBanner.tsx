@@ -19,7 +19,14 @@ import { Banner, Button } from "@/components/ui";
  *  - `unverifiable` — N2's 503: Google was unreachable, the session was PRESERVED, and the
  *                     server knows the user is still signed in. Offering "sign in again"
  *                     would be false, and acting on it would discard exactly the session N2
- *                     protected. So: state it, offer nothing, let the retry resolve it.
+ *                     protected. So: state it and offer nothing.
+ *
+ * The `unverifiable` copy states a fact and promises nothing on purpose. An earlier draft
+ * said "we'll keep retrying", which we do not: `shouldRetry` allows a 503 exactly one retry
+ * and there is no polling loop (deliberately — polling during a Google outage would add load
+ * to the outage, which is what honouring `Retry-After` exists to avoid). In practice the
+ * notice does clear itself, because a successful principal read clears it — but that is a
+ * pleasant surprise rather than something the copy commits to.
  *
  * Dismissing clears the notice rather than suppressing it: the session really is still dead,
  * so if a later background read hits the same wall the banner returns. It never blocks
@@ -36,8 +43,7 @@ export function SessionNoticeBanner() {
   if (notice === "unverifiable") {
     return (
       <Banner variant="warning" role="status" onClose={clearAuthNotice}>
-        We can&apos;t verify your session right now — you&apos;re still signed in, and we&apos;ll
-        keep retrying.
+        We couldn&apos;t verify your session just now. You&apos;re still signed in.
       </Banner>
     );
   }

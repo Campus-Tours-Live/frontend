@@ -1,12 +1,23 @@
 // Client-only query options (via ../http → apiFetch). Not for SSR prefetch — apiFetch is client-only.
 import { queryOptions } from "@tanstack/react-query";
 import { ApiError, apiJson } from "../http";
-import { notifyAuthNotice } from "@/lib/auth";
+import { clearAuthNotice, notifyAuthNotice } from "@/lib/auth";
 import { queryKeys } from "../keys";
 import type { Me } from "../types";
 
 /** The BFF's problem `code` for N2's "session preserved, Google unreachable" 503. */
 const AUTH_UPSTREAM_UNAVAILABLE = "AUTH_UPSTREAM_UNAVAILABLE";
+
+/**
+ * True when a principal read failed because we could not CHECK the session — not because
+ * the user is signed out. The two must not be conflated: the session is intact and the
+ * server knows it, so rendering this as signed-out is a false sign-out.
+ */
+export function isSessionUnverifiable(error: unknown): boolean {
+  return (
+    error instanceof ApiError && error.status === 503 && error.code === AUTH_UPSTREAM_UNAVAILABLE
+  );
+}
 
 async function fetchMe(): Promise<Me | null> {
   try {
@@ -27,7 +38,13 @@ async function fetchMe(): Promise<Me | null> {
     //   3. `"ambient"` — the death is reported through the notice channel and the banner;
     //      the page stays usable, and the prompt is reserved for when the USER asks for
     //      something that needs a session (N3).
-    return await apiJson<Me>("/v1/userinfo", { escalate: "ambient" });
+    const me = await apiJson<Me>("/v1/userinfo", { escalate: "ambient" });
+    // Recovery. A successful principal read proves both that the session is good and that
+    // the BFF could reach Google, so any standing notice is now stale. Without this the
+    // banner had NO production path back to nothing — only the user closing it by hand —
+    // which left a recovered system looking broken.
+    clearAuthNotice();
+    return me;
   } catch (error) {
     if (error instanceof ApiError) {
       // A 401 WITHOUT the re-auth signal is a genuine "not signed in" — stay quiet.
@@ -37,7 +54,7 @@ async function fetchMe(): Promise<Me | null> {
 
       // N2's 503: Google was unreachable, so the BFF could not refresh — but it deliberately
       // PRESERVED the session and said so. The user is still signed in.
-      if (error.status === 503 && error.code === AUTH_UPSTREAM_UNAVAILABLE) {
+      if (isSessionUnverifiable(error)) {
         notifyAuthNotice("unverifiable");
         // Rethrow rather than resolving null: null asserts "signed out", which is false and
         // would flip the header to logged-out — M4's original symptom via a new trigger.
