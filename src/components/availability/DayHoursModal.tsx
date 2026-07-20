@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
-import { Alert, Button, Modal, TimePicker } from "@/components/ui";
+import {
+  Alert,
+  Body,
+  Button,
+  Caption,
+  Heading,
+  IconButton,
+  Modal,
+  TimePicker,
+} from "@/components/ui";
 import {
   ApiError,
   useReplaceRules,
@@ -166,10 +175,12 @@ function DayHoursModalContent({
       maxHeightClassName="max-h-[min(600px,85vh)]"
       header={
         <>
-          <h2 id="day-hours-modal-title" className="font-display text-[24px] font-bold text-ink">
+          <Heading as="h2" id="day-hours-modal-title" size="xlarge">
             Edit {dayLabel} hours
-          </h2>
-          <p className="mt-1 text-[13px] text-ink-soft">Times shown in {settingsTimezone}.</p>
+          </Heading>
+          <Body size="small" color="muted" className="mt-1">
+            Times shown in {settingsTimezone}.
+          </Body>
         </>
       }
       footer={
@@ -216,7 +227,9 @@ function DayHoursModalContent({
 
       <div className="mt-4 space-y-4">
         {ranges.length === 0 ? (
-          <p className="text-[13px] text-ink-soft">No hours yet — add a time range below.</p>
+          <Body size="small" color="muted">
+            No hours yet — add a time range below.
+          </Body>
         ) : (
           ranges.map((range, index) => (
             <div key={range.key}>
@@ -244,25 +257,25 @@ function DayHoursModalContent({
                     onChange={(next) => updateRange(range.key, { to: next })}
                   />
                 </div>
-                <button
-                  type="button"
+                <IconButton
+                  variant="soft"
+                  size="small"
                   onClick={() => removeRange(range.key)}
-                  aria-label={`Remove range ${index + 1}`}
-                  className="tp-icon-btn"
+                  a11yLabel={`Remove range ${index + 1}`}
                 >
                   <Trash2 size={16} strokeWidth={1.8} aria-hidden />
-                </button>
+                </IconButton>
               </div>
               {rangeErrors[index] ? (
-                <p role="alert" className="mt-1 text-[12px] font-semibold text-error-foreground">
+                <Caption as="p" role="alert" weight={600} color="error" className="mt-1">
                   {rangeErrors[index]}
-                </p>
+                </Caption>
               ) : null}
             </div>
           ))
         )}
 
-        <Button type="button" variant="ghost" size="sm" onClick={addRange}>
+        <Button type="button" variant="ghost" size="small" onClick={addRange}>
           <Plus size={15} strokeWidth={2} aria-hidden />
           Add time range
         </Button>

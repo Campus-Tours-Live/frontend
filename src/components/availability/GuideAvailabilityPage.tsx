@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, InlineLoading, PageContainer, PageHeader } from "@/components/ui";
+import { Alert, InlineLoading, PageContainer, PageHeader, SegmentedControl } from "@/components/ui";
+import { cn } from "@/lib/utils/cn";
+import { useMediaQuery } from "@/hooks";
 import {
   useAvailabilityExceptions,
   useAvailabilityRules,
@@ -11,6 +13,7 @@ import {
 import { BookingRulesPanel } from "./BookingRulesPanel";
 import { DateOverrideModal } from "./DateOverrideModal";
 import { MonthAvailabilityView } from "./MonthAvailabilityView";
+import { WeekAvailabilityPanel } from "./WeekAvailabilityPanel";
 import { WeeklyHoursPanel } from "./WeeklyHoursPanel";
 
 /**
@@ -41,6 +44,17 @@ export function GuideAvailabilityPage() {
 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideDate, setOverrideDate] = useState<string | null>(null);
+  // Mobile flow: tapping a day opens a detail sheet first; "Add/Edit override" swaps it for the
+  // editor and remembers to return to that sheet when the editor is dismissed. Desktop skips the
+  // sheet entirely (a day tap opens the editor directly).
+  const isTouch = useMediaQuery("(hover: none), (max-width: 1023px)");
+  const [daySheetDate, setDaySheetDate] = useState<string | null>(null);
+  const [returnToDaySheet, setReturnToDaySheet] = useState(false);
+  // Which of the two panels is visible on narrow screens. Desktop (`lg:`) shows both side by
+  // side, so this only drives the mobile view switch; both panels stay mounted regardless
+  // (layout only — no content or state change). `null` = follow the data-driven default computed
+  // below (calendar hero, or the weekly editor when no hours are set yet); a manual tap pins it.
+  const [mobileViewOverride, setMobileViewOverride] = useState<"calendar" | "weekly" | null>(null);
 
   const isLoading =
     rulesQuery.isLoading ||
@@ -55,6 +69,10 @@ export function GuideAvailabilityPage() {
   // availability, so this only chooses copy based on the flags, never derives them.
   const bookable = resolvedQuery.data?.bookable;
   const hasWeeklyHours = resolvedQuery.data?.hasWeeklyHours;
+  // The guide hasn't set any weekly hours yet (the "add weekly hours to start taking bookings"
+  // state). Date overrides adjust the weekly baseline, so there's nothing to override until it
+  // exists — the calendar disables "Add override" and explains why in this state.
+  const weeklyHoursMissing = bookable === false && hasWeeklyHours === false;
   const readinessMessage =
     bookable === false
       ? hasWeeklyHours
@@ -62,20 +80,48 @@ export function GuideAvailabilityPage() {
         : "You haven't set any availability yet, so participants can't book you. Add weekly hours to start taking bookings."
       : null;
 
-  const openOverride = (date: string) => {
+  // Point the mobile view switch at the weekly editor when the guide has no weekly hours yet (the
+  // "add weekly hours to start taking bookings" state above) so the switch lands on the next step;
+  // otherwise the calendar is the default hero. A manual tap (`mobileViewOverride`) always wins.
+  const mobileView = mobileViewOverride ?? (weeklyHoursMissing ? "weekly" : "calendar");
+
+  const handleDayClick = (date: string) => {
+    // Mobile opens the day sheet; desktop opens the editor modal. The blocked case (no weekly hours)
+    // is handled inside MonthAvailabilityView: the mobile sheet disables its action, and a desktop
+    // click shows a notice there instead of routing here — so this only runs for allowed clicks.
+    if (isTouch) {
+      setDaySheetDate(date);
+    } else {
+      setReturnToDaySheet(false);
+      setOverrideDate(date);
+      setOverrideOpen(true);
+    }
+  };
+
+  // "Add/Edit override" from the day sheet: swap the sheet for the editor, remembering to return.
+  // Guarded — the sheet's button is disabled while weekly hours are missing, so this never fires then.
+  const handleEditOverride = (date: string) => {
+    if (weeklyHoursMissing) return;
+    setDaySheetDate(null);
+    setReturnToDaySheet(true);
     setOverrideDate(date);
     setOverrideOpen(true);
   };
 
-  const closeOverride = () => {
+  // Editor dismissed (Cancel / save / backdrop / Escape): close it, and on mobile go back to the
+  // day sheet it was opened from.
+  const handleOverrideClose = () => {
     setOverrideOpen(false);
+    if (returnToDaySheet && overrideDate) {
+      setDaySheetDate(overrideDate);
+      setReturnToDaySheet(false);
+    }
   };
 
   return (
-    <PageContainer width="prose">
+    <PageContainer width="wide">
       {/* No "Guide" eyebrow (PageHeader omits eyebrows by design): the left nav already scopes this
-          to the guide area, and the page's own Step 1 / Step 2 section eyebrows below would make a
-          top eyebrow read as noise. "Availability" stays the page's real <h1>. */}
+          to the guide area. "Availability" stays the page's real <h1>. */}
       <PageHeader
         title="Availability"
         lead="Manage when participants can book you — weekly hours, date overrides, and booking limits."
@@ -92,31 +138,70 @@ export function GuideAvailabilityPage() {
       ) : null}
 
       {!isLoading && !isError ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
-          <aside className="mb-4 space-y-2 lg:col-span-2 lg:row-start-1 lg:mb-6">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-              For reference · Booking policy
-            </p>
+        <div className="space-y-4">
+          <aside className="space-y-2">
             {settingsQuery.data ? <BookingRulesPanel settings={settingsQuery.data} /> : null}
           </aside>
 
-          <div className="space-y-2 lg:col-start-1 lg:row-start-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-              Step 1 · Set your weekly hours
-            </p>
-            <WeeklyHoursPanel />
+          {/* Mobile view switch — desktop shows both columns side by side, so the segmented control
+              is mobile-only (`lg:hidden`). Both panels stay mounted; the switch only toggles which
+              one is visible on mobile (state/behavior untouched). No section heading here: it would
+              just repeat the page's "Availability" <h1>; the two switch labels already say what's
+              below. */}
+          <div className="space-y-2 lg:hidden">
+            <SegmentedControl<"calendar" | "weekly">
+              aria-label="Choose availability view"
+              value={mobileView}
+              onChange={setMobileViewOverride}
+              options={[
+                { value: "calendar", label: "Bookable days" },
+                { value: "weekly", label: "Weekly hours" },
+              ]}
+            />
           </div>
 
-          <div className="space-y-2 lg:col-start-2 lg:row-start-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">
-              Step 2 · Review your availability calendar
-            </p>
-            <MonthAvailabilityView onOpenOverride={openOverride} />
+          {/* Calendar hero + weekly rail (Variant B): two plain cards side by side — no wrapping
+              frame, so they match the Booking-rules card and the rest of the page. Calendar is the
+              hero (`1fr`), weekly a narrower rail. `lg:items-stretch` keeps both columns the same
+              height as the taller one, re-solving as weekly hours grow/shrink. The right column is a
+              flex-col holding the calendar + a week/day detail panel that grows (`flex-1`) to fill the
+              extra height, so the right side has no void while matching the left. Weekly gets
+              `lg:h-full` to fill its side. Below `lg` the columns collapse and the mobile switch shows
+              one at a time (the week/day panel is desktop-only). */}
+          <div className="lg:grid lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
+            <div
+              className={cn(
+                "lg:col-start-1 lg:block",
+                mobileView === "weekly" ? "block" : "hidden",
+              )}
+            >
+              <WeeklyHoursPanel />
+            </div>
+
+            <div
+              className={cn(
+                "lg:col-start-2 lg:flex lg:h-full lg:flex-col lg:gap-4",
+                mobileView === "calendar" ? "block" : "hidden",
+              )}
+            >
+              <MonthAvailabilityView
+                onDayClick={handleDayClick}
+                daySheetDate={daySheetDate}
+                onDaySheetClose={() => setDaySheetDate(null)}
+                onEditOverride={handleEditOverride}
+                canAddOverride={!weeklyHoursMissing}
+              />
+              <WeekAvailabilityPanel className="hidden lg:flex lg:flex-1" />
+            </div>
           </div>
         </div>
       ) : null}
 
-      <DateOverrideModal open={overrideOpen} initialDate={overrideDate} onClose={closeOverride} />
+      <DateOverrideModal
+        open={overrideOpen}
+        initialDate={overrideDate}
+        onClose={handleOverrideClose}
+      />
     </PageContainer>
   );
 }

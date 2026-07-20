@@ -10,9 +10,7 @@ describe("Hero", () => {
         name: /explore campus with someone who actually studies there/i,
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(/ask the questions you cannot find/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/ask the questions you cannot find/i)).toBeInTheDocument();
   });
 
   it("renders both call-to-action buttons", () => {

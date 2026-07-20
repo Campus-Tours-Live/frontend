@@ -7,3 +7,4 @@ export { useDismiss } from "./useDismiss";
 export { useScrollLock } from "./useScrollLock";
 export { useDropdown } from "./useDropdown";
 export { useDebounced } from "./useDebounced";
+export { useMediaQuery } from "./useMediaQuery";

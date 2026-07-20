@@ -12,11 +12,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  * Direct-URL access is blocked here too — the switcher/nav are only the happy path.
  * AppShell stays a client component: it owns the chrome, not the guard.
  */
-export default async function AppGroupLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const me = await getServerMe();
   const roles = me?.roles ?? [];
 

@@ -17,7 +17,9 @@ describe("RoleCard", () => {
   it("renders the badge, title, points and CTA", () => {
     render(<RoleCard {...baseProps} />);
     expect(screen.getByText("Participant")).toHaveClass("status", "status-info");
-    expect(screen.getByRole("heading", { name: /explore and book live campus tours/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /explore and book live campus tours/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Prospective students")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /continue as participant/i })).toBeInTheDocument();
   });

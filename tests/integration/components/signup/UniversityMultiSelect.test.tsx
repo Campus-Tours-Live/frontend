@@ -11,8 +11,7 @@ import {
 // debounce lives inside the hook, so mocking it keeps assertions synchronous.
 const search = jest.fn();
 jest.mock("@/lib/data-access", () => ({
-  useUniversitySearch: (query: string, opts?: { enabled?: boolean }) =>
-    search(query, opts),
+  useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => search(query, opts),
 }));
 
 const OPTIONS: UniversityOption[] = [
@@ -41,6 +40,19 @@ beforeEach(() => {
 });
 
 describe("UniversityMultiSelect", () => {
+  it("associates a wrapping label via the id prop (a11y)", () => {
+    render(
+      <>
+        <label htmlFor="uni-x">Your university</label>
+        <UniversityMultiSelect id="uni-x" value={[]} onChange={() => {}} max={1} />
+      </>,
+    );
+    // The label's htmlFor resolves to the search input, so it's programmatically labelled.
+    expect(screen.getByLabelText("Your university")).toBe(
+      screen.getByPlaceholderText(/search universities/i),
+    );
+  });
+
   it("searches as you type and renders matching options", async () => {
     const user = userEvent.setup();
     render(<Harness />);

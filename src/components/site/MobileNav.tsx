@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useMe } from "@/lib/data-access";
-import { Drawer, Link, MenuItem } from "@/components/ui";
+import { Caption, Drawer, IconButton, Link, MenuItem } from "@/components/ui";
 import { AccountNav } from "./AccountNav";
 import { NAV_LINKS } from "./NavLinks";
 
@@ -33,27 +33,27 @@ export function MobileNav({
   return (
     <div className="lg:hidden">
       {/* Negative margin aligns the icon with the page content's left edge. */}
-      <button
-        type="button"
-        aria-label="Open menu"
+      <IconButton
+        a11yLabel="Open menu"
+        variant="ghost"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="-ml-[9px] flex h-10 w-10 items-center justify-center rounded-card text-ink-soft transition-colors hover:text-ink"
+        className="-ml-[9px] h-10 w-10"
       >
         <Menu size={22} strokeWidth={2} aria-hidden />
-      </button>
+      </IconButton>
 
       {/* Left slide-in drawer (backdrop + Esc + scroll-lock handled by Drawer). */}
       <Drawer open={open} onClose={close} side="left" ariaLabel="Menu">
         {/* Close — floats top-right, no title bar. */}
-        <button
-          type="button"
-          aria-label="Close menu"
+        <IconButton
+          a11yLabel="Close menu"
+          variant="ghost"
           onClick={close}
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-card text-ink-soft transition-colors hover:bg-canvas hover:text-ink"
+          className="absolute right-2 top-2 z-10"
         >
           <X size={20} strokeWidth={2} aria-hidden />
-        </button>
+        </IconButton>
 
         <div className="flex-1 overflow-y-auto px-3 pb-6 pt-12">
           {/* Logged out (incl. onboarding): welcome card with the sign-in CTA. */}
@@ -62,9 +62,9 @@ export function MobileNav({
               <Link href="/signin" variant="primary" block onClick={close}>
                 Sign in or Join Now
               </Link>
-              <p className="mt-2.5 text-center text-[12px] leading-snug text-ink-soft">
+              <Caption as="p" className="mt-2.5 text-center leading-snug">
                 Book live campus tours, or guide your own campus.
-              </p>
+              </Caption>
             </div>
           )}
 
@@ -73,9 +73,9 @@ export function MobileNav({
 
           {/* Primary site links. */}
           <div className="mt-1 border-t border-border pt-3">
-            <div className="px-2.5 pb-1.5 text-[12px] font-extrabold uppercase tracking-[0.07em] text-ink-soft">
+            <Caption as="div" weight={800} className="px-2.5 pb-1.5 uppercase tracking-[0.07em]">
               Discover
-            </div>
+            </Caption>
             <ul className="flex flex-col gap-0.5">
               {NAV_LINKS.map((link) => (
                 <li key={link.label}>

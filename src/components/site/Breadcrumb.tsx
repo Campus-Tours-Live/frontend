@@ -14,13 +14,16 @@ export interface Crumb {
 export function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
     <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+      <ol className="flex flex-wrap items-center gap-2 text-ui-sm font-semibold">
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
           return (
             <li key={item.label} className="flex items-center gap-2">
               {item.href && !isLast ? (
-                <Link href={item.href} className="text-ink-soft transition-colors hover:text-primary">
+                <Link
+                  href={item.href}
+                  className="text-ink-soft transition-colors hover:text-primary"
+                >
                   {item.label}
                 </Link>
               ) : (
@@ -29,7 +32,9 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
                 </span>
               )}
               {!isLast && (
-                <span aria-hidden className="text-ink-soft/50">/</span>
+                <span aria-hidden className="text-ink-soft/50">
+                  /
+                </span>
               )}
             </li>
           );

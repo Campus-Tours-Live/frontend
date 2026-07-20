@@ -1,21 +1,41 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Calendar, Card, MonthYearPicker, Popover, type CalendarDay } from "@/components/ui";
+import {
+  Alert,
+  Badge,
+  Body,
+  Button,
+  Calendar,
+  Caption,
+  Drawer,
+  Heading,
+  Panel,
+  PanelHeader,
+  Popover,
+  type CalendarDay,
+} from "@/components/ui";
+import { useMediaQuery } from "@/hooks";
 import {
   useAvailabilityExceptions,
   useAvailabilitySettings,
   useResolvedAvailability,
-  type AvailabilityException,
-  type AvailabilityOccurrence,
 } from "@/lib/data-access";
 import {
   bucketOccurrencesByDate,
   isoDateInTimeZone,
   partsInTimeZone,
 } from "@/lib/availability/bucketByDate";
-import { minutesFromHHmm } from "@/lib/availability/fromTo";
+import {
+  buildAdditionalIntervals,
+  formatWindow,
+  localMinutesOfDay,
+  minutesBetween,
+  resolveDayWindows,
+  type ResolvedDayWindow,
+} from "@/lib/availability/dayWindows";
 import { cn } from "@/lib/utils";
+import { formatDayHeader } from "./availabilityHelpers";
 
 const FALLBACK_TIMEZONE = "America/Los_Angeles";
 
@@ -30,27 +50,28 @@ interface MonthCursor {
   month: number; // 1-12
 }
 
-/** One backend-resolved window mapped for rendering — `additional` flags a window
- *  that matches an ADDITIONAL exception on the same date (blue accent + "Extra"
- *  label), never a recomputed one. */
-interface DayWindow {
-  window: AvailabilityOccurrence;
-  additional: boolean;
-}
-
 interface DayCell {
   iso: string;
   day: number;
-  windows: DayWindow[];
+  windows: ResolvedDayWindow[];
   totalMinutes: number;
   hasAdditional: boolean;
   isToday: boolean;
 }
 
 export interface MonthAvailabilityViewProps {
-  /** Invoked with the clicked day's ISO date (yyyy-mm-dd) — the page wires this to the
-   *  date-specific override modal (Task 4/5). */
-  onOpenOverride: (date: string) => void;
+  /** A day cell was clicked (ISO yyyy-mm-dd). The page routes it — a detail sheet on mobile,
+   *  the override editor on desktop. */
+  onDayClick: (date: string) => void;
+  /** Controlled: the day whose detail sheet is open (mobile), or null when none is. */
+  daySheetDate: string | null;
+  /** Dismiss the day sheet (backdrop/Escape/close). */
+  onDaySheetClose: () => void;
+  /** "Add/Edit override" tapped inside the day sheet, for that day's ISO date. */
+  onEditOverride: (date: string) => void;
+  /** Whether date overrides can be added right now. When false (no weekly hours set yet), the day
+   *  sheet's "Add/Edit override" button is disabled and a notice explains why. */
+  canAddOverride: boolean;
 }
 
 function pad2(value: number): string {
@@ -63,58 +84,7 @@ function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
-/** A window's duration in minutes — the only arithmetic allowed on the backend-resolved
- *  windows (never overlap/trim/coalesce), used for the density bar length + total. */
-function minutesBetween(startAt: string, endAt: string): number {
-  return Math.max(0, (new Date(endAt).getTime() - new Date(startAt).getTime()) / 60000);
-}
-
-/** Minutes-of-day (0–1439) of `iso` AS SEEN in `timeZone` — for placing a window on
- *  the density bar. Purely a rendering coordinate, not availability math. */
-function localMinutesOfDay(iso: string, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(iso));
-  const map: Record<string, string> = {};
-  for (const part of parts) {
-    if (part.type !== "literal") map[part.type] = part.value;
-  }
-  const hour = Number(map.hour) % 24; // "24" (midnight) → 0
-  return hour * 60 + Number(map.minute);
-}
-
-function formatClockTime(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(iso));
-}
-
-/** Render one window's from–to exactly as returned — 1:1, never merged with a neighbor. */
-function formatWindow(window: AvailabilityOccurrence, timeZone: string): string {
-  return `${formatClockTime(window.startAt, timeZone)} – ${formatClockTime(window.endAt, timeZone)}`;
-}
-
-/** Weekday-abbrev + M/D header, e.g. "Thu 7/17". The weekday is derived from the ISO
- *  calendar date itself (UTC noon avoids any tz-boundary slip). */
-function formatDayHeader(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const weekday = new Intl.DateTimeFormat("en-US", {
-    timeZone: "UTC",
-    weekday: "short",
-  }).format(new Date(Date.UTC(y, m - 1, d, 12)));
-  return `${weekday} ${m}/${d}`;
-}
-
-/** `MonthCursor` <-> a month-start `Date`, for `MonthYearPicker` (which is date-based,
- *  not year/month-number based). */
-function cursorToDate(cursor: MonthCursor): Date {
-  return new Date(cursor.year, cursor.month - 1, 1);
-}
+/** A `Date` (from `Calendar`'s `onMonthChange`) -> the `{year, month}` cursor. */
 function dateToCursor(date: Date): MonthCursor {
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
@@ -128,7 +98,7 @@ function currentMonthInTimeZone(timeZone: string): MonthCursor {
 }
 
 /**
- * Calendar-centric "Availability calendar" month view (CTL-55 v2). Built on the generic
+ * Calendar-centric "Bookable days" month view (CTL-55 v2). Built on the generic
  * `Calendar` + `Popover` UI primitives. Everything shown is derived from the
  * backend-resolved read (`occurrences`) and the exceptions list — the FE only buckets
  * occurrences by settings-tz date, maps window times to pixel/percentage positions, and
@@ -142,7 +112,13 @@ function currentMonthInTimeZone(timeZone: string): MonthCursor {
  *  - hover a day    → a summary Popover listing that day's windows 1:1 in settings tz;
  *  - click a day    → `onOpenOverride(iso)` (the page opens the override modal).
  */
-export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewProps) {
+export function MonthAvailabilityView({
+  onDayClick,
+  daySheetDate,
+  onDaySheetClose,
+  onEditOverride,
+  canAddOverride,
+}: MonthAvailabilityViewProps) {
   const resolvedQuery = useResolvedAvailability();
   const settingsQuery = useAvailabilitySettings();
   const exceptionsQuery = useAvailabilityExceptions();
@@ -156,6 +132,12 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
   const [cursor, setCursor] = useState<MonthCursor | null>(null);
   const activeCursor: MonthCursor = cursor ?? currentMonthInTimeZone(settingsTimezone);
   const [hovered, setHovered] = useState<{ iso: string; anchorEl: HTMLElement } | null>(null);
+  // Touch devices can't hover, so the hover summary popover is unreachable there — suppress it.
+  // (The tap → day-sheet vs desktop → editor routing is decided by the page via onDayClick.)
+  const isTouch = useMediaQuery("(hover: none), (max-width: 1023px)");
+  // Desktop only: a day click while overrides are blocked (no weekly hours) shows a notice under the
+  // calendar heading instead of opening the editor modal. Mobile shows the block inside the day sheet.
+  const [blockedNotice, setBlockedNotice] = useState(false);
 
   const resolvedOccurrences = resolvedQuery.data?.occurrences;
   const exceptions = exceptionsQuery.data;
@@ -165,24 +147,11 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
     [resolvedOccurrences, settingsTimezone],
   );
 
-  /** Per-date ADDITIONAL exception coverage intervals (settings-local minutes-of-day) — used only
-   *  to flag which resolved windows get the blue "Extra" accent; the occurrences already reflect the
-   *  net result (FE-never-recomputes). Kept as intervals (not raw start times) so the accent survives
-   *  a backend-TRIMMED ADDITIONAL start: when Core clips an extra window's start (e.g. because its
-   *  first minutes were already covered by weekly hours), the resolved window starts LATER than the
-   *  exception's `startLocal`, so a start-string match would silently drop the accent — but the start
-   *  still falls inside the exception's original [start, start+windowMin) interval. */
-  const additionalIntervalsByDate = useMemo(() => {
-    const map = new Map<string, { startMin: number; endMin: number }[]>();
-    for (const exc of exceptions ?? ([] as AvailabilityException[])) {
-      if (exc.kind !== "ADDITIONAL") continue;
-      const startMin = minutesFromHHmm(exc.startLocal);
-      const list = map.get(exc.exceptionDate) ?? [];
-      list.push({ startMin, endMin: startMin + exc.windowMin });
-      map.set(exc.exceptionDate, list);
-    }
-    return map;
-  }, [exceptions]);
+  // ADDITIONAL "Extra" coverage intervals per date (see `buildAdditionalIntervals`).
+  const additionalIntervalsByDate = useMemo(
+    () => buildAdditionalIntervals(exceptions),
+    [exceptions],
+  );
 
   const todayIso = useMemo(
     () => isoDateInTimeZone(new Date(), settingsTimezone),
@@ -194,23 +163,22 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
     const result: DayCell[] = [];
     for (let day = 1; day <= total; day++) {
       const iso = `${activeCursor.year}-${pad2(activeCursor.month)}-${pad2(day)}`;
-      const rawWindows = occurrencesByDate.get(iso) ?? [];
-      const additionalIntervals = additionalIntervalsByDate.get(iso);
-      let totalMinutes = 0;
-      const windows: DayWindow[] = rawWindows.map((window) => {
-        totalMinutes += minutesBetween(window.startAt, window.endAt);
-        const startMin = localMinutesOfDay(window.startAt, settingsTimezone);
-        const additional =
-          additionalIntervals?.some((iv) => startMin >= iv.startMin && startMin < iv.endMin) ??
-          false;
-        return { window, additional };
-      });
+      const windows = resolveDayWindows(
+        iso,
+        occurrencesByDate,
+        additionalIntervalsByDate,
+        settingsTimezone,
+      );
+      const totalMinutes = windows.reduce(
+        (sum, { window }) => sum + minutesBetween(window.startAt, window.endAt),
+        0,
+      );
       result.push({
         iso,
         day,
         windows,
         totalMinutes,
-        hasAdditional: (additionalIntervals?.length ?? 0) > 0,
+        hasAdditional: (additionalIntervalsByDate.get(iso)?.length ?? 0) > 0,
         isToday: iso === todayIso,
       });
     }
@@ -218,6 +186,7 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
   }, [activeCursor, occurrencesByDate, additionalIntervalsByDate, settingsTimezone, todayIso]);
 
   const hoveredCell = hovered ? cells.find((cell) => cell.iso === hovered.iso) : undefined;
+  const sheetCell = daySheetDate ? cells.find((cell) => cell.iso === daySheetDate) : undefined;
 
   const calendarDays: CalendarDay[] = cells.map((cell) => {
     // Announce the day's booking status (backend-resolved, never recomputed) in the accessible name
@@ -235,38 +204,52 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
   });
 
   return (
-    <Card
+    <Panel
       role="region"
-      aria-label="Availability calendar"
-      padded={false}
+      aria-label="Bookable days"
+      divider="inset"
       className="overflow-visible"
+      header={
+        <PanelHeader
+          title="Bookable days"
+          subtitle="What participants can actually book, shown by day. Select a day to see its details and add a one-off override."
+        >
+          {blockedNotice && !canAddOverride ? (
+            <div className="mt-3 hidden lg:block">
+              <Alert variant="warning" role="status">
+                Set your weekly hours first — date overrides adjust your weekly schedule, so there
+                is nothing to override yet.
+              </Alert>
+            </div>
+          ) : null}
+        </PanelHeader>
+      }
     >
-      <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:px-6">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h2 className="font-display text-[20px] font-bold text-ink">Availability calendar</h2>
-          <p className="text-[13px] text-ink-soft">
-            What participants can actually book, shown by day. Hover a day for details, click a day
-            to add a one-off override.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center justify-end">
-          <MonthYearPicker
-            value={cursorToDate(activeCursor)}
-            onChange={(next) => setCursor(dateToCursor(next))}
-            aria-label="Month"
-          />
-        </div>
-      </div>
-
       <div className="px-5 py-4 sm:px-6">
         <Calendar
           year={activeCursor.year}
           month={activeCursor.month}
           days={calendarDays}
           weekStartsOn={0}
+          onMonthChange={(next) => setCursor(dateToCursor(next))}
+          monthNavAlign="center"
           hoveredDate={hovered?.iso ?? null}
-          onDayClick={(iso) => onOpenOverride(iso)}
-          onDayHover={(iso, anchorEl) => setHovered(iso && anchorEl ? { iso, anchorEl } : null)}
+          onDayClick={(iso) => {
+            // Desktop can't add an override with no weekly hours: show the notice above instead of
+            // routing the click to the editor modal. Mobile still opens the day sheet (which carries
+            // its own disabled action + notice), so only gate the desktop path here.
+            if (!canAddOverride && !isTouch) {
+              setBlockedNotice(true);
+              return;
+            }
+            onDayClick(iso);
+          }}
+          onDayHover={(iso, anchorEl) => {
+            // Touch devices have no hover (browsers only emulate a "sticky" hover on tap), so
+            // ignore hover there — a tap opens the day sheet instead (see onDayClick).
+            if (isTouch) return;
+            setHovered(iso && anchorEl ? { iso, anchorEl } : null);
+          }}
         />
 
         <Legend />
@@ -276,7 +259,7 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
           mouse-leave/blur clears `hovered` — so it must not register the Popover's outside-pointer /
           Escape GLOBAL listeners (those are for dismissible dialogs, not a tooltip). */}
       <Popover
-        open={Boolean(hoveredCell)}
+        open={!isTouch && Boolean(hoveredCell)}
         anchorEl={hovered?.anchorEl ?? null}
         role="tooltip"
         aria-label={hoveredCell ? `Availability for ${hoveredCell.iso}` : undefined}
@@ -284,7 +267,56 @@ export function MonthAvailabilityView({ onOpenOverride }: MonthAvailabilityViewP
       >
         {hoveredCell ? <SummaryPopover cell={hoveredCell} timeZone={settingsTimezone} /> : null}
       </Popover>
-    </Card>
+
+      {/* Touch fallback for the hover popover: on tap, a bottom sheet shows the day's detail and
+          an "Add override" action (which opens the full editor). Dismisses via backdrop/Escape. */}
+      <Drawer
+        open={Boolean(sheetCell)}
+        onClose={onDaySheetClose}
+        side="bottom"
+        ariaLabel={sheetCell ? `Availability for ${sheetCell.iso}` : undefined}
+        header={
+          sheetCell ? (
+            <Heading as="h3" size="h3">
+              {formatDayHeader(sheetCell.iso)}
+            </Heading>
+          ) : undefined
+        }
+        footer={
+          sheetCell ? (
+            // A disabled `.btn` has `pointer-events-none`, so it can't show its own cursor — wrap it
+            // so hovering the (disabled) button falls through to the span's `cursor-not-allowed`.
+            <span className={cn("block", !canAddOverride && "cursor-not-allowed")}>
+              <Button
+                type="button"
+                variant="primary"
+                block
+                disabled={!canAddOverride}
+                onClick={() => onEditOverride(sheetCell.iso)}
+              >
+                {(exceptions ?? []).some((exc) => exc.exceptionDate === sheetCell.iso)
+                  ? "Edit override"
+                  : "Add override"}
+              </Button>
+            </span>
+          ) : undefined
+        }
+      >
+        {sheetCell ? (
+          <div className="space-y-3">
+            {/* No weekly hours yet → overrides adjust a baseline that doesn't exist. Disable the
+                action (footer) and say why here. */}
+            {!canAddOverride ? (
+              <Alert variant="warning">
+                Set your weekly hours first — date overrides adjust your weekly schedule, so there
+                is nothing to override yet.
+              </Alert>
+            ) : null}
+            <DaySheet cell={sheetCell} timeZone={settingsTimezone} />
+          </div>
+        ) : null}
+      </Drawer>
+    </Panel>
   );
 }
 
@@ -320,13 +352,13 @@ function DensityBar({ cell, timeZone }: { cell: DayCell; timeZone: string }) {
   );
 }
 
-/** Backend-resolved day summary: a header (weekday + date + status), then each window
- *  as a row with a colour dot (green available / blue "Extra"), formatted in settings tz. */
+/** Backend-resolved day summary: a header (weekday + date + status), then each window as a row —
+ *  the from–to time + an Available/Extra badge (same as the day sheet), formatted in settings tz. */
 function SummaryPopover({ cell, timeZone }: { cell: DayCell; timeZone: string }) {
   const available = cell.windows.length > 0;
   const status = available ? "Available" : "Unavailable";
   return (
-    <div className="rounded-card border border-border bg-popover p-3 text-[13px] shadow-lg">
+    <div className="rounded-card border border-border bg-popover p-3 text-ui-sm shadow-lg">
       <p className="font-semibold text-ink">
         {formatDayHeader(cell.iso)} · {status}
       </p>
@@ -335,29 +367,56 @@ function SummaryPopover({ cell, timeZone }: { cell: DayCell; timeZone: string })
           {cell.windows.map(({ window, additional }, index) => (
             <li
               key={`${window.startAt}-${window.endAt}-${index}`}
-              className="flex items-center gap-2 text-ink"
+              className="flex items-center justify-between gap-2 text-ink"
             >
-              <span
-                aria-hidden
-                className={cn(
-                  "h-2 w-2 shrink-0 rounded-full",
-                  additional ? "bg-primary" : "bg-success",
-                )}
-              />
               <span className="tabular-nums">{formatWindow(window, timeZone)}</span>
-              {additional ? (
-                <span className="ml-auto text-[11px] font-semibold text-primary">Extra</span>
-              ) : null}
+              <Badge variant={additional ? "primary" : "success"}>
+                {additional ? "Extra" : "Available"}
+              </Badge>
             </li>
           ))}
         </ul>
       ) : (
         <p className="mt-2 text-ink-soft">No hours</p>
       )}
-      <p className="mt-2 border-t border-border pt-2 text-[11px] text-ink-soft">
+      <Caption as="p" size="xs" className="mt-2 border-t border-border pt-2">
         Summary from resolved availability — not recomputed.
-      </p>
+      </Caption>
     </div>
+  );
+}
+
+/** Bottom-sheet body for a tapped day (the touch alternative to the hover popover): the day
+ *  header + an "Add override" action, then each resolved window as a row with an Available/Extra
+ *  pill. Pure presentation of resolved availability — never recomputed. */
+function DaySheet({ cell, timeZone }: { cell: DayCell; timeZone: string }) {
+  if (cell.windows.length === 0) {
+    return (
+      <Body
+        size="small"
+        color="muted"
+        className="rounded-md border border-border bg-card px-3 py-4 text-center"
+      >
+        No hours set this day.
+      </Body>
+    );
+  }
+  return (
+    <ul aria-label={`Windows on ${cell.iso}`} className="flex flex-col gap-2">
+      {cell.windows.map(({ window, additional }, index) => (
+        <li
+          key={`${window.startAt}-${window.endAt}-${index}`}
+          className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5"
+        >
+          <Body as="span" size="small" weight={600} className="tabular-nums">
+            {formatWindow(window, timeZone)}
+          </Body>
+          <Badge variant={additional ? "primary" : "success"}>
+            {additional ? "Extra" : "Available"}
+          </Badge>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -370,7 +429,7 @@ function Legend() {
     { className: "ring-2 ring-ink", label: "Today" },
   ];
   return (
-    <div className="mt-7 flex flex-col gap-2 text-[11px] text-ink-soft">
+    <Caption as="div" size="xs" className="mt-7 flex flex-col gap-2">
       <span>Density bar spans 12:00 AM – 12:00 AM (full day):</span>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         {items.map((item) => (
@@ -380,6 +439,6 @@ function Legend() {
           </span>
         ))}
       </div>
-    </div>
+    </Caption>
   );
 }

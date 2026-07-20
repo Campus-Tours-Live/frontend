@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, StatusBadge } from "@/components/ui";
+import { Alert, Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import { offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
@@ -34,26 +34,32 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
   };
 
   return (
-    <article className="overflow-hidden rounded-panel border border-border bg-card shadow-card">
-      <div className="flex h-[150px] items-center justify-center bg-canvas text-[12px] font-medium text-ink-soft">
+    <Card as="article" padded={false} className="overflow-hidden rounded-panel">
+      <Caption
+        as="div"
+        weight={500}
+        className="flex h-[150px] items-center justify-center bg-canvas"
+      >
         Campus tour image
-      </div>
+      </Caption>
       <div className="p-5">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge variant={offeringStatusVariant(offering.status)}>
             {offeringStatusLabel(offering.status)}
           </StatusBadge>
-          <span className="text-[12px] text-ink-soft">
-            {isPublished ? "Visible publicly" : "Not public"}
-          </span>
+          <Caption>{isPublished ? "Visible publicly" : "Not public"}</Caption>
         </div>
 
-        <h3 className="mt-3 font-display text-h4 text-ink">{offering.title}</h3>
+        <Heading as="h3" size="h4" className="mt-3">
+          {offering.title}
+        </Heading>
         {offering.description ? (
-          <p className="mt-2 line-clamp-2 text-[14px] text-ink-soft">{offering.description}</p>
+          <Body size="medium" color="muted" className="mt-2 line-clamp-2">
+            {offering.description}
+          </Body>
         ) : null}
 
-        <dl className="mt-4 grid grid-cols-3 gap-3 text-[13px]">
+        <dl className="mt-4 grid grid-cols-3 gap-3 text-ui-sm">
           <div>
             <dt className="text-ink-soft">Duration</dt>
             <dd className="font-semibold text-ink">{offering.durationMin} min</dd>
@@ -78,17 +84,20 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
 
         <div className="mt-5 flex flex-wrap gap-2">
           {isDraft ? (
-            <Button variant="primary" size="sm" disabled={publishDisabled} onClick={handlePublish}>
+            <Button
+              variant="primary"
+              size="small"
+              disabled={publishDisabled}
+              onClick={handlePublish}
+            >
               {activate.isPending ? "Publishing…" : "Publish"}
             </Button>
           ) : null}
           {!canPublish && isDraft ? (
-            <p className="text-[12px] text-ink-soft">
-              Publishing unlocks after your guide application is approved.
-            </p>
+            <Caption as="p">Publishing unlocks after your guide application is approved.</Caption>
           ) : null}
         </div>
       </div>
-    </article>
+    </Card>
   );
 }

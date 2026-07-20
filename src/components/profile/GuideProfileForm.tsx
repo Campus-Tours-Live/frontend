@@ -2,17 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, Button, Chip, Field, Spinner, TextField, Textarea } from "@/components/ui";
+import { Alert, Body, Button, Card, Chip, Spinner, TextField, Textarea } from "@/components/ui";
 import {
   ApiError,
   useTourTopics,
   useUpdateGuideProfile,
   type GuideProfile,
 } from "@/lib/data-access";
-import {
-  UniversityMultiSelect,
-  type UniversityOption,
-} from "@/components/signup/UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
 const LANGUAGES = [
   { value: "en-US", label: "English" },
@@ -133,7 +130,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
       {errors.root ? <Alert variant="error">{errors.root.message}</Alert> : null}
       {saveMessage ? <Alert variant="success">{saveMessage}</Alert> : null}
 
-      <div className="space-y-5 rounded-panel border border-border bg-card p-6 shadow-card">
+      <Card padded={false} className="space-y-5 rounded-panel p-6">
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField
             label="First name"
@@ -149,18 +146,22 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           />
         </div>
 
-        <Field label="University" error={errors.university?.message}>
-          <Controller
-            control={control}
-            name="university"
-            rules={{
-              validate: (value) => value.length > 0 || "University is required",
-            }}
-            render={({ field }) => (
-              <UniversityMultiSelect value={field.value} onChange={field.onChange} max={1} />
-            )}
-          />
-        </Field>
+        <Controller
+          control={control}
+          name="university"
+          rules={{
+            validate: (value) => value.length > 0 || "University is required",
+          }}
+          render={({ field }) => (
+            <UniversityField
+              label="University"
+              error={errors.university?.message}
+              value={field.value}
+              onChange={field.onChange}
+              max={1}
+            />
+          )}
+        />
 
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField
@@ -184,9 +185,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           name="languages"
           render={({ field }) => (
             <fieldset>
-              <legend className="mb-2 block text-[13px] font-semibold text-ink">
+              <Body as="legend" size="small" weight={600} className="mb-2 block">
                 Languages you can guide in
-              </legend>
+              </Body>
               <div className="flex flex-wrap gap-2">
                 {LANGUAGES.map((language) => {
                   const active = field.value.includes(language.value);
@@ -216,11 +217,13 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           name="specialties"
           render={({ field }) => (
             <fieldset>
-              <legend className="mb-2 block text-[13px] font-semibold text-ink">
+              <Body as="legend" size="small" weight={600} className="mb-2 block">
                 Tour specialties <span className="font-normal text-ink-soft">(optional)</span>
-              </legend>
+              </Body>
               {topicsLoading ? (
-                <p className="text-[14px] text-ink-soft">Loading…</p>
+                <Body size="medium" color="muted">
+                  Loading…
+                </Body>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {topicOptions.map((topic) => {
@@ -258,7 +261,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           hint="Default pricing for new tour offerings."
           {...register("basePrice", { required: "Price is required" })}
         />
-      </div>
+      </Card>
 
       <Button type="submit" variant="primary" disabled={isSubmitting || updateProfile.isPending}>
         {isSubmitting || updateProfile.isPending ? (

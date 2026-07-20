@@ -8,11 +8,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  * the (app) group so a staff-only account redirected here by the (app) guard does
  * not bounce back (no redirect loop).
  */
-export default async function StaffLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const me = await getServerMe();
   if (!me) redirect("/signin?returnTo=/staff");
   if (!me.roles.includes("ADMIN") && !me.roles.includes("SUPPORT")) redirect("/dashboard");

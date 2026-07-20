@@ -38,9 +38,11 @@ export function AffectedBookingsNotice({ bookings, timeZone }: AffectedBookingsN
       </p>
       <ul className="mt-1 space-y-1">
         {bookings.map((booking) => (
-          <li key={booking.bookingId} className="text-[13px]">
+          <li key={booking.bookingId}>
             <span className="font-semibold">{booking.bookingNumber}</span>{" "}
-            {formatBookingWindow(booking.scheduledStartAt, booking.scheduledEndAt, timeZone)}
+            <time dateTime={booking.scheduledStartAt}>
+              {formatBookingWindow(booking.scheduledStartAt, booking.scheduledEndAt, timeZone)}
+            </time>
           </li>
         ))}
       </ul>

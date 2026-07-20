@@ -16,9 +16,7 @@ const BFF_URL = "http://bff.internal:8080";
 function cookieStore(value: string | undefined) {
   return {
     get: jest.fn((name: string) =>
-      name === SESSION_COOKIE && value !== undefined
-        ? { name, value }
-        : undefined,
+      name === SESSION_COOKIE && value !== undefined ? { name, value } : undefined,
     ),
   };
 }
@@ -51,9 +49,7 @@ describe("getServerMe — guards before fetching", () => {
   it("returns null and never fetches when BFF_URL is unset", async () => {
     delete process.env.BFF_URL;
     mockedCookies.mockResolvedValue(
-      cookieStore("session-token") as unknown as Awaited<
-        ReturnType<typeof cookies>
-      >,
+      cookieStore("session-token") as unknown as Awaited<ReturnType<typeof cookies>>,
     );
 
     await expect(getServerMe()).resolves.toBeNull();
@@ -64,9 +60,7 @@ describe("getServerMe — guards before fetching", () => {
 describe("getServerMe — with a session cookie and BFF_URL set", () => {
   beforeEach(() => {
     mockedCookies.mockResolvedValue(
-      cookieStore("session-token") as unknown as Awaited<
-        ReturnType<typeof cookies>
-      >,
+      cookieStore("session-token") as unknown as Awaited<ReturnType<typeof cookies>>,
     );
   });
 

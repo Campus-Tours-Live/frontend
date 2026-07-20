@@ -1,16 +1,5 @@
-import {
-  BadgeCheck,
-  CalendarDays,
-  Clock,
-  GraduationCap,
-  List,
-  Trophy,
-} from "lucide-react";
-import {
-  MemberCard,
-  type MemberCardHighlight,
-  type MemberCardItem,
-} from "@/components/ui";
+import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lucide-react";
+import { MemberCard, type MemberCardHighlight, type MemberCardItem } from "@/components/ui";
 import type { GuideDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 

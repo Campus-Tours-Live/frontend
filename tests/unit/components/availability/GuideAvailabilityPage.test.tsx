@@ -174,7 +174,61 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
     render(<GuideAvailabilityPage />);
 
     expect(screen.getByRole("list", { name: /weekly hours by day/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /availability calendar/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /bookable days/i })).toBeInTheDocument();
+  });
+
+  it("mobile view switch flips between calendar and weekly, keeping both panels mounted", async () => {
+    const user = setupUser();
+    render(<GuideAvailabilityPage />);
+
+    const calendarBtn = screen.getByRole("button", { name: "Bookable days" });
+    const weeklyBtn = screen.getByRole("button", { name: "Weekly hours" });
+
+    // Calendar is the default (hero) view.
+    expect(calendarBtn).toHaveAttribute("aria-pressed", "true");
+    expect(weeklyBtn).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(weeklyBtn);
+    expect(weeklyBtn).toHaveAttribute("aria-pressed", "true");
+    expect(calendarBtn).toHaveAttribute("aria-pressed", "false");
+
+    // The switch is presentation-only: both panels stay in the DOM across the toggle.
+    expect(screen.getByRole("list", { name: /weekly hours by day/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /bookable days/i })).toBeInTheDocument();
+  });
+
+  it("defaults the mobile switch to Weekly hours when no weekly hours are set yet", () => {
+    // The "add weekly hours to start taking bookings" state (bookable=false, hasWeeklyHours=false):
+    // the switch should land on the weekly editor so it points at the next step, not the calendar.
+    setHooks({
+      resolved: { data: { ...resolved, bookable: false, hasWeeklyHours: false } },
+    });
+    render(<GuideAvailabilityPage />);
+
+    expect(screen.getByRole("button", { name: "Weekly hours" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Bookable days" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("keeps the calendar default once no-hours guides tap to the calendar (manual choice wins)", async () => {
+    const user = setupUser();
+    setHooks({
+      resolved: { data: { ...resolved, bookable: false, hasWeeklyHours: false } },
+    });
+    render(<GuideAvailabilityPage />);
+
+    const calendarBtn = screen.getByRole("button", { name: "Bookable days" });
+    await user.click(calendarBtn);
+    expect(calendarBtn).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Weekly hours" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
   it("renders BookingRulesPanel from useAvailabilitySettings", () => {
@@ -183,12 +237,15 @@ describe("GuideAvailabilityPage — assembled v2.1 layout", () => {
     expect(screen.getByText("AUTO")).toBeInTheDocument();
   });
 
-  it("renders the three section-guidance eyebrows", () => {
+  it("labels each workbench panel by its own title (no section eyebrows)", () => {
     render(<GuideAvailabilityPage />);
 
-    expect(screen.getByText(/set your weekly hours/i)).toBeInTheDocument();
-    expect(screen.getByText(/review your availability calendar/i)).toBeInTheDocument();
-    expect(screen.getByText(/booking policy/i)).toBeInTheDocument();
+    // Variant B drops the section eyebrows (Step 1 / Step 2 and the booking-policy label) — each
+    // panel's own heading labels it instead.
+    expect(screen.queryByText(/set your weekly hours/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/review your availability calendar/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Weekly hours" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Bookable days" })).toBeInTheDocument();
   });
 
   it("keeps the booking-rules aside in normal flow (not sticky)", () => {
@@ -220,7 +277,7 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
     const dialog = await screen.findByRole("dialog");
     // 2026-07-22 is a Wednesday; the title carries the weekday + M/D.
     expect(
-      within(dialog).getByRole("heading", { name: /Date-specific hours · Wed 7\/22/ }),
+      within(dialog).getByRole("heading", { name: /Date-specific hours · Wednesday, Jul 22/ }),
     ).toBeInTheDocument();
     // DateOverrideModal defaults to "Block time off" (UNAVAILABLE) — that segment is filled.
     expect(within(dialog).getByRole("button", { name: "Block time off" })).toHaveAttribute(
@@ -240,6 +297,20 @@ describe("GuideAvailabilityPage — month click opens the override modal", () =>
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("with no weekly hours, a desktop day click shows a notice by the calendar and never opens the modal", async () => {
+    const user = setupUser();
+    setHooks({
+      resolved: { data: { ...resolved, bookable: false, hasWeeklyHours: false } },
+    });
+    render(<GuideAvailabilityPage />);
+
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
+
+    // Desktop blocks the override modal before it opens and surfaces a notice instead.
+    expect(screen.getByText(/set your weekly hours first/i)).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
@@ -302,5 +373,47 @@ describe("GuideAvailabilityPage — write 422 surfaces as an in-dialog notificat
     ).toBeInTheDocument();
     // Stays open — the notification lives inside the still-open dialog, not a page-level banner.
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
+describe("GuideAvailabilityPage — mobile day-sheet flow (tap → sheet → editor → back)", () => {
+  function mockTouch() {
+    window.matchMedia = jest.fn().mockImplementation((q: string) => ({
+      matches: true,
+      media: q,
+      onchange: null,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+  }
+
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia;
+  });
+
+  it("Cancel in the editor returns to the day sheet instead of closing everything", async () => {
+    mockTouch();
+    const user = setupUser();
+    render(<GuideAvailabilityPage />);
+
+    // Tap a day → the detail sheet (not the editor).
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
+    expect(
+      screen.getByRole("dialog", { name: /Availability for 2026-07-22/i }),
+    ).toBeInTheDocument();
+
+    // Add override → the editor opens (the sheet is swapped out).
+    await user.click(screen.getByRole("button", { name: "Add override" }));
+    const editor = await screen.findByRole("dialog", { name: "Date-specific hours" });
+    expect(editor).toBeInTheDocument();
+
+    // Cancel → back to the day sheet, not all the way out to the calendar.
+    await user.click(within(editor).getByRole("button", { name: /cancel/i }));
+    expect(
+      screen.getByRole("dialog", { name: /Availability for 2026-07-22/i }),
+    ).toBeInTheDocument();
   });
 });

@@ -5,8 +5,10 @@ import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Button,
-  Field,
+  Card,
+  Icon,
   Link,
+  Nudge,
   SectionHeading,
   SelectField,
   Spinner,
@@ -14,10 +16,7 @@ import {
   Textarea,
 } from "@/components/ui";
 import { ApiError, useCreateOffering, useTourTopics } from "@/lib/data-access";
-import {
-  UniversityMultiSelect,
-  type UniversityOption,
-} from "@/components/signup/UniversityMultiSelect";
+import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
 const DURATIONS = [30, 45, 60, 90] as const;
 
@@ -94,14 +93,14 @@ export function CreateOfferingForm() {
           lead="Save a draft now and publish when you're ready."
           level={1}
         />
-        <Link href="/guide/tour-offerings" variant="ghost" size="sm">
+        <Link href="/guide/tour-offerings" variant="ghost" size="small">
           Back to list
         </Link>
       </div>
 
       {errors.root ? <Alert variant="error">{errors.root.message}</Alert> : null}
 
-      <div className="space-y-5 rounded-panel border border-border bg-card p-6 shadow-card">
+      <Card padded={false} className="space-y-5 rounded-panel p-6">
         <TextField
           label="Public title"
           placeholder="Campus life and hidden study spots"
@@ -109,18 +108,22 @@ export function CreateOfferingForm() {
           {...register("title", { required: "Title is required" })}
         />
 
-        <Field label="University" error={errors.university?.message}>
-          <Controller
-            control={control}
-            name="university"
-            rules={{
-              validate: (value) => value.length > 0 || "University is required",
-            }}
-            render={({ field }) => (
-              <UniversityMultiSelect value={field.value} onChange={field.onChange} max={1} />
-            )}
-          />
-        </Field>
+        <Controller
+          control={control}
+          name="university"
+          rules={{
+            validate: (value) => value.length > 0 || "University is required",
+          }}
+          render={({ field }) => (
+            <UniversityField
+              label="University"
+              error={errors.university?.message}
+              value={field.value}
+              onChange={field.onChange}
+              max={1}
+            />
+          )}
+        />
 
         <SelectField
           label="Topic"
@@ -161,12 +164,12 @@ export function CreateOfferingForm() {
           rows={4}
           {...register("description")}
         />
-      </div>
+      </Card>
 
-      <div className="rounded-panel border border-border bg-canvas p-5 text-[13px] text-ink-soft">
-        Saving creates a draft. Publishing requires a verified guide account and makes the offering
-        visible on the public marketplace.
-      </div>
+      <Nudge variant="info" leading={<Icon name="info" />} title="Saving creates a draft">
+        Publishing requires a verified guide account and makes the offering visible on the public
+        marketplace.
+      </Nudge>
 
       <Button type="submit" variant="primary" disabled={isSubmitting || createOffering.isPending}>
         {isSubmitting || createOffering.isPending ? (
