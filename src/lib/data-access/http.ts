@@ -6,6 +6,14 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message?: string,
+    /**
+     * The problem+json `code`. Carried because status alone cannot distinguish failures that
+     * demand opposite handling — notably N2's `AUTH_UPSTREAM_UNAVAILABLE` 503 ("your session
+     * is fine, we just couldn't verify it") from any other 503.
+     */
+    public readonly code?: string,
+    /** `Retry-After` in ms, when the server asked for a specific pace. */
+    public readonly retryAfterMs?: number,
   ) {
     super(message ?? `HTTP ${status}`);
     this.name = "ApiError";
@@ -23,6 +31,7 @@ export class ApiError extends Error {
  */
 async function errorFromResponse(res: Response): Promise<ApiError> {
   let message: string | undefined;
+  let code: string | undefined;
   try {
     const body = await res.json();
     if (body && typeof body === "object") {
@@ -30,11 +39,20 @@ async function errorFromResponse(res: Response): Promise<ApiError> {
         (typeof body.title === "string" && body.title) ||
         (typeof body.detail === "string" && body.detail) ||
         undefined;
+      code = typeof body.code === "string" ? body.code : undefined;
     }
   } catch {
     // empty or non-JSON body — fall through to the generic message
   }
-  return new ApiError(res.status, message ?? `Request failed (${res.status})`);
+  // Optional-chained on purpose: this runs on the FAILURE path, where the least helpful
+  // thing it could do is throw a TypeError of its own and replace a real 422 with noise.
+  const retryAfter = Number(res.headers?.get("retry-after"));
+  return new ApiError(
+    res.status,
+    message ?? `Request failed (${res.status})`,
+    code,
+    Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : undefined,
+  );
 }
 
 /** apiFetch + unwrap the `{ data }` envelope. Throws {@link ApiError} on non-2xx. */

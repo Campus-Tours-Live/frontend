@@ -19,7 +19,7 @@ describe("tourTopicsOptions", () => {
     expect(tourTopicsOptions().queryKey).toEqual(["tour-topics"]);
   });
 
-  it("queryFn fetches /v1/meta/tour-topics with interactive:false and returns the resolved value", async () => {
+  it("queryFn fetches /v1/meta/tour-topics with escalate: none and returns the resolved value", async () => {
     const payload = [{ id: "t1" }];
     mockedApiJson.mockResolvedValue(payload as never);
 
@@ -27,7 +27,7 @@ describe("tourTopicsOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/tour-topics", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/tour-topics", { escalate: "none" });
     expect(result).toBe(payload);
   });
 

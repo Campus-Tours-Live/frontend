@@ -24,17 +24,16 @@ export function toursPath(filters: TourCatalogFilters = {}) {
 export const tourCatalogOptions = (filters: TourCatalogFilters = {}) =>
   queryOptions({
     queryKey: queryKeys.tourCatalog(filters),
-    queryFn: () => apiJson<TourCatalogPage>(toursPath(filters), { interactive: false }),
+    queryFn: () => apiJson<TourCatalogPage>(toursPath(filters), { escalate: "none" }),
     placeholderData: keepPreviousData,
   });
 
-/** GET /v1/tours/{id} — single discoverable tour detail. `interactive: false` matches its public
+/** GET /v1/tours/{id} — single discoverable tour detail. `escalate: "none"` matches its public
  *  siblings above: this is an anonymous marketplace read, so a `401` must return to the caller
  *  rather than popping the re-auth modal at a visitor who never had a session. */
 export const tourDetailOptions = (id: string) =>
   queryOptions({
     queryKey: queryKeys.tourDetail(id),
-    queryFn: () =>
-      apiJson<TourDetail>(`/v1/tours/${encodeURIComponent(id)}`, { interactive: false }),
+    queryFn: () => apiJson<TourDetail>(`/v1/tours/${encodeURIComponent(id)}`, { escalate: "none" }),
     enabled: Boolean(id),
   });

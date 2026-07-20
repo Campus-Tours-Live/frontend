@@ -19,3 +19,10 @@ export {
   SIGN_IN_AGAIN_MESSAGE,
   isAuthCancelled,
 } from "./authGate";
+export {
+  subscribeAuthNotice,
+  notifyAuthNotice,
+  clearAuthNotice,
+  getAuthNotice,
+  type AuthNotice,
+} from "./authNotice";

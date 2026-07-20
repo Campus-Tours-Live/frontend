@@ -13,6 +13,6 @@ export const tourFeatureOptionsQuery = () =>
   queryOptions({
     queryKey: queryKeys.tourFeatures(),
     queryFn: () =>
-      apiJson<TourFeatureOptionsByTopic>("/v1/meta/tour-features", { interactive: false }),
+      apiJson<TourFeatureOptionsByTopic>("/v1/meta/tour-features", { escalate: "none" }),
     staleTime: Infinity,
   });

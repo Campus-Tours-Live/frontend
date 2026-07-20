@@ -73,6 +73,13 @@ describe("useMe", () => {
     );
   });
 
+  /**
+   * LOAD-BEARING (N3 re-checked this). `fetchMe`'s catch for a plain 401 is unreachable in
+   * production for this endpoint — the BFF's only 401 emitter is `_shared/reauth.ts`, which
+   * always sets `Auth-Required`. So the entire guarantee that an anonymous visitor never
+   * touches the protected principal read rests on THIS gate, not on that catch. Keep this
+   * test alive through any refactor of useMe.
+   */
   it("logged out (session says no) → me null AND never calls the protected /v1/userinfo", async () => {
     routeFetch({ authenticated: false });
 
@@ -132,7 +139,15 @@ describe("useMe", () => {
     expect(result.current.hasRole("GUIDE")).toBe(true);
   });
 
-  it("session authenticated but userinfo 401 → me null (session/token race)", async () => {
+  /**
+   * NOTE — this drives a 401 WITHOUT `Auth-Required`, which the BFF cannot actually produce
+   * for this endpoint (see the comment above). The old name, "session/token race", implied
+   * the real mid-session race is silent; it is not — that race always carries the re-auth
+   * header, and N3 surfaces it through the session-expired banner (me-ambient.test.ts).
+   * What this pins is only the defensive branch: an unexpected bare 401 degrades to
+   * logged-out rather than throwing.
+   */
+  it("session authenticated but a bare 401 (no Auth-Required) → me null, defensively", async () => {
     routeFetch({ authenticated: true, userinfo: () => jsonResponse(401, {}) });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });

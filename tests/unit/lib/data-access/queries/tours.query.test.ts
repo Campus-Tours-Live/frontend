@@ -44,7 +44,7 @@ describe("tourCatalogOptions", () => {
     mockedApiJson.mockResolvedValue([] as never);
     void queryFn();
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
   });
 
   it("queryFn fetches /v1/tours with no query string when filters are empty", async () => {
@@ -55,7 +55,7 @@ describe("tourCatalogOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
     expect(result).toBe(payload);
   });
 
@@ -74,7 +74,7 @@ describe("tourCatalogOptions", () => {
 
     expect(mockedApiJson).toHaveBeenCalledWith(
       "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&topic=DORM_HOUSING&q=campus&sort=RATING&limit=5",
-      { interactive: false },
+      { escalate: "none" },
     );
   });
 
@@ -84,7 +84,7 @@ describe("tourCatalogOptions", () => {
     const queryFn = tourCatalogOptions({ limit: 0 }).queryFn as () => Promise<unknown>;
     await queryFn();
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
   });
 
   it("adds page when > 0 and omits it when 0", async () => {
@@ -92,12 +92,12 @@ describe("tourCatalogOptions", () => {
 
     const withPage = tourCatalogOptions({ page: 2, limit: 20 }).queryFn as () => Promise<unknown>;
     await withPage();
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours?page=2&limit=20", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours?page=2&limit=20", { escalate: "none" });
 
     mockedApiJson.mockClear();
     const firstPage = tourCatalogOptions({ page: 0 }).queryFn as () => Promise<unknown>;
     await firstPage();
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
   });
 });
 
@@ -120,9 +120,9 @@ describe("tourDetailOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    // interactive:false — an anonymous marketplace read must not pop the re-auth modal on a 401
+    // escalate: none — an anonymous marketplace read must not pop the re-auth modal on a 401
     // (H2c; matches tourCatalogOptions and the other public queries).
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc", { escalate: "none" });
     expect(result).toBe(payload);
   });
 
@@ -132,6 +132,6 @@ describe("tourDetailOptions", () => {
     const queryFn = tourDetailOptions("a b/c?d").queryFn as () => Promise<unknown>;
     await queryFn();
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd", { escalate: "none" });
   });
 });

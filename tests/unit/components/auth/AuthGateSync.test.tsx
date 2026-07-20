@@ -1,10 +1,12 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthGateSync } from "@/components/auth/AuthGateSync";
 import { queryKeys } from "@/lib/data-access/keys";
 import {
   AuthCancelledError,
   cancelAuth,
+  clearAuthNotice,
+  notifyAuthNotice,
   requireAuth,
   resetAuthGate,
   subscribeAuthGate,
@@ -47,6 +49,7 @@ function makeClient() {
 beforeEach(() => {
   pathname = "/dashboard";
   resetAuthGate();
+  clearAuthNotice();
 });
 
 describe("AuthGateSync — gate opening transitions the client to anonymous", () => {
@@ -99,6 +102,33 @@ describe("AuthGateSync — gate opening transitions the client to anonymous", ()
 
     expect(client.getQueryData(queryKeys.session())).toBe(true);
     cancelAuth();
+  });
+});
+
+describe("AuthGateSync — notice-driven transition (N3)", () => {
+  it("goes anonymous on an 'expired' notice, with no gate involved", () => {
+    // N3 routes an AMBIENT re-auth 401 to the notice channel instead of the gate, so the
+    // anonymous transition has to hang off the notice too — otherwise the header would keep
+    // rendering signed-in behind the session-expired banner.
+    const client = makeClient();
+    renderWithClient(client);
+
+    act(() => notifyAuthNotice("expired"));
+
+    expect(client.getQueryData(queryKeys.session())).toBe(false);
+    expect(client.getQueryData(queryKeys.me())).toBeUndefined();
+  });
+
+  it("does NOT go anonymous on 'unverifiable' — the session is intact", () => {
+    // N2 preserved this session on purpose; signing the user out here would throw away
+    // exactly what it protected, and the server still considers them authenticated.
+    const client = makeClient();
+    renderWithClient(client);
+
+    act(() => notifyAuthNotice("unverifiable"));
+
+    expect(client.getQueryData(queryKeys.session())).toBe(true);
+    expect(client.getQueryData(queryKeys.me())).toEqual({ id: "u1", roles: ["GUIDE"] });
   });
 });
 

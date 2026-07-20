@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { subscribeAuthGate, advanceAuthEpoch } from "@/lib/auth";
+import { subscribeAuthGate, subscribeAuthNotice, advanceAuthEpoch } from "@/lib/auth";
 // Deep import on purpose: the data-access barrel documents `keys` as internal, and this
 // adapter is exactly the kind of internal consumer that convention is written for.
 import { queryKeys } from "@/lib/data-access/keys";
@@ -29,6 +29,22 @@ import { queryKeys } from "@/lib/data-access/keys";
 export function AuthGateSync() {
   const queryClient = useQueryClient();
   const pathname = usePathname();
+
+  // N3: an ambient re-auth 401 never opens the gate — it raises a notice instead — so the
+  // anonymous transition has to hang off the notice channel too, or the header would keep
+  // rendering signed-in behind the banner.
+  useEffect(
+    () =>
+      subscribeAuthNotice((notice) => {
+        // ONLY `expired`. On `unverifiable` the session is intact and the server said so
+        // (N2's 503); going anonymous there would be a false sign-out — the exact outcome
+        // N2 preserved the session to prevent.
+        if (notice !== "expired") return;
+        queryClient.setQueryData(queryKeys.session(), false);
+        queryClient.removeQueries({ queryKey: queryKeys.me() });
+      }),
+    [queryClient],
+  );
 
   useEffect(
     () =>

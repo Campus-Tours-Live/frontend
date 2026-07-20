@@ -20,7 +20,7 @@ describe("tourFeatureOptionsQuery", () => {
     expect(tourFeatureOptionsQuery().staleTime).toBe(Infinity);
   });
 
-  it("queryFn fetches /v1/meta/tour-features with interactive:false and returns the resolved value", async () => {
+  it("queryFn fetches /v1/meta/tour-features with escalate: none and returns the resolved value", async () => {
     const payload = {
       ACCESSIBILITY: [{ value: "WHEELCHAIR", label: "Wheelchair accessible" }],
     };
@@ -30,7 +30,7 @@ describe("tourFeatureOptionsQuery", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/tour-features", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/tour-features", { escalate: "none" });
     expect(result).toBe(payload);
   });
 });

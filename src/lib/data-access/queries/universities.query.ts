@@ -24,7 +24,7 @@ export const universitySearchOptions = (
           `/v1/meta/universities?q=${encodeURIComponent(query)}`,
           // interactive:false — ambient public typeahead; a 401 returns to the caller instead of
           // popping the reauth modal (matches the meta-query convention, e.g. tour-topics).
-          { signal, interactive: false },
+          { signal, escalate: "none" },
         );
         return options.map(
           (o): University => ({
