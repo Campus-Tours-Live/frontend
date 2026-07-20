@@ -45,7 +45,7 @@ import type { TagColor } from "@/components/ui";
  * Visual mapping for {@link TourProductCard}: turns raw backend fields (topic / universityId /
  * universityName / major) into the card's three glance-level channels —
  *   topic  → COLOUR   (a soft brand-token mask over the campus photo + pill + tags)
- *   campus → PHOTO    (a per-university image, with a deterministic brand gradient as fallback)
+ *   campus → PHOTO    (a per-university image, with a shared fallback photo when absent)
  *   major  → ICON     (a field-of-study glyph)
  * Each is orthogonal, so a list filtered to one dimension never becomes look-alikes.
  *
@@ -172,12 +172,19 @@ export const TINT = {
 } as const;
 export type TintStrength = keyof typeof TINT;
 
-/* ------------------------------------------------------------------ campus → photo / gradient */
+/* ------------------------------------------------------------------ campus → photo / crest */
 
 export interface CampusVisual {
-  /** Deterministic brand gradient used when no photo is registered (keeps schools distinct). */
-  gradient: string;
-  /** 2-letter monogram for the crest badge. */
+  /**
+   * 2-letter monogram for the crest badge.
+   *
+   * NOTE — crest/crestColor currently have NO production consumer: the shipped card design
+   * (TourProductCard) is photo-only. They are kept as the crest chrome this module is meant to
+   * supply, not as leftovers. Distinct from the former `gradient` field, which was removed
+   * (L5#7) because its purpose — "shown when no photo is registered" — no longer exists:
+   * CAMPUS_FALLBACK_IMAGE backs both the missing-URL and failed-load cases, so it had become
+   * unreachable rather than merely unused.
+   */
   crest: string;
   /** Crest text colour (a stable brand tone per campus). */
   crestColor: string;
@@ -186,7 +193,7 @@ export interface CampusVisual {
 /**
  * Shared fallback campus photo (Cloudflare R2), used when a tour has no `universityImageUrl`
  * (backend-provided) or the resolved photo fails to load. The card owns loading the actual photo
- * from `tour.universityImageUrl` — this module only supplies the gradient/crest chrome plus this
+ * from `tour.universityImageUrl` — this module only supplies the crest chrome plus this
  * one shared fallback URL.
  */
 export const CAMPUS_FALLBACK_IMAGE =
@@ -195,13 +202,6 @@ export const CAMPUS_FALLBACK_IMAGE =
 /** Optional curated crest overrides, keyed by universityId. Falls back to computed initials. */
 export const CAMPUS_CREST: Record<string, string> = {};
 
-const GRADIENTS = [
-  "bg-gradient-to-br from-[#E7EEF3] to-[#D9E6DE]",
-  "bg-gradient-to-br from-[#EAF0E7] to-[#F3ECDD]",
-  "bg-gradient-to-br from-[#E9E5F6] to-[#E3ECEF]",
-  "bg-gradient-to-br from-[#F3E7E3] to-[#EFE7DC]",
-  "bg-gradient-to-br from-[#F8EEDD] to-[#F3E7E3]",
-];
 const CREST_COLORS = [
   "text-primary-dark",
   "text-sage-foreground",
@@ -210,7 +210,7 @@ const CREST_COLORS = [
   "text-warning-foreground",
 ];
 
-/** Stable non-negative hash so a given university always maps to the same gradient/colour. */
+/** Stable non-negative hash so a given university always maps to the same crest colour. */
 function hash(input: string): number {
   let h = 0;
   for (let i = 0; i < input.length; i += 1) h = (h * 31 + input.charCodeAt(i)) | 0;
@@ -231,7 +231,6 @@ export function campusInitials(name: string): string {
 export function campusVisual(universityId: string, universityName: string): CampusVisual {
   const key = hash(universityId || universityName);
   return {
-    gradient: GRADIENTS[key % GRADIENTS.length],
     crest: CAMPUS_CREST[universityId] ?? campusInitials(universityName),
     crestColor: CREST_COLORS[key % CREST_COLORS.length],
   };

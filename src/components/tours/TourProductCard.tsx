@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import type { TourSummary } from "@/lib/data-access";
 import {
   CAMPUS_FALLBACK_IMAGE,
-  campusVisual,
   languageLabel,
   majorGlyph,
   prettifyFeatureCode,
@@ -65,7 +64,6 @@ export function TourProductCard({
   className,
 }: TourProductCardProps) {
   const t = topicStyle(tour.topic);
-  const campus = campusVisual(tour.universityId, tour.universityName);
   const TopicIcon = t.icon;
 
   // Guide credentials condensed to one line: "BS Computer Science · Entered 2023" (fields optional).
@@ -90,17 +88,15 @@ export function TourProductCard({
         aria-hidden
         className="pointer-events-none absolute inset-0 isolate -translate-x-2 -translate-y-2 overflow-hidden rounded-panel border border-border shadow-card"
       >
-        {imageSrc ? (
-          <Image
-            src={imageSrc}
-            alt=""
-            fill
-            sizes="(max-width:600px) 100vw, (max-width:980px) 50vw, 360px"
-            className="object-cover grayscale"
-          />
-        ) : (
-          <div className={cn("absolute inset-0", campus.gradient)} />
-        )}
+        {/* No conditional: `imageSrc` always resolves (CAMPUS_FALLBACK_IMAGE backs both the
+            missing-URL and failed-load cases), so the old gradient branch was unreachable. */}
+        <Image
+          src={imageSrc}
+          alt=""
+          fill
+          sizes="(max-width:600px) 100vw, (max-width:980px) 50vw, 360px"
+          className="object-cover grayscale"
+        />
         <div className={cn("absolute inset-0 opacity-60 mix-blend-multiply", t.dot)} />
       </div>
 
@@ -108,18 +104,14 @@ export function TourProductCard({
       <div className="relative flex flex-1 flex-col overflow-hidden rounded-panel border border-border bg-card shadow-card">
         {/* ---------- media: campus photo — clean, save-heart only ---------- */}
         <div className="relative aspect-square">
-          {imageSrc ? (
-            <Image
-              src={imageSrc}
-              alt={`${tour.universityName} campus`}
-              fill
-              sizes="(max-width:600px) 100vw, (max-width:980px) 50vw, 360px"
-              className="object-cover"
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            <div className={cn("absolute inset-0", campus.gradient)} aria-hidden />
-          )}
+          <Image
+            src={imageSrc}
+            alt={`${tour.universityName} campus`}
+            fill
+            sizes="(max-width:600px) 100vw, (max-width:980px) 50vw, 360px"
+            className="object-cover"
+            onError={() => setImageFailed(true)}
+          />
           {tour.isNew ? (
             <Tag
               color="coral"

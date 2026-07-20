@@ -59,11 +59,11 @@ describe("campusVisual", () => {
 
   it("falls back to hashing the university name when the id is empty", () => {
     // universityId can be blank in edge cases; the hash then keys off the name instead so the
-    // same-named campus still maps to a stable gradient/colour.
+    // same-named campus still maps to a stable crest colour.
     const first = campusVisual("", "Blue Ridge Institute");
     const second = campusVisual("", "Blue Ridge Institute");
     expect(first).toEqual(second);
-    expect(first.gradient).toEqual(expect.any(String));
+    expect(first.crestColor).toEqual(expect.any(String));
   });
 });
 
