@@ -76,10 +76,30 @@ const GLASS_HOVER: Record<GlassTone, string> = {
   smoke: "hover:bg-ink/38",
 };
 
+/**
+ * Interaction response for a control floating over imagery.
+ *
+ * The tint bump alone is not enough: the material is translucent and the ground is a photograph, so
+ * a 22%→38% change is perceptually almost nothing. Worse, on the tour card this button overlaps a
+ * stretched card link, so with no response of its own the user cannot tell whether the click under
+ * their cursor will save the tour or open it.
+ *
+ * Scale is the cue that does not care what is behind the button. `active:` presses it in, which is
+ * the iOS idiom for a control acknowledging a touch. Reduced motion drops the movement itself, not
+ * just its animation — an instant jump is still motion.
+ */
+const GLASS_INTERACTION = [
+  "transition-[transform,background-color,box-shadow] duration-150 ease-out",
+  "hover:scale-110 active:scale-95",
+  "motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
+].join(" ");
+
 function variantClass(variant: IconButtonVariant, tone: GlassTone): string {
   // Frosted-glass control over imagery — reuses the shared Glass material. `tone` comes from the
   // call site because only it knows the ground; see GlassTone.
-  return variant === "glass" ? glassClass(tone, GLASS_HOVER[tone]) : STATIC_VARIANT_CLASS[variant];
+  return variant === "glass"
+    ? glassClass(tone, `${GLASS_HOVER[tone]} ${GLASS_INTERACTION}`)
+    : STATIC_VARIANT_CLASS[variant];
 }
 
 export const IconButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, IconButtonProps>(

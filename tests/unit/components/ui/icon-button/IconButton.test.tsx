@@ -76,6 +76,26 @@ describe("IconButton", () => {
     expect(button).not.toHaveClass("glass-light");
   });
 
+  /**
+   * A glass control floats over imagery, which offers no affordance of its own — and on the tour
+   * card it also overlaps a stretched card link, so without a response of its own, hovering the
+   * heart looks exactly like hovering the card behind it and the user cannot tell whether a click
+   * will save or navigate. The old response was a 22%→32% tint bump on a translucent material over
+   * a photo: technically present, perceptually absent. Scale is the cue that does not depend on
+   * whatever colour happens to be behind the button.
+   */
+  it("gives the glass variant a background-independent hover and press response", () => {
+    render(
+      <IconButton a11yLabel="Save" variant="glass" tone="smoke">
+        <Icon name="info" />
+      </IconButton>,
+    );
+    const button = screen.getByRole("button", { name: "Save" });
+    expect(button).toHaveClass("hover:scale-110", "active:scale-95");
+    // Reduced motion must lose the movement itself, not merely its animation.
+    expect(button).toHaveClass("motion-reduce:transition-none", "motion-reduce:hover:scale-100");
+  });
+
   it("applies the solid (filled brand) variant", () => {
     render(
       <IconButton a11yLabel="Search" variant="solid">
