@@ -27,18 +27,30 @@ export function useMe() {
    * read the principal, so `data` is undefined. Reporting that as `me = null` would render
    * the signed-out header — underneath a banner telling the user they are still signed in.
    *
-   * With a cached principal this cannot happen (the query keeps its last good `data`); this
-   * is only the no-cache path. The honest state is neither signed-in nor signed-out: we do
-   * not know yet, so it stays "resolving" and the header shows neither identity nor a
-   * sign-out affordance until we do.
+   * With a cached principal this cannot happen (the query keeps its last good `data`), so
+   * this is only the no-cache path. The honest answer is neither signed-in nor signed-out:
+   * we do not know.
+   *
+   * It is reported as its OWN state, deliberately NOT folded into `isLoading`. An earlier
+   * version did fold it in, which reads fine in the header but made `/profile` — which does
+   * `if (isLoading) return <InlineLoading/>` — spin forever during a sustained outage. An
+   * indefinite spinner is a worse lie than either truth. A timeout would not have helped:
+   * after N seconds we still would not know, and there is no honest state to fall back TO
+   * ("signed out" is false, and that false sign-out is the original M4 symptom). Consumers
+   * decide instead: the header shows no identity, a protected page explains itself.
    */
-  const unverified = data === undefined && isSessionUnverifiable(meError);
+  const sessionUnverified = data === undefined && isSessionUnverifiable(meError);
 
   const me = authenticated ? (data ?? null) : null;
-  const isLoading = sessionLoading || (authenticated === true && (meLoading || unverified));
+  const isLoading = sessionLoading || (authenticated === true && meLoading);
   return {
     me,
     isLoading,
+    /**
+     * We could not CHECK the session and have no cached principal — not a claim that the
+     * user is signed out. Treat as "unknown": never render a signed-out state off this.
+     */
+    sessionUnverified,
     /** Onboarded = holds ≥1 role. A bare account (mid first-onboarding) is not. */
     isOnboarded: !!me && (me.roles?.length ?? 0) > 0,
     hasRole: (r: Role) => Boolean(me?.roles?.includes(r)),

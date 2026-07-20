@@ -58,7 +58,7 @@ export function HeaderNav({
   showDashboard?: boolean;
   showAuthActions?: boolean;
 }) {
-  const { me, isLoading, isOnboarded } = useMe();
+  const { me, isLoading, isOnboarded, sessionUnverified } = useMe();
   const dd = useDropdown();
 
   // Logged-in = you are a member (hold ≥1 role). A member stays logged-in even while
@@ -85,7 +85,7 @@ export function HeaderNav({
         </Link>
       ))}
 
-      {showAuthActions && !isLoading ? (
+      {showAuthActions && !isLoading && !sessionUnverified ? (
         <div onMouseEnter={dd.openNow} onMouseLeave={dd.scheduleClose}>
           <button
             type="button"

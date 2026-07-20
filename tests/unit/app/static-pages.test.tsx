@@ -83,6 +83,19 @@ describe("static / shell pages", () => {
     expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 
+  it("profile explains an unverifiable session instead of spinning forever", () => {
+    // The reason sessionUnverified is its own state and not folded into isLoading: this page
+    // renders a spinner for isLoading, and during a sustained outage that spinner would
+    // never resolve — there is no polling loop and nothing to wait for. An indefinite
+    // spinner is a worse lie than saying what happened.
+    mockUseMe.mockReturnValue({ me: null, isLoading: false, sessionUnverified: true });
+    render(<ProfilePage />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/couldn.t be verified/i);
+    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+    // And it must not claim they are signed out.
+    expect(screen.getByRole("alert")).toHaveTextContent(/still signed in/i);
+  });
+
   it("profile renders guide page when active role is GUIDE", () => {
     mockUseMe.mockReturnValue({ me: { activeRole: "GUIDE" }, isLoading: false });
     render(<ProfilePage />);

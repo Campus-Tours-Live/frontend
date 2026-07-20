@@ -25,7 +25,7 @@ export function MobileNav({
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
-  const { isLoading, isOnboarded } = useMe();
+  const { isLoading, isOnboarded, sessionUnverified } = useMe();
 
   // Logged-in = you are a member (hold ≥1 role); a not-yet-member (bare account
   // mid first-signup, or not signed in) holds 0 roles → public.
@@ -58,7 +58,7 @@ export function MobileNav({
 
         <div className="flex-1 overflow-y-auto px-3 pb-6 pt-12">
           {/* Logged out (incl. onboarding): welcome card with the sign-in CTA. */}
-          {showAuthActions && !isLoading && !loggedIn && (
+          {showAuthActions && !isLoading && !sessionUnverified && !loggedIn && (
             <div className="mb-4 rounded-panel bg-primary-soft p-4">
               <Link href="/signin" variant="primary" block onClick={close}>
                 Sign in or Join Now
