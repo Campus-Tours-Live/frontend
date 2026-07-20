@@ -48,7 +48,7 @@ export function TourCatalogCard({ tour, topicLabel }: { tour: TourSummary; topic
           <span className="text-[20px] font-extrabold text-ink">
             {formatPrice(tour.priceCents, tour.currency)}
           </span>
-          <Link href={`/tours/${tour.slug}`} variant="secondary" size="sm">
+          <Link href={`/tours/${tour.slug}`} variant="secondary" size="small">
             View tour
           </Link>
         </div>

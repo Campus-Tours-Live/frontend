@@ -61,7 +61,12 @@ function UniversityFallbackCard({ university }: { university: (typeof UNIVERSITI
       <h3 className="mt-3 font-display text-h4 text-ink">{university.name}</h3>
       <p className="mt-1 text-[13px] font-semibold text-primary-dark">{university.location}</p>
       <p className="mt-3 flex-1 text-[14px] text-ink-soft">{university.body}</p>
-      <Link href={university.href} variant="secondary" size="sm" className="mt-5 w-full sm:w-auto">
+      <Link
+        href={university.href}
+        variant="secondary"
+        size="small"
+        className="mt-5 w-full sm:w-auto"
+      >
         Explore university
         <ArrowRight size={15} strokeWidth={2} />
       </Link>
@@ -110,7 +115,7 @@ function Results({
               We could not load live tours right now, so here are a few campuses to start from. Your
               filters are still saved.
             </p>
-            <Button variant="ghost" size="sm" onClick={onRetry} className="mt-3 px-0">
+            <Button variant="ghost" size="small" onClick={onRetry} className="mt-3 px-0">
               Try again
             </Button>
           </div>
@@ -132,7 +137,7 @@ function Results({
         <p className="mt-2 max-w-xl text-[14px] text-ink-soft">
           Try broadening your date, topic, or university selection.
         </p>
-        <Button variant="secondary" size="sm" onClick={onReset} className="mt-5">
+        <Button variant="secondary" size="small" onClick={onReset} className="mt-5">
           <RotateCcw size={15} strokeWidth={2} />
           Clear filters
         </Button>
@@ -286,7 +291,7 @@ export function AllToursPage() {
                 </select>
               </label>
 
-              <Button variant="ghost" size="sm" onClick={reset} className="px-0">
+              <Button variant="ghost" size="small" onClick={reset} className="px-0">
                 <RotateCcw size={15} strokeWidth={2} />
                 Clear all
               </Button>

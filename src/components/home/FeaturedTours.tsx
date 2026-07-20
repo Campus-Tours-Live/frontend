@@ -7,89 +7,7 @@ import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 
-/**
- * FeaturedTours — featured section from design_new (#home .featured).
- *
- * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
- * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
- * so the cut-off cards peek through. All 9 cards.
- *
- * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
- * shown, followed by a "View all tours" CTA.
- *
- * Data is hardcoded; "View tour" CTAs are inert for now.
- */
-const FEATURED_TOURS: TourCardProps[] = [
-  {
-    title: "Campus life and hidden study spots",
-    university: "North Coast University",
-    guide: "Maya Chen",
-    durationMinutes: 60,
-    price: 42,
-  },
-  {
-    title: "Engineering, labs, and student projects",
-    university: "Redwood State College",
-    guide: "Elias Brooks",
-    durationMinutes: 45,
-    price: 36,
-  },
-  {
-    title: "International student experience",
-    university: "Harborview University",
-    guide: "Sofia Patel",
-    durationMinutes: 60,
-    price: 44,
-  },
-  {
-    title: "Dorm tour and housing options",
-    university: "North Coast University",
-    guide: "Liam Walsh",
-    durationMinutes: 30,
-    price: 28,
-  },
-  {
-    title: "Arts, studios, and performance spaces",
-    university: "Lakeside College",
-    guide: "Aria Nguyen",
-    durationMinutes: 45,
-    price: 38,
-  },
-  {
-    title: "Sports, gyms, and student rec",
-    university: "Summit University",
-    guide: "Marcus Lee",
-    durationMinutes: 30,
-    price: 30,
-  },
-  {
-    title: "Libraries and quiet study corners",
-    university: "Harborview University",
-    guide: "Chloe Adams",
-    durationMinutes: 45,
-    price: 34,
-  },
-  {
-    title: "Dining halls and campus food scene",
-    university: "Redwood State College",
-    guide: "Diego Romero",
-    durationMinutes: 30,
-    price: 26,
-  },
-  {
-    title: "Research labs and grad pathways",
-    university: "Summit University",
-    guide: "Priya Shah",
-    durationMinutes: 60,
-    price: 48,
-  },
-];
-
-const COUNT = FEATURED_TOURS.length;
-
- * Data comes from GET /v1/tours (public marketplace catalog); "View all" /
- * "View tour" CTAs are inert for now.
- */
+/** Map a catalog `TourSummary` onto the props {@link TourCard} renders. */
 function toCardProps(tour: TourSummary): TourCardProps {
   return {
     title: tour.title,
@@ -99,7 +17,6 @@ function toCardProps(tour: TourSummary): TourCardProps {
     price: formatOfferingPrice(tour.priceCents, tour.currency),
   };
 }
-
 
 /**
  * Page metrics from the live DOM: one "page" is however many whole cards are
@@ -135,6 +52,19 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   );
 }
 
+/**
+ * FeaturedTours — featured section from design_new (#home .featured).
+ *
+ * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
+ * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
+ * so the cut-off cards peek through.
+ *
+ * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
+ * shown, followed by a "View all tours" CTA.
+ *
+ * Data comes from GET /v1/tours (the public marketplace catalog), so the card
+ * count is whatever that returns; the "View tour" CTAs are inert for now.
+ */
 export function FeaturedTours() {
   const { data: tours, isLoading, isError } = useTourCatalog();
   const list = tours ?? [];
@@ -178,7 +108,10 @@ export function FeaturedTours() {
         <SectionHeading eyebrow="Featured tours" title="Start with a campus that feels right." />
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
         {showCarousel ? (
-          <Link href="/tours" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
+          <Link
+            href="/tours"
+            className="hidden shrink-0 font-semibold text-primary lg:inline-block"
+          >
             View all tours
           </Link>
         ) : null}
