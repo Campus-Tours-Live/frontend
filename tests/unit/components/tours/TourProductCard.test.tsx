@@ -113,6 +113,19 @@ describe("TourProductCard", () => {
     }
   });
 
+  /**
+   * Campus imagery is arbitrary — pale hand-drawn illustrations as much as dark photos — so the
+   * save control cannot assume a dark ground. Ivory glass on a cream sky left the heart at roughly
+   * 1:1 contrast, i.e. absent for anyone not tabbing to it. Pin the smoke tone so a refactor
+   * cannot silently fall back to the variant's default.
+   */
+  it("gives the save control the smoke tone so it survives pale campus art", () => {
+    render(<TourProductCard tour={tour} onToggleSave={jest.fn()} />);
+    const save = screen.getByRole("button", { name: "Save tour" });
+    expect(save).toHaveClass("glass", "glass-smoke");
+    expect(save).not.toHaveClass("glass-light");
+  });
+
   it("calls onToggleSave with the tour id when the save control is clicked, and reflects saved state", async () => {
     const user = userEvent.setup();
     const onToggleSave = jest.fn();

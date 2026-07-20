@@ -121,15 +121,29 @@ export function TourProductCard({
               New
             </Tag>
           ) : null}
+          {/* `smoke`, not the default ivory: campus imagery is caller-supplied and runs from pale
+              hand-drawn illustrations to dark photos, so the control cannot assume its ground. Ivory
+              glass under an ivory heart on a cream sky was ~1:1 contrast — the control was there,
+              but only for someone tabbing to it. The heart also carries its own drop shadow, which
+              is the cheap stand-in for iOS vibrancy: it keeps the glyph edge when the material
+              happens to blur into something the same brightness as the glyph. */}
           <IconButton
             variant="glass"
+            tone="smoke"
             size="small"
             a11yLabel={saved ? "Remove from saved" : "Save tour"}
             aria-pressed={saved}
             onClick={() => onToggleSave?.(tour.id)}
             className="absolute right-3 top-3 z-10"
           >
-            <Heart size={16} strokeWidth={2} className={cn(saved && "fill-current")} />
+            <Heart
+              size={16}
+              strokeWidth={2}
+              className={cn(
+                "drop-shadow-[0_1px_2px_hsl(var(--brand-ink)/0.5)]",
+                saved && "fill-current",
+              )}
+            />
           </IconButton>
         </div>
 

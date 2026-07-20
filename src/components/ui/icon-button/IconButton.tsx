@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
-import { glassClass } from "../glass/Glass";
+import { glassClass, type GlassTone } from "../glass/Glass";
 
 /**
  * IconButton — an icon-only control. Because it has no visible text, `a11yLabel` is REQUIRED and
@@ -28,6 +28,15 @@ interface IconButtonOwnProps {
   children: ReactNode;
   size?: IconButtonSize;
   variant?: IconButtonVariant;
+  /**
+   * Which glass material the `glass` variant uses — ignored by every other variant. Default
+   * `"light"` (ivory material, for DARK / photo grounds).
+   *
+   * Pass `"smoke"` for a control over caller-supplied imagery: it is the only tone that stays
+   * legible on both a pale illustration and a dark photo. This used to be hard-coded to `"light"`,
+   * which is why the tour card's save heart vanished on a cream sky. See {@link GlassTone}.
+   */
+  tone?: GlassTone;
   className?: string;
 }
 
@@ -49,22 +58,33 @@ const SIZE_CLASS: Record<IconButtonSize, string> = {
   large: "h-11 w-11",
 };
 
-const VARIANT_CLASS: Record<IconButtonVariant, string> = {
+const STATIC_VARIANT_CLASS: Record<Exclude<IconButtonVariant, "glass">, string> = {
   // Neutral hover (surfaces on the ivory ground).
   ghost: "text-ink-soft hover:bg-canvas hover:text-ink",
   // Brand-tinted hover (matches the calendar/nav chevrons).
   soft: "text-ink-soft hover:bg-primary-soft hover:text-primary",
-  // Frosted-glass control for photo / dark grounds — reuses the shared Glass surface.
-  glass: glassClass("light", "hover:bg-ivory/40"),
   // Filled brand action — the primary icon-only CTA (e.g. the header search submit).
   solid: "bg-primary text-primary-foreground hover:bg-primary-dark",
   // Bordered card pill on the page surface — brand-tinted on hover (e.g. carousel chevrons).
   card: "border border-border bg-card text-ink shadow-card hover:border-primary hover:text-primary",
 };
 
+/** Hover tint stays inside each tone's own palette, so it can never invert the material's contrast. */
+const GLASS_HOVER: Record<GlassTone, string> = {
+  light: "hover:bg-ivory/40",
+  dark: "hover:bg-card/90",
+  smoke: "hover:bg-ink/38",
+};
+
+function variantClass(variant: IconButtonVariant, tone: GlassTone): string {
+  // Frosted-glass control over imagery — reuses the shared Glass material. `tone` comes from the
+  // call site because only it knows the ground; see GlassTone.
+  return variant === "glass" ? glassClass(tone, GLASS_HOVER[tone]) : STATIC_VARIANT_CLASS[variant];
+}
+
 export const IconButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, IconButtonProps>(
   function IconButton(
-    { a11yLabel, children, size = "medium", variant = "ghost", className, ...rest },
+    { a11yLabel, children, size = "medium", variant = "ghost", tone = "light", className, ...rest },
     ref,
   ) {
     const classes = cn(
@@ -72,7 +92,7 @@ export const IconButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, Icon
       "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-primary-soft",
       "disabled:cursor-not-allowed disabled:opacity-40",
       SIZE_CLASS[size],
-      VARIANT_CLASS[variant],
+      variantClass(variant, tone),
       className,
     );
 

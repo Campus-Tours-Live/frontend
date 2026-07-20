@@ -244,6 +244,82 @@
     @apply w-full;
   }
 
+  /* ---------- Glass — iOS-style material ----------
+     A real material, not a tint. Four things separate the two, and only the first was here before:
+
+       1. blur          — 24px. At 12px it reads "slightly out of focus", not "behind glass".
+       2. saturation    — the one everyone omits. Without it the backdrop greys out and the surface
+                          looks like frosted plastic; with it, colour blooms through as glass.
+                          Kept at 150%: at 180% a saturated ground (red brick, foliage) turns the
+                          surface into an opaque colour disc — verified, it went muddy brown.
+       3. specular edge — a light hairline on the TOP edge only, plus a fainter full ring. A uniform
+                          border is a flat sticker; a lit top edge is a physical object.
+       4. contact shadow — tight and low-alpha, so it sits a millimetre above the photo.
+
+     Tones are NOT interchangeable — see `Glass.tsx`. `smoke` is the one for arbitrary imagery,
+     which is also what iOS ships for controls over photos: iOS switches material by sampling
+     backdrop luminance, CSS cannot, so the only tone that survives both a pale illustration and a
+     dark photo is a thin dark material carrying a light glyph. */
+  .glass {
+    @apply backdrop-blur-[24px] backdrop-saturate-150;
+  }
+  .glass-smoke {
+    background-color: hsl(var(--brand-ink) / 0.22);
+    color: hsl(var(--brand-ivory));
+    box-shadow:
+      inset 0 0.5px 0 hsl(var(--brand-ivory) / 0.46),
+      inset 0 0 0 0.5px hsl(var(--brand-ivory) / 0.16),
+      0 1px 3px hsl(var(--brand-ink) / 0.28);
+  }
+  .glass-light {
+    background-color: hsl(var(--brand-ivory) / 0.24);
+    color: hsl(var(--brand-ivory));
+    box-shadow:
+      inset 0 0.5px 0 hsl(var(--brand-ivory) / 0.6),
+      inset 0 0 0 0.5px hsl(var(--brand-ivory) / 0.4),
+      0 1px 3px hsl(var(--brand-ink) / 0.24);
+  }
+  .glass-dark {
+    background-color: hsl(var(--card) / 0.7);
+    color: hsl(var(--brand-ink));
+    box-shadow:
+      inset 0 0.5px 0 hsl(var(--brand-ivory) / 0.7),
+      inset 0 0 0 0.5px hsl(var(--brand-ink) / 0.1),
+      0 1px 3px hsl(var(--brand-ink) / 0.24);
+  }
+
+  /* No `backdrop-filter` (older Safari, Firefox with the flag off): nothing blurs, so the tint is
+     the ONLY thing left carrying legibility — thicken it rather than shipping an invisible control. */
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass-smoke {
+      background-color: hsl(var(--brand-ink) / 0.62);
+    }
+    .glass-light {
+      background-color: hsl(var(--brand-ivory) / 0.72);
+    }
+    .glass-dark {
+      background-color: hsl(var(--card) / 0.85);
+    }
+  }
+
+  /* Apple's "Reduce Transparency" — the material goes OPAQUE, it does not merely dim. Users who set
+     this often do so because translucency costs them legibility, so honour it properly. */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass {
+      backdrop-filter: none;
+    }
+    .glass-smoke {
+      background-color: hsl(var(--brand-ink) / 0.92);
+    }
+    .glass-light {
+      background-color: hsl(var(--brand-ivory) / 0.92);
+      color: hsl(var(--brand-ink));
+    }
+    .glass-dark {
+      background-color: hsl(var(--card));
+    }
+  }
+
   /* ---------- Card ---------- */
   .card {
     @apply bg-card border border-border rounded-card shadow-card;

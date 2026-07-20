@@ -49,17 +49,31 @@ describe("IconButton", () => {
     expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
   });
 
-  it("applies the frosted-glass variant (brand off-white, blurred) for photo grounds", () => {
+  it("applies the frosted-glass variant, defaulting to the ivory tone for dark grounds", () => {
     render(
       <IconButton a11yLabel="Save" variant="glass">
         <Icon name="info" />
       </IconButton>,
     );
-    expect(screen.getByRole("button", { name: "Save" })).toHaveClass(
-      "backdrop-blur-md",
-      "bg-ivory/25",
-      "text-ivory",
+    expect(screen.getByRole("button", { name: "Save" })).toHaveClass("glass", "glass-light");
+  });
+
+  /**
+   * The tone belongs to the CALLER, because only the call site knows the ground. It used to be
+   * hard-coded to `light` — ivory glass under an ivory glyph — so a control over caller-supplied
+   * imagery had no way to stay visible on a pale photo (WCAG 1.4.11 wants ≥3:1 for a UI boundary).
+   * `smoke` is the tone that survives BOTH grounds, which is also what iOS uses for controls over
+   * photos: a thin dark material carrying a light glyph.
+   */
+  it("takes the smoke tone for controls over arbitrary imagery", () => {
+    render(
+      <IconButton a11yLabel="Save" variant="glass" tone="smoke">
+        <Icon name="info" />
+      </IconButton>,
     );
+    const button = screen.getByRole("button", { name: "Save" });
+    expect(button).toHaveClass("glass", "glass-smoke");
+    expect(button).not.toHaveClass("glass-light");
   });
 
   it("applies the solid (filled brand) variant", () => {
