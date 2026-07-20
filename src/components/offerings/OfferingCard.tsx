@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Alert, Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
@@ -25,7 +26,10 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
     try {
       await activate.mutateAsync(offering.id);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 403) {
+      if (isAuthCancelled(err)) {
+        // Dismissing the sign-in prompt did not fail the publish — it never ran.
+        setActionError(SIGN_IN_AGAIN_MESSAGE);
+      } else if (err instanceof ApiError && err.status === 403) {
         setActionError("Your guide application must be approved before you can publish.");
       } else {
         setActionError("Could not publish this offering. Please try again.");

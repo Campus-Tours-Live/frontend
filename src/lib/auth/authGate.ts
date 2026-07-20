@@ -45,6 +45,24 @@ export class AuthCancelledError extends Error {
   }
 }
 
+/**
+ * What to show the user when their own dismissal is what stopped a request.
+ *
+ * Shared so every "error → message" helper attributes this the same way. Getting it wrong
+ * is worse than saying nothing: telling someone their hours/override/booking "could not be
+ * saved" when the write was never attempted sends them retrying, then bug-reporting.
+ */
+export const SIGN_IN_AGAIN_MESSAGE = "Please sign in again to continue.";
+
+/**
+ * True when a request failed because the user dismissed the sign-in prompt — a user
+ * decision, NOT a failure of the action they were attempting. Check this FIRST in any
+ * error-to-message helper, before status-code branches, since it is not an HTTP failure.
+ */
+export function isAuthCancelled(err: unknown): err is AuthCancelledError {
+  return err instanceof AuthCancelledError;
+}
+
 let listeners: Listener[] = [];
 let pending: Promise<void> | null = null;
 let resolvePending: (() => void) | null = null;
@@ -124,9 +142,15 @@ export function advanceAuthEpoch(): void {
   epoch += 1;
 }
 
-/** Clear post-cancel suppression (e.g. the user explicitly chooses to sign in). */
+/**
+ * Clear post-cancel suppression (e.g. the user explicitly chooses to sign in).
+ *
+ * Advances the epoch rather than zeroing it: `epoch` is documented as monotonic, and a
+ * reset that rewinds it would break that invariant for anything that ever compares epochs
+ * across a reset.
+ */
 export function resetAuthGate(): void {
   declinedAtEpoch = null;
-  epoch = 0;
+  epoch += 1;
   reset();
 }

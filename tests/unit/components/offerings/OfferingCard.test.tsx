@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OfferingCard } from "@/components/offerings/OfferingCard";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
+import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
@@ -97,6 +98,22 @@ describe("OfferingCard", () => {
     render(<OfferingCard offering={{ ...draftOffering, topic: null }} canPublish={false} />);
 
     expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("attributes a dismissed sign-in prompt to auth, not to the publish failing", async () => {
+    // N1a Symptom A′ on a WRITE: the publish never ran, so telling the guide it "could not
+    // be published" sends them retrying against a wall they can't see.
+    const user = userEvent.setup();
+    setActivate({
+      mutateAsync: jest.fn().mockRejectedValue(new AuthCancelledError()),
+    });
+
+    render(<OfferingCard offering={draftOffering} canPublish />);
+
+    await user.click(screen.getByRole("button", { name: "Publish" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(SIGN_IN_AGAIN_MESSAGE);
+    expect(screen.getByRole("alert")).not.toHaveTextContent("Could not publish this offering");
   });
 
   it("shows a publishing indicator while the publish mutation is pending", () => {

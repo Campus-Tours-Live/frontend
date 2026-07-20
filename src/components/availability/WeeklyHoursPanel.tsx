@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Alert, Body, Button, Panel, PanelHeader, Switch } from "@/components/ui";
 import {
   ApiError,
@@ -46,7 +47,9 @@ function dedupeBookings(bookings: AffectedBooking[]): AffectedBooking[] {
   return out;
 }
 
-function toggleErrorMessage(err: unknown): string {
+export function toggleErrorMessage(err: unknown): string {
+  // A dismissed sign-in prompt is not this action failing — attribute it to auth.
+  if (isAuthCancelled(err)) return SIGN_IN_AGAIN_MESSAGE;
   if (err instanceof ApiError && err.status === 422) {
     return (
       err.message ||

@@ -37,6 +37,13 @@ export function AuthGateSync() {
         // The gate opens only on the BFF's explicit re-auth signal — by which point the
         // server has cleared the cookie. Reflect that immediately rather than waiting for a
         // probe that may never run.
+        //
+        // ORDER IS LOAD-BEARING — do not swap these two lines. Writing `session = false`
+        // first flips `useMe`'s `enabled` to false, so the `me` query is no longer observed
+        // by the time it is removed. Removing an actively-observed query instead triggers a
+        // refetch, which immediately eats another 401. Not an infinite loop (the gate is
+        // already open, so `requireAuth` returns the same pending promise), but a wasted
+        // request on a user we already know is signed out.
         queryClient.setQueryData(queryKeys.session(), false);
         queryClient.removeQueries({ queryKey: queryKeys.me() });
       }),

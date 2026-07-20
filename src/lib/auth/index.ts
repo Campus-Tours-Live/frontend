@@ -16,4 +16,6 @@ export {
   cancelAuth,
   resetAuthGate,
   AuthCancelledError,
+  SIGN_IN_AGAIN_MESSAGE,
+  isAuthCancelled,
 } from "./authGate";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Plus, Trash2 } from "lucide-react";
 import {
   Alert,
@@ -387,6 +388,8 @@ function conflictSentences(conflictDays: DayView[], timeZone: string): string[] 
  *  modal never pre-computes or blocks on validity client-side (FE-never-recomputes). The dry-run
  *  preview + this 422 are the only sources of truth. */
 export function dateOverrideErrorMessage(err: unknown): string {
+  // A dismissed sign-in prompt is not this action failing — attribute it to auth.
+  if (isAuthCancelled(err)) return SIGN_IN_AGAIN_MESSAGE;
   if (err instanceof ApiError && err.status === 422) {
     return err.message || "This override could not be applied.";
   }
@@ -399,6 +402,8 @@ export function dateOverrideErrorMessage(err: unknown): string {
  *  — and falls back to a generic notice when the error carries none (e.g. a network failure).
  *  Pure presentation of `previewQuery.error`; never a recompute. */
 export function previewErrorMessage(err: unknown): string {
+  // A dismissed sign-in prompt is not this action failing — attribute it to auth.
+  if (isAuthCancelled(err)) return SIGN_IN_AGAIN_MESSAGE;
   if (err instanceof ApiError && err.message) {
     return err.message;
   }
