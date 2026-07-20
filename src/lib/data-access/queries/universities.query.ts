@@ -22,7 +22,9 @@ export const universitySearchOptions = (
       if (source === "live") {
         const options = await apiJson<MetaOption[]>(
           `/v1/meta/universities?q=${encodeURIComponent(query)}`,
-          { signal },
+          // interactive:false — ambient public typeahead; a 401 returns to the caller instead of
+          // popping the reauth modal (matches the meta-query convention, e.g. tour-topics).
+          { signal, interactive: false },
         );
         return options.map(
           (o): University => ({

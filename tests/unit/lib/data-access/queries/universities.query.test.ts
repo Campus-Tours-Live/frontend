@@ -58,7 +58,7 @@ describe("universitySearchOptions", () => {
     expect(result).toBe(payload);
   });
 
-  it("live source fetches /v1/meta/universities and adapts { value, label } to University", async () => {
+  it("live source fetches /v1/meta/universities (interactive:false) and adapts { value, label } to University", async () => {
     mockedApiJson.mockResolvedValue([
       { value: "243744", label: "Stanford — Stanford, CA" },
     ] as never);
@@ -69,7 +69,12 @@ describe("universitySearchOptions", () => {
     }) => Promise<unknown>;
     const result = await queryFn({ signal });
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/universities?q=stanford", { signal });
+    // interactive:false — this ambient public read must return a 401 to the caller, not pop the
+    // reauth modal (matches the meta-query convention; a logged-out visitor may hit it).
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/universities?q=stanford", {
+      signal,
+      interactive: false,
+    });
     expect(result).toEqual([
       { id: "243744", name: "Stanford — Stanford, CA", shortName: null, city: null, region: null },
     ]);
