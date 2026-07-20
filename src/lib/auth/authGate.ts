@@ -23,7 +23,7 @@ import "client-only";
  * successful `completeAuth()`, an explicit `requireAuth({ force: true })`) lets
  * the prompt open again.
  *
- * This distinction is the N1a defect: a permanent flag meant one Cancel disabled
+ * This distinction is what a permanent flag got wrong: one Cancel disabled
  * re-auth for the whole page lifetime — including a deliberate "Book this tour"
  * clicked minutes later, which then failed with a generic error. Only a full page
  * reload recovered, because nothing in production ever cleared the flag.

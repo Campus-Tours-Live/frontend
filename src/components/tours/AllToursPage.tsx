@@ -231,8 +231,8 @@ export function AllToursPage() {
       topicIds: topicIds.length ? topicIds : undefined,
       sort,
       page,
-      // A common multiple of the grid's column counts (1/2/3/4) so every full page fills complete
-      // rows at any width — no empty bottom-right cell on the 3-column desktop layout.
+      // A common multiple of the grid's column counts (1 / 2 / 3) so every full page fills
+      // complete rows at any width — no empty bottom-right cell on the 3-column desktop layout.
       limit: 24,
     }),
     [query, universityId, sort, topicIds, page],

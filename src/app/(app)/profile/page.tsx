@@ -12,7 +12,7 @@ export default function ProfilePage() {
   const { me, isLoading, sessionUnverified } = useMe();
 
   if (isLoading) return <InlineLoading label="Loading…" />;
-  // We could not check who you are (N2's upstream outage), and we have nothing cached.
+  // We could not check who you are (the BFF could not reach Google), and we have nothing cached.
   // Explain it instead of spinning forever — the spinner would never resolve, since there
   // is no polling loop and nothing to wait for.
   if (sessionUnverified) {

@@ -19,9 +19,9 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
 }
 
 /**
- * Honour the server's `Retry-After` when it sent one (N3).
+ * Honour the server's `Retry-After` when it sent one.
  *
- * N2's `503 AUTH_UPSTREAM_UNAVAILABLE` asks for 5s precisely because Google is having a bad
+ * The BFF's `503 AUTH_UPSTREAM_UNAVAILABLE` asks for 5s precisely because Google is having a bad
  * minute. Retrying on our own ~1s default would mean that during a Google incident every
  * client retries harder than the server just asked, adding load to the outage that caused
  * it. Anything without the header keeps the previous exponential backoff.

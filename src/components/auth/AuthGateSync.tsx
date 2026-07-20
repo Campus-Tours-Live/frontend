@@ -12,7 +12,7 @@ import { queryKeys } from "@/lib/data-access/keys";
  * Keeps client auth state in step with the server's, and keeps a decline from outliving
  * the page it was made on. Renders nothing.
  *
- * WHY THIS EXISTS (N1a). A re-auth 401 from the BFF *already cleared the session cookie*
+ * WHY THIS EXISTS. A re-auth 401 from the BFF *already cleared the session cookie*
  * server-side, but nothing on the client acted on that fact:
  *
  *   - the cached `["session"]` stayed `true`, so the header kept rendering the signed-in
@@ -30,15 +30,15 @@ export function AuthGateSync() {
   const queryClient = useQueryClient();
   const pathname = usePathname();
 
-  // N3: an ambient re-auth 401 never opens the gate — it raises a notice instead — so the
+  // An ambient re-auth 401 never opens the gate — it raises a notice instead — so the
   // anonymous transition has to hang off the notice channel too, or the header would keep
   // rendering signed-in behind the banner.
   useEffect(
     () =>
       subscribeAuthNotice((state) => {
         // ONLY `expired`. On `unverifiable` the session is intact and the server said so
-        // (N2's 503); going anonymous there would be a false sign-out — the exact outcome
-        // N2 preserved the session to prevent.
+        // (the BFF's 503); going anonymous there would be a false sign-out — the very outcome
+        // the BFF keeps the session to avoid.
         if (state?.notice !== "expired") return;
         queryClient.setQueryData(queryKeys.session(), false);
         queryClient.removeQueries({ queryKey: queryKeys.me() });

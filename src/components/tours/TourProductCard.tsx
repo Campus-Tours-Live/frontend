@@ -48,8 +48,8 @@ function initials(name: string): string {
 /**
  * TourProductCard — the public marketplace card, following the mainstream "experience led by a
  * person" pattern (Airbnb / Udemy / Preply): a clean campus photo (save-heart only), then a content
- * column with campus → title → guide (avatar + name + one credentials line) → a single topic chip →
- * rating / duration / price. Topic is shown once (chip) and reinforced by the duotone card behind +
+ * column with campus → title → guide (avatar + name + one credentials line) → a single topic chip
+ * → languages → features → rating / duration / price. Topic is shown once (chip) and reinforced by the duotone card behind +
  * the avatar tint; campus is the photo + name. The whole card links to the tour (stretched link);
  * the save heart stays independently clickable.
  */
@@ -205,7 +205,7 @@ export function TourProductCard({
             {t.label}
           </Tag>
 
-          {/* Languages — their own row (all shown; the globe leads the group). */}
+          {/* Languages — their own row, all shown; each chip carries its own globe. */}
           {tour.languages.length > 0 ? (
             <div className="flex flex-wrap items-center gap-1.5">
               {tour.languages.map((lang, i) => (

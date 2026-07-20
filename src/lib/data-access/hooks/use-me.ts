@@ -36,7 +36,8 @@ export function useMe() {
    * `if (isLoading) return <InlineLoading/>` — spin forever during a sustained outage. An
    * indefinite spinner is a worse lie than either truth. A timeout would not have helped:
    * after N seconds we still would not know, and there is no honest state to fall back TO
-   * ("signed out" is false, and that false sign-out is the original M4 symptom). Consumers
+   * ("signed out" is false, and a false sign-out is the symptom this whole path exists to
+   * avoid). Consumers
    * decide instead: the header shows no identity, a protected page explains itself.
    */
   const sessionUnverified = data === undefined && isSessionUnverifiable(meError);

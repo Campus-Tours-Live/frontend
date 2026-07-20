@@ -8,7 +8,7 @@ export class ApiError extends Error {
     message?: string,
     /**
      * The problem+json `code`. Carried because status alone cannot distinguish failures that
-     * demand opposite handling — notably N2's `AUTH_UPSTREAM_UNAVAILABLE` 503 ("your session
+     * demand opposite handling — notably the BFF's `AUTH_UPSTREAM_UNAVAILABLE` 503 ("your session
      * is fine, we just couldn't verify it") from any other 503.
      */
     public readonly code?: string,

@@ -22,8 +22,10 @@ export const universitySearchOptions = (
       if (source === "live") {
         const options = await apiJson<MetaOption[]>(
           `/v1/meta/universities?q=${encodeURIComponent(query)}`,
-          // interactive:false — ambient public typeahead; a 401 returns to the caller instead of
-          // popping the reauth modal (matches the meta-query convention, e.g. tour-topics).
+          // `none`, not `ambient`: this is a public directory an anonymous visitor may search, so
+          // a 401 here means "not signed in" and is the caller's to interpret — there is nothing to
+          // report. `ambient` would raise a session notice, which only makes sense for a read that
+          // implies a session (matches the other meta queries, e.g. tour-topics).
           { signal, escalate: "none" },
         );
         return options.map(

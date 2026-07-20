@@ -1,12 +1,12 @@
 import "client-only";
 
 /**
- * Ambient auth notices — the non-blocking half of auth feedback (N3).
+ * Ambient auth notices — the non-blocking half of auth feedback.
  *
  * The auth GATE (`authGate.ts`) is a demand: it opens a prompt and makes the user answer.
  * That is correct when the user asked for something that needs a session, and wrong when a
- * background read merely discovered a problem. M4 wired the background case to the gate, so
- * a visitor browsing a public page could be seized by a modal they never asked for.
+ * background read merely discovered a problem. Wiring the background case to the gate — as this
+ * app once did — let a visitor browsing a public page be seized by a modal they never asked for.
  *
  * This channel carries the quiet cases instead. A notice states a situation; the UI shows a
  * persistent banner and the page stays fully usable.
@@ -16,11 +16,11 @@ import "client-only";
  *  - `expired`      — the BFF sent a re-auth 401, which means it already CLEARED the session
  *                     cookie. The client must transition to anonymous, and offering a
  *                     sign-in affordance is right.
- *  - `unverifiable` — the BFF answered `503 AUTH_UPSTREAM_UNAVAILABLE` (N2): Google was
- *                     unreachable, so the session could not be refreshed — but it is INTACT
- *                     and the server knows it. Going anonymous here would be a false
- *                     sign-out, exactly what N2 preserved the session to prevent, and a
- *                     sign-in prompt would be nonsense: nothing is wrong with their session.
+ *  - `unverifiable` — the BFF answered `503 AUTH_UPSTREAM_UNAVAILABLE`: Google was unreachable,
+ *                     so the session could not be refreshed — but it is INTACT and the server
+ *                     knows it. Going anonymous here would be a false sign-out, the very outcome
+ *                     the BFF keeps the session to avoid, and a sign-in prompt would be nonsense:
+ *                     nothing is wrong with their session.
  */
 export type AuthNotice = "expired" | "unverifiable";
 
@@ -28,7 +28,7 @@ export type AuthNotice = "expired" | "unverifiable";
  * A notice plus whatever the server told us about pacing.
  *
  * `retryAfterMs` exists so a user-facing "try again" control can respect the pace the
- * server actually asked for (N2 sends `Retry-After: 5`) instead of inventing its own
+ * server actually asked for (the BFF sends `Retry-After: 5`) instead of inventing its own
  * cooldown that silently drifts from the BFF.
  */
 export interface AuthNoticeState {

@@ -8,9 +8,13 @@ If you (human or AI agent) open a PR, follow these.
 Fill out the PR description using `.github/pull_request_template.md`. The required
 `pr-template` check needs:
 
-- a non-empty **## Summary**
-- a non-empty **## Testing** section
+- a **## Summary** of at least 100 characters / 15 words
+- a **## Testing** section of at least 40 characters / 7 words
 - at least one **## Type of change** box checked (`- [x]`)
+
+Placeholder text, gibberish, and a Testing section identical to the Summary are all rejected, and
+a second AI step fails the check if the description contradicts the diff. "Non-empty" is not
+enough — write the real thing.
 
 The template is **not** auto-applied when a PR is created via `gh pr create` or by an
 agent, so pass a `--body` that includes those sections yourself.
@@ -23,11 +27,12 @@ Conventional Commits **plus a Jira ticket**:
     e.g. feat: CTL-1234 add Google OIDC callback
 
 Types: `feat fix docs style refactor perf test build ci chore revert`.
-Enforced by a local `commit-msg` hook (installed on first `./mvnw` / `npm install`).
+Enforced by a local `commit-msg` hook (husky → commitlint), installed by `npm install`.
 
 ## What blocks a merge
 
-- `ci` — unit + integration tests, project coverage gate, and ≥80% patch coverage on changed lines
+- `Lint & Typecheck` · `Unit & Integration` · `Patch Coverage` — Prettier format check, ESLint, `tsc --noEmit`, unit + integration tests, the project coverage gate, and ≥80% patch coverage on changed lines
+- `pr-size` — **hard-fails** a PR over 700 added lines or 40 changed files; split it
 - `pr-template` — the PR-description checks above
 - a pull request is required (no direct push to `main`) with **1 approving review**
 
@@ -73,26 +78,26 @@ command** (e.g. `/code-review`).
 
 ## Situation → skill
 
-| When you are…                                                    | Use this skill                                                                                                               |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Planning any new feature / behavior change (think before coding) | `superpowers:brainstorming` †                                                                                                |
-| Refactoring (no behavior change)                                 | `superpowers:brainstorming` †, then `comprehensive-review`                                                                   |
-| Layout, color, typography, visual direction                      | `ui-design`, `ui-ux-pro-max`, `frontend-design` †                                                                            |
-| React components / hooks / Server vs Client boundary             | `frontend-mobile-development`, `javascript-typescript`                                                                       |
-| Next.js App Router / SSR / data fetching                         | `frontend-mobile-development`                                                                                                |
-| Calling the bff API (types, TanStack Query)                      | `javascript-typescript`                                                                                                      |
-| **Accessibility (a11y)** — public, student-facing UI             | ⚠️ no dedicated enabled skill — use `ui-design` + `frontend-design` † and follow WCAG (semantics, focus, contrast, keyboard) |
-| Performance / Core Web Vitals / bundle size                      | `frontend-mobile-development` (no dedicated perf skill — measure first, then optimize)                                       |
-| Env / config changes (`BFF_URL`, ports, `.env`)                  | ⚠️ cross-repo — port `:3001` is fixed (bff `WEB_ORIGIN` + Google OAuth redirect depend on it); see Cross-repo rules below    |
-| Writing / adding unit & component tests (Jest + Testing Library) | `unit-testing`, `superpowers:test-driven-development` †                                                                      |
-| End-to-end UI verification in a real browser                     | `webapp-testing` †                                                                                                           |
-| Dependency upgrades / CVE remediation / `npm audit`              | `security-scanning`                                                                                                          |
-| Checking security (XSS, dependency CVEs, token storage)          | `security-scanning`                                                                                                          |
-| Fixing a red CI / failing build                                  | `superpowers:systematic-debugging` † (reproduce locally: `npm run lint && npm run typecheck && npm test`)                    |
-| Debugging (any bug / test failure / unexpected behavior)         | `superpowers:systematic-debugging` †                                                                                         |
-| Writing docs / README / comments                                 | `doc-coauthoring` †                                                                                                          |
-| Reviewing your own or someone else's PR, before merging          | `comprehensive-review`, `/code-review`; security via `/security-review`                                                      |
-| **"Live" real-time tours (WebRTC / WebSocket)**                  | ⚠️ product core, **no skill and no infra yet** — always plan/`superpowers:brainstorming` † and design before coding          |
+| When you are…                                                    | Use this skill                                                                                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Planning any new feature / behavior change (think before coding) | `superpowers:brainstorming` †                                                                                             |
+| Refactoring (no behavior change)                                 | `superpowers:brainstorming` †, then `comprehensive-review`                                                                |
+| Layout, color, typography, visual direction                      | `ui-design`, `ui-ux-pro-max`, `frontend-design` †                                                                         |
+| React components / hooks / Server vs Client boundary             | `frontend-mobile-development`, `javascript-typescript`                                                                    |
+| Next.js App Router / SSR / data fetching                         | `frontend-mobile-development`                                                                                             |
+| Calling the bff API (types, TanStack Query)                      | `javascript-typescript`                                                                                                   |
+| **Accessibility (a11y)** — public, student-facing UI             | ⚠️ no dedicated a11y skill — use `ui-design` + `frontend-design` † and follow WCAG (semantics, focus, contrast, keyboard) |
+| Performance / Core Web Vitals / bundle size                      | `frontend-mobile-development` (no dedicated perf skill — measure first, then optimize)                                    |
+| Env / config changes (`BFF_URL`, ports, `.env`)                  | ⚠️ cross-repo — port `:3001` is fixed (bff `WEB_ORIGIN` + Google OAuth redirect depend on it); see Cross-repo rules below |
+| Writing / adding unit & component tests (Jest + Testing Library) | `unit-testing`, `superpowers:test-driven-development` †                                                                   |
+| End-to-end UI verification in a real browser                     | `webapp-testing` †                                                                                                        |
+| Dependency upgrades / CVE remediation / `npm audit`              | `security-scanning`                                                                                                       |
+| Checking security (XSS, dependency CVEs, token storage)          | `security-scanning`                                                                                                       |
+| Fixing a red CI / failing build                                  | `superpowers:systematic-debugging` † (reproduce locally: `npm run lint && npm run typecheck && npm test`)                 |
+| Debugging (any bug / test failure / unexpected behavior)         | `superpowers:systematic-debugging` †                                                                                      |
+| Writing docs / README / comments                                 | `doc-coauthoring` †                                                                                                       |
+| Reviewing your own or someone else's PR, before merging          | `comprehensive-review`, `/code-review`; security via `/security-review`                                                   |
+| **"Live" real-time tours (WebRTC / WebSocket)**                  | ⚠️ product core, **no skill and no infra yet** — always plan/`superpowers:brainstorming` † and design before coding       |
 
 ## ⚠️ Cross-repo observation rules (read before changing frontend)
 

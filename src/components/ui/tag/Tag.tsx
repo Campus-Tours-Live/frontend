@@ -3,10 +3,13 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Tag — a small, visual-only, non-interactive label that draws focus to a trait: status,
- * availability, a rating, a category. Comes in eight colours and three emphasis variants, with an
- * optional leading icon. For the brand-token status pills, prefer Badge/StatusBadge; reach for Tag
- * when you need the wider colour × emphasis matrix.
+ * Tag — a small label that draws focus to a trait: status, availability, a rating, a category.
+ * Comes in two colour groups — eight semantic brand hues, plus the eight `--topic-*` categorical
+ * colours the tour cards key off — across four emphasis variants, with an optional leading icon. For the brand-token status pills, prefer Badge/StatusBadge; reach
+ * for Tag when you need the wider colour × emphasis matrix.
+ *
+ * Presentational by default; passing `onRemove` turns it into a removable token and renders a real
+ * remove `<button>` inside it, so the Tag is then interactive.
  *
  *   <Tag color="green" leading={<Icon name="success" />}>Confirmed</Tag>
  *   <Tag color="spark" variant="primary">New</Tag>

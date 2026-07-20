@@ -44,7 +44,7 @@ import type { TagColor } from "@/components/ui";
 /**
  * Visual mapping for {@link TourProductCard}: turns raw backend fields (topic / universityId /
  * universityName / major) into the card's three glance-level channels —
- *   topic  → COLOUR   (a soft brand-token mask over the campus photo + pill + tags)
+ *   topic  → COLOUR   (a soft mask from the `--topic-*` scale over the photo + pill + tags)
  *   campus → PHOTO    (a per-university image, with a shared fallback photo when absent)
  *   major  → ICON     (a field-of-study glyph)
  * Each is orthogonal, so a list filtered to one dimension never becomes look-alikes.
@@ -72,8 +72,13 @@ export interface TopicStyle {
 }
 
 /**
- * Keyed by the Core `tour_topic` enum. Six brand hues cover the eight topics, so two pairs share a
- * family — the label + icon-free pill still tell them apart; re-map here if you want all-distinct.
+ * Keyed by the Core `tour_topic` enum. Every topic has its own colour family from the `--topic-*`
+ * categorical scale — that scale exists precisely because the previous arrangement borrowed six
+ * semantic hues for eight topics and two pairs came out identical (see the scale's note in
+ * `globals.css`).
+ *
+ * Re-mapping a topic here is fine; INVENTING a colour for it is not. The guarantee is a property of
+ * the set, not of any one entry, and `topic-colour-distance.test.ts` measures it.
  */
 export const TOPIC_STYLE: Record<string, TopicStyle> = {
   GENERAL_CAMPUS: {
@@ -181,7 +186,7 @@ export interface CampusVisual {
    * NOTE — crest/crestColor currently have NO production consumer: the shipped card design
    * (TourProductCard) is photo-only. They are kept as the crest chrome this module is meant to
    * supply, not as leftovers. Distinct from the former `gradient` field, which was removed
-   * (L5#7) because its purpose — "shown when no photo is registered" — no longer exists:
+   * because its purpose — "shown when no photo is registered" — no longer exists:
    * CAMPUS_FALLBACK_IMAGE backs both the missing-URL and failed-load cases, so it had become
    * unreachable rather than merely unused.
    */

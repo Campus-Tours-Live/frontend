@@ -12,9 +12,9 @@ import { queryKeys } from "@/lib/data-access/keys";
 import { Banner, Button } from "@/components/ui";
 
 /**
- * Persistent, non-blocking notice about the session (N3).
+ * Persistent, non-blocking notice about the session.
  *
- * This is the alternative to the modal M4 reached for. A background read that discovers the
+ * This is the alternative to a modal. A background read that discovers the
  * session died has learned something worth telling the user — but the user did not ask for
  * anything, so the page must stay usable and nothing may be seized. Escalation to a prompt
  * is reserved for the moment they actually request something that needs a session.
@@ -23,10 +23,10 @@ import { Banner, Button } from "@/components/ui";
  *
  *  - `expired`      — the server has already cleared the session. Signing in again is the
  *                     correct action, so offer it.
- *  - `unverifiable` — N2's 503: Google was unreachable, the session was PRESERVED, and the
- *                     server knows the user is still signed in. Offering "sign in again"
- *                     would be false, and acting on it would discard exactly the session N2
- *                     protected. So: state it and offer nothing.
+ *  - `unverifiable` — the BFF's `503 AUTH_UPSTREAM_UNAVAILABLE`: Google was unreachable, so the
+ *                     session could not be refreshed — but the BFF kept it and says so. Offering
+ *                     "sign in again" would be false, and acting on it would discard the very
+ *                     session the BFF preserved. So: state it and offer nothing.
  *
  * The `unverifiable` copy states a fact and promises nothing on purpose. An earlier draft
  * said "we'll keep retrying", which we do not: `shouldRetry` allows a 503 exactly one retry

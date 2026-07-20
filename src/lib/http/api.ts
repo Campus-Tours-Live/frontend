@@ -17,16 +17,16 @@ import { requireAuth, notifyAuthNotice } from "@/lib/auth";
  *        catalog / detail, the university typeahead) → `"none"`
  *
  *    Do NOT choose `"none"` merely because a call also runs on a public page —
- *    that reasoning shipped the CTL-16 M4 bug. `/v1/userinfo` is PROTECTED and is
+ *    that reasoning is what once hid a dead session. `/v1/userinfo` is PROTECTED and is
  *    issued only behind `useMe`'s `enabled: authenticated` gate, so a 401 there is
  *    a session that DIED, not an anonymous visitor; silencing it dropped a
  *    signed-in user onto the logged-out view. It is `"ambient"`: the death is
  *    reported, but through a banner rather than by seizing the page (see
- *    me.query.ts, and N3).
- *  - `getSession()` (see ./session) → only to answer "is the user logged in?" for
- *    a render decision. It hits `/auth/session` (not a `/vN` resource), never
- *    opens the modal. Don't use `apiFetch` for that probe — `apiFetch` rejects
- *    any non-versioned path by design.
+ *    me.query.ts).
+ *  - `sessionOptions` (see `lib/data-access/queries/session.query.ts`) → only to
+ *    answer "is the user logged in?" for a render decision. It hits `/auth/session`
+ *    (not a `/vN` resource) directly and never opens the prompt. Don't use
+ *    `apiFetch` for that probe — it rejects any non-versioned path by design.
  *
  * HOW TO USE
  * ----------
@@ -93,9 +93,9 @@ export interface ApiFetchInit extends RequestInit {
   /**
    * How a re-auth 401 should surface — see {@link AuthEscalation}. Default `"prompt"`.
    *
-   * Replaces the old `interactive` boolean, which could only choose between a modal and
-   * silence. That binary is what forced M4 to make a background read able to seize the
-   * page: the only alternative on offer was swallowing a dead session.
+   * Replaces an earlier `interactive` boolean, which could only choose between a modal and
+   * silence. That binary is what forced a background read to be able to seize the page: the
+   * only alternative on offer was swallowing a dead session.
    */
   escalate?: AuthEscalation;
 }
