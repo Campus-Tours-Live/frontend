@@ -120,7 +120,9 @@ describe("tourDetailOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc");
+    // interactive:false — an anonymous marketplace read must not pop the re-auth modal on a 401
+    // (H2c; matches tourCatalogOptions and the other public queries).
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc", { interactive: false });
     expect(result).toBe(payload);
   });
 
@@ -130,6 +132,6 @@ describe("tourDetailOptions", () => {
     const queryFn = tourDetailOptions("a b/c?d").queryFn as () => Promise<unknown>;
     await queryFn();
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd");
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd", { interactive: false });
   });
 });
