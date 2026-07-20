@@ -12,6 +12,7 @@ export {
   subscribeAuthGate,
   requireAuth,
   completeAuth,
+  advanceAuthEpoch,
   cancelAuth,
   resetAuthGate,
   AuthCancelledError,

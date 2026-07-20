@@ -4,6 +4,7 @@ import { Alert, Body, Card, InlineLoading, SectionHeading, StatusBadge } from "@
 import { useGuideProfile, useMe } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
+import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import {
   applicationStatusLabel,
   applicationStatusVariant,
@@ -12,14 +13,14 @@ import {
 
 export function GuideProfilePage() {
   const { me } = useMe();
-  const { data: profile, isLoading, isError } = useGuideProfile();
+  const { data: profile, isLoading, isError, error } = useGuideProfile();
 
   if (isLoading) {
     return <InlineLoading label="Loading profile…" />;
   }
 
   if (isError || !profile) {
-    return <Alert variant="error">Failed to load your guide profile.</Alert>;
+    return <QueryErrorAlert error={error}>Failed to load your guide profile.</QueryErrorAlert>;
   }
 
   return (

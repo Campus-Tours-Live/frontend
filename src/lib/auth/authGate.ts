@@ -15,10 +15,18 @@ import "client-only";
  * does a same-tab redirect (the page unloads, so the promise simply never
  * resolves — harmless). Cancelling rejects with AuthCancelledError.
  *
- * Cancel suppression: after the user cancels, background requests that 401
- * (e.g. polling / refetch) must NOT keep re-opening the modal. We enter a
- * suppressed state where `requireAuth()` rejects immediately, until an explicit
- * `requireAuth({ force: true })` or `resetAuthGate()`.
+ * Cancel suppression, scoped to an AUTH EPOCH: after the user cancels, background
+ * requests that 401 (e.g. polling / refetch) must NOT keep re-opening the modal.
+ * But "don't nag me right now" is not "never ask me again" — so the decline is
+ * recorded against the current epoch rather than in a sticky flag, and any auth
+ * event that advances the epoch (a route change via `advanceAuthEpoch()`, a
+ * successful `completeAuth()`, an explicit `requireAuth({ force: true })`) lets
+ * the prompt open again.
+ *
+ * This distinction is the N1a defect: a permanent flag meant one Cancel disabled
+ * re-auth for the whole page lifetime — including a deliberate "Book this tour"
+ * clicked minutes later, which then failed with a generic error. Only a full page
+ * reload recovered, because nothing in production ever cleared the flag.
  *
  * Division of responsibility:
  *  - This gate handles ONLY the mid-session, interactive case (needs UI), so it
@@ -41,7 +49,10 @@ let listeners: Listener[] = [];
 let pending: Promise<void> | null = null;
 let resolvePending: (() => void) | null = null;
 let rejectPending: ((reason: Error) => void) | null = null;
-let suppressed = false;
+/** Monotonic counter; every auth event advances it. */
+let epoch = 0;
+/** The epoch the user declined in, or null if they haven't. Never a bare boolean. */
+let declinedAtEpoch: number | null = null;
 
 function emit(open: boolean): void {
   for (const l of listeners) l(open);
@@ -60,10 +71,10 @@ export function subscribeAuthGate(listener: Listener): () => void {
  * While suppressed (after a cancel), rejects immediately unless `force` is set.
  */
 export function requireAuth(options: { force?: boolean } = {}): Promise<void> {
-  if (suppressed && !options.force) {
+  if (declinedAtEpoch === epoch && !options.force) {
     return Promise.reject(new AuthCancelledError());
   }
-  if (options.force) suppressed = false;
+  if (options.force) declinedAtEpoch = null;
 
   if (!pending) {
     pending = new Promise<void>((resolve, reject) => {
@@ -84,7 +95,8 @@ function reset(): void {
 /** Called once re-authentication has succeeded (e.g. a popup reports success). */
 export function completeAuth(): void {
   const resolve = resolvePending;
-  suppressed = false;
+  epoch += 1; // a successful sign-in is the clearest auth event there is
+  declinedAtEpoch = null;
   reset();
   emit(false);
   resolve?.();
@@ -93,13 +105,28 @@ export function completeAuth(): void {
 /** Called when the user dismisses the modal without signing in. */
 export function cancelAuth(): void {
   const reject = rejectPending;
-  suppressed = true; // stop background 401s from re-opening the modal
+  // Suppress background 401s for THIS epoch only — see the epoch note at the top.
+  declinedAtEpoch = epoch;
   reset();
   emit(false);
   reject?.(new AuthCancelledError());
 }
 
+/**
+ * Advance the auth epoch, lifting any decline recorded in the previous one.
+ *
+ * Called on navigation (see `AuthGateSync`): a user who dismissed the prompt on one page
+ * has not decided anything about the next one, and the alternative — carrying the decline
+ * forward forever — is the bug this replaced. Cheap and idempotent-ish: advancing without
+ * a prior decline is a no-op in effect.
+ */
+export function advanceAuthEpoch(): void {
+  epoch += 1;
+}
+
 /** Clear post-cancel suppression (e.g. the user explicitly chooses to sign in). */
 export function resetAuthGate(): void {
-  suppressed = false;
+  declinedAtEpoch = null;
+  epoch = 0;
+  reset();
 }
