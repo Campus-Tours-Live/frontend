@@ -91,7 +91,20 @@ export function GuideOnboardingForm() {
 
   // Majors are the fields of study the SELECTED school offers (live) — empty until one is picked.
   const selectedUniversity = watch("university")?.[0];
-  const { data: majorOptions = [] } = useMajors(selectedUniversity?.id);
+  const {
+    data: majorOptions = [],
+    isLoading: majorsLoading,
+    isError: majorsErrored,
+    refetch: refetchMajors,
+  } = useMajors(selectedUniversity?.id);
+
+  // Major is REQUIRED and its options come from a live upstream (College Scorecard). The Core
+  // swallows an upstream outage into an empty list, so the query SUCCEEDS with `[]` — meaning
+  // "settled but empty" is the realistic degradation signal, not `isError`. Without this the
+  // dropdown just sits permanently empty with no explanation and onboarding dead-ends on a field
+  // the guide cannot fill.
+  const majorsUnavailable =
+    Boolean(selectedUniversity) && !majorsLoading && (majorsErrored || majorOptions.length === 0);
 
   // Prefill the name from the account — a member acquiring a second role already
   // entered it for the first (or it came from Google at signup). Fills empty fields
@@ -241,25 +254,46 @@ export function GuideOnboardingForm() {
                 name="major"
                 rules={{ required: "Please select your major." }}
                 render={({ field }) => (
-                  <SelectField
-                    label="Major"
-                    error={errors.major?.message}
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={!selectedUniversity}
-                  >
-                    <option value="">
-                      {selectedUniversity ? "Select a major" : "Pick a university first"}
-                    </option>
-                    {field.value && !majorOptions.some((o) => o.value === field.value) ? (
-                      <option value={field.value}>{field.value}</option>
-                    ) : null}
-                    {majorOptions.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
+                  <div>
+                    <SelectField
+                      label="Major"
+                      error={errors.major?.message}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!selectedUniversity || majorsLoading}
+                    >
+                      <option value="">
+                        {!selectedUniversity
+                          ? "Pick a university first"
+                          : majorsLoading
+                            ? "Loading majors…"
+                            : "Select a major"}
                       </option>
-                    ))}
-                  </SelectField>
+                      {field.value && !majorOptions.some((o) => o.value === field.value) ? (
+                        <option value={field.value}>{field.value}</option>
+                      ) : null}
+                      {majorOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </SelectField>
+                    {majorsUnavailable ? (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
+                        <Body as="p" size="small" color="muted">
+                          Couldn&apos;t load majors for this school.
+                        </Body>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="small"
+                          onClick={() => void refetchMajors()}
+                        >
+                          Try again
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
                 )}
               />
               <TextField

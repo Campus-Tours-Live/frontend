@@ -22,6 +22,11 @@ const UNIVERSITY_CATALOG: Record<string, { id: string; name: string; shortName?:
   empty: { id: "u-3", name: "Empty Data University", shortName: "Empty Data" },
 };
 
+// Layer 0b: the majors hook's degraded states. Defaults to "settled, no error" so the existing
+// suite is unaffected; individual tests flip these.
+const refetchMajors = jest.fn();
+let majorsState: { isLoading: boolean; isError: boolean } = { isLoading: false, isError: false };
+
 const MAJORS_BY_SCHOOL: Record<string, Array<{ value: string; label: string }> | undefined> = {
   "u-1": [{ value: "computer_science", label: "Computer Science" }],
   "u-2": [{ value: "economics", label: "Economics" }],
@@ -35,9 +40,13 @@ jest.mock("@/lib/data-access", () => ({
   useTourTopics: () => ({ data: topicsData }),
   useUpdateGuideProfile: () => ({ mutateAsync }),
   // Majors are keyed off the selected school — empty until one is picked, matching
-  // the real hook's `enabled: Boolean(schoolId)` gate.
+  // the real hook's `enabled: Boolean(schoolId)` gate. The loading/error flags are
+  // overridable so the degraded states can be driven per test.
   useMajors: (schoolId?: string | null) => ({
     data: schoolId ? MAJORS_BY_SCHOOL[schoolId] : [],
+    isLoading: majorsState.isLoading,
+    isError: majorsState.isError,
+    refetch: refetchMajors,
   }),
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => {
     const match = UNIVERSITY_CATALOG[query.trim().toLowerCase()];
@@ -69,6 +78,8 @@ beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
   topicsData = [{ value: "academics", label: "Academics" }];
+  refetchMajors.mockReset();
+  majorsState = { isLoading: false, isError: false };
 });
 
 describe("GuideOnboardingForm edge cases", () => {
@@ -125,6 +136,63 @@ describe("GuideOnboardingForm edge cases", () => {
     expect(majorSelect).not.toBeDisabled();
     expect(within(majorSelect).getAllByRole("option")).toHaveLength(1);
     expect(within(majorSelect).getByRole("option", { name: "Select a major" })).toBeInTheDocument();
+  });
+
+  // Layer 0b — major is REQUIRED and its options come from a live upstream. The Core swallows a
+  // Scorecard outage into an empty list, so the query SUCCEEDS with `[]`: without these states the
+  // dropdown sits permanently empty with no explanation and onboarding dead-ends.
+  it("explains an empty majors list and offers a retry", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "empty");
+    await user.click(await screen.findByRole("button", { name: /Empty Data University/i }));
+
+    expect(await screen.findByText(/couldn't load majors for this school/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+    expect(refetchMajors).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains a failed majors fetch even when the school has options cached", async () => {
+    majorsState = { isLoading: false, isError: true };
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    await user.click(await screen.findByRole("button", { name: /State University/i }));
+
+    expect(await screen.findByText(/couldn't load majors for this school/i)).toBeInTheDocument();
+  });
+
+  it("disables the major select while majors are loading, without claiming failure", async () => {
+    majorsState = { isLoading: true, isError: false };
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    await user.click(await screen.findByRole("button", { name: /State University/i }));
+
+    const majorSelect = await screen.findByLabelText(/major/i);
+    expect(majorSelect).toBeDisabled();
+    expect(
+      within(majorSelect).getByRole("option", { name: "Loading majors…" }),
+    ).toBeInTheDocument();
+    // Still in flight — must not accuse the upstream of failing yet.
+    expect(screen.queryByText(/couldn't load majors/i)).not.toBeInTheDocument();
+  });
+
+  it("says nothing about majors before a university is chosen", () => {
+    renderWithQuery(<GuideOnboardingForm />);
+
+    expect(screen.getByLabelText(/major/i)).toBeDisabled();
+    expect(screen.queryByText(/couldn't load majors/i)).not.toBeInTheDocument();
   });
 
   it("keeps a previously chosen major as a fallback option after switching schools", async () => {
