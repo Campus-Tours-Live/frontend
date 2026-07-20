@@ -25,7 +25,11 @@ const UNIVERSITY_CATALOG: Record<string, { id: string; name: string; shortName?:
 // Layer 0b: the majors hook's degraded states. Defaults to "settled, no error" so the existing
 // suite is unaffected; individual tests flip these.
 const refetchMajors = jest.fn();
-let majorsState: { isLoading: boolean; isError: boolean } = { isLoading: false, isError: false };
+let majorsState: { isLoading: boolean; isFetching: boolean; isError: boolean } = {
+  isLoading: false,
+  isFetching: false,
+  isError: false,
+};
 
 const MAJORS_BY_SCHOOL: Record<string, Array<{ value: string; label: string }> | undefined> = {
   "u-1": [{ value: "computer_science", label: "Computer Science" }],
@@ -45,6 +49,7 @@ jest.mock("@/lib/data-access", () => ({
   useMajors: (schoolId?: string | null) => ({
     data: schoolId ? MAJORS_BY_SCHOOL[schoolId] : [],
     isLoading: majorsState.isLoading,
+    isFetching: majorsState.isFetching,
     isError: majorsState.isError,
     refetch: refetchMajors,
   }),
@@ -79,7 +84,7 @@ beforeEach(() => {
   mutateAsync.mockResolvedValue({});
   topicsData = [{ value: "academics", label: "Academics" }];
   refetchMajors.mockReset();
-  majorsState = { isLoading: false, isError: false };
+  majorsState = { isLoading: false, isFetching: false, isError: false };
 });
 
 describe("GuideOnboardingForm edge cases", () => {
@@ -156,8 +161,27 @@ describe("GuideOnboardingForm edge cases", () => {
     expect(refetchMajors).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the retry as in-flight so it can't be spam-clicked", async () => {
+    // A retry runs against an already-settled query, so `isLoading` stays FALSE (it is
+    // `isPending && isFetching`, first-load only). `isFetching` is what makes the retry visible —
+    // without it the button sits idle for the whole upstream round trip and invites double-clicks.
+    majorsState = { isLoading: false, isFetching: true, isError: false };
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "empty");
+    await user.click(await screen.findByRole("button", { name: /Empty Data University/i }));
+
+    const retry = await screen.findByRole("button", { name: /trying…/i });
+    expect(retry).toBeDisabled();
+    // The explanation stays put rather than flickering out and back.
+    expect(screen.getByText(/couldn't load majors for this school/i)).toBeInTheDocument();
+  });
+
   it("explains a failed majors fetch even when the school has options cached", async () => {
-    majorsState = { isLoading: false, isError: true };
+    majorsState = { isLoading: false, isFetching: false, isError: true };
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
 
@@ -170,7 +194,7 @@ describe("GuideOnboardingForm edge cases", () => {
   });
 
   it("disables the major select while majors are loading, without claiming failure", async () => {
-    majorsState = { isLoading: true, isError: false };
+    majorsState = { isLoading: true, isFetching: true, isError: false };
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
 

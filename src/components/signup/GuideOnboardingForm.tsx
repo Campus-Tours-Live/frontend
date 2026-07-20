@@ -94,6 +94,10 @@ export function GuideOnboardingForm() {
   const {
     data: majorOptions = [],
     isLoading: majorsLoading,
+    // `isLoading` is `isPending && isFetching` — true only on the FIRST load. A retry runs against
+    // an already-settled query (isPending false), so it would leave `isLoading` false and the retry
+    // would give no feedback at all. `isFetching` is what covers "a fetch is in flight right now".
+    isFetching: majorsFetching,
     isError: majorsErrored,
     refetch: refetchMajors,
   } = useMajors(selectedUniversity?.id);
@@ -287,9 +291,10 @@ export function GuideOnboardingForm() {
                           type="button"
                           variant="ghost"
                           size="small"
+                          disabled={majorsFetching}
                           onClick={() => void refetchMajors()}
                         >
-                          Try again
+                          {majorsFetching ? "Trying…" : "Try again"}
                         </Button>
                       </div>
                     ) : null}
