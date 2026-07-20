@@ -128,6 +128,46 @@ export default {
         scrim: "hsl(var(--brand-scrim))",
         // Campus label — the reserved university-name colour (kept out of the topic palette).
         teal: "hsl(var(--brand-teal))",
+        blush: {
+          DEFAULT: "hsl(var(--topic-blush))",
+          soft: "hsl(var(--topic-blush-soft))",
+          foreground: "hsl(var(--topic-blush-foreground))",
+        },
+        rust: {
+          DEFAULT: "hsl(var(--topic-rust))",
+          soft: "hsl(var(--topic-rust-soft))",
+          foreground: "hsl(var(--topic-rust-foreground))",
+        },
+        olive: {
+          DEFAULT: "hsl(var(--topic-olive))",
+          soft: "hsl(var(--topic-olive-soft))",
+          foreground: "hsl(var(--topic-olive-foreground))",
+        },
+        moss: {
+          DEFAULT: "hsl(var(--topic-moss))",
+          soft: "hsl(var(--topic-moss-soft))",
+          foreground: "hsl(var(--topic-moss-foreground))",
+        },
+        lagoon: {
+          DEFAULT: "hsl(var(--topic-lagoon))",
+          soft: "hsl(var(--topic-lagoon-soft))",
+          foreground: "hsl(var(--topic-lagoon-foreground))",
+        },
+        azure: {
+          DEFAULT: "hsl(var(--topic-azure))",
+          soft: "hsl(var(--topic-azure-soft))",
+          foreground: "hsl(var(--topic-azure-foreground))",
+        },
+        iris: {
+          DEFAULT: "hsl(var(--topic-iris))",
+          soft: "hsl(var(--topic-iris-soft))",
+          foreground: "hsl(var(--topic-iris-foreground))",
+        },
+        mauve: {
+          DEFAULT: "hsl(var(--topic-mauve))",
+          soft: "hsl(var(--topic-mauve-soft))",
+          foreground: "hsl(var(--topic-mauve-foreground))",
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",

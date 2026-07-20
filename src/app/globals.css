@@ -88,9 +88,52 @@
     --brand-purple-soft: 255 67% 95%; /* #EFEBFB */
     --brand-purple-foreground: 254 36% 46%; /* #5F4BA0 */
 
-    /* Campus label — a cool teal reserved for the university name so it never collides with the
-       topic hues (which own the coral/blue/amber/sage/purple/green palette). */
+    /* Campus label — a cool teal reserved for the university name. */
     --brand-teal: 175 28% 34%; /* #3E6E6A */
+
+    /* ---- Tour-topic categorical scale ----
+       A scale whose ONLY job is mutual distinguishability. It exists because the topics used to
+       borrow semantic tokens (`primary`, `success`, `warning`, `sage`, `coral`, `purple`), and
+       those were each chosen for a different job — a brand action, a positive status, a caution —
+       so nobody ever designed them to be told apart from one another. Eight topics sharing six
+       borrowed colours meant two pairs were identical, and colour then lied about category.
+
+       Borrowing was also why they could not simply be re-tuned: `primary` alone appears in 30
+       files (buttons, links, focus rings). Decoupling is what makes these free to move.
+
+       Derived, not eyeballed: positions were optimised in OKLab for maximum minimum pairwise
+       distance, constrained to the brand's own character (HSL saturation ≤ 55%, the muted band
+       every other family sits in). Result: closest pair went from ΔE 0.020 — indistinguishable —
+       to 0.128 for the dots and 0.119 for the chips. `-foreground` doubles as the chip fill
+       (Tag `variant="inverse"` puts ivory text on it), so each is held to ≥4.5:1 against ivory.
+       `-soft` is the base mixed 86% into ivory, keeping the tint inside the family.
+
+       DO NOT hand-tweak one of these in isolation — the guarantee is a property of the SET, and
+       `topic-colour-distance.test.ts` measures it. */
+    --topic-blush: 356.1 51.7% 70%; /* #DA8B90 — Campus life */
+    --topic-blush-soft: 16.8 50% 92.6%; /* #F6E8E3 */
+    --topic-blush-foreground: 354.5 32.9% 45.5%; /* #9A4E55 — chip fill, 5.45:1 on ivory */
+    --topic-rust: 23.6 45% 48.5%; /* #B37044 — Dining & student life */
+    --topic-rust-soft: 30.2 44.7% 89.4%; /* #F0E4D8 */
+    --topic-rust-foreground: 25.7 76.1% 25%; /* #70390F — chip fill, 8.61:1 on ivory */
+    --topic-olive: 49 43.8% 56%; /* #C0AE5E — International */
+    --topic-olive-soft: 46.3 46% 90.5%; /* #F2EDDC */
+    --topic-olive-foreground: 50.5 81.9% 28%; /* #82700D — chip fill, 4.62:1 on ivory */
+    --topic-moss: 109.4 23.9% 45%; /* #618E57 — First-year */
+    --topic-moss-soft: 76.2 23.2% 88.4%; /* #E5E8DB */
+    --topic-moss-foreground: 108.9 49.7% 22%; /* #27541C — chip fill, 8.28:1 on ivory */
+    --topic-lagoon: 169.8 43% 50.7%; /* #4BB7A5 — Transfer */
+    --topic-lagoon-soft: 139.2 27% 90.9%; /* #E2EEE6 */
+    --topic-lagoon-foreground: 172.4 96.4% 23.9%; /* #027869 — chip fill, 5.05:1 on ivory */
+    --topic-azure: 206.8 49.3% 54.5%; /* #5291C4 — Dorms & housing */
+    --topic-azure-soft: 189.2 14.8% 90.3%; /* #E2E9EA */
+    --topic-azure-foreground: 203 92.4% 27.5%; /* #055587 — chip fill, 7.36:1 on ivory */
+    --topic-iris: 227.7 46.4% 79.2%; /* #B1BBE2 — Academics & majors */
+    --topic-iris-soft: 19 5.4% 93.7%; /* #F0EFEE */
+    --topic-iris-foreground: 228.3 18.5% 49.2%; /* #666F95 — chip fill, 4.57:1 on ivory */
+    --topic-mauve: 308 23.9% 52.8%; /* #A36A9C — For parents */
+    --topic-mauve-soft: 354.4 23.5% 91.2%; /* #EEE3E4 */
+    --topic-mauve-foreground: 306.6 37% 29.5%; /* #672F61 — chip fill, 9.07:1 on ivory */
 
     /* ---- Member role accent tokens (participant / guide / guardian) ----
        Semantic aliases so any role-coloured surface reuses one source. */

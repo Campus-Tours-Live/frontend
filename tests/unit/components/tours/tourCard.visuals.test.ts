@@ -18,6 +18,32 @@ describe("exported style tables", () => {
     expect(TOPIC_STYLE.GENERAL_CAMPUS.label).toBe("Campus life");
   });
 
+  /**
+   * Colour IS the topic key here — it drives the chip, the avatar tint and the duotone card behind,
+   * so two topics sharing one reads as "same category" at a glance. Two pairs used to collide
+   * (Academics & majors / For parents on purple, Dorms & housing / Transfer on blue), differing
+   * only by ~5% mask opacity, which is imperceptible. The cause was structural rather than a typo:
+   * eight topics were being fitted into the six non-semantic `TagColor`s (`red` reads as an error
+   * and `gray` is taken by the unknown-topic fallback), so whoever wrote it had to double up.
+   * Assert the invariant, not the two fixes — this is what catches the ninth topic.
+   */
+  it("gives every topic a colour no other topic uses", () => {
+    const styles = Object.values(TOPIC_STYLE);
+    for (const field of ["dot", "tagColor", "text", "tag"] as const) {
+      const used = styles.map((s) => s[field]);
+      expect(new Set(used).size).toBe(used.length);
+    }
+  });
+
+  it("never reuses the fallback's grey for a real topic", () => {
+    // Grey means "we don't know this topic". A real topic wearing it is indistinguishable from
+    // one the frontend failed to recognise.
+    for (const style of Object.values(TOPIC_STYLE)) {
+      expect(style.tagColor).not.toBe("gray");
+      expect(style.dot).not.toBe("bg-ink-soft");
+    }
+  });
+
   it("TINT exposes the three mask-opacity presets", () => {
     expect(TINT).toEqual({ subtle: "opacity-60", normal: "opacity-80", vivid: "opacity-100" });
   });

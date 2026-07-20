@@ -11,7 +11,23 @@ import { cn } from "@/lib/utils";
  *   <Tag color="green" leading={<Icon name="success" />}>Confirmed</Tag>
  *   <Tag color="spark" variant="primary">New</Tag>
  */
-export type TagColor = "blue" | "gray" | "green" | "red" | "purple" | "spark" | "coral" | "sage";
+export type TagColor =
+  | "blue"
+  | "gray"
+  | "green"
+  | "red"
+  | "purple"
+  | "spark"
+  | "coral"
+  | "sage"
+  | "blush"
+  | "rust"
+  | "olive"
+  | "moss"
+  | "lagoon"
+  | "azure"
+  | "iris"
+  | "mauve";
 export type TagVariant = "primary" | "secondary" | "tertiary" | "inverse";
 
 // Literal class strings (Tailwind can't JIT interpolated `bg-${color}-…`), all mapped to the app's
@@ -47,6 +63,54 @@ const TAG_STYLES: Record<TagColor, Record<TagVariant, string>> = {
     secondary: "bg-purple-soft text-purple-foreground",
     tertiary: "bg-purple-soft/60 text-purple-foreground",
     inverse: "bg-purple-foreground text-ivory",
+  },
+  blush: {
+    primary: "bg-blush text-blush-foreground",
+    secondary: "bg-blush-soft text-blush-foreground",
+    tertiary: "bg-blush-soft/60 text-blush-foreground",
+    inverse: "bg-blush-foreground text-ivory",
+  },
+  rust: {
+    primary: "bg-rust text-rust-foreground",
+    secondary: "bg-rust-soft text-rust-foreground",
+    tertiary: "bg-rust-soft/60 text-rust-foreground",
+    inverse: "bg-rust-foreground text-ivory",
+  },
+  olive: {
+    primary: "bg-olive text-olive-foreground",
+    secondary: "bg-olive-soft text-olive-foreground",
+    tertiary: "bg-olive-soft/60 text-olive-foreground",
+    inverse: "bg-olive-foreground text-ivory",
+  },
+  moss: {
+    primary: "bg-moss text-moss-foreground",
+    secondary: "bg-moss-soft text-moss-foreground",
+    tertiary: "bg-moss-soft/60 text-moss-foreground",
+    inverse: "bg-moss-foreground text-ivory",
+  },
+  lagoon: {
+    primary: "bg-lagoon text-lagoon-foreground",
+    secondary: "bg-lagoon-soft text-lagoon-foreground",
+    tertiary: "bg-lagoon-soft/60 text-lagoon-foreground",
+    inverse: "bg-lagoon-foreground text-ivory",
+  },
+  azure: {
+    primary: "bg-azure text-azure-foreground",
+    secondary: "bg-azure-soft text-azure-foreground",
+    tertiary: "bg-azure-soft/60 text-azure-foreground",
+    inverse: "bg-azure-foreground text-ivory",
+  },
+  iris: {
+    primary: "bg-iris text-iris-foreground",
+    secondary: "bg-iris-soft text-iris-foreground",
+    tertiary: "bg-iris-soft/60 text-iris-foreground",
+    inverse: "bg-iris-foreground text-ivory",
+  },
+  mauve: {
+    primary: "bg-mauve text-mauve-foreground",
+    secondary: "bg-mauve-soft text-mauve-foreground",
+    tertiary: "bg-mauve-soft/60 text-mauve-foreground",
+    inverse: "bg-mauve-foreground text-ivory",
   },
   spark: {
     primary: "bg-warning text-warning-foreground",
