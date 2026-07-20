@@ -3,6 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { Home } from "lucide-react";
 import { MobileNav } from "@/components/site/MobileNav";
 import { useMe } from "@/lib/data-access";
+import { submitLogout } from "@/lib/auth/logout";
+
+jest.mock("@/lib/auth/logout", () => ({ submitLogout: jest.fn() }));
 
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
@@ -129,14 +132,17 @@ describe("MobileNav — logged out (not onboarded)", () => {
 describe("MobileNav — logged in (onboarded)", () => {
   beforeEach(() => setupMe({ isOnboarded: true }));
 
-  it("renders AccountNav and a Sign out link, hides the sign-in CTA", async () => {
+  it("renders AccountNav and a Sign out button that POSTs logout, hides the sign-in CTA", async () => {
     const user = userEvent.setup();
     render(<MobileNav />);
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.getByTestId("account-nav")).toBeInTheDocument();
-    const signOut = screen.getByRole("link", { name: "Sign out" });
-    expect(signOut).toHaveAttribute("href", "/auth/logout");
+    // Sign out is a POST (not a CSRF-forgeable GET link) — a button that submits the logout form.
+    const signOut = screen.getByRole("button", { name: "Sign out" });
+    expect(signOut).not.toHaveAttribute("href");
+    await user.click(signOut);
+    expect(submitLogout).toHaveBeenCalled();
     expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });
 });

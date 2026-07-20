@@ -3,6 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { Home } from "lucide-react";
 import { HeaderNav } from "@/components/site/HeaderNav";
 import { useMe } from "@/lib/data-access";
+import { submitLogout } from "@/lib/auth/logout";
+
+jest.mock("@/lib/auth/logout", () => ({ submitLogout: jest.fn() }));
 
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
@@ -141,8 +144,11 @@ describe("HeaderNav — logged in (onboarded)", () => {
     );
     expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByText("Support")).toBeInTheDocument();
+    // Sign out is a POST (not a CSRF-forgeable GET link) — a button that submits the logout form.
     const signOut = screen.getByRole("menuitem", { name: "Sign out" });
-    expect(signOut).toHaveAttribute("href", "/auth/logout");
+    expect(signOut).not.toHaveAttribute("href");
+    await user.click(signOut);
+    expect(submitLogout).toHaveBeenCalled();
     // Logged-in menu must NOT show the public sign-in CTA.
     expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });

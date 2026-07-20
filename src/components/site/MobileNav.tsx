@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useMe } from "@/lib/data-access";
+import { submitLogout } from "@/lib/auth/logout";
 import { Caption, Drawer, IconButton, Link, MenuItem, MenuSection } from "@/components/ui";
 import { AccountNav } from "./AccountNav";
 import { NAV_LINKS } from "./NavLinks";
@@ -88,7 +89,14 @@ export function MobileNav({
           {showAuthActions && loggedIn && (
             <MenuSection bordered>
               <li>
-                <MenuItem href="/auth/logout" icon={LogOut} iconSize={17} onSelect={close}>
+                <MenuItem
+                  icon={LogOut}
+                  iconSize={17}
+                  onSelect={() => {
+                    close();
+                    submitLogout();
+                  }}
+                >
                   Sign out
                 </MenuItem>
               </li>
