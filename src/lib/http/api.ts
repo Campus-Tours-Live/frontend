@@ -11,9 +11,17 @@ import { requireAuth } from "@/lib/auth";
  *    the only client that should ever touch the `/vN` resource API. Use
  *    `interactive: true`
  *    (default) on protected pages so a mid-session expiry pops the re-auth modal;
- *    use `interactive: false` for passive/ambient reads that may run while logged
- *    out (header user info, account nav, meta vocab) where a 401 just means
- *    "not signed in" and must NOT nag an anonymous visitor with the modal.
+ *    use `interactive: false` ONLY for reads of genuinely PUBLIC resources that an
+ *    anonymous visitor is expected to make (meta vocabularies, the public tour
+ *    catalog / detail, the university typeahead) where a 401 just means "not
+ *    signed in" and must NOT nag an anonymous visitor with the modal.
+ *
+ *    Do NOT reach for `interactive: false` merely because a call also runs on a
+ *    public page — that reasoning shipped the CTL-16 M4 bug. `/v1/userinfo` is
+ *    PROTECTED and is issued only behind `useMe`'s `enabled: authenticated`
+ *    gate, so a 401 there is a session that DIED, not an anonymous visitor;
+ *    opting it out silently dropped a signed-in user onto the logged-out view.
+ *    Gate the call instead, and leave it interactive (see me.query.ts).
  *  - `getSession()` (see ./session) → only to answer "is the user logged in?" for
  *    a render decision. It hits `/auth/session` (not a `/vN` resource), never
  *    opens the modal. Don't use `apiFetch` for that probe — `apiFetch` rejects
@@ -22,7 +30,7 @@ import { requireAuth } from "@/lib/auth";
  * HOW TO USE
  * ----------
  *   const res = await apiFetch("/v1/userinfo");                 // protected read
- *   const res = await apiFetch("/v1/userinfo", { interactive: false }); // ambient
+ *   const res = await apiFetch("/v1/meta/tour-topics", { interactive: false }); // public
  *   const res = await apiFetch("/v1/guide/profile", {           // mutation
  *     method: "PATCH",
  *     headers: { "Content-Type": "application/json" },
@@ -45,10 +53,12 @@ import { requireAuth } from "@/lib/auth";
  *   the page unloads and the retry is effectively a no-op — but it stays correct
  *   for any future in-place re-auth.
  * - `interactive: false` opts a call OUT of the modal: a re-auth 401 is returned
- *   as-is so the caller can read it as "logged out". This lets ambient reads in
- *   a public / possibly-signed-out context (header, account nav, session probes)
+ *   as-is so the caller can read it as "logged out". This lets reads of PUBLIC
+ *   resources (meta vocabularies, the tour catalog/detail, university search)
  *   share the SAME client — with its versioned-path + `same-origin` guarantees —
- *   without nagging an anonymous visitor with the sign-in modal.
+ *   without nagging an anonymous visitor with the sign-in modal. The header and
+ *   account nav are NOT in this list: they read the principal through `useMe`,
+ *   which gates on `/auth/session` first and therefore stays interactive.
  */
 const SAFE_METHODS = new Set(["GET", "HEAD"]);
 
