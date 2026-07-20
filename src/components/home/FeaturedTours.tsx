@@ -12,7 +12,7 @@ import { formatOfferingPrice } from "@/lib/format";
  *
  * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
  * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
- * so the cut-off cards peek through.
+ * so the cut-off cards peek through. All 9 cards.
  *
  * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
  * shown, followed by a "View all tours" CTA.
