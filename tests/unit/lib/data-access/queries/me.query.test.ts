@@ -21,7 +21,7 @@ describe("meOptions", () => {
     expect(meOptions().queryKey).toEqual(["me"]);
   });
 
-  it("queryFn fetches /v1/userinfo with interactive:false and returns the user on 200", async () => {
+  it("queryFn fetches /v1/userinfo interactively and returns the user on 200", async () => {
     const me = { id: "me-1" };
     mockedApiJson.mockResolvedValue(me as never);
 
@@ -29,7 +29,10 @@ describe("meOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/userinfo", { interactive: false });
+    // No `interactive: false`: useMe only calls this once the session probe said authenticated,
+    // so a re-auth 401 here is a DEAD session that must escalate, not an anonymous visitor.
+    // See me.query.reauth.test.ts for that end-to-end behaviour.
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/userinfo");
     expect(result).toBe(me);
   });
 
