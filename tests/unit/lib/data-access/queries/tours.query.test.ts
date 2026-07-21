@@ -17,6 +17,15 @@ describe("tourCatalogOptions", () => {
     expect(tourCatalogOptions(filters).queryKey).toEqual(["tour-catalog", filters]);
   });
 
+  it("marks catalog reads as ambient so public browsing does not trigger re-auth UI", () => {
+    const queryFn = tourCatalogOptions().queryFn as () => Promise<unknown>;
+
+    mockedApiJson.mockResolvedValue([] as never);
+    void queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+  });
+
   it("queryFn fetches /v1/tours with no query string when filters are empty", async () => {
     const payload = [{ id: "t1" }];
     mockedApiJson.mockResolvedValue(payload as never);
@@ -25,7 +34,7 @@ describe("tourCatalogOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours");
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
     expect(result).toBe(payload);
   });
 
@@ -44,6 +53,7 @@ describe("tourCatalogOptions", () => {
 
     expect(mockedApiJson).toHaveBeenCalledWith(
       "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&q=campus&sort=RATING&limit=5",
+      { interactive: false },
     );
   });
 
@@ -53,7 +63,7 @@ describe("tourCatalogOptions", () => {
     const queryFn = tourCatalogOptions({ limit: 0 }).queryFn as () => Promise<unknown>;
     await queryFn();
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours");
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
   });
 });
 

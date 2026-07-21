@@ -7,19 +7,7 @@ import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 
-/**
- * FeaturedTours — featured section from design_new (#home .featured).
- *
- * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
- * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
- * so the cut-off cards peek through.
- *
- * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
- * shown, followed by a "View all tours" CTA.
- *
- * Data comes from GET /v1/tours (public marketplace catalog); "View all" /
- * "View tour" CTAs are inert for now.
- */
+/** Map a catalog `TourSummary` onto the props {@link TourCard} renders. */
 function toCardProps(tour: TourSummary): TourCardProps {
   return {
     title: tour.title,
@@ -46,6 +34,37 @@ function pageMetrics(el: HTMLDivElement, count: number): { stride: number; pageC
   };
 }
 
+function Chevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d={dir === "left" ? "m15 18-6-6 6-6" : "m9 18 6-6-6-6"} />
+    </svg>
+  );
+}
+
+/**
+ * FeaturedTours — featured section from design_new (#home .featured).
+ *
+ * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
+ * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
+ * so the cut-off cards peek through.
+ *
+ * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
+ * shown, followed by a "View all tours" CTA.
+ *
+ * Data comes from GET /v1/tours (the public marketplace catalog), so the card
+ * count is whatever that returns; the "View tour" CTAs are inert for now.
+ */
 export function FeaturedTours() {
   const { data: tours, isLoading, isError } = useTourCatalog();
   const list = tours ?? [];
@@ -89,7 +108,10 @@ export function FeaturedTours() {
         <SectionHeading eyebrow="Featured tours" title="Start with a campus that feels right." />
         {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
         {showCarousel ? (
-          <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
+          <Link
+            href="/tours"
+            className="hidden shrink-0 font-semibold text-primary lg:inline-block"
+          >
             View all tours
           </Link>
         ) : null}
@@ -181,10 +203,9 @@ export function FeaturedTours() {
               />
             ))}
           </div>
-
           {/* Mobile "View all" CTA (vertical stack only) */}
           <div className="mt-6 flex justify-center lg:hidden">
-            <Link href="#" className="font-semibold text-primary">
+            <Link href="/tours" className="font-semibold text-primary">
               View all tours
             </Link>
           </div>

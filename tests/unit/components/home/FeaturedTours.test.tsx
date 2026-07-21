@@ -205,6 +205,14 @@ describe("FeaturedTours", () => {
     expect(screen.getByRole("button", { name: /previous tours/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /next tours/i })).toBeInTheDocument();
   });
+
+  it("links the view-all CTAs to the tours catalog", () => {
+    render(<FeaturedTours />);
+
+    expect(screen.getAllByRole("link", { name: /view all tours/i })).toEqual(
+      expect.arrayContaining([expect.objectContaining({ pathname: "/tours" })]),
+    );
+  });
 });
 
 describe("TourCard", () => {
