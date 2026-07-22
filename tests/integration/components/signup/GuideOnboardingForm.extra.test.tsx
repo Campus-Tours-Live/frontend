@@ -1,5 +1,5 @@
 import { type ReactElement } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
@@ -248,18 +248,29 @@ describe("GuideOnboardingForm edge cases", () => {
     await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
 
     // Switch schools — the major field keeps its old value, but the new school's
-    // majors list ("economics") no longer contains it.
+    // majors list ("economics") no longer contains it. This sequence is timing-sensitive on a
+    // slow single-core CI runner (it was flaky there while always passing locally), so every
+    // step waits for its own visible result before the next acts on the DOM.
     await user.click(screen.getByRole("button", { name: /Remove State University/i }));
-    // At max=1 the search input UNMOUNTS while State is selected and REMOUNTS (fresh, empty)
-    // once it's removed. Wait for that remounted input with findBy before typing — a bare
-    // getByPlaceholderText can grab the node mid-remount, so on a slow single-core CI runner
-    // user.type() lands keystrokes on an input that's being replaced and silently drops them,
-    // leaving "tech" unsearched and Tech Institute never selected (the flaky failure).
+    // At max=1 the search input unmounts while a school is selected and remounts (fresh, empty)
+    // once it's removed — wait for that remounted input before typing into it.
     await user.type(await screen.findByPlaceholderText(/search universities/i), "tech");
-    await user.click(await screen.findByRole("button", { name: /Tech Institute/i }));
+    // Select Tech, and confirm the selection actually took (its chip appears). Between
+    // findByRole and click the option node can be swapped out by an in-flight re-render, which
+    // silently no-ops user.click on a detached ref — so retry the click until the chip is there.
+    await waitFor(
+      async () => {
+        if (!screen.queryByRole("button", { name: /Remove Tech Institute/i })) {
+          const option = screen.queryByRole("button", { name: /Tech Institute/i });
+          if (option) await user.click(option);
+        }
+        expect(screen.getByRole("button", { name: /Remove Tech Institute/i })).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
-    // Wait for the switch to settle (setValue on "university" drives the majors query) before
-    // asserting: the new school's option only appears once selectedUniversity is u-2.
+    // The switch has settled (Tech is selected → setValue drove the majors query). The new
+    // school's option only exists once selectedUniversity is u-2.
     const majorSelect = await screen.findByLabelText(/major/i);
     expect(
       await within(majorSelect).findByRole("option", { name: "Economics" }),
