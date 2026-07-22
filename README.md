@@ -197,12 +197,23 @@ src/
 ├── app/                     # App Router — routes, layouts, RSC guards
 │   ├── layout.tsx           #   root: fonts, QueryProvider, SessionExpiredModal
 │   ├── globals.css          #   design tokens + semantic component classes
-│   ├── page.tsx             #   "/" home
-│   ├── (app)/               #   signed-in area (layout = server-side role guard)
+│   ├── (public)/            #   route group — public pages (own layout = SiteHeader)
+│   │   ├── page.tsx         #     "/" home
+│   │   ├── tours/           #     /tours — public tour listing
+│   │   └── layout.tsx
+│   ├── (auth)/              #   route group — sign-in / sign-up / onboarding (own layout)
+│   │   ├── signin/          #     /signin
+│   │   ├── signup/          #     role | participant | guide
+│   │   ├── onboarding/      #     guide / participant onboarding
+│   │   └── layout.tsx
+│   ├── (app)/               #   route group — signed-in area (layout = server-side role guard)
 │   │   ├── dashboard/ profile/ support/
-│   ├── onboarding/          #   guide / participant onboarding
-│   ├── signup/              #   role | participant | guide
-│   ├── signin/
+│   │   ├── guide/           #     guide supply side (own layout)
+│   │   │   ├── availability/          #   /guide/availability
+│   │   │   ├── tour-offerings/        #   /guide/tour-offerings
+│   │   │   │   └── new/               #   /guide/tour-offerings/new
+│   │   │   └── layout.tsx
+│   │   └── layout.tsx
 │   └── staff/               #   staff area (own layout)
 ├── components/
 │   ├── ui/                  #   design-system primitives (Button, Card, Modal, Badge, Field…)
@@ -227,16 +238,21 @@ src/
 
 ## Routing & pages
 
-File-based **App Router** routing under `src/app/`. Folders are routes; `layout.tsx` wraps a subtree;
-the `(app)` folder is a **route group** (groups routes under one layout without adding a URL segment).
+File-based **App Router** routing under `src/app/`. Folders are routes; `layout.tsx` wraps a subtree.
+The app has three **route groups** — `(public)`, `(auth)`, and `(app)` — each with its own `layout.tsx`
+(groups routes under a shared layout without adding a URL segment).
 
 | Route                                    | Area      | Notes                                            |
 | ---------------------------------------- | --------- | ------------------------------------------------ |
 | `/`                                      | public    | Home / marketing                                 |
+| `/tours`                                 | public    | Browse tours (public listing)                    |
 | `/signin`                                | public    | Sign-in entry (delegates to the BFF)             |
 | `/signup/role` `…/participant` `…/guide` | public    | Choose a role / start onboarding                 |
 | `/onboarding/guide` `…/participant`      | protected | Complete a role's onboarding                     |
 | `/dashboard` `/profile` `/support`       | protected | Signed-in app area — `(app)` group, role-guarded |
+| `/guide/availability`                    | protected | Guide availability — weekly hours + overrides    |
+| `/guide/tour-offerings`                  | protected | Guide tour offerings (supply side)               |
+| `/guide/tour-offerings/new`              | protected | Create a new tour offering                       |
 | `/staff`                                 | protected | Staff (ADMIN / SUPPORT) area, own layout         |
 
 **Server vs Client Components:** pages and layouts are **Server Components** by default (they can read
@@ -305,6 +321,10 @@ are `application/problem+json`.
 
 - **`apiJson` / `patchJson` / `postJson`** (`data-access/http.ts`) — unwrap `{ data }` and throw
   `ApiError` (carrying the HTTP status) on non-2xx.
+- **`apiJsonRaw` / `postJsonRaw` / `patchJsonRaw` / `deleteJsonRaw`** (`data-access/http.ts`) — the same
+  helpers but returning the **full envelope** instead of just `data`, for endpoints whose extra fields
+  matter (e.g. the `affectedBookings` returned when writing availability, or the remaining list a
+  `DELETE` echoes back).
 - **`queryKeys`** (`data-access/keys.ts`) — one central key factory, so reads and the mutations that
   invalidate them can't drift.
 - **`queries/`, `mutations/`, `hooks/`** — each feature has a query/mutation definition and a
