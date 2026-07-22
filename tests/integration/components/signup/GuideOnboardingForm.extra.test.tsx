@@ -253,11 +253,17 @@ describe("GuideOnboardingForm edge cases", () => {
     await user.type(screen.getByPlaceholderText(/search universities/i), "tech");
     await user.click(await screen.findByRole("button", { name: /Tech Institute/i }));
 
-    const majorSelect = screen.getByLabelText(/major/i);
+    const majorSelect = await screen.findByLabelText(/major/i);
+    // The switch settles asynchronously (remove → retype → repick refire setValue on the
+    // "university" field, which drives the majors query). Wait for the new school's option
+    // before asserting: a bare getByRole races that re-render and, on a single-core CI runner,
+    // intermittently reads the pre-switch state (disabled select, no Economics yet).
+    expect(
+      await within(majorSelect).findByRole("option", { name: "Economics" }),
+    ).toBeInTheDocument();
     expect(majorSelect).toHaveValue("computer_science");
     expect(
       within(majorSelect).getByRole("option", { name: "computer_science" }),
     ).toBeInTheDocument();
-    expect(within(majorSelect).getByRole("option", { name: "Economics" })).toBeInTheDocument();
   });
 });
