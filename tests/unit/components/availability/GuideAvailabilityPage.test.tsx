@@ -416,4 +416,19 @@ describe("GuideAvailabilityPage — mobile day-sheet flow (tap → sheet → edi
       screen.getByRole("dialog", { name: /Availability for 2026-07-22/i }),
     ).toBeInTheDocument();
   });
+
+  it("dismissing the day sheet directly (Escape), without ever opening the editor, closes it (onDaySheetClose wiring)", async () => {
+    mockTouch();
+    const user = setupUser();
+    render(<GuideAvailabilityPage />);
+
+    await user.click(screen.getByTestId("calendar-day-2026-07-22"));
+    expect(
+      screen.getByRole("dialog", { name: /Availability for 2026-07-22/i }),
+    ).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

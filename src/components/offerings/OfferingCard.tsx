@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Alert, Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
 import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
@@ -25,7 +26,10 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
     try {
       await activate.mutateAsync(offering.id);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 403) {
+      if (isAuthCancelled(err)) {
+        // Dismissing the sign-in prompt did not fail the publish — it never ran.
+        setActionError(SIGN_IN_AGAIN_MESSAGE);
+      } else if (err instanceof ApiError && err.status === 403) {
         setActionError("Your guide application must be approved before you can publish.");
       } else {
         setActionError("Could not publish this offering. Please try again.");
@@ -61,18 +65,28 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
 
         <dl className="mt-4 grid grid-cols-3 gap-3 text-ui-sm">
           <div>
-            <dt className="text-ink-soft">Duration</dt>
-            <dd className="font-semibold text-ink">{offering.durationMin} min</dd>
+            <Body as="dt" size="small" color="muted">
+              Duration
+            </Body>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {offering.durationMin} min
+            </Body>
           </div>
           <div>
-            <dt className="text-ink-soft">Price</dt>
-            <dd className="font-semibold text-ink">
+            <Body as="dt" size="small" color="muted">
+              Price
+            </Body>
+            <Body as="dd" size="small" weight={600} color="ink">
               {formatOfferingPrice(offering.priceCents, offering.currency)}
-            </dd>
+            </Body>
           </div>
           <div>
-            <dt className="text-ink-soft">Topic</dt>
-            <dd className="font-semibold text-ink">{topicLabel ?? offering.topic ?? "—"}</dd>
+            <Body as="dt" size="small" color="muted">
+              Topic
+            </Body>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {topicLabel ?? offering.topic ?? "—"}
+            </Body>
           </div>
         </dl>
 

@@ -13,10 +13,13 @@ describe("Hero", () => {
     expect(screen.getByText(/ask the questions you cannot find/i)).toBeInTheDocument();
   });
 
-  it("renders both call-to-action buttons", () => {
+  it("renders the two CTAs — 'Explore tours' → /tours, 'Become a guide' → /signup/guide", () => {
     render(<Hero />);
-    expect(screen.getByRole("button", { name: /explore live tours/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /become a guide/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /explore tours/i })).toHaveAttribute("href", "/tours");
+    expect(screen.getByRole("link", { name: /become a guide/i })).toHaveAttribute(
+      "href",
+      "/signup/guide",
+    );
   });
 
   it("lists all three trust signals", () => {

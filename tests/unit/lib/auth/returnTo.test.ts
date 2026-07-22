@@ -8,7 +8,7 @@ describe("DEFAULT_RETURN_TO", () => {
 
 describe("sanitizeReturnTo", () => {
   describe("allowed roots pass through", () => {
-    it.each(["/dashboard", "/profile", "/support", "/staff", "/onboarding"])(
+    it.each(["/dashboard", "/profile", "/support", "/staff", "/onboarding", "/guide"])(
       "returns %s unchanged",
       (value) => {
         expect(sanitizeReturnTo(value)).toBe(value);
@@ -24,6 +24,8 @@ describe("sanitizeReturnTo", () => {
       "/staff/users",
       "/onboarding/step-1",
       "/dashboard/a/b/c/deeply/nested",
+      "/guide/availability",
+      "/guide/tour-offerings/new",
     ])("returns %s unchanged", (value) => {
       expect(sanitizeReturnTo(value)).toBe(value);
     });

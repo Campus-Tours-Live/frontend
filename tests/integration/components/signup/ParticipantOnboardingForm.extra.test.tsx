@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ParticipantOnboardingForm } from "@/components/signup/ParticipantOnboardingForm";
+import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 // Variants that the main suite's fixed mock can't express: an empty tour-topics
 // response, and a non-Error rejection.
@@ -58,6 +59,20 @@ describe("ParticipantOnboardingForm edge cases", () => {
 
     await user.click(screen.getByRole("button", { name: /back/i }));
     expect(await screen.findByLabelText(/first name/i)).toHaveValue("Jordan");
+  });
+
+  it("attributes a dismissed sign-in prompt to auth, not to onboarding failing", async () => {
+    // AuthCancelledError IS an Error, so the old `err.message` path already showed
+    // "Sign-in was cancelled." — correctly attributed but with no way to act on it, and
+    // phrased differently from every other site. Route it through the canonical message.
+    topicsData = [{ value: "academics", label: "Academics" }];
+    mutateAsync.mockRejectedValueOnce(new AuthCancelledError());
+    const user = userEvent.setup();
+    renderWithQuery(<ParticipantOnboardingForm />);
+    await gotoTopics(user);
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+    expect(await screen.findByText(SIGN_IN_AGAIN_MESSAGE)).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it("shows a generic message when the rejection is not an Error", async () => {

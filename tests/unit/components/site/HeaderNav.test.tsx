@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Home } from "lucide-react";
 import { HeaderNav } from "@/components/site/HeaderNav";
 import { useMe } from "@/lib/data-access";
+import { submitLogout } from "@/lib/auth/logout";
+
+jest.mock("@/lib/auth/logout", () => ({ submitLogout: jest.fn() }));
 
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
@@ -9,6 +13,17 @@ jest.mock("@/lib/data-access", () => ({
 jest.mock("next/navigation", () => ({
   usePathname: () => "/",
   useRouter: () => ({ push: jest.fn() }),
+}));
+
+// NAV_LINKS is intentionally [] in production (see NavLinks.ts), which every other test in this
+// file relies on. A getter (read fresh on each property access) lets one test below flip it to a
+// non-empty vocabulary to exercise the inline-link render branch the real data never reaches
+// today, without disturbing the empty default the rest of the suite exercises.
+let navLinks: { label: string; href: string; icon: typeof Home }[] = [];
+jest.mock("@/components/site/NavLinks", () => ({
+  get NAV_LINKS() {
+    return navLinks;
+  },
 }));
 
 type MePartial = {
@@ -26,17 +41,29 @@ function setupMe(me: MePartial | null, opts?: { isLoading?: boolean; isOnboarded
 
 beforeEach(() => {
   jest.clearAllMocks();
+  navLinks = [];
 });
 
-describe("HeaderNav — primary nav links", () => {
-  it("renders the primary nav links regardless of auth state", () => {
+describe("HeaderNav — primary nav links (removed)", () => {
+  it("renders no primary nav links", () => {
+    setupMe(null, { isOnboarded: false });
+
+    render(<HeaderNav />);
+
+    expect(screen.queryByRole("link", { name: "Explore tours" })).not.toBeInTheDocument();
+    expect(screen.queryByText("How it works")).not.toBeInTheDocument();
+    expect(screen.queryByText("For students & parents")).not.toBeInTheDocument();
+  });
+});
+
+describe("HeaderNav — primary nav links present (future-proofing)", () => {
+  it("renders each NAV_LINKS entry as an inline link", () => {
+    navLinks = [{ label: "Explore tours", href: "/tours", icon: Home }];
     setupMe(null, { isOnboarded: false });
 
     render(<HeaderNav />);
 
     expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
-    expect(screen.getByText("How it works")).toBeInTheDocument();
-    expect(screen.getByText("For students & parents")).toBeInTheDocument();
   });
 });
 
@@ -117,8 +144,11 @@ describe("HeaderNav — logged in (onboarded)", () => {
     );
     expect(screen.getByText("Profile")).toBeInTheDocument();
     expect(screen.getByText("Support")).toBeInTheDocument();
+    // Sign out is a POST (not a CSRF-forgeable GET link) — a button that submits the logout form.
     const signOut = screen.getByRole("menuitem", { name: "Sign out" });
-    expect(signOut).toHaveAttribute("href", "/auth/logout");
+    expect(signOut).not.toHaveAttribute("href");
+    await user.click(signOut);
+    expect(submitLogout).toHaveBeenCalled();
     // Logged-in menu must NOT show the public sign-in CTA.
     expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });
@@ -141,8 +171,6 @@ describe("HeaderNav — loading / auth-actions gate", () => {
     render(<HeaderNav />);
 
     expect(screen.queryByRole("button", { name: /Account/ })).not.toBeInTheDocument();
-    // Nav links still render.
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 
   it("hides the account trigger when showAuthActions is false", () => {
@@ -151,6 +179,5 @@ describe("HeaderNav — loading / auth-actions gate", () => {
     render(<HeaderNav showAuthActions={false} />);
 
     expect(screen.queryByRole("button", { name: /Hi/ })).not.toBeInTheDocument();
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 });

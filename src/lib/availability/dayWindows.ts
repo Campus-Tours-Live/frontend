@@ -1,7 +1,7 @@
 /**
  * Resolve + format a single date's backend-resolved availability windows, shared by the month
- * calendar (`MonthAvailabilityView`) and the desktop "today" detail panel (`TodayAvailabilityPanel`)
- * so the two never drift on the ADDITIONAL/"Extra" flag or the from–to formatting.
+ * calendar (`MonthAvailabilityView`) and the week panel (`WeekAvailabilityPanel`) so the two never
+ * drift on the ADDITIONAL/"Extra" flag or the from–to formatting.
  *
  * Like `bucketByDate`, this only reads/labels backend-resolved occurrences — it never computes
  * overlaps, trims, or "net availability" (FE-never-recomputes).

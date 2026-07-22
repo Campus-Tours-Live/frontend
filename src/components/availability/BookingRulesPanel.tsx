@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Panel, PanelHeader } from "@/components/ui";
+import { Body, Panel, PanelHeader } from "@/components/ui";
 import type { AvailabilitySettings } from "@/lib/data-access";
 import { formatDuration } from "@/lib/availability/duration";
 import { formatTimezoneLabel } from "@/lib/availability/timezones";
@@ -19,8 +19,12 @@ function formatMinutesLabel(minutes: number): string {
 function RuleRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-ink-soft">{label}</dt>
-      <dd className="text-right font-medium text-ink">{value}</dd>
+      <Body as="dt" size="medium" color="muted">
+        {label}
+      </Body>
+      <Body as="dd" size="medium" weight={500} color="ink" className="text-right">
+        {value}
+      </Body>
     </div>
   );
 }

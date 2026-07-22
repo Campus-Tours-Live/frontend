@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { formSubmitErrorMessage } from "@/lib/errors";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -76,10 +77,10 @@ export function CreateOfferingForm() {
       });
       router.push("/guide/tour-offerings");
     } catch (err) {
-      const message =
-        err instanceof ApiError && err.status === 422
-          ? "Check your inputs — title, university, topic, duration, and price are required."
-          : "Could not save this offering. Please try again.";
+      const message = formSubmitErrorMessage(err, {
+        invalid: "Check your inputs — title, university, topic, duration, and price are required.",
+        generic: "Could not save this offering. Please try again.",
+      });
       setError("root", { message });
     }
   });

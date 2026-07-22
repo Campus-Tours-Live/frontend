@@ -185,6 +185,35 @@ describe("WeeklyHoursPanel — toggle drives rule `active` (deactivate-preserve)
     expect(within(tuesdayRow()).queryByText("BK-99")).not.toBeInTheDocument();
   });
 
+  it("on a PARTIAL multi-rule failure still surfaces the succeeded rule's booking AND reports the error", async () => {
+    const user = userEvent.setup();
+    // Monday flips two rules. The 2nd rejects; the 1st succeeds and stranded a live booking.
+    // The stranded booking must NOT be swallowed by the sibling's failure (Promise.allSettled).
+    const updateMutate = jest.fn().mockImplementation(({ id }: { id: string }) =>
+      id === "rule-mon-2"
+        ? Promise.reject(new ApiError(422, "This range overlaps another active rule."))
+        : Promise.resolve({
+            data: {},
+            affectedBookings: [
+              {
+                bookingId: "bk1",
+                bookingNumber: "BK-77",
+                status: "CONFIRMED",
+                scheduledStartAt: "2026-07-20T15:00:00Z",
+                scheduledEndAt: "2026-07-20T16:00:00Z",
+              },
+            ],
+          }),
+    );
+    mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(mondayRow()).getByRole("switch", { name: /monday availability/i }));
+
+    expect(await within(mondayRow()).findByText("BK-77")).toBeInTheDocument();
+    expect(await screen.findByText(/this range overlaps another active rule/i)).toBeInTheDocument();
+  });
+
   it("toggling an Unavailable day (with existing inactive rules) to Available re-activates them", async () => {
     const user = userEvent.setup();
     const updateMutate = jest.fn().mockResolvedValue({ data: {}, affectedBookings: [] });
@@ -237,6 +266,20 @@ describe("WeeklyHoursPanel — Edit opens DayHoursModal prefilled with from–to
   });
 });
 
+describe("WeeklyHoursPanel — Cancel in DayHoursModal closes it", () => {
+  it("clicking Cancel inside the Edit modal closes it (onClose wiring)", async () => {
+    const user = userEvent.setup();
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(mondayRow()).getByRole("button", { name: /^Edit Monday hours$/i }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
 describe("WeeklyHoursPanel — re-activate 422 leaves the day Unavailable + notifies", () => {
   it("shows the backend message and does not flip the day when re-activation is rejected", async () => {
     const user = userEvent.setup();
@@ -268,5 +311,30 @@ describe("WeeklyHoursPanel — re-activate 422 leaves the day Unavailable + noti
     expect(
       await screen.findByText(/could not update this day's availability/i),
     ).toBeInTheDocument();
+  });
+
+  it("falls back to the generic overlap notice when a 422 rejection carries no message", async () => {
+    const user = userEvent.setup();
+    const updateMutate = jest.fn().mockRejectedValue(new ApiError(422, ""));
+    mockUseUpdateAvailabilityRule.mockReturnValue({ mutateAsync: updateMutate, isPending: false });
+    render(<WeeklyHoursPanel />);
+
+    await user.click(within(tuesdayRow()).getByRole("switch", { name: /tuesday availability/i }));
+
+    expect(
+      await screen.findByText(/one of its hours now overlaps another active rule/i),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("WeeklyHoursPanel — rules query still loading", () => {
+  it("renders every day as Unavailable while rulesQuery.data is still loading (no rules yet)", () => {
+    mockUseAvailabilityRules.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    render(<WeeklyHoursPanel />);
+
+    expect(
+      within(mondayRow()).getByRole("switch", { name: /monday availability/i }),
+    ).toHaveAttribute("aria-checked", "false");
+    expect(within(mondayRow()).getByText(/no hours set/i)).toBeInTheDocument();
   });
 });

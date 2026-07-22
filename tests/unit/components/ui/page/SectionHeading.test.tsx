@@ -36,6 +36,20 @@ describe("SectionHeading", () => {
     expect(screen.getByRole("heading", { name: "t" }).tagName).toBe("H2");
   });
 
+  it("size overrides the visual scale while keeping the semantic level (e.g. h1 tag, display size)", () => {
+    render(<SectionHeading title="Hero" level={1} size="display" />);
+    const heading = screen.getByRole("heading", { name: "Hero" });
+    expect(heading.tagName).toBe("H1");
+    expect(heading).toHaveClass("display");
+    expect(heading).not.toHaveClass("h1");
+  });
+
+  it("renders an action beside the title when provided", () => {
+    render(<SectionHeading title="Featured" action={<a href="/tours">View all</a>} />);
+    expect(screen.getByRole("heading", { name: "Featured" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View all" })).toHaveAttribute("href", "/tours");
+  });
+
   it("applies titleId to the heading element", () => {
     render(<SectionHeading title="t" titleId="my-title" />);
     expect(screen.getByRole("heading", { name: "t" })).toHaveAttribute("id", "my-title");

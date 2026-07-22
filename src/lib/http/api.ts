@@ -1,6 +1,6 @@
 import "client-only";
 
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, notifyAuthNotice } from "@/lib/auth";
 
 /**
  * Single entry point for calls to our BFF resource API (versioned `/vN/*`).
@@ -8,28 +8,38 @@ import { requireAuth } from "@/lib/auth";
  * WHEN TO USE WHICH
  * -----------------
  *  - `apiFetch(path, init)` → for every actual `/vN` data read or write. This is
- *    the only client that should ever touch the `/vN` resource API. Use
- *    `interactive: true`
- *    (default) on protected pages so a mid-session expiry pops the re-auth modal;
- *    use `interactive: false` for passive/ambient reads that may run while logged
- *    out (header user info, account nav, meta vocab) where a 401 just means
- *    "not signed in" and must NOT nag an anonymous visitor with the modal.
- *  - `getSession()` (see ./session) → only to answer "is the user logged in?" for
- *    a render decision. It hits `/auth/session` (not a `/vN` resource), never
- *    opens the modal. Don't use `apiFetch` for that probe — `apiFetch` rejects
- *    any non-versioned path by design.
+ *    the only client that should ever touch the `/vN` resource API. Pick
+ *    `escalate` by asking WHO caused the request:
+ *      · the user clicked/submitted/opened a protected page → `"prompt"` (default)
+ *      · the page issued it by itself (header principal read, background refetch)
+ *        → `"ambient"`
+ *      · it is a genuinely public resource (meta vocabularies, the public tour
+ *        catalog / detail, the university typeahead) → `"none"`
+ *
+ *    Do NOT choose `"none"` merely because a call also runs on a public page —
+ *    that reasoning is what once hid a dead session. `/v1/userinfo` is PROTECTED and is
+ *    issued only behind `useMe`'s `enabled: authenticated` gate, so a 401 there is
+ *    a session that DIED, not an anonymous visitor; silencing it dropped a
+ *    signed-in user onto the logged-out view. It is `"ambient"`: the death is
+ *    reported, but through a banner rather than by seizing the page (see
+ *    me.query.ts).
+ *  - `sessionOptions` (see `lib/data-access/queries/session.query.ts`) → only to
+ *    answer "is the user logged in?" for a render decision. It hits `/auth/session`
+ *    (not a `/vN` resource) directly and never opens the prompt. Don't use
+ *    `apiFetch` for that probe — it rejects any non-versioned path by design.
  *
  * HOW TO USE
  * ----------
  *   const res = await apiFetch("/v1/userinfo");                 // protected read
- *   const res = await apiFetch("/v1/userinfo", { interactive: false }); // ambient
+ *   const res = await apiFetch("/v1/meta/tour-topics", { escalate: "none" });   // public
+ *   const res = await apiFetch("/v1/userinfo", { escalate: "ambient" });        // background
  *   const res = await apiFetch("/v1/guide/profile", {           // mutation
  *     method: "PATCH",
  *     headers: { "Content-Type": "application/json" },
  *     body: JSON.stringify(payload),
  *   });
- * Returns the `Response` (check `res.ok` yourself). With `interactive: true` it
- * may reject with `AuthCancelledError` if the user dismisses the re-auth modal.
+ * Returns the `Response` (check `res.ok` yourself). With `escalate: "prompt"` it
+ * may reject with `AuthCancelledError` if the user dismisses the re-auth prompt.
  *
  * BEHAVIOUR
  * ---------
@@ -44,11 +54,14 @@ import { requireAuth } from "@/lib/auth";
  *   idempotent). In our modal UX the user re-auths via a same-tab redirect, so
  *   the page unloads and the retry is effectively a no-op — but it stays correct
  *   for any future in-place re-auth.
- * - `interactive: false` opts a call OUT of the modal: a re-auth 401 is returned
- *   as-is so the caller can read it as "logged out". This lets ambient reads in
- *   a public / possibly-signed-out context (header, account nav, session probes)
- *   share the SAME client — with its versioned-path + `same-origin` guarantees —
- *   without nagging an anonymous visitor with the sign-in modal.
+ * - `escalate: "none"` opts a call OUT of every auth reaction: a re-auth 401 is
+ *   returned as-is so the caller can read it as "logged out". This lets reads of
+ *   PUBLIC resources (meta vocabularies, the tour catalog/detail, university
+ *   search) share the SAME client — with its versioned-path + `same-origin`
+ *   guarantees — without reacting to an anonymous visitor at all. The header and
+ *   account nav are NOT in this list: they read the principal through `useMe`,
+ *   which is `"ambient"` — a dead session there is reported via the notice
+ *   channel and the session-expired banner, never a modal.
  */
 const SAFE_METHODS = new Set(["GET", "HEAD"]);
 
@@ -60,15 +73,31 @@ const SAFE_METHODS = new Set(["GET", "HEAD"]);
  */
 const VERSIONED_BFF_PATH = /^\/v\d+\//;
 
+/**
+ * How a re-auth 401 should surface. The distinction is WHO caused the request, because that
+ * is what decides whether interrupting the user is legitimate.
+ *
+ *  - `"prompt"` (default) — the user asked for this (a click, a submit, opening a protected
+ *    page). Blocking them to re-authenticate is expected and proportionate.
+ *  - `"ambient"` — the page issued this by itself (the header's principal read, a background
+ *    refetch). The user did not ask for anything, so seizing the page with a modal is not
+ *    ours to do: raise a notice, let the banner state it, keep the page usable.
+ *  - `"none"` — a genuinely public resource an anonymous visitor may read. A 401 here means
+ *    "not signed in" and is the caller's to interpret; say nothing.
+ */
+export type AuthEscalation = "prompt" | "ambient" | "none";
+
 export interface ApiFetchInit extends RequestInit {
   /** Replay this request after re-auth even if it's a mutation (idempotent only). */
   retryAfterAuth?: boolean;
   /**
-   * Whether a re-auth 401 should open the sign-in modal. Default `true`.
-   * Set `false` for ambient reads that may run while logged out (header/nav/
-   * probes): the 401 is returned to the caller instead of popping the modal.
+   * How a re-auth 401 should surface — see {@link AuthEscalation}. Default `"prompt"`.
+   *
+   * Replaces an earlier `interactive` boolean, which could only choose between a modal and
+   * silence. That binary is what forced a background read to be able to seize the page: the
+   * only alternative on offer was swallowing a dead session.
    */
-  interactive?: boolean;
+  escalate?: AuthEscalation;
 }
 
 function isReauthRequired(res: Response): boolean {
@@ -80,12 +109,19 @@ export async function apiFetch(path: string, init: ApiFetchInit = {}): Promise<R
     throw new Error(`apiFetch only accepts versioned BFF paths ("/vN/..."); got: ${path}`);
   }
 
-  const { retryAfterAuth, interactive = true, ...requestInit } = init;
+  const { retryAfterAuth, escalate = "prompt", ...requestInit } = init;
   const opts: RequestInit = { credentials: "same-origin", ...requestInit };
 
   const res = await fetch(path, opts);
-  // Ambient callers (interactive: false) get the raw 401 to read as "logged out".
-  if (!interactive || !isReauthRequired(res)) return res;
+  if (escalate === "none" || !isReauthRequired(res)) return res;
+
+  if (escalate === "ambient") {
+    // The page discovered this, not the user. State it and get out of the way — the caller
+    // still receives the 401 and renders its own signed-out state. No retry: there is
+    // nothing to retry until the user decides to sign in.
+    notifyAuthNotice("expired");
+    return res;
+  }
 
   // Free the 401 body before re-auth.
   /* istanbul ignore next -- cancel() only rejects on an already-errored stream */

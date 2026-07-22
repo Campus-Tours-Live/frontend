@@ -18,6 +18,8 @@ export interface UniversityFieldProps {
   error?: ReactNode;
   optional?: boolean;
   max?: number;
+  /** "catalog" = local table (default); "live" = every U.S. school via the Scorecard proxy. */
+  source?: "catalog" | "live";
 }
 
 /**
@@ -35,6 +37,7 @@ export function UniversityField({
   error,
   optional,
   max,
+  source,
 }: UniversityFieldProps) {
   const id = useId();
   return (
@@ -47,6 +50,7 @@ export function UniversityField({
         value={value}
         onChange={onChange}
         max={max}
+        source={source}
       />
     </Field>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Body, Caption } from "@/components/ui";
+import { Body, Caption, Tag } from "@/components/ui";
 import { useUniversitySearch } from "@/lib/data-access";
 
 export interface UniversityOption {
@@ -21,6 +21,7 @@ export function UniversityMultiSelect({
   value,
   onChange,
   max = 5,
+  source = "catalog",
   id,
   "aria-labelledby": ariaLabelledby,
   "aria-describedby": ariaDescribedby,
@@ -29,6 +30,8 @@ export function UniversityMultiSelect({
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   max?: number;
+  /** "catalog" = local table (default); "live" = every U.S. school via the Scorecard proxy. */
+  source?: "catalog" | "live";
   /** Id for the search input, so a wrapping `<label htmlFor>` associates + focuses it (present only
    *  while below `max`). */
   id?: string;
@@ -52,6 +55,7 @@ export function UniversityMultiSelect({
   // Debounce, request cancellation, and caching all live in the hook now.
   const { data: results = [], isFetching: loading } = useUniversitySearch(query, {
     enabled: !atMax,
+    source,
   });
 
   const add = (o: UniversityOption) => {
@@ -75,17 +79,16 @@ export function UniversityMultiSelect({
       {value.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {value.map((v) => (
-            <span key={v.id} className="chip active">
+            <Tag
+              key={v.id}
+              color="blue"
+              variant="primary"
+              onRemove={() => remove(v.id)}
+              removeLabel={`Remove ${v.name}`}
+              className="border-[1.5px] border-primary px-3.5 py-[7px] text-ui-sm"
+            >
               {v.shortName || v.name}
-              <button
-                type="button"
-                aria-label={`Remove ${v.name}`}
-                onClick={() => remove(v.id)}
-                className="ml-1 leading-none"
-              >
-                ×
-              </button>
-            </span>
+            </Tag>
           ))}
         </div>
       )}
@@ -108,7 +111,11 @@ export function UniversityMultiSelect({
           />
           {open && (loading || results.some((r) => !selectedIds.has(r.id))) && (
             <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-card border border-border bg-card shadow-card">
-              {loading && <li className="px-4 py-2 text-ui-sm text-ink-soft">Searching…</li>}
+              {loading && (
+                <Caption as="li" className="px-4 py-2">
+                  Searching…
+                </Caption>
+              )}
               {results
                 .filter((r) => !selectedIds.has(r.id))
                 .map((r) => (

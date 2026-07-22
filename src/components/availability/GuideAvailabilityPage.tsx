@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import { Alert, InlineLoading, PageContainer, PageHeader, SegmentedControl } from "@/components/ui";
 import { cn } from "@/lib/utils/cn";
 import { useMediaQuery } from "@/hooks";
@@ -63,6 +64,10 @@ export function GuideAvailabilityPage() {
     resolvedQuery.isLoading;
   const isError =
     rulesQuery.isError || exceptionsQuery.isError || settingsQuery.isError || resolvedQuery.isError;
+  // Keep the first actual error, not just the boolean: a cancelled sign-in must be
+  // attributed to auth rather than reported as "we couldn't load your availability".
+  const loadError =
+    rulesQuery.error ?? exceptionsQuery.error ?? settingsQuery.error ?? resolvedQuery.error;
 
   // Readiness notice (CTL-55 B1) — pure presentation of the two backend-derived readiness signals
   // on the resolved-availability read (`bookable`, `hasWeeklyHours`); the FE never recomputes
@@ -101,6 +106,9 @@ export function GuideAvailabilityPage() {
   // "Add/Edit override" from the day sheet: swap the sheet for the editor, remembering to return.
   // Guarded — the sheet's button is disabled while weekly hours are missing, so this never fires then.
   const handleEditOverride = (date: string) => {
+    /* istanbul ignore next -- defensive: the day sheet's "Add/Edit override" button is disabled
+     * while weeklyHoursMissing (MonthAvailabilityView), and a disabled <button> never dispatches a
+     * click event (DOM spec), so this guard never actually fires via user interaction. */
     if (weeklyHoursMissing) return;
     setDaySheetDate(null);
     setReturnToDaySheet(true);
@@ -129,7 +137,9 @@ export function GuideAvailabilityPage() {
 
       {isLoading ? <InlineLoading label="Loading availability…" /> : null}
 
-      {isError ? <Alert variant="error">Failed to load your availability.</Alert> : null}
+      {isError ? (
+        <QueryErrorAlert error={loadError}>Failed to load your availability.</QueryErrorAlert>
+      ) : null}
 
       {!isLoading && !isError && readinessMessage ? (
         <Alert variant="warning" role="status">

@@ -1,25 +1,36 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Filter, RotateCcw, Search } from "lucide-react";
-import { Alert, Button, Chip, Link, SectionHeading } from "@/components/ui";
-import { useTourCatalog, type TourCatalogSort, type TourSummary } from "@/lib/data-access";
-import { cn } from "@/lib/utils";
-import { TourCatalogCard } from "./TourCatalogCard";
-
-const TOPIC_FILTERS = [
-  { value: "GENERAL_CAMPUS", label: "Campus life" },
-  { value: "DORM_HOUSING", label: "Dorms & housing" },
-  { value: "DINING_STUDENT_LIFE", label: "Dining & student life" },
-  { value: "INTERNATIONAL_STUDENT", label: "International students" },
-] as const;
-
-const SORTS: { value: TourCatalogSort; label: string }[] = [
-  { value: "RECOMMENDED", label: "Recommended" },
-  { value: "RATING", label: "Top rated" },
-  { value: "PRICE_ASC", label: "Lowest price" },
-  { value: "PRICE_DESC", label: "Highest price" },
-];
+import Image from "next/image";
+import { RotateCcw, Telescope } from "lucide-react";
+import { assetUrl } from "@/lib/assets";
+import {
+  Alert,
+  Badge,
+  Body,
+  Button,
+  Card,
+  Container,
+  Heading,
+  Icon,
+  List,
+  ListItem,
+  Pagination,
+  SectionHeading,
+  Skeleton,
+} from "@/components/ui";
+import {
+  canonicalizeTopicIds,
+  useTourCatalog,
+  useTourFeatures,
+  useTourTopics,
+  type TourSummary,
+} from "@/lib/data-access";
+import { TourProductCard } from "./TourProductCard";
+import { TourFiltersBar } from "./TourFiltersBar";
+import { TourFiltersModal } from "./TourFiltersModal";
+import { useTourListState } from "./useTourListState";
+import { useResponsivePageWindow } from "./useResponsivePageWindow";
 
 const UNIVERSITIES = [
   {
@@ -48,29 +59,42 @@ const UNIVERSITIES = [
   },
 ];
 
-function topicLabel(value: string): string {
-  return TOPIC_FILTERS.find((t) => t.value === value)?.label ?? value;
-}
+// Trust signals shown under the tours hero — the marketplace's quality promise, in the app's
+// established "checkmark row" style (mirrors the home hero). Replaces the old boxed disclaimer.
+const TOUR_TRUST = [
+  "Verified current students",
+  "Live, interactive tours",
+  "Every listing reviewed",
+];
 
 function UniversityFallbackCard({ university }: { university: (typeof UNIVERSITIES)[number] }) {
   return (
-    <article className="flex h-full flex-col rounded-panel border border-border bg-card p-5 shadow-card">
-      <div className="self-start rounded-pill bg-primary-soft px-2.5 py-1 text-[12px] font-bold text-primary-dark">
+    <Card as="article" padded={false} className="flex h-full flex-col p-5">
+      <Badge variant="primary" className="self-start">
         University
-      </div>
-      <h3 className="mt-3 font-display text-h4 text-ink">{university.name}</h3>
-      <p className="mt-1 text-[13px] font-semibold text-primary-dark">{university.location}</p>
-      <p className="mt-3 flex-1 text-[14px] text-ink-soft">{university.body}</p>
-      <Link
-        href={university.href}
+      </Badge>
+      <Heading as="h3" size="h4" className="mt-3">
+        {university.name}
+      </Heading>
+      <Body size="small" weight={600} color="primary-dark" className="mt-1">
+        {university.location}
+      </Body>
+      <Body size="medium" color="muted" className="mt-3 flex-1">
+        {university.body}
+      </Body>
+      <Button
         variant="secondary"
         size="small"
-        className="mt-5 w-full sm:w-auto"
+        disabled
+        title="Coming soon"
+        className="mt-5 inline-flex w-full items-center justify-center gap-1.5 sm:w-auto"
       >
         Explore university
-        <ArrowRight size={15} strokeWidth={2} />
-      </Link>
-    </article>
+        <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-ink-soft">
+          Soon
+        </span>
+      </Button>
+    </Card>
   );
 }
 
@@ -87,17 +111,23 @@ function Results({
   onReset: () => void;
   onRetry: () => void;
 }) {
+  // Backend-owned feature vocabulary (single source of truth) → code→label map for the chips.
+  const { labelByCode: featureLabels } = useTourFeatures();
+
   if (loading) {
     return (
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Loading tours">
+      <div
+        className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3"
+        aria-label="Loading tours"
+      >
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-panel border border-border bg-card p-5 shadow-card">
-            <div className="h-32 rounded-card bg-canvas" />
-            <div className="mt-5 h-4 w-28 rounded-pill bg-canvas" />
-            <div className="mt-4 h-5 w-3/4 rounded-pill bg-canvas" />
-            <div className="mt-3 h-4 w-full rounded-pill bg-canvas" />
-            <div className="mt-6 h-10 w-32 rounded-pill bg-canvas" />
-          </div>
+          <Card key={i}>
+            <Skeleton height={128} className="rounded-card" />
+            <Skeleton variant="rounded" height={16} width={112} className="mt-5" />
+            <Skeleton variant="rounded" height={20} width="75%" className="mt-4" />
+            <Skeleton variant="rounded" height={16} className="mt-3" />
+            <Skeleton variant="rounded" height={40} width={128} className="mt-6" />
+          </Card>
         ))}
       </div>
     );
@@ -121,7 +151,7 @@ function Results({
           </div>
         </Alert>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
           {UNIVERSITIES.slice(0, 3).map((u) => (
             <UniversityFallbackCard key={u.name} university={u} />
           ))}
@@ -132,56 +162,92 @@ function Results({
 
   if (tours.length === 0) {
     return (
-      <div className="rounded-panel border border-border bg-card p-8 shadow-card">
-        <h2 className="font-display text-h3 text-ink">No tours match these filters</h2>
-        <p className="mt-2 max-w-xl text-[14px] text-ink-soft">
-          Try broadening your date, topic, or university selection.
-        </p>
-        <Button variant="secondary" size="small" onClick={onReset} className="mt-5">
+      <Card padded={false} className="flex flex-col items-center px-6 py-16 text-center sm:py-20">
+        <span
+          className="grid size-16 place-items-center rounded-pill bg-primary-soft text-primary"
+          aria-hidden
+        >
+          <Telescope size={28} strokeWidth={1.75} />
+        </span>
+        <Heading as="h2" size="h3" className="mt-5">
+          No tours match your filters yet
+        </Heading>
+        <Body size="medium" color="muted" className="mt-2 max-w-md">
+          Try a different topic or university, widen your dates, or clear your filters to see every
+          live student-guided tour.
+        </Body>
+        <Button variant="secondary" size="small" onClick={onReset} className="mt-6">
           <RotateCcw size={15} strokeWidth={2} />
-          Clear filters
+          Clear all filters
         </Button>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
       {tours.map((tour) => (
-        <TourCatalogCard key={tour.id} tour={tour} topicLabel={topicLabel(tour.topic)} />
+        <TourProductCard
+          key={tour.id}
+          tour={tour}
+          major={tour.guideMajor}
+          degree={tour.guideDegree ?? undefined}
+          entryYear={tour.guideEntryYear ?? undefined}
+          featureLabels={featureLabels}
+        />
       ))}
     </div>
   );
 }
 
 export function AllToursPage() {
-  const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState<string>("");
-  const [sort, setSort] = useState<TourCatalogSort>("RECOMMENDED");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const {
+    query,
+    universityId,
+    topicIds: rawTopicIds,
+    sort,
+    page,
+    changeTopics,
+    changeSort,
+    setPage,
+    reset: resetState,
+  } = useTourListState();
+  const [modalOpen, setModalOpen] = useState(false);
+  const pageWindow = useResponsivePageWindow();
+
+  const { data: topics } = useTourTopics();
+  const allValues = useMemo(() => (topics ?? []).map((o) => o.value), [topics]);
+  // Canonicalise the URL's topics for display + query so a full-set URL renders as "Any" (no
+  // inversion) — the single authority for this rule is `canonicalizeTopicIds`.
+  const topicIds = useMemo(
+    () => canonicalizeTopicIds(rawTopicIds, allValues),
+    [rawTopicIds, allValues],
+  );
 
   const filters = useMemo(
     () => ({
       q: query.trim() || undefined,
-      topic: topic || undefined,
+      universityId: universityId || undefined,
+      topicIds: topicIds.length ? topicIds : undefined,
       sort,
-      limit: 20,
+      page,
+      // A common multiple of the grid's column counts (1 / 2 / 3) so every full page fills
+      // complete rows at any width — no empty bottom-right cell on the 3-column desktop layout.
+      limit: 24,
     }),
-    [query, sort, topic],
+    [query, universityId, sort, topicIds, page],
   );
 
-  const { data: tours = [], isLoading, isError, refetch } = useTourCatalog(filters);
-  const activeFilterCount = Number(Boolean(query.trim())) + Number(Boolean(topic));
+  const { data, isLoading, isError, refetch } = useTourCatalog(filters);
+  const tours = data?.items ?? [];
   const resultTitle = isLoading
     ? "Loading tours"
     : isError
       ? "Available tours"
-      : `${tours.length} tours`;
+      : `${data?.totalElements ?? tours.length} tours`;
 
   const reset = () => {
-    setQuery("");
-    setTopic("");
-    setSort("RECOMMENDED");
+    resetState();
     void refetch();
   };
 
@@ -191,149 +257,107 @@ export function AllToursPage() {
 
   return (
     <div className="pb-24">
-      <section className="border-b border-border/70 bg-ivory">
-        <div className="mx-auto max-w-content px-6 py-12 lg:py-16">
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
-            <SectionHeading
-              eyebrow="Explore tours"
-              title="Find a campus experience that matches what matters to you."
-              lead="Search live, student-guided tours by school, topic, budget, and the questions you want answered before you visit or apply."
-              level={1}
-            />
-            <div className="rounded-panel border border-border bg-card p-5 shadow-card">
-              <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-primary-dark">
-                Public marketplace
-              </div>
-              <p className="mt-2 text-[14px] text-ink-soft">
-                Only published tours from approved student guides are shown.
-              </p>
+      <section className="border-b border-border/70 bg-muted">
+        <Container className="py-12 lg:py-16">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
+            <div className="max-w-2xl">
+              <SectionHeading
+                eyebrow="Explore tours"
+                title="Tour campus with a student who's already there."
+                lead="Live, student-guided tours you can search by school, topic, and budget — then ask the questions a brochure never answers."
+                level={1}
+              />
+              <List dividers={false} className="mt-7 flex flex-wrap gap-x-6 gap-y-2">
+                {TOUR_TRUST.map((signal) => (
+                  <ListItem
+                    key={signal}
+                    padded={false}
+                    className="gap-2 text-ink-soft"
+                    leading={<Icon name="success" className="text-sage-deep" />}
+                  >
+                    {signal}
+                  </ListItem>
+                ))}
+              </List>
+            </div>
+            {/* Hero illustration — scales with its column and keeps its 4:3 ratio; hidden below lg
+                where there isn't room for it beside the copy. */}
+            <div className="hidden lg:block">
+              <Image
+                src={assetUrl("hero_explore_campus.png")}
+                alt=""
+                width={1448}
+                height={1086}
+                priority
+                sizes="(min-width: 1024px) 48vw, 0px"
+                className="h-auto w-full rounded-panel shadow-card"
+              />
             </div>
           </div>
-        </div>
+        </Container>
       </section>
 
-      <section className="mx-auto max-w-content px-6 py-10">
-        <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <aside className="lg:sticky lg:top-6 lg:self-start">
-            <button
-              type="button"
-              className="mb-4 flex w-full items-center justify-between rounded-card border border-border bg-card px-4 py-3 text-left font-bold text-ink shadow-card lg:hidden"
-              onClick={() => setFiltersOpen((open) => !open)}
-              aria-expanded={filtersOpen}
-            >
-              <span className="inline-flex items-center gap-2">
-                <Filter size={17} strokeWidth={2} />
-                Filters
-              </span>
-              <span className="text-[12px] text-ink-soft">{activeFilterCount} active</span>
-            </button>
+      <Container as="section" className="py-10">
+        <TourFiltersBar
+          topicIds={topicIds}
+          onTopicsChange={changeTopics}
+          onOpenFilters={() => setModalOpen(true)}
+        />
+        <TourFiltersModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          sort={sort}
+          resultCount={data?.totalElements ?? tours.length}
+          onApply={({ sort: next }) => changeSort(next)}
+        />
 
-            <div
-              className={cn(
-                "space-y-6 rounded-panel border border-border bg-card p-5 shadow-card",
-                !filtersOpen && "hidden lg:block",
-              )}
-            >
-              <div>
-                <h2 className="font-display text-h4 text-ink">Filters</h2>
-                <p className="mt-1 text-[13px] text-ink-soft">Refine the public catalog.</p>
-              </div>
-
-              <label className="field block">
-                <span>Search</span>
-                <div className="relative mt-1.5">
-                  <Search
-                    size={16}
-                    strokeWidth={2}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft"
-                    aria-hidden
-                  />
-                  <input
-                    className="input pl-9"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="University, tour, or topic"
-                    type="search"
-                  />
-                </div>
-              </label>
-
-              <fieldset>
-                <legend className="mb-2 block text-[13px] font-bold text-ink">Topic</legend>
-                <div className="flex flex-wrap gap-2">
-                  <Chip active={!topic} onClick={() => setTopic("")}>
-                    Any
-                  </Chip>
-                  {TOPIC_FILTERS.map((t) => (
-                    <Chip
-                      key={t.value}
-                      active={topic === t.value}
-                      onClick={() => setTopic(t.value)}
-                    >
-                      {t.label}
-                    </Chip>
-                  ))}
-                </div>
-              </fieldset>
-
-              <label className="field block">
-                <span>Sort by</span>
-                <select
-                  className="input mt-1.5"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as TourCatalogSort)}
-                >
-                  {SORTS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <Button variant="ghost" size="small" onClick={reset} className="px-0">
-                <RotateCcw size={15} strokeWidth={2} />
-                Clear all
-              </Button>
+        <div className="mt-8">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="eyebrow">Available tours</div>
+              <Heading as="h2" size="h3" className="mt-1">
+                {resultTitle}
+              </Heading>
             </div>
-          </aside>
-
-          <div>
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <div className="eyebrow">Available tours</div>
-                <h2 className="mt-1 font-display text-h3 text-ink">{resultTitle}</h2>
-              </div>
-              <p className="max-w-sm text-[13px] text-ink-soft">
-                Live listings update as student guides publish new availability.
-              </p>
-            </div>
-
-            <Results
-              tours={tours}
-              loading={isLoading}
-              error={isError}
-              onReset={reset}
-              onRetry={retry}
-            />
+            <Body size="small" color="muted" className="max-w-sm">
+              Live listings update as student guides publish new availability.
+            </Body>
           </div>
-        </div>
-      </section>
 
-      <section className="mx-auto max-w-content px-6">
+          <Results
+            tours={tours}
+            loading={isLoading}
+            error={isError}
+            onReset={reset}
+            onRetry={retry}
+          />
+
+          {!isLoading && !isError ? (
+            <Pagination
+              page={page}
+              totalPages={data?.totalPages ?? 0}
+              onPageChange={setPage}
+              windowSize={pageWindow}
+              className="mt-10"
+            />
+          ) : null}
+        </div>
+      </Container>
+
+      <Container as="section">
         <div className="border-t border-border pt-10">
           <SectionHeading
             eyebrow="Universities"
             title="Browse by university"
             lead="Start with a campus, then choose a student guide and tour topic that fits your questions."
           />
-          <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
             {UNIVERSITIES.map((u) => (
               <UniversityFallbackCard key={u.name} university={u} />
             ))}
           </div>
         </div>
-      </section>
+      </Container>
     </div>
   );
 }

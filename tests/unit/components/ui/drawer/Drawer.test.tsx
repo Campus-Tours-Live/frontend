@@ -137,6 +137,31 @@ describe("Drawer", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("an unstructured bottom sheet (no header/footer/title/actions) scrolls the whole panel", () => {
+    render(
+      <Drawer open onClose={jest.fn()} side="bottom" ariaLabel="Sheet">
+        <p>body</p>
+      </Drawer>,
+    );
+    expect(screen.getByRole("dialog", { name: "Sheet" })).toHaveClass("overflow-y-auto");
+  });
+
+  it("structured mode with only a footer (no header/title) renders no header bar", () => {
+    render(
+      <Drawer
+        open
+        onClose={jest.fn()}
+        ariaLabel="Footer only"
+        footer={<button type="button">Save</button>}
+      >
+        <p>body</p>
+      </Drawer>,
+    );
+    const dialog = screen.getByRole("dialog", { name: "Footer only" });
+    expect(dialog.querySelector(".border-b")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+
   it("size sets the width for a side drawer", () => {
     render(
       <Drawer open onClose={jest.fn()} side="right" size="large" title="Wide">

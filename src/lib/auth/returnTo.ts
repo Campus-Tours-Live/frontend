@@ -9,7 +9,14 @@
  */
 export const DEFAULT_RETURN_TO = "/dashboard";
 
-const ALLOWED_RETURN_ROOTS = ["/dashboard", "/profile", "/support", "/staff", "/onboarding"];
+const ALLOWED_RETURN_ROOTS = [
+  "/dashboard",
+  "/profile",
+  "/support",
+  "/staff",
+  "/onboarding",
+  "/guide",
+];
 
 export function sanitizeReturnTo(value: string | null | undefined): string {
   if (!value) return DEFAULT_RETURN_TO;

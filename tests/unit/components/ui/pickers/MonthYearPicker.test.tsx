@@ -364,6 +364,29 @@ describe("MonthYearPicker — grid popover", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(labelButton).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("clicking the label again while open closes the popover (toggle)", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    const labelButton = screen.getByRole("button", { name: "July 2026" });
+    await user.click(labelButton);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await user.click(labelButton);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(labelButton).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("falls back to a generic 'Month picker' aria-label on the popover when none is given", async () => {
+    const user = userEvent.setup();
+    render(<MonthYearPicker value={new Date(2026, 6, 1)} onChange={jest.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "July 2026" }));
+
+    expect(screen.getByRole("dialog", { name: "Month picker" })).toBeInTheDocument();
+  });
 });
 
 describe("MonthYearPicker — disabled", () => {

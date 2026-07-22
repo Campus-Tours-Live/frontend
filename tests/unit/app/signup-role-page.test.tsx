@@ -19,7 +19,7 @@ jest.mock("@/components/signup/RoleCard", () => ({
 
 import { redirect } from "next/navigation";
 import { getServerMe } from "@/lib/http/serverMe";
-import SignupRolePage from "@/app/signup/role/page";
+import SignupRolePage from "@/app/(auth)/signup/role/page";
 
 const redirectMock = redirect as unknown as jest.Mock;
 const getServerMeMock = getServerMe as jest.Mock;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Plus, Trash2 } from "lucide-react";
 import {
   Alert,
@@ -63,6 +64,8 @@ function draftsFromRules(rules: AvailabilityRule[]): RangeDraft[] {
 /** Surfaces the backend's 422 message verbatim (overlap / cross-midnight / re-activate) — this
  *  modal never pre-computes or blocks on conflicts client-side (FE-never-recomputes). */
 export function dayHoursErrorMessage(err: unknown): string {
+  // A dismissed sign-in prompt is not this action failing — attribute it to auth.
+  if (isAuthCancelled(err)) return SIGN_IN_AGAIN_MESSAGE;
   if (err instanceof ApiError && err.status === 422) {
     return err.message || "That range overlaps another one on this day.";
   }

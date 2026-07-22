@@ -88,6 +88,53 @@
     --brand-purple-soft: 255 67% 95%; /* #EFEBFB */
     --brand-purple-foreground: 254 36% 46%; /* #5F4BA0 */
 
+    /* Campus label — a cool teal reserved for the university name. */
+    --brand-teal: 175 28% 34%; /* #3E6E6A */
+
+    /* ---- Tour-topic categorical scale ----
+       A scale whose ONLY job is mutual distinguishability. It exists because the topics used to
+       borrow semantic tokens (`primary`, `success`, `warning`, `sage`, `coral`, `purple`), and
+       those were each chosen for a different job — a brand action, a positive status, a caution —
+       so nobody ever designed them to be told apart from one another. Eight topics sharing six
+       borrowed colours meant two pairs were identical, and colour then lied about category.
+
+       Borrowing was also why they could not simply be re-tuned: `primary` alone appears in 30
+       files (buttons, links, focus rings). Decoupling is what makes these free to move.
+
+       Derived, not eyeballed: positions were optimised in OKLab for maximum minimum pairwise
+       distance, constrained to the brand's own character (HSL saturation ≤ 55%, the muted band
+       every other family sits in). Result: closest pair went from ΔE 0.020 — indistinguishable —
+       to 0.128 for the dots and 0.119 for the chips. `-foreground` doubles as the chip fill
+       (Tag `variant="inverse"` puts ivory text on it), so each is held to ≥4.5:1 against ivory.
+       `-soft` is the base mixed 86% into ivory, keeping the tint inside the family.
+
+       DO NOT hand-tweak one of these in isolation — the guarantee is a property of the SET, and
+       `topic-colour-distance.test.ts` measures it. */
+    --topic-blush: 356.1 51.7% 70%; /* #DA8B90 — Campus life */
+    --topic-blush-soft: 16.8 50% 92.6%; /* #F6E8E3 */
+    --topic-blush-foreground: 354.5 32.9% 45.5%; /* #9A4E55 — chip fill, 5.45:1 on ivory */
+    --topic-rust: 23.6 45% 48.5%; /* #B37044 — Dining & student life */
+    --topic-rust-soft: 30.2 44.7% 89.4%; /* #F0E4D8 */
+    --topic-rust-foreground: 25.7 76.1% 25%; /* #70390F — chip fill, 8.61:1 on ivory */
+    --topic-olive: 49 43.8% 56%; /* #C0AE5E — International */
+    --topic-olive-soft: 46.3 46% 90.5%; /* #F2EDDC */
+    --topic-olive-foreground: 50.5 81.9% 28%; /* #82700D — chip fill, 4.62:1 on ivory */
+    --topic-moss: 109.4 23.9% 45%; /* #618E57 — First-year */
+    --topic-moss-soft: 76.2 23.2% 88.4%; /* #E5E8DB */
+    --topic-moss-foreground: 108.9 49.7% 22%; /* #27541C — chip fill, 8.28:1 on ivory */
+    --topic-lagoon: 169.8 43% 50.7%; /* #4BB7A5 — Transfer */
+    --topic-lagoon-soft: 139.2 27% 90.9%; /* #E2EEE6 */
+    --topic-lagoon-foreground: 172.4 96.4% 23.9%; /* #027869 — chip fill, 5.05:1 on ivory */
+    --topic-azure: 206.8 49.3% 54.5%; /* #5291C4 — Dorms & housing */
+    --topic-azure-soft: 189.2 14.8% 90.3%; /* #E2E9EA */
+    --topic-azure-foreground: 203 92.4% 27.5%; /* #055587 — chip fill, 7.36:1 on ivory */
+    --topic-iris: 227.7 46.4% 79.2%; /* #B1BBE2 — Academics & majors */
+    --topic-iris-soft: 19 5.4% 93.7%; /* #F0EFEE */
+    --topic-iris-foreground: 228.3 18.5% 49.2%; /* #666F95 — chip fill, 4.57:1 on ivory */
+    --topic-mauve: 308 23.9% 52.8%; /* #A36A9C — For parents */
+    --topic-mauve-soft: 354.4 23.5% 91.2%; /* #EEE3E4 */
+    --topic-mauve-foreground: 306.6 37% 29.5%; /* #672F61 — chip fill, 9.07:1 on ivory */
+
     /* ---- Member role accent tokens (participant / guide / guardian) ----
        Semantic aliases so any role-coloured surface reuses one source. */
     --role-participant: var(--brand-primary);
@@ -173,6 +220,9 @@
    ========================================================================= */
 @layer components {
   /* ---------- Typography ---------- */
+  .display {
+    @apply font-display text-display text-ink;
+  }
   .h1 {
     @apply font-display text-h1 text-ink;
   }
@@ -235,6 +285,82 @@
   }
   .btn-block {
     @apply w-full;
+  }
+
+  /* ---------- Glass — iOS-style material ----------
+     A real material, not a tint. Four things separate the two, and only the first was here before:
+
+       1. blur          — 24px. At 12px it reads "slightly out of focus", not "behind glass".
+       2. saturation    — the one everyone omits. Without it the backdrop greys out and the surface
+                          looks like frosted plastic; with it, colour blooms through as glass.
+                          Kept at 150%: at 180% a saturated ground (red brick, foliage) turns the
+                          surface into an opaque colour disc — verified, it went muddy brown.
+       3. specular edge — a light hairline on the TOP edge only, plus a fainter full ring. A uniform
+                          border is a flat sticker; a lit top edge is a physical object.
+       4. contact shadow — tight and low-alpha, so it sits a millimetre above the photo.
+
+     Tones are NOT interchangeable — see `Glass.tsx`. `smoke` is the one for arbitrary imagery,
+     which is also what iOS ships for controls over photos: iOS switches material by sampling
+     backdrop luminance, CSS cannot, so the only tone that survives both a pale illustration and a
+     dark photo is a thin dark material carrying a light glyph. */
+  .glass {
+    @apply backdrop-blur-[24px] backdrop-saturate-150;
+  }
+  .glass-smoke {
+    background-color: hsl(var(--brand-ink) / 0.22);
+    color: hsl(var(--brand-ivory));
+    box-shadow:
+      inset 0 0.5px 0 hsl(var(--brand-ivory) / 0.46),
+      inset 0 0 0 0.5px hsl(var(--brand-ivory) / 0.16),
+      0 1px 3px hsl(var(--brand-ink) / 0.28);
+  }
+  .glass-light {
+    background-color: hsl(var(--brand-ivory) / 0.24);
+    color: hsl(var(--brand-ivory));
+    box-shadow:
+      inset 0 0.5px 0 hsl(var(--brand-ivory) / 0.6),
+      inset 0 0 0 0.5px hsl(var(--brand-ivory) / 0.4),
+      0 1px 3px hsl(var(--brand-ink) / 0.24);
+  }
+  .glass-dark {
+    background-color: hsl(var(--card) / 0.7);
+    color: hsl(var(--brand-ink));
+    box-shadow:
+      inset 0 0.5px 0 hsl(var(--brand-ivory) / 0.7),
+      inset 0 0 0 0.5px hsl(var(--brand-ink) / 0.1),
+      0 1px 3px hsl(var(--brand-ink) / 0.24);
+  }
+
+  /* No `backdrop-filter` (older Safari, Firefox with the flag off): nothing blurs, so the tint is
+     the ONLY thing left carrying legibility — thicken it rather than shipping an invisible control. */
+  @supports not (backdrop-filter: blur(1px)) {
+    .glass-smoke {
+      background-color: hsl(var(--brand-ink) / 0.62);
+    }
+    .glass-light {
+      background-color: hsl(var(--brand-ivory) / 0.72);
+    }
+    .glass-dark {
+      background-color: hsl(var(--card) / 0.85);
+    }
+  }
+
+  /* Apple's "Reduce Transparency" — the material goes OPAQUE, it does not merely dim. Users who set
+     this often do so because translucency costs them legibility, so honour it properly. */
+  @media (prefers-reduced-transparency: reduce) {
+    .glass {
+      backdrop-filter: none;
+    }
+    .glass-smoke {
+      background-color: hsl(var(--brand-ink) / 0.92);
+    }
+    .glass-light {
+      background-color: hsl(var(--brand-ivory) / 0.92);
+      color: hsl(var(--brand-ink));
+    }
+    .glass-dark {
+      background-color: hsl(var(--card));
+    }
   }
 
   /* ---------- Card ---------- */
@@ -419,6 +545,14 @@
   .tp-col::-webkit-scrollbar {
     display: none;
   }
+  /* Keep horizontal scroll but hide the scrollbar (chip rows) — desktop + mobile. */
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE / legacy Edge */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome / Safari */
+  }
   .tp-item {
     scroll-snap-align: center;
   }
@@ -493,5 +627,163 @@
   .spinner-pill {
     animation: none;
     opacity: 0.55;
+  }
+}
+
+/* ---- Collapsing header — animated Header panel + single-shell morph -----------
+   The white Header itself morphs: an animated background PANEL (not the fixed <header>) carries the
+   background, bottom border and elevation, and its HEIGHT interpolates 72↔146px so the whole header
+   visually grows/shrinks and its bottom edge always sits BELOW the search shell. The search is ONE
+   `.ds-shell` (center-anchored; only top/width/height/box-shadow transition) that lives INSIDE the
+   panel. Both the panel and the shell are absolute (out of flow) → the spacer stays 72px and content
+   never moves. Expanded and compact layers share the SAME segment grid so fields stay aligned through
+   the morph. First-pass geometry — calibrate optically. NO transform-scale, NO transition:all. */
+:root {
+  --header-row-height: 72px;
+  --header-expanded-height: 146px;
+  --header-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --header-duration: 260ms;
+  --header-panel-duration: 280ms;
+  --header-fade-duration: 180ms;
+}
+
+/* Constant spacer — reserves the header's footprint at the top of the page so content never sits
+   under the fixed header. Deliberately does NOT animate: on desktop the header collapses on scroll,
+   but at scroll top it is fully expanded, so we reserve the expanded height there. Mobile is a single
+   row. (This is the page safe-area the shell overlay was always meant to have.) */
+.header-spacer {
+  height: var(--header-row-height);
+}
+@media (min-width: 1024px) {
+  .header-spacer {
+    height: var(--header-expanded-height);
+  }
+}
+
+/* Animated white Header background panel — the header's real visual surface + bottom border. */
+.ds-header-bg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 0;
+  height: var(--header-row-height); /* mobile: single row (the expanded band is desktop-only) */
+  background: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+  transition: height var(--header-panel-duration) var(--header-easing);
+}
+@media (min-width: 1024px) {
+  .ds-header-bg {
+    height: var(--header-expanded-height);
+  }
+  .ds-header-bg[data-collapsed="true"] {
+    height: var(--header-row-height);
+  }
+}
+
+/* The one search shell — center-anchored; sits inside the panel; only top/width/height/shadow move.
+   Width capped by a narrower-side estimate so it can't cover logo/nav/account down to 1024px
+   (calibrate against real cluster widths at 1024/1280/1440). Shadow is weak when expanded (it's
+   inside the white header) and a touch stronger when collapsed (a clickable control in one row);
+   the scroll-expanded overlay's stronger elevation is a later step. */
+.ds-shell {
+  position: absolute;
+  left: 50%;
+  top: 80px;
+  z-index: 20;
+  width: min(680px, calc(100vw - 440px));
+  height: 56px;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-sm);
+  transition:
+    top var(--header-duration) var(--header-easing),
+    width var(--header-duration) var(--header-easing),
+    height var(--header-duration) var(--header-easing),
+    box-shadow var(--header-duration) var(--header-easing);
+}
+.ds-shell[data-collapsed="true"] {
+  top: 14px;
+  width: min(460px, calc(100vw - 440px));
+  height: 44px;
+  box-shadow: var(--shadow-md);
+}
+
+/* Content layers fill the shell and cross-fade; the shared segment grid keeps fields aligned. */
+.ds-expanded,
+.ds-compact {
+  position: absolute;
+  inset: 0;
+}
+.ds-expanded {
+  opacity: 1;
+  transition: opacity var(--header-fade-duration) ease 60ms;
+}
+.ds-compact {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.ds-shell[data-collapsed="true"] .ds-expanded {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.ds-shell[data-collapsed="true"] .ds-compact {
+  opacity: 1;
+  transition: opacity var(--header-fade-duration) ease 80ms;
+}
+
+/* Shared segment widths (University widest, Topic, Language narrowest) — identical in both layers. */
+.ds-seg--uni {
+  flex: 42 1 0;
+  min-width: 0;
+}
+.ds-seg--topic {
+  flex: 25 1 0;
+  min-width: 0;
+}
+.ds-seg--lang {
+  flex: 21 1 0;
+  min-width: 0;
+}
+
+/* Airbnb-style: the divider adjacent to a hovered/active interactive segment (University or Topic)
+   fades out, so the highlighted section reads as one continuous rounded pill. Applies on either
+   side of the divider (segment-before via `+`, segment-after via `:has`). Language is inert, so it
+   never fades a divider. */
+.ds-divider {
+  transition: opacity 150ms ease;
+}
+.ds-seg--uni:hover + .ds-divider,
+.ds-seg--topic:hover + .ds-divider,
+.ds-seg--uni[data-active="true"] + .ds-divider,
+.ds-seg--topic[data-active="true"] + .ds-divider,
+.ds-divider:has(+ .ds-seg--uni:hover),
+.ds-divider:has(+ .ds-seg--topic:hover),
+.ds-divider:has(+ .ds-seg--uni[data-active="true"]),
+.ds-divider:has(+ .ds-seg--topic[data-active="true"]) {
+  opacity: 0;
+}
+
+/* Shared section module panel — a header-layer sibling anchored under the shell's left (≈ the
+   University segment). First-pass anchor via calc (not per-frame rect measurement); calibrate.
+   Clamped to a left safe margin so it can't leave the viewport. */
+.ds-panel {
+  position: absolute;
+  top: 140px;
+  left: max(24px, calc(50% - min(680px, 100vw - 440px) / 2));
+  width: min(380px, calc(100vw - 48px));
+  z-index: 30;
+}
+
+/* Topic module anchors under the Topic segment (≈ 40% across the shell), narrower than the
+   University module. Same first-pass calc anchor — calibrate against the segment widths. */
+.ds-panel--topic {
+  left: max(24px, calc(50% - min(680px, 100vw - 440px) / 2 + min(680px, 100vw - 440px) * 0.4));
+  width: min(300px, calc(100vw - 48px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-header-bg,
+  .ds-shell,
+  .ds-expanded,
+  .ds-compact {
+    transition-duration: 1ms !important;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
 import { useMe, useSetActiveRole, type Role } from "@/lib/data-access";
@@ -19,7 +20,7 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const { me, hasRole } = useMe();
   const setActiveRole = useSetActiveRole();
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   const active = me?.activeRole;
   // Only a participant/guide context has a switcher (staff is excluded).
@@ -30,13 +31,18 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   async function switchTo(role: Role) {
     /* istanbul ignore next -- guard: the active role's control never triggers a switch */
     if (role === active) return;
-    setFailed(false);
+    setFailed(null);
     try {
       await setActiveRole.mutateAsync(role);
       onNavigate?.();
-    } catch {
+    } catch (err) {
       // 403 (revoked mid-session) or network/5xx — surface a retry hint, don't fail silently.
-      setFailed(true);
+      // A dismissed sign-in prompt is NOT the switch failing, so it must not read that way.
+      setFailed(
+        isAuthCancelled(err)
+          ? SIGN_IN_AGAIN_MESSAGE
+          : "Couldn't switch right now. Please try again.",
+      );
     }
   }
 
@@ -57,7 +63,7 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
         />
         {failed && (
           <Alert variant="error" className="mt-2.5 text-ui-sm">
-            Couldn&apos;t switch right now. Please try again.
+            {failed}
           </Alert>
         )}
       </div>

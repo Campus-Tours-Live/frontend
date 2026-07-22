@@ -60,4 +60,31 @@ describe("Checkbox", () => {
     expect(cb).toHaveAttribute("value", "apple");
     expect(ref.current).toBe(cb);
   });
+
+  it("defaults to unchecked when `checked` is omitted", () => {
+    render(<Checkbox label="Apple" onChange={jest.fn()} />);
+    expect(screen.getByRole("checkbox", { name: "Apple" })).not.toBeChecked();
+  });
+
+  it("accepts a callback ref", () => {
+    let node: HTMLInputElement | null = null;
+    render(
+      <Checkbox
+        ref={(el) => {
+          node = el;
+        }}
+        label="Apple"
+        checked={false}
+        onChange={jest.fn()}
+      />,
+    );
+    expect(node).toBe(screen.getByRole("checkbox", { name: "Apple" }));
+  });
+
+  it("uses the disabled+filled box tone when disabled and checked", () => {
+    render(<Checkbox label="Apple" disabled checked onChange={jest.fn()} />);
+    const cb = screen.getByRole("checkbox", { name: "Apple" });
+    const box = cb.parentElement?.querySelector("span[aria-hidden]");
+    expect(box).toHaveClass("border-border", "bg-border", "text-white");
+  });
 });

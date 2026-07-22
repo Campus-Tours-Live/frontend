@@ -52,4 +52,12 @@ describe("Nudge", () => {
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("renders no body copy when children is omitted", () => {
+    render(<Nudge data-testid="nudge" title="Note" />);
+    const nudge = screen.getByTestId("nudge");
+    // Only the title's Body element should render — no second (body-copy) Body element.
+    expect(within(nudge).getByText("Note")).toBeInTheDocument();
+    expect(nudge.querySelectorAll(".mt-1")).toHaveLength(0);
+  });
 });

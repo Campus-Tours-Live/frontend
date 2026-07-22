@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useMe } from "@/lib/data-access";
-import { Caption, Drawer, IconButton, Link, MenuItem } from "@/components/ui";
+import { submitLogout } from "@/lib/auth/logout";
+import { Caption, Drawer, IconButton, Link, MenuItem, MenuSection } from "@/components/ui";
 import { AccountNav } from "./AccountNav";
 import { NAV_LINKS } from "./NavLinks";
 
@@ -24,7 +25,7 @@ export function MobileNav({
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
-  const { isLoading, isOnboarded } = useMe();
+  const { isLoading, isOnboarded, sessionUnverified } = useMe();
 
   // Logged-in = you are a member (hold ≥1 role); a not-yet-member (bare account
   // mid first-signup, or not signed in) holds 0 roles → public.
@@ -57,7 +58,7 @@ export function MobileNav({
 
         <div className="flex-1 overflow-y-auto px-3 pb-6 pt-12">
           {/* Logged out (incl. onboarding): welcome card with the sign-in CTA. */}
-          {showAuthActions && !isLoading && !loggedIn && (
+          {showAuthActions && !isLoading && !sessionUnverified && !loggedIn && (
             <div className="mb-4 rounded-panel bg-primary-soft p-4">
               <Link href="/signin" variant="primary" block onClick={close}>
                 Sign in or Join Now
@@ -71,12 +72,9 @@ export function MobileNav({
           {/* Logged in: account menu. */}
           {loggedIn && <AccountNav onNavigate={close} />}
 
-          {/* Primary site links. */}
-          <div className="mt-1 border-t border-border pt-3">
-            <Caption as="div" weight={800} className="px-2.5 pb-1.5 uppercase tracking-[0.07em]">
-              Discover
-            </Caption>
-            <ul className="flex flex-col gap-0.5">
+          {/* Primary site links (only when there are any — currently none). */}
+          {NAV_LINKS.length > 0 && (
+            <MenuSection label="Discover" bordered>
               {NAV_LINKS.map((link) => (
                 <li key={link.label}>
                   <MenuItem href={link.href} icon={link.icon} iconSize={17} onSelect={close}>
@@ -84,16 +82,25 @@ export function MobileNav({
                   </MenuItem>
                 </li>
               ))}
-            </ul>
-          </div>
+            </MenuSection>
+          )}
 
           {/* Sign out (logged in only). */}
           {showAuthActions && loggedIn && (
-            <div className="mt-2 border-t border-border pt-3">
-              <MenuItem href="/auth/logout" icon={LogOut} iconSize={17} onSelect={close}>
-                Sign out
-              </MenuItem>
-            </div>
+            <MenuSection bordered>
+              <li>
+                <MenuItem
+                  icon={LogOut}
+                  iconSize={17}
+                  onSelect={() => {
+                    close();
+                    submitLogout();
+                  }}
+                >
+                  Sign out
+                </MenuItem>
+              </li>
+            </MenuSection>
           )}
         </div>
       </Drawer>
