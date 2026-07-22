@@ -6,7 +6,7 @@ const base: TourCardProps = {
   university: "Stanford University",
   guide: "Ada L.",
   durationMinutes: 45,
-  price: "$29.00",
+  price: 29,
 };
 
 function renderCard(overrides: Partial<TourCardProps> = {}) {
@@ -24,26 +24,22 @@ describe("TourCard", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders university and guide meta plus duration badge", () => {
+  it("renders the university · guide · duration meta line", () => {
     renderCard();
 
-    // University and guide render as separate elements (university truncates on
-    // overflow; the guide name — the key trust signal — always stays fully visible).
-    expect(screen.getByText("Stanford University")).toBeInTheDocument();
-    expect(screen.getByText("· Ada L.")).toBeInTheDocument();
-    expect(screen.getByText(/45\s*min/i)).toBeInTheDocument();
+    expect(screen.getByText("Stanford University · Ada L. · 45 min")).toBeInTheDocument();
   });
 
-  it("renders the pre-formatted price as-is", () => {
-    renderCard({ price: "$120.00" });
+  it("renders the price with a dollar sign", () => {
+    renderCard({ price: 120 });
 
-    expect(screen.getByText("$120.00")).toBeInTheDocument();
+    expect(screen.getByText("$120")).toBeInTheDocument();
   });
 
-  it("renders a free tour as $0.00", () => {
-    renderCard({ price: "$0.00" });
+  it("renders a free tour as $0", () => {
+    renderCard({ price: 0 });
 
-    expect(screen.getByText("$0.00")).toBeInTheDocument();
+    expect(screen.getByText("$0")).toBeInTheDocument();
   });
 
   it("renders the verified-guide badge and the inert View tour button", () => {
@@ -59,13 +55,11 @@ describe("TourCard", () => {
       university: "MIT",
       guide: "Grace H.",
       durationMinutes: 90,
-      price: "$55.00",
+      price: 55,
     });
 
     expect(screen.getByRole("heading", { name: "Night Tour of the Quad" })).toBeInTheDocument();
-    expect(screen.getByText("MIT")).toBeInTheDocument();
-    expect(screen.getByText("· Grace H.")).toBeInTheDocument();
-    expect(screen.getByText(/90\s*min/i)).toBeInTheDocument();
-    expect(screen.getByText("$55.00")).toBeInTheDocument();
+    expect(screen.getByText("MIT · Grace H. · 90 min")).toBeInTheDocument();
+    expect(screen.getByText("$55")).toBeInTheDocument();
   });
 });
