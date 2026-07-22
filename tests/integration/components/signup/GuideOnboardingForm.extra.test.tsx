@@ -250,14 +250,17 @@ describe("GuideOnboardingForm edge cases", () => {
     // Switch schools — the major field keeps its old value, but the new school's
     // majors list ("economics") no longer contains it.
     await user.click(screen.getByRole("button", { name: /Remove State University/i }));
-    await user.type(screen.getByPlaceholderText(/search universities/i), "tech");
+    // At max=1 the search input UNMOUNTS while State is selected and REMOUNTS (fresh, empty)
+    // once it's removed. Wait for that remounted input with findBy before typing — a bare
+    // getByPlaceholderText can grab the node mid-remount, so on a slow single-core CI runner
+    // user.type() lands keystrokes on an input that's being replaced and silently drops them,
+    // leaving "tech" unsearched and Tech Institute never selected (the flaky failure).
+    await user.type(await screen.findByPlaceholderText(/search universities/i), "tech");
     await user.click(await screen.findByRole("button", { name: /Tech Institute/i }));
 
+    // Wait for the switch to settle (setValue on "university" drives the majors query) before
+    // asserting: the new school's option only appears once selectedUniversity is u-2.
     const majorSelect = await screen.findByLabelText(/major/i);
-    // The switch settles asynchronously (remove → retype → repick refire setValue on the
-    // "university" field, which drives the majors query). Wait for the new school's option
-    // before asserting: a bare getByRole races that re-render and, on a single-core CI runner,
-    // intermittently reads the pre-switch state (disabled select, no Economics yet).
     expect(
       await within(majorSelect).findByRole("option", { name: "Economics" }),
     ).toBeInTheDocument();
