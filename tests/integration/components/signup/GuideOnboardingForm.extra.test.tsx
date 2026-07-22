@@ -1,5 +1,5 @@
 import { type ReactElement } from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
@@ -243,31 +243,25 @@ describe("GuideOnboardingForm edge cases", () => {
 
     await user.type(screen.getByLabelText(/first name/i), "Jordan");
     await user.type(screen.getByLabelText(/last name/i), "Lee");
-    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    // Drive the university search with fireEvent.change (one shot) rather than a per-character
+    // user.type: at max=1 the search input unmounts once a school is selected and remounts fresh
+    // after removal, and typing char-by-char into a just-remounted controlled input drops
+    // keystrokes on a slow single-core CI runner — leaving the query unsearched and the school
+    // never offered. Setting the value in a single change event sidesteps that race entirely.
+    fireEvent.change(screen.getByPlaceholderText(/search universities/i), {
+      target: { value: "state" },
+    });
     await user.click(await screen.findByRole("button", { name: /State University/i }));
     await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
 
     // Switch schools — the major field keeps its old value, but the new school's
-    // majors list ("economics") no longer contains it. This sequence is timing-sensitive on a
-    // slow single-core CI runner (it was flaky there while always passing locally), so every
-    // step waits for its own visible result before the next acts on the DOM.
+    // majors list ("economics") no longer contains it.
     await user.click(screen.getByRole("button", { name: /Remove State University/i }));
-    // At max=1 the search input unmounts while a school is selected and remounts (fresh, empty)
-    // once it's removed — wait for that remounted input before typing into it.
-    await user.type(await screen.findByPlaceholderText(/search universities/i), "tech");
-    // Select Tech, and confirm the selection actually took (its chip appears). Between
-    // findByRole and click the option node can be swapped out by an in-flight re-render, which
-    // silently no-ops user.click on a detached ref — so retry the click until the chip is there.
-    await waitFor(
-      async () => {
-        if (!screen.queryByRole("button", { name: /Remove Tech Institute/i })) {
-          const option = screen.queryByRole("button", { name: /Tech Institute/i });
-          if (option) await user.click(option);
-        }
-        expect(screen.getByRole("button", { name: /Remove Tech Institute/i })).toBeInTheDocument();
-      },
-      { timeout: 3000 },
-    );
+    // The input has remounted empty below max; set "tech" in one change event (see above).
+    fireEvent.change(await screen.findByPlaceholderText(/search universities/i), {
+      target: { value: "tech" },
+    });
+    await user.click(await screen.findByRole("button", { name: /Tech Institute/i }));
 
     // The switch has settled (Tech is selected → setValue drove the majors query). The new
     // school's option only exists once selectedUniversity is u-2.
