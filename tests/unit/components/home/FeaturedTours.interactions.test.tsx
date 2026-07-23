@@ -1,5 +1,38 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { FeaturedTours } from "@/components/home/FeaturedTours";
+import { useTourCatalog, type TourSummary } from "@/lib/data-access";
+
+jest.mock("@/lib/data-access", () => ({
+  useTourCatalog: jest.fn(),
+}));
+
+const mockUseTourCatalog = useTourCatalog as jest.MockedFunction<typeof useTourCatalog>;
+
+function tour(id: string): TourSummary {
+  return {
+    id,
+    title: `Tour ${id}`,
+    slug: id,
+    topic: "GENERAL_CAMPUS",
+    universityId: "u1",
+    universityName: "North Coast University",
+    guideId: "g1",
+    guideDisplayName: "Maya Chen",
+    guideMajor: "Computer Science",
+    guideDegree: "BS",
+    guideEntryYear: 2023,
+    durationMin: 60,
+    priceCents: 4200,
+    currency: "USD",
+    avgRating: 4.8,
+    reviewCount: 18,
+    languages: ["en-US"],
+    features: [],
+    isNew: false,
+  };
+}
+
+const NINE_TOURS: TourSummary[] = Array.from({ length: 9 }, (_, i) => tour(`t${i + 1}`));
 
 /**
  * The carousel paging math reads live layout (offsetLeft / clientWidth) and calls
@@ -14,6 +47,15 @@ describe("FeaturedTours carousel interactions", () => {
       configurable: true,
       value: scrollToSpy,
     });
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseTourCatalog.mockReturnValue({
+      data: { items: NINE_TOURS, page: 0, size: 20, totalPages: 1, totalElements: 9 },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useTourCatalog>);
   });
 
   function findScroller(container: HTMLElement): HTMLElement {

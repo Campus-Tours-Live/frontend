@@ -27,8 +27,7 @@ function toCardProps(tour: TourSummary): TourCardProps {
 
 export function FeaturedTours() {
   const { data: tours, isLoading, isError } = useTourCatalog();
-  const list = tours ?? [];
-  const showCarousel = !isLoading && !isError && list.length > 0;
+  const list = tours?.items ?? [];
 
   return (
     <Container as="section" width="wide" className="pb-[90px] pt-8">
@@ -65,7 +64,7 @@ export function FeaturedTours() {
       ) : list.length === 0 ? (
         <p className="text-ink-soft">No featured tours yet — check back soon.</p>
       ) : (
-        <TourCarousel tours={list.map(toCardProps)} />
+        <TourCarousel tours={list.map(toCardProps)} viewAllHref="/tours" />
       )}
     </Container>
   );
