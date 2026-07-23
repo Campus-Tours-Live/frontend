@@ -29,6 +29,16 @@ describe("List", () => {
     expect(container.querySelectorAll(".border-t")).toHaveLength(0);
   });
 
+  it("falls back to the array index as the key for a non-element child", () => {
+    // Plain strings aren't valid elements, so List can't key off `.key` — it must fall back to
+    // the array index without throwing, and still wrap each one in its own <li>.
+    render(<List aria-label="Strings">{["Dog", "Cat"]}</List>);
+    const items = screen.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Dog");
+    expect(items[1]).toHaveTextContent("Cat");
+  });
+
   it("skips falsy children so a hidden conditional row renders no empty li", () => {
     const show = false;
     render(
@@ -75,6 +85,24 @@ describe("ListItem", () => {
     );
     const row = screen.getByTestId("row");
     expect(row).not.toHaveClass("px-5", "py-3.5", "sm:px-6");
+  });
+
+  it("uses full-ink text for the label when there is no title above it", () => {
+    render(<ListItem>Just a label</ListItem>);
+    expect(screen.getByText("Just a label")).toHaveClass("text-ink");
+  });
+
+  it("mutes the label's colour when a title sits above it", () => {
+    render(<ListItem title="Vehicle">2020 Toyota</ListItem>);
+    expect(screen.getByText("2020 Toyota")).toHaveClass("text-ink-soft");
+  });
+
+  it("renders no body line when there are no children (title only)", () => {
+    render(<ListItem title="Vehicle" data-testid="row" />);
+    const titleEl = screen.getByText("Vehicle");
+    // The title's Body is the only child of the content wrapper — no second Body for a
+    // missing label line.
+    expect(titleEl.parentElement?.children).toHaveLength(1);
   });
 
   it("passes through onClick / data-* attributes", async () => {

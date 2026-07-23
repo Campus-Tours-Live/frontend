@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Divider, Link, List, MenuItem } from "@/components/ui";
 import { useDropdown } from "@/hooks";
 import { useMe } from "@/lib/data-access";
+import { submitLogout } from "@/lib/auth/logout";
 import { NAV_LINKS } from "./NavLinks";
 
 /**
@@ -57,7 +58,7 @@ export function HeaderNav({
   showDashboard?: boolean;
   showAuthActions?: boolean;
 }) {
-  const { me, isLoading, isOnboarded } = useMe();
+  const { me, isLoading, isOnboarded, sessionUnverified } = useMe();
   const dd = useDropdown();
 
   // Logged-in = you are a member (hold ≥1 role). A member stays logged-in even while
@@ -84,7 +85,7 @@ export function HeaderNav({
         </Link>
       ))}
 
-      {showAuthActions && !isLoading ? (
+      {showAuthActions && !isLoading && !sessionUnverified ? (
         <div onMouseEnter={dd.openNow} onMouseLeave={dd.scheduleClose}>
           <button
             type="button"
@@ -125,7 +126,14 @@ export function HeaderNav({
 
                 <Divider className="my-1" />
 
-                <MenuItem role="menuitem" icon={LogOut} href="/auth/logout" onSelect={dd.close}>
+                <MenuItem
+                  role="menuitem"
+                  icon={LogOut}
+                  onSelect={() => {
+                    dd.close();
+                    submitLogout();
+                  }}
+                >
                   Sign out
                 </MenuItem>
               </>

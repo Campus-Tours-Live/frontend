@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import userEvent from "@testing-library/user-event";
 import { RoleSwitcher } from "@/components/site/RoleSwitcher";
 import { useMe, useSetActiveRole } from "@/lib/data-access";
@@ -137,6 +138,22 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Guide" }));
 
     expect(await screen.findByText(/couldn.t switch right now/i)).toBeInTheDocument();
+  });
+
+  it("attributes a dismissed sign-in prompt to auth, not to the switch failing", async () => {
+    // N1a Symptom A′: the role switch never ran, so "couldn't switch right now, please try
+    // again" would send the user retrying an action that was never the problem.
+    setupMe({ activeRole: "PARTICIPANT", roles: ["PARTICIPANT", "GUIDE"] });
+    setupSetActiveRole({
+      mutateAsync: jest.fn().mockRejectedValue(new AuthCancelledError()),
+    });
+
+    render(<RoleSwitcher />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Guide" }));
+
+    expect(await screen.findByText(SIGN_IN_AGAIN_MESSAGE)).toBeInTheDocument();
+    expect(screen.queryByText(/couldn.t switch right now/i)).not.toBeInTheDocument();
   });
 
   it("disables both toggle buttons while a switch is pending", () => {

@@ -457,6 +457,37 @@ describe("MonthAvailabilityView — self-sufficient month cursor", () => {
   });
 });
 
+describe("MonthAvailabilityView — resolved data still loading", () => {
+  it("renders every day as unavailable while resolvedQuery.data is still loading (no occurrences yet)", () => {
+    mockUseResolvedAvailability.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
+
+    renderView();
+
+    expect(screen.getByTestId("calendar-day-2026-07-10")).toHaveAttribute("data-muted", "true");
+    expect(screen.queryByTestId("density-2026-07-10")).not.toBeInTheDocument();
+  });
+});
+
+describe("MonthAvailabilityView — day sheet action label while exceptions are still loading", () => {
+  it("labels the sheet action 'Add override' (not 'Edit') while exceptionsQuery.data is still loading", () => {
+    setResolved([{ startAt: "2026-07-22T14:00:00Z", endAt: "2026-07-22T15:00:00Z" }]);
+    mockUseAvailabilityExceptions.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
+
+    renderView({ daySheetDate: "2026-07-22" });
+
+    const sheet = screen.getByRole("dialog", { name: /Availability for 2026-07-22/i });
+    expect(within(sheet).getByRole("button", { name: "Add override" })).toBeInTheDocument();
+  });
+});
+
 describe("MonthAvailabilityView — month navigation", () => {
   it("moves to the next/previous month and keeps rendering day cells", async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

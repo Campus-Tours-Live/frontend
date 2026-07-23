@@ -50,6 +50,17 @@ describe("Field", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("omits the label id and description id when htmlFor is not given", () => {
+    render(
+      <Field label="Name" description="Help text">
+        <input aria-label="bare" />
+      </Field>,
+    );
+    const label = screen.getByText("Name").closest("label");
+    expect(label).not.toHaveAttribute("id");
+    expect(screen.getByText("Help text")).not.toHaveAttribute("id");
+  });
+
   it("merges a custom className onto the field wrapper", () => {
     const { container } = render(
       <Field className="extra">

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Alert, Link, SectionHeading } from "@/components/ui";
+import { Alert, Container, Link, SectionHeading } from "@/components/ui";
 import { type TourCardProps } from "@/components/tours/TourCard";
 import { TourCarousel } from "@/components/tours/TourCarousel";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
@@ -31,16 +31,22 @@ export function FeaturedTours() {
   const showCarousel = !isLoading && !isError && list.length > 0;
 
   return (
-    <section className="mx-auto max-w-content px-6 pb-[90px] pt-8 xl:max-w-[1280px] 2xl:max-w-[1400px]">
-      <div className="mb-6 flex items-end justify-between gap-5">
-        <SectionHeading eyebrow="Featured tours" title="Start with a campus that feels right." />
-        {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
-        {showCarousel ? (
-          <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
+    <Container as="section" width="wide" className="pb-[90px] pt-8">
+      <SectionHeading
+        eyebrow="Featured tours"
+        title="Start with a campus that feels right."
+        level={2}
+        className="mb-6"
+        // Desktop "View all" (mobile gets its own CTA below the stack)
+        action={
+          <Link
+            href="/tours"
+            className="hidden shrink-0 font-semibold text-primary lg:inline-block"
+          >
             View all tours
           </Link>
-        ) : null}
-      </div>
+        }
+      />
 
       {isError ? (
         <Alert variant="error">Couldn&apos;t load featured tours. Please try again later.</Alert>
@@ -61,6 +67,6 @@ export function FeaturedTours() {
       ) : (
         <TourCarousel tours={list.map(toCardProps)} />
       )}
-    </section>
+    </Container>
   );
 }

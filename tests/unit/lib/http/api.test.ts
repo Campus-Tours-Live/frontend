@@ -95,11 +95,11 @@ describe("apiFetch request construction", () => {
     });
   });
 
-  it("does not forward the apiFetch-only flags (interactive / retryAfterAuth) to fetch", async () => {
+  it("does not forward the apiFetch-only flags (escalate / retryAfterAuth) to fetch", async () => {
     fetchMock.mockResolvedValue(makeRes({ status: 200 }));
 
     await apiFetch("/v1/userinfo", {
-      interactive: true,
+      escalate: "prompt",
       retryAfterAuth: true,
     });
 
@@ -215,21 +215,24 @@ describe("apiFetch re-auth gate (interactive)", () => {
   });
 });
 
-describe("apiFetch ambient mode (interactive: false)", () => {
+// N3 renamed this mode: `escalate: "none"` is the public-resource opt-out. The genuinely
+// "ambient" case (a background principal read) is now its own mode and raises a notice —
+// see tests/unit/lib/http/escalation.test.ts.
+describe('apiFetch public-resource mode (escalate: "none")', () => {
   it("returns a re-auth 401 as-is without opening the gate", async () => {
     const res = makeRes({ status: 401, headers: REAUTH_HEADER });
     fetchMock.mockResolvedValue(res);
 
-    await expect(apiFetch("/v1/userinfo", { interactive: false })).resolves.toBe(res);
+    await expect(apiFetch("/v1/userinfo", { escalate: "none" })).resolves.toBe(res);
     expect(mockedRequireAuth).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("never cancels the body in ambient mode (caller may read the 401)", async () => {
+  it("never cancels the body in this mode (caller may read the 401)", async () => {
     const res = makeRes({ status: 401, headers: REAUTH_HEADER });
     fetchMock.mockResolvedValue(res);
 
-    await apiFetch("/v1/userinfo", { interactive: false });
+    await apiFetch("/v1/userinfo", { escalate: "none" });
 
     expect((res.body as unknown as { cancel: jest.Mock }).cancel).not.toHaveBeenCalled();
   });

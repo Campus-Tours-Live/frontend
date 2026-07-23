@@ -12,7 +12,18 @@ export {
   subscribeAuthGate,
   requireAuth,
   completeAuth,
+  advanceAuthEpoch,
   cancelAuth,
   resetAuthGate,
   AuthCancelledError,
+  SIGN_IN_AGAIN_MESSAGE,
+  isAuthCancelled,
 } from "./authGate";
+export {
+  subscribeAuthNotice,
+  notifyAuthNotice,
+  clearAuthNotice,
+  getAuthNotice,
+  type AuthNoticeState,
+  type AuthNotice,
+} from "./authNotice";

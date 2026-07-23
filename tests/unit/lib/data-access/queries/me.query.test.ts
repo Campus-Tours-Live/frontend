@@ -21,7 +21,7 @@ describe("meOptions", () => {
     expect(meOptions().queryKey).toEqual(["me"]);
   });
 
-  it("queryFn fetches /v1/userinfo with interactive:false and returns the user on 200", async () => {
+  it("queryFn fetches /v1/userinfo as an ambient read and returns the user on 200", async () => {
     const me = { id: "me-1" };
     mockedApiJson.mockResolvedValue(me as never);
 
@@ -29,7 +29,11 @@ describe("meOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/userinfo", { interactive: false });
+    // "ambient" (N3), not the old `interactive: false` and not a bare interactive call:
+    // useMe only issues this once the session probe said authenticated, so a re-auth 401 is
+    // a DEAD session that must be REPORTED — but through the banner, not by seizing a page
+    // the user never asked to leave. See me-ambient.test.ts for that behaviour.
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/userinfo", { escalate: "ambient" });
     expect(result).toBe(me);
   });
 

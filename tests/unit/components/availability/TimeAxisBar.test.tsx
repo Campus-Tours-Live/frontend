@@ -1,11 +1,19 @@
 import { render, screen, within } from "@testing-library/react";
 import {
+  SEGMENT_NAME,
   TimeAxis,
   TimeAxisBar,
   TimeAxisLegend,
   minToPercent,
+  resolveAxisDomain,
   type TimeAxisSegment,
 } from "@/components/availability/TimeAxisBar";
+
+describe("SEGMENT_NAME", () => {
+  it("maps each segment kind to its legend-facing label", () => {
+    expect(SEGMENT_NAME).toEqual({ available: "Available", off: "Time off", extra: "Extra" });
+  });
+});
 
 describe("minToPercent", () => {
   it("maps a minute-of-day to a clamped percentage across the range", () => {
@@ -22,6 +30,24 @@ describe("minToPercent", () => {
 
   it("never divides by zero for a degenerate range", () => {
     expect(minToPercent(600, 600, 600)).toBe(0);
+  });
+});
+
+describe("resolveAxisDomain", () => {
+  it("defaults to the full day [0, 1440] when there is no explicit domain and no segments", () => {
+    expect(resolveAxisDomain([], undefined, undefined)).toEqual({ startMin: 0, endMin: 1440 });
+  });
+
+  it("bumps a degenerate self-derived domain (start === end after hour-padding) forward by one hour", () => {
+    // A single zero-width, on-the-hour segment (600-600) pads to the SAME start/end, which would
+    // divide by zero downstream (minToPercent's span) — bumped to a 1-hour span instead.
+    const segments: TimeAxisSegment[] = [
+      { startMin: 600, endMin: 600, kind: "available", label: "10:00 AM – 10:00 AM" },
+    ];
+    expect(resolveAxisDomain(segments, undefined, undefined)).toEqual({
+      startMin: 600,
+      endMin: 660,
+    });
   });
 });
 

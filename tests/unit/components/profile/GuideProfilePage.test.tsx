@@ -11,6 +11,7 @@ jest.mock("@/lib/data-access", () => ({
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
   }),
+  useMajors: () => ({ data: [], isLoading: false }),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({

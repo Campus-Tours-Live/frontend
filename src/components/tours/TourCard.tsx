@@ -13,7 +13,7 @@ export interface TourCardProps {
   university: string;
   guide: string;
   durationMinutes: number;
-  /** Locale/currency-formatted price (see formatOfferingPrice), e.g. "$42.00". */
+  /** Pre-formatted currency string, e.g. from {@link formatOfferingPrice} — already includes the symbol. */
   price: string;
 }
 
@@ -22,22 +22,17 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
     <Card
       as="article"
       padded={false}
-      className="group flex h-full flex-col overflow-hidden transition-all duration-200 hover:-translate-y-[3px] hover:border-sage hover:shadow-[0_14px_34px_rgba(47,52,55,0.09)]"
+      className="flex h-full flex-col overflow-hidden rounded-[18px]"
     >
       {/* Image placeholder — imported editorial campus crop */}
-      <div className="relative flex h-[150px] shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-sage-soft to-canvas">
-        <Icon icon={ImageIcon} size={28} strokeWidth={1.5} className="text-ink-soft/35" />
-        <StatusBadge variant="success" className="absolute left-3 top-3 shadow-sm">
+      <div className="flex h-[150px] items-center justify-center bg-canvas">
+        <Icon icon={ImageIcon} size={32} strokeWidth={1.5} className="text-ink-soft/35" />
+      </div>
+      <div className="flex flex-1 flex-col p-[18px]">
+        <StatusBadge variant="success" className="self-start">
           Verified guide
         </StatusBadge>
-        <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-pill bg-card px-2.5 py-1 text-[12px] font-semibold text-ink shadow-sm">
-          <Icon icon={Clock} size={12} strokeWidth={2} />
-          {durationMinutes} min
-        </span>
-      </div>
-
-      <div className="card-pad flex flex-1 flex-col">
-        <Heading as="h4" size="h4" className="mb-1.5 min-h-[2.6em]">
+        <Heading as="h4" size="h4" className="mb-1.5 mt-3.5 min-h-[2.6em]">
           <LineClamp lines={2}>{title}</LineClamp>
         </Heading>
         <Body as="div" size="small" color="muted" className="flex items-center gap-1.5">
@@ -51,16 +46,17 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
           </Link>
           <span className="shrink-0">· {guide}</span>
         </Body>
-
+        <Body as="div" size="small" color="muted" className="mt-1.5 flex items-center gap-1.5">
+          <Icon icon={Clock} size={14} className="shrink-0" />
+          <span>{durationMinutes} min</span>
+        </Body>
         <div className="mt-auto flex items-center justify-between pt-4">
+          {/* Off-scale on purpose: the price is the card's most prominent number; 18px has no
+              type token and Heading would switch it to the display serif. */}
           <span className="text-[18px] font-extrabold text-ink">{price}</span>
-          <Button variant="secondary" size="small" className="gap-1.5">
+          <Button variant="secondary" size="small" className="flex items-center gap-1.5">
             View tour
-            <Icon
-              icon={MoveRight}
-              size={14}
-              className="transition-transform duration-200 group-hover:translate-x-0.5"
-            />
+            <Icon icon={MoveRight} size={14} />
           </Button>
         </div>
       </div>

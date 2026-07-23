@@ -97,4 +97,26 @@ describe("FocusTrap", () => {
     await user.click(screen.getByText("close"));
     expect(screen.getByText("opener")).toHaveFocus();
   });
+
+  it("ignores keys other than Tab", () => {
+    render(<Harness />);
+    const first = screen.getByText("first");
+    expect(first).toHaveFocus();
+    const notPrevented = fireEvent.keyDown(first, { key: "a" });
+    // Falls through the disabled/non-Tab guard without touching focus or the event.
+    expect(notPrevented).toBe(true);
+    expect(first).toHaveFocus();
+  });
+
+  it("prevents Tab (with no wrap) when the trap has no focusable children", () => {
+    render(
+      <FocusTrap>
+        <span>no focusable content</span>
+      </FocusTrap>,
+    );
+    const root = screen.getByText("no focusable content").parentElement as HTMLElement;
+    // dispatchEvent (what fireEvent returns) is false only when preventDefault() was called.
+    const notPrevented = fireEvent.keyDown(root, { key: "Tab" });
+    expect(notPrevented).toBe(false);
+  });
 });

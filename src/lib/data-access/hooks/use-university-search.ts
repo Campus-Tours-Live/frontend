@@ -9,7 +9,12 @@ import { universitySearchOptions } from "../queries/universities.query";
  * request cancellation (React Query's signal), and caching — callers pass the raw
  * query and an `enabled` flag.
  */
-export function useUniversitySearch(query: string, options?: { enabled?: boolean }) {
+export function useUniversitySearch(
+  query: string,
+  options?: { enabled?: boolean; source?: "catalog" | "live" },
+) {
   const debounced = useDebounced(query, 250);
-  return useQuery(universitySearchOptions(debounced, options?.enabled ?? true));
+  return useQuery(
+    universitySearchOptions(debounced, options?.enabled ?? true, options?.source ?? "catalog"),
+  );
 }

@@ -26,8 +26,9 @@ const config = {
   // "html" → coverage/lcov-report/index.html (the istanbul HTML report), regenerated
   // on every run. "text"/"text-summary" print to the terminal; "lcov" feeds CI tools.
   coverageReporters: ["text", "text-summary", "html", "lcov"],
-  // Coverage gate (`npm run test:coverage`): a 90% floor across the board — identical to
-  // the BFF and Core repos. Only enforced on coverage runs; a plain `npm test` is unaffected.
+  // Coverage gate: a 90% floor across the board — identical to the BFF and Core repos.
+  // Enforced on every run — `collectCoverage` is on, so the threshold applies to a plain
+  // `npm test` too, not just `npm run test:coverage`.
   coverageThreshold: {
     global: { statements: 90, functions: 90, lines: 90, branches: 90 },
   },

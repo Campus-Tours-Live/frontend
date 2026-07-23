@@ -53,4 +53,16 @@ describe("Radio", () => {
     expect(radio).toBeInTheDocument();
     expect(ref.current).toBe(radio);
   });
+
+  it("defaults to unchecked when `checked` is omitted", () => {
+    render(<Radio name="plan" value="mo" label="Monthly" onChange={jest.fn()} />);
+    expect(screen.getByRole("radio", { name: "Monthly" })).not.toBeChecked();
+  });
+
+  it("dims the filled dot when disabled and checked", () => {
+    render(<Radio name="p" value="x" label="X" disabled checked onChange={jest.fn()} />);
+    const radio = screen.getByRole("radio", { name: "X" });
+    const dot = radio.parentElement?.querySelector("span[aria-hidden] > span");
+    expect(dot).toHaveClass("bg-border");
+  });
 });

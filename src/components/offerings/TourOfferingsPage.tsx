@@ -14,6 +14,7 @@ import {
 import { useMe, useOfferings, useTourTopics, type Offering } from "@/lib/data-access";
 import { OfferingCard } from "./OfferingCard";
 import { filterOfferings, type OfferingFilter } from "./offeringStatus";
+import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 
 const FILTERS: { id: OfferingFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -24,7 +25,7 @@ const FILTERS: { id: OfferingFilter; label: string }[] = [
 
 export function TourOfferingsPage() {
   const { me } = useMe();
-  const { data: offerings = [], isLoading, isError } = useOfferings();
+  const { data: offerings = [], isLoading, isError, error } = useOfferings();
   const { data: topics = [] } = useTourTopics();
   const [filter, setFilter] = useState<OfferingFilter>("all");
 
@@ -56,7 +57,9 @@ export function TourOfferingsPage() {
 
       {isLoading ? <InlineLoading label="Loading offerings…" /> : null}
 
-      {isError ? <Alert variant="error">Failed to load your tour offerings.</Alert> : null}
+      {isError ? (
+        <QueryErrorAlert error={error}>Failed to load your tour offerings.</QueryErrorAlert>
+      ) : null}
 
       {!isLoading && !isError && visible.length === 0 ? (
         <Alert variant="info">

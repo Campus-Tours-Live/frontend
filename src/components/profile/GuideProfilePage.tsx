@@ -1,9 +1,10 @@
 "use client";
 
-import { Alert, Body, Card, SectionHeading, Spinner, StatusBadge } from "@/components/ui";
+import { Alert, Body, Card, InlineLoading, SectionHeading, StatusBadge } from "@/components/ui";
 import { useGuideProfile, useMe } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
+import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import {
   applicationStatusLabel,
   applicationStatusVariant,
@@ -12,19 +13,14 @@ import {
 
 export function GuideProfilePage() {
   const { me } = useMe();
-  const { data: profile, isLoading, isError } = useGuideProfile();
+  const { data: profile, isLoading, isError, error } = useGuideProfile();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 text-ink-soft">
-        <Spinner />
-        Loading profile…
-      </div>
-    );
+    return <InlineLoading label="Loading profile…" />;
   }
 
   if (isError || !profile) {
-    return <Alert variant="error">Failed to load your guide profile.</Alert>;
+    return <QueryErrorAlert error={error}>Failed to load your guide profile.</QueryErrorAlert>;
   }
 
   return (
@@ -42,19 +38,25 @@ export function GuideProfilePage() {
             <Body as="dt" size="small" color="muted">
               Display name
             </Body>
-            <dd className="font-semibold text-ink">{profile.displayName ?? "—"}</dd>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {profile.displayName ?? "—"}
+            </Body>
           </div>
           <div>
             <Body as="dt" size="small" color="muted">
               Email
             </Body>
-            <dd className="font-semibold text-ink">{profile.email ?? "—"}</dd>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {profile.email ?? "—"}
+            </Body>
           </div>
           <div>
             <Body as="dt" size="small" color="muted">
               Member since
             </Body>
-            <dd className="font-semibold text-ink">{formatMonthYear(me?.createdAt)}</dd>
+            <Body as="dd" size="small" weight={600} color="ink">
+              {formatMonthYear(me?.createdAt)}
+            </Body>
           </div>
           <div>
             <Body as="dt" size="small" color="muted">
@@ -70,9 +72,9 @@ export function GuideProfilePage() {
             <Body as="dt" size="small" color="muted">
               Verification
             </Body>
-            <dd className="font-semibold text-ink">
+            <Body as="dd" size="small" weight={600} color="ink">
               {verificationStatusLabel(profile.verificationStatus)}
-            </dd>
+            </Body>
           </div>
         </dl>
       </Card>

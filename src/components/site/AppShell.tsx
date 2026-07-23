@@ -1,3 +1,4 @@
+import { Container } from "@/components/ui";
 import { SiteHeader } from "./SiteHeader";
 import { AccountSidebar } from "./AccountSidebar";
 
@@ -21,10 +22,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           row height = max(sidebar, content)), NOT on the sticky sidebar — so the line tracks the
           taller right-hand content and never stops short at the menu's end, while still keeping a
           minimum length of the sidebar height on short pages. */}
-      <div className="mx-auto max-w-content px-6 pb-24 pt-10 lg:grid lg:grid-cols-[256px_1fr]">
+      <Container className="pb-24 pt-10 lg:grid lg:grid-cols-[256px_1fr]">
         <AccountSidebar />
         <section className="min-w-0 lg:border-l lg:border-border lg:pl-10">{children}</section>
-      </div>
+      </Container>
     </main>
   );
 }
