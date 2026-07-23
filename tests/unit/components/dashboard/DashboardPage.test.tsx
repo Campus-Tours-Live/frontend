@@ -15,6 +15,7 @@ const mockUseDashboard = useDashboard as jest.Mock;
 const guideData: GuideDashboard = {
   kind: "guide",
   guide: {
+    firstName: "Ada",
     displayName: "Ada Lovelace",
     email: "ada@example.com",
     major: "Computer Science",
@@ -95,15 +96,13 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Failed to load your dashboard");
   });
 
-  it("renders the guide summary branch when data.kind is 'guide'", () => {
+  it("renders the guide dashboard branch when data.kind is 'guide'", () => {
     setHook({ data: guideData });
     render(<DashboardPage />);
 
-    // Guide-specific signals: the guide's name + the guide role pill.
-    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
-    expect(screen.getByText("Student Guide")).toBeInTheDocument();
-    // Offerings row (guide-only) reflects offerings.length.
-    expect(screen.getByText("Offerings")).toBeInTheDocument();
+    // Guide-specific signals: eyebrow label + firstName in the greeting.
+    expect(screen.getByText("Guide Dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ada");
 
     // It should NOT render the participant welcome heading.
     expect(screen.queryByText(/Your participant profile is saved\./)).not.toBeInTheDocument();

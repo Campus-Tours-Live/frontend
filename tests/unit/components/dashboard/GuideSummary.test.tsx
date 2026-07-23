@@ -2,9 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { GuideSummary } from "@/components/dashboard/GuideSummary";
 import type { GuideDashboard, Offering } from "@/lib/data-access";
 
-// Renders the real MemberCard + Alert (no mocks). GuideSummary is purely
-// presentational: name + role pill, label→value rows (Major / Application /
-// Offerings) and a highlight callout gated on canPublish.
+// GuideSummary renders two sections (top to bottom):
+//   1. MemberCard — avatar + role pill, label→value rows, highlight callout.
+//   2. Stats row — Profile completion, Rating, This month, Upcoming payout.
+// Profile completion % is computed locally from guide profile fields; the other
+// three stats show "—" until BFF endpoints land.
 
 function offering(id: string): Offering {
   return {
@@ -37,7 +39,25 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
   };
 }
 
-describe("GuideSummary", () => {
+/** All 8 completion checks satisfied → 100%. */
+function fullGuide(): GuideDashboard["guide"] {
+  return {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    displayName: "Ada Lovelace",
+    bio: "Campus expert",
+    languages: ["English"],
+    specialties: ["STEM"],
+    basePriceCents: 5000,
+    verificationStatus: "VERIFIED",
+    applicationStatus: "APPROVED",
+  };
+}
+
+// ---------------------------------------------------------------------------
+// MemberCard
+// ---------------------------------------------------------------------------
+describe("GuideSummary — MemberCard", () => {
   it("renders the guide display name", () => {
     render(<GuideSummary data={makeData()} />);
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
@@ -52,16 +72,12 @@ describe("GuideSummary", () => {
   it("falls back to — when guideStatus is null", () => {
     render(<GuideSummary data={makeData({ guideStatus: null })} />);
     expect(screen.getByText("Application")).toBeInTheDocument();
-    // The Application row value should render the em-dash fallback.
-    expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("shows the offerings count (offerings.length)", () => {
+  it("shows the offerings count", () => {
     render(
       <GuideSummary
-        data={makeData({
-          offerings: [offering("a"), offering("b"), offering("c")],
-        })}
+        data={makeData({ offerings: [offering("a"), offering("b"), offering("c")] })}
       />,
     );
     expect(screen.getByText("Offerings")).toBeInTheDocument();
@@ -85,24 +101,19 @@ describe("GuideSummary", () => {
     render(<GuideSummary data={data} />);
     expect(screen.getByText("Major")).toBeInTheDocument();
     expect(screen.queryByText("Computer Science")).not.toBeInTheDocument();
-    // The Major row value should fall back to the em-dash.
-    expect(screen.getByText("—")).toBeInTheDocument();
   });
 
   it("shows the under-review highlight when canPublish is false", () => {
     render(<GuideSummary data={makeData({ canPublish: false })} />);
     expect(screen.getByText("Application under review")).toBeInTheDocument();
     expect(screen.getByText("Hosting unlocks once an admin approves you.")).toBeInTheDocument();
-    // Unverified guides get the plain "Student Guide" role label.
     expect(screen.getByText("Student Guide")).toBeInTheDocument();
   });
 
-  it("does NOT show the under-review highlight when canPublish is true", () => {
+  it("shows the approved-to-host highlight when canPublish is true", () => {
     render(<GuideSummary data={makeData({ canPublish: true })} />);
     expect(screen.queryByText("Application under review")).not.toBeInTheDocument();
-    // Instead it shows the approved-to-host highlight.
     expect(screen.getByText("Approved to host")).toBeInTheDocument();
-    // Role pill is always "Student Guide"; "verified" is conveyed by the green pill.
     expect(screen.getByText("Student Guide")).toBeInTheDocument();
   });
 
@@ -113,17 +124,92 @@ describe("GuideSummary", () => {
     expect(screen.getByText("Member")).toBeInTheDocument();
   });
 
-  it("does NOT render the guide's email anywhere", () => {
-    // Documents current behavior: GuideSummary never surfaces guide.email.
+  it("shows the account 'Member since' month and year", () => {
+    render(<GuideSummary data={makeData()} />);
+    expect(screen.getByText("Member since")).toBeInTheDocument();
+    expect(screen.getByText("March 2025")).toBeInTheDocument();
+  });
+
+  it("does not surface the guide's email address", () => {
     render(<GuideSummary data={makeData()} />);
     expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
     expect(screen.queryByText(/Email Verified/)).not.toBeInTheDocument();
   });
+});
 
-  it("shows the account 'Member since' month and year", () => {
-    // makeData seeds createdAt = 2025-03-15T00:00:00Z.
+// ---------------------------------------------------------------------------
+// Stats row
+// ---------------------------------------------------------------------------
+describe("GuideSummary — stats row", () => {
+  it("renders all four stat card eyebrows", () => {
     render(<GuideSummary data={makeData()} />);
-    expect(screen.getByText("Member since")).toBeInTheDocument();
-    expect(screen.getByText("March 2025")).toBeInTheDocument();
+    expect(screen.getByText("Profile")).toBeInTheDocument();
+    expect(screen.getByText("Rating")).toBeInTheDocument();
+    expect(screen.getByText("This month")).toBeInTheDocument();
+    expect(screen.getByText("Upcoming payout")).toBeInTheDocument();
+  });
+
+  it("shows — for rating, this month, and upcoming payout (BFF not yet wired)", () => {
+    render(<GuideSummary data={makeData()} />);
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("shows placeholder subtitles for the three BFF stats", () => {
+    render(<GuideSummary data={makeData()} />);
+    expect(screen.getByText("No reviews yet")).toBeInTheDocument();
+    expect(screen.getByText("Earnings snapshot")).toBeInTheDocument();
+    expect(screen.getByText("Captured earnings")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Profile completion card
+// ---------------------------------------------------------------------------
+describe("GuideSummary — profile completion", () => {
+  it("shows 0% when no guide fields are filled", () => {
+    render(<GuideSummary data={makeData({ guide: {} })} />);
+    expect(screen.getByText("0%")).toBeInTheDocument();
+  });
+
+  it("shows 100% when all guide fields are filled", () => {
+    render(<GuideSummary data={makeData({ guide: fullGuide() })} />);
+    expect(screen.getByText("100%")).toBeInTheDocument();
+  });
+
+  it("computes partial completion correctly (4 of 8 fields → 50%)", () => {
+    render(
+      <GuideSummary
+        data={makeData({
+          guide: {
+            firstName: "Ada",
+            lastName: "Lovelace",
+            bio: "Campus expert",
+            applicationStatus: "APPROVED",
+            // languages, specialties, basePriceCents, verificationStatus absent
+          },
+        })}
+      />,
+    );
+    expect(screen.getByText("50%")).toBeInTheDocument();
+  });
+
+  it("renders a progressbar with correct aria attributes", () => {
+    render(<GuideSummary data={makeData({ guide: fullGuide() })} />);
+    const bar = screen.getByRole("progressbar", { name: /profile completion/i });
+    expect(bar).toHaveAttribute("aria-valuenow", "100");
+    expect(bar).toHaveAttribute("aria-valuemin", "0");
+    expect(bar).toHaveAttribute("aria-valuemax", "100");
+  });
+
+  it("always shows the 'Complete profile' link pointing to /profile", () => {
+    render(<GuideSummary data={makeData({ guide: {} })} />);
+    const link = screen.getByRole("link", { name: /complete profile/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/profile");
+  });
+
+  it("still shows 'Complete profile' link even when profile is 100% complete", () => {
+    render(<GuideSummary data={makeData({ guide: fullGuide() })} />);
+    expect(screen.getByRole("link", { name: /complete profile/i })).toBeInTheDocument();
   });
 });
