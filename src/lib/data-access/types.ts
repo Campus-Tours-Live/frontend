@@ -66,6 +66,8 @@ export interface Offering {
   priceCents: number;
   currency: string;
   description?: string | null;
+  languages?: string[];
+  features?: string[];
 }
 
 /** Body for POST /v1/guide/offerings — creates a DRAFT offering. */
@@ -77,6 +79,8 @@ export interface CreateOfferingInput {
   priceCents: number;
   description?: string;
   languages?: string[];
+  /** Feature codes from GET /v1/meta/tour-features for the chosen topic (max 3). */
+  features?: string[];
 }
 
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */

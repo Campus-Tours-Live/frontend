@@ -21,10 +21,32 @@ const mockUseTourTopics = jest.fn(() => ({
   data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
   isLoading: false,
 }));
+const mockUseLanguages = jest.fn(() => ({
+  data: [
+    { value: "en-US", label: "English" },
+    { value: "es", label: "Spanish" },
+  ],
+  isLoading: false,
+}));
+const mockUseTourFeatures = jest.fn(() => ({
+  byTopic: {
+    GENERAL_CAMPUS: [
+      { value: "Q_AND_A", label: "Q&A" },
+      { value: "HIDDEN_SPOTS", label: "Hidden spots" },
+      { value: "PHOTOS_OK", label: "Photos allowed" },
+      { value: "SMALL_GROUP", label: "Small group" },
+    ],
+  },
+  labelByCode: {},
+  isLoading: false,
+  isError: false,
+}));
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useCreateOffering: () => ({ mutateAsync, isPending: false }),
   useTourTopics: () => mockUseTourTopics(),
+  useLanguages: () => mockUseLanguages(),
+  useTourFeatures: () => mockUseTourFeatures(),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({
@@ -62,6 +84,26 @@ beforeEach(() => {
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
   });
+  mockUseLanguages.mockReturnValue({
+    data: [
+      { value: "en-US", label: "English" },
+      { value: "es", label: "Spanish" },
+    ],
+    isLoading: false,
+  });
+  mockUseTourFeatures.mockReturnValue({
+    byTopic: {
+      GENERAL_CAMPUS: [
+        { value: "Q_AND_A", label: "Q&A" },
+        { value: "HIDDEN_SPOTS", label: "Hidden spots" },
+        { value: "PHOTOS_OK", label: "Photos allowed" },
+        { value: "SMALL_GROUP", label: "Small group" },
+      ],
+    },
+    labelByCode: {},
+    isLoading: false,
+    isError: false,
+  });
 });
 
 describe("CreateOfferingForm", () => {
@@ -72,6 +114,8 @@ describe("CreateOfferingForm", () => {
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
     await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    await user.click(screen.getByRole("button", { name: "Q&A" }));
+    await user.click(screen.getByRole("button", { name: "Spanish" }));
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
     expect(mutateAsync).toHaveBeenCalledWith({
@@ -81,7 +125,8 @@ describe("CreateOfferingForm", () => {
       durationMin: 60,
       priceCents: 4200,
       description: undefined,
-      languages: ["en-US"],
+      languages: ["en-US", "es"],
+      features: ["Q_AND_A"],
     });
     expect(push).toHaveBeenCalledWith("/guide/tour-offerings");
   });
@@ -162,5 +207,17 @@ describe("CreateOfferingForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Could not save this offering. Please try again.",
     );
+  });
+
+  it("caps feature selection at three", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    await user.click(screen.getByRole("button", { name: "Q&A" }));
+    await user.click(screen.getByRole("button", { name: "Hidden spots" }));
+    await user.click(screen.getByRole("button", { name: "Photos allowed" }));
+
+    expect(screen.getByRole("button", { name: "Small group" })).toBeDisabled();
   });
 });
