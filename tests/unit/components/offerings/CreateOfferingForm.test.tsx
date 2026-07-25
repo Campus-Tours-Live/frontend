@@ -220,4 +220,56 @@ describe("CreateOfferingForm", () => {
 
     expect(screen.getByRole("button", { name: "Small group" })).toBeDisabled();
   });
+
+  it("shows a loading state while features are fetching", async () => {
+    const user = userEvent.setup();
+    mockUseTourFeatures.mockReturnValue({
+      byTopic: {},
+      labelByCode: {},
+      isLoading: true,
+      isError: false,
+    });
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    expect(screen.getByText("Loading features…")).toBeInTheDocument();
+  });
+
+  it("shows an empty state when the topic has no features", async () => {
+    const user = userEvent.setup();
+    mockUseTourFeatures.mockReturnValue({
+      byTopic: { GENERAL_CAMPUS: [] },
+      labelByCode: {},
+      isLoading: false,
+      isError: false,
+    });
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    expect(screen.getByText("No features for this topic.")).toBeInTheDocument();
+  });
+
+  it("shows a loading state while languages are fetching", () => {
+    mockUseLanguages.mockReturnValue({ data: undefined, isLoading: true } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByText("Loading languages…")).toBeInTheDocument();
+  });
+
+  it("toggles features and languages off when chips are clicked again", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.click(screen.getByRole("button", { name: "Pick university" }));
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+
+    await user.click(screen.getByRole("button", { name: "Q&A" }));
+    await user.click(screen.getByRole("button", { name: "Q&A" })); // deselect feature
+    await user.click(screen.getByRole("button", { name: "English" })); // deselect default language
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(await screen.findByText("Select at least one language")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
 });

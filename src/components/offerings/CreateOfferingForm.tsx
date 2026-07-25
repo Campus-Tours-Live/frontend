@@ -91,11 +91,6 @@ export function CreateOfferingForm() {
       return;
     }
 
-    if (values.languages.length === 0) {
-      setError("languages", { message: "Select at least one language" });
-      return;
-    }
-
     try {
       await createOffering.mutateAsync({
         title: values.title.trim(),
