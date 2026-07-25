@@ -228,7 +228,7 @@ describe("CreateOfferingForm", () => {
       labelByCode: {},
       isLoading: true,
       isError: false,
-    });
+    } as never);
     renderWithQuery(<CreateOfferingForm />);
 
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
@@ -242,7 +242,7 @@ describe("CreateOfferingForm", () => {
       labelByCode: {},
       isLoading: false,
       isError: false,
-    });
+    } as never);
     renderWithQuery(<CreateOfferingForm />);
 
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
