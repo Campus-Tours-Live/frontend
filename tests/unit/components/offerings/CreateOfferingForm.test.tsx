@@ -18,7 +18,10 @@ jest.mock("next/link", () => ({
 
 const mutateAsync = jest.fn();
 const mockUseTourTopics = jest.fn(() => ({
-  data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
+  data: [
+    { value: "GENERAL_CAMPUS", label: "General campus" },
+    { value: "DORM_HOUSING", label: "Dorm & housing" },
+  ],
   isLoading: false,
 }));
 const mockUseLanguages = jest.fn(() => ({
@@ -35,6 +38,10 @@ const mockUseTourFeatures = jest.fn(() => ({
       { value: "HIDDEN_SPOTS", label: "Hidden spots" },
       { value: "PHOTOS_OK", label: "Photos allowed" },
       { value: "SMALL_GROUP", label: "Small group" },
+    ],
+    DORM_HOUSING: [
+      { value: "DORM_INTERIOR", label: "Dorm interior" },
+      { value: "Q_AND_A", label: "Q&A" },
     ],
   },
   labelByCode: {},
@@ -81,7 +88,10 @@ beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({ id: "o1" });
   mockUseTourTopics.mockReturnValue({
-    data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
+    data: [
+      { value: "GENERAL_CAMPUS", label: "General campus" },
+      { value: "DORM_HOUSING", label: "Dorm & housing" },
+    ],
     isLoading: false,
   });
   mockUseLanguages.mockReturnValue({
@@ -98,6 +108,10 @@ beforeEach(() => {
         { value: "HIDDEN_SPOTS", label: "Hidden spots" },
         { value: "PHOTOS_OK", label: "Photos allowed" },
         { value: "SMALL_GROUP", label: "Small group" },
+      ],
+      DORM_HOUSING: [
+        { value: "DORM_INTERIOR", label: "Dorm interior" },
+        { value: "Q_AND_A", label: "Q&A" },
       ],
     },
     labelByCode: {},
@@ -271,5 +285,24 @@ describe("CreateOfferingForm", () => {
 
     expect(await screen.findByText("Select at least one language")).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("clears topic-invalid features when the topic changes", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.click(screen.getByRole("button", { name: "Pick university" }));
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    await user.click(screen.getByRole("button", { name: "Hidden spots" }));
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "DORM_HOUSING");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topic: "DORM_HOUSING",
+        features: undefined,
+      }),
+    );
   });
 });

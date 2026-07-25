@@ -69,12 +69,10 @@ export function CreateOfferingForm() {
 
   // Drop feature selections that are no longer valid for the chosen topic.
   useEffect(() => {
-    if (!topic) {
-      setValue("features", []);
-      return;
-    }
-    const allowed = new Set((byTopic[topic] ?? []).map((o) => o.value));
-    const next = getValues("features").filter((code) => allowed.has(code));
+    const allowed = new Set((topic ? (byTopic[topic] ?? []) : []).map((o) => o.value));
+    const current = getValues("features");
+    const next = topic ? current.filter((code) => allowed.has(code)) : [];
+    if (next.length === current.length && next.every((code, i) => code === current[i])) return;
     setValue("features", next);
   }, [topic, byTopic, setValue, getValues]);
 
