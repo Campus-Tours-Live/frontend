@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,6 +19,8 @@ export interface FieldProps {
   description?: ReactNode;
   optional?: boolean;
   className?: string;
+  /** Inline styles for the wrapping `.field` (e.g. a reliable min-height reservation). */
+  style?: CSSProperties;
   children: ReactNode;
 }
 
@@ -30,10 +32,11 @@ export function Field({
   description,
   optional,
   className,
+  style,
   children,
 }: FieldProps) {
   return (
-    <div className={cn("field", className)}>
+    <div className={cn("field", className)} style={style}>
       {label ? (
         <label id={htmlFor ? `${htmlFor}-label` : undefined} htmlFor={htmlFor}>
           {label}

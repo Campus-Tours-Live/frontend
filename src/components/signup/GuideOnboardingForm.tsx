@@ -4,20 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { useMajors, useMe, useTourTopics, useUpdateGuideProfile } from "@/lib/data-access";
+import {
+  useDegrees,
+  useMajors,
+  useMe,
+  useTourTopics,
+  useUpdateGuideProfile,
+} from "@/lib/data-access";
 import {
   Alert,
   Body,
   Button,
-  Chip,
+  ButtonRow,
+  Checkbox,
   SectionHeading,
-  SelectField,
-  Spinner,
+  SelectMenu,
   TextField,
   Textarea,
+  WizardSteps,
 } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
+import { NAME_MAX_LENGTH, sanitizeName, validateName } from "@/lib/validation/name";
+import { CLASS_YEAR_FLOOR_YEARS, gradYearBufferForDegree } from "./classYear";
 import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
@@ -31,15 +39,23 @@ interface FormValues {
   lastName: string;
   university: UniversityOption[];
   major: string;
+  degree: string;
   classYear: string;
   bio: string;
   languages: string[];
   specialties: string[];
-  basePrice: string; // dollars, as typed
   schoolEmail: string;
 }
 
-const STEPS = ["About you", "Your guiding", "Verification"] as const;
+const STEPS = ["About you", "Your guiding", "Student verification"] as const;
+
+// One focused subtitle per step — the header title stays constant while the lead narrows to the
+// task at hand, so Step 3 reads as "verify" rather than repeating the whole-flow summary.
+const STEP_LEADS = [
+  "Tell prospective students who you are and where you study.",
+  "Show how you guide — the languages you speak, your specialties, and a short bio.",
+  "Enter your school email — we’ll send a link to verify you’re a current student. Every application is reviewed before tours go live.",
+] as const;
 
 // Languages are open BCP-47 tags (not a controlled backend vocabulary like
 // tour_topic), so we offer a fixed common-language list client-side. The
@@ -73,6 +89,7 @@ export function GuideOnboardingForm() {
     trigger,
     setValue,
     getValues,
+    clearErrors,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<FormValues>({
     defaultValues: {
@@ -80,14 +97,18 @@ export function GuideOnboardingForm() {
       lastName: "",
       university: [],
       major: "",
+      degree: "",
       classYear: "",
       bio: "",
       languages: ["en-US"],
       specialties: [],
-      basePrice: "28",
       schoolEmail: "",
     },
     mode: "onSubmit",
+    // Don't auto-focus the first invalid field on submit: our fields clear their own error on
+    // focus (a deliberate UX choice), so RHF focusing the field would instantly wipe the error it
+    // just set — e.g. submitting an empty school email would show no message at all.
+    shouldFocusError: false,
   });
 
   // Majors are the fields of study the SELECTED school offers (live) — empty until one is picked.
@@ -111,6 +132,22 @@ export function GuideOnboardingForm() {
   const majorsUnavailable =
     Boolean(selectedUniversity) && !majorsLoading && (majorsErrored || majorOptions.length === 0);
 
+  // Degree levels the SELECTED school awards (live) — empty until a university is picked, the same
+  // per-school dependency as majors. Optional, and it also sets the upper bound for class year.
+  const {
+    data: degreeOptions = [],
+    isLoading: degreesLoading,
+    isFetching: degreesFetching,
+    isError: degreesErrored,
+    refetch: refetchDegrees,
+  } = useDegrees(selectedUniversity?.id);
+  const degreesUnavailable =
+    Boolean(selectedUniversity) &&
+    !degreesLoading &&
+    (degreesErrored || degreeOptions.length === 0);
+
+  const currentYear = new Date().getFullYear();
+
   // Prefill the name from the account — a member acquiring a second role already
   // entered it for the first (or it came from Google at signup). Fills empty fields
   // once, without clobbering input or marking the form dirty.
@@ -127,12 +164,10 @@ export function GuideOnboardingForm() {
 
   const persist = async (values: FormValues) => {
     setSubmitError(null);
-    const dollars = Number(values.basePrice);
-    const basePriceCents =
-      values.basePrice && !Number.isNaN(dollars) ? Math.round(dollars * 100) : undefined;
     try {
       // onSuccess invalidates ["me"] + the guide profile (submit=true grants GUIDE),
-      // so the header reflects it immediately. Land in the guide area.
+      // so the header reflects it immediately. Land in the guide area. Base price is not set here —
+      // the backend keeps its default and the guide tunes pricing per tour later.
       await updateProfile.mutateAsync({
         // firstName/lastName/university/major are required on step 1 → the fallbacks never run
         firstName: /* istanbul ignore next */ values.firstName || undefined,
@@ -140,10 +175,11 @@ export function GuideOnboardingForm() {
         universityId: /* istanbul ignore next */ values.university[0]?.id,
         major: /* istanbul ignore next */ values.major || undefined,
         classYear: values.classYear || undefined,
-        bio: values.bio || undefined,
+        // degree + bio are required (steps 1 and 2), so the `|| undefined` fallback is never taken
+        degree: /* istanbul ignore next */ values.degree || undefined,
+        bio: /* istanbul ignore next */ values.bio || undefined,
         languages: values.languages,
         specialties: values.specialties,
-        basePriceCents,
         verificationEmail: values.schoolEmail,
         submit: true,
       });
@@ -164,7 +200,18 @@ export function GuideOnboardingForm() {
 
   const advance = async () => {
     if (step === 0) {
-      const ok = await trigger(["firstName", "lastName", "university", "major"]);
+      const ok = await trigger([
+        "firstName",
+        "lastName",
+        "university",
+        "major",
+        "degree",
+        "classYear",
+      ]);
+      if (!ok) return;
+    } else if (step === 1) {
+      // Languages (≥1), specialties (≥1), and bio are all required to leave "Your guiding".
+      const ok = await trigger(["languages", "specialties", "bio"]);
       if (!ok) return;
     }
     setStep((s) => s + 1);
@@ -184,286 +231,359 @@ export function GuideOnboardingForm() {
         <OnboardingBreadcrumb current="Guide onboarding" />
       </div>
 
-      {/* Eyebrow row — Cancel aligns to it (✕ closes the task). */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="eyebrow">Guide application</div>
-        <OnboardingCancel dirty={isDirty} disabled={isSubmitting} />
-      </div>
-      <SectionHeading
-        title="Set up your guide profile"
-        lead="Tell prospective students about yourself and verify your current student status. Our team reviews each application before tours go live."
-      />
-
-      <form onSubmit={onSubmit} className="mt-10">
-        {/* Progress */}
-        <div
-          className="mb-6 flex items-center gap-2"
-          aria-label={`Step ${step + 1} of ${STEPS.length}`}
-        >
-          {STEPS.map((label, i) => (
-            <span
-              key={label}
-              className={cn(
-                "h-2 rounded-pill transition-all",
-                i === step ? "w-6 bg-primary" : i < step ? "w-2 bg-primary/50" : "w-2 bg-border",
-              )}
-            />
-          ))}
-          <Body as="span" size="small" color="muted" className="ml-2">
-            Step {step + 1} of {STEPS.length} · {STEPS[step]}
-          </Body>
+      {/* Fixed min-height + flex column: the footer (Back/Continue/Submit) is pinned to the card
+          bottom, and step content grows into the slack above it rather than pushing the buttons —
+          so height stays put across steps and as content changes (e.g. adding schools). */}
+      <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+        {/* Eyebrow row — Cancel aligns to it (✕ closes the task). */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="eyebrow">Guide application</div>
+          <OnboardingCancel dirty={isDirty} disabled={isSubmitting} />
         </div>
+        <SectionHeading title="Set up your guide profile" lead={STEP_LEADS[step]} />
 
-        {/* Step 1 — About you (required) */}
-        {step === 0 && (
-          <div className="flex flex-col gap-7">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField
-                label="First name"
-                autoComplete="given-name"
-                placeholder="Jordan"
-                error={errors.firstName?.message}
-                {...register("firstName", {
-                  required: "Please enter your first name.",
-                })}
-              />
-              <TextField
-                label="Last name"
-                autoComplete="family-name"
-                placeholder="Lee"
-                error={errors.lastName?.message}
-                {...register("lastName", {
-                  required: "Please enter your last name.",
-                })}
-              />
-            </div>
+        <form onSubmit={onSubmit} className="mt-10 flex flex-1 flex-col">
+          <WizardSteps steps={STEPS} current={step} className="mb-9" />
 
-            <Controller
-              control={control}
-              name="university"
-              rules={{
-                validate: (v) => v.length > 0 || "Select the university you currently attend.",
-              }}
-              render={({ field }) => (
-                <UniversityField
-                  label="Your university"
-                  description="Search any U.S. university you currently attend."
-                  error={errors.university?.message as string}
-                  value={field.value}
-                  onChange={field.onChange}
-                  max={1}
-                  source="live"
+          {/* Step 1 — About you (required) */}
+          {step === 0 && (
+            <div className="flex flex-col gap-7">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <TextField
+                  label="First name"
+                  autoComplete="given-name"
+                  placeholder="John"
+                  maxLength={NAME_MAX_LENGTH}
+                  error={errors.firstName?.message}
+                  onFocus={() => clearErrors("firstName")}
+                  {...register("firstName", {
+                    required: "Please enter your first name.",
+                    validate: validateName,
+                    onChange: (e) => {
+                      const cleaned = sanitizeName(e.target.value);
+                      if (cleaned !== e.target.value) setValue("firstName", cleaned);
+                    },
+                  })}
                 />
-              )}
-            />
+                <TextField
+                  label="Last name"
+                  autoComplete="family-name"
+                  placeholder="Doe"
+                  maxLength={NAME_MAX_LENGTH}
+                  error={errors.lastName?.message}
+                  onFocus={() => clearErrors("lastName")}
+                  {...register("lastName", {
+                    required: "Please enter your last name.",
+                    validate: validateName,
+                    onChange: (e) => {
+                      const cleaned = sanitizeName(e.target.value);
+                      if (cleaned !== e.target.value) setValue("lastName", cleaned);
+                    },
+                  })}
+                />
+              </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Controller
                 control={control}
-                name="major"
-                rules={{ required: "Please select your major." }}
+                name="university"
+                rules={{
+                  validate: (v) => v.length > 0 || "Select the university you currently attend.",
+                }}
                 render={({ field }) => (
-                  <div>
-                    <SelectField
-                      label="Major"
-                      error={errors.major?.message}
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={!selectedUniversity || majorsLoading}
-                    >
-                      <option value="">
-                        {!selectedUniversity
-                          ? "Pick a university first"
-                          : majorsLoading
-                            ? "Loading majors…"
-                            : "Select a major"}
-                      </option>
-                      {field.value && !majorOptions.some((o) => o.value === field.value) ? (
-                        <option value={field.value}>{field.value}</option>
-                      ) : null}
-                      {majorOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </SelectField>
-                    {majorsUnavailable ? (
-                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
-                        <Body as="p" size="small" color="muted">
-                          Couldn&apos;t load majors for this school.
-                        </Body>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="small"
-                          disabled={majorsFetching}
-                          onClick={() => void refetchMajors()}
-                        >
-                          {majorsFetching ? "Trying…" : "Try again"}
-                        </Button>
-                      </div>
-                    ) : null}
-                  </div>
+                  <UniversityField
+                    label="Your university"
+                    description="Search any U.S. university you currently attend."
+                    error={errors.university?.message as string}
+                    value={field.value}
+                    onChange={(next) => {
+                      field.onChange(next);
+                      // Major & degree are gated on the university; clearing it clears theirs too.
+                      if (next.length > 0) clearErrors(["university", "major", "degree"]);
+                    }}
+                    onFocus={() => clearErrors(["university", "major", "degree"])}
+                    max={1}
+                    source="live"
+                  />
                 )}
               />
-              <TextField
-                label="Class year"
-                optional
-                placeholder="2027"
-                {...register("classYear")}
-              />
-            </div>
-          </div>
-        )}
 
-        {/* Step 2 — Your guiding (optional) */}
-        {step === 1 && (
-          <div className="flex flex-col gap-7">
-            <Textarea
-              label="Short bio"
-              optional
-              className="min-h-[96px]"
-              placeholder="Tell prospective students a little about you and what makes your tours great."
-              {...register("bio")}
-            />
-
-            <Controller
-              control={control}
-              name="languages"
-              render={({ field }) => (
-                <fieldset>
-                  <Body as="legend" size="small" weight={700} className="mb-2 block">
-                    Languages you can guide in
-                  </Body>
-                  <div className="flex flex-wrap gap-2">
-                    {LANGUAGES.map((l) => {
-                      const active = field.value.includes(l.value);
-                      return (
-                        <Chip
-                          key={l.value}
-                          active={active}
-                          onClick={() =>
-                            field.onChange(
-                              active
-                                ? field.value.filter((v) => v !== l.value)
-                                : [...field.value, l.value],
-                            )
-                          }
-                        >
-                          {l.label}
-                        </Chip>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="specialties"
-              render={({ field }) => (
-                <fieldset>
-                  <Body as="legend" size="small" weight={700} className="mb-2 block">
-                    Tour specialties <span className="font-normal text-ink-soft">(optional)</span>
-                  </Body>
-                  {topicOptions.length === 0 ? (
-                    <Body size="medium" color="muted">
-                      Loading…
-                    </Body>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {topicOptions.map((t) => {
-                        const active = field.value.includes(t.value);
-                        return (
-                          <Chip
-                            key={t.value}
-                            active={active}
-                            onClick={() =>
-                              field.onChange(
-                                active
-                                  ? field.value.filter((v) => v !== t.value)
-                                  : [...field.value, t.value],
-                              )
-                            }
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Controller
+                  control={control}
+                  name="major"
+                  rules={{ required: "Please select your major." }}
+                  render={({ field }) => (
+                    <div>
+                      <SelectMenu
+                        label="Major"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onFocus={() => clearErrors("major")}
+                        disabled={!selectedUniversity || majorsLoading}
+                        error={errors.major?.message}
+                        placeholder={
+                          !selectedUniversity
+                            ? "Pick a university first"
+                            : majorsLoading
+                              ? "Loading majors…"
+                              : "Select a major"
+                        }
+                        searchPlaceholder="Search majors…"
+                        // Keep a previously chosen major as a fallback option after switching schools.
+                        options={
+                          field.value && !majorOptions.some((o) => o.value === field.value)
+                            ? [{ value: field.value, label: field.value }, ...majorOptions]
+                            : majorOptions
+                        }
+                      />
+                      {majorsUnavailable ? (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
+                          <Body as="p" size="small" color="muted">
+                            Couldn&apos;t load majors for this school.
+                          </Body>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="small"
+                            disabled={majorsFetching}
+                            onClick={() => void refetchMajors()}
                           >
-                            {t.label}
-                          </Chip>
-                        );
-                      })}
+                            {majorsFetching ? "Trying…" : "Try again"}
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   )}
-                </fieldset>
-              )}
-            />
+                />
+                <Controller
+                  control={control}
+                  name="degree"
+                  rules={{ required: "Please select your degree." }}
+                  render={({ field }) => (
+                    <div>
+                      <SelectMenu
+                        label="Degree"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onFocus={() => clearErrors("degree")}
+                        disabled={!selectedUniversity || degreesLoading}
+                        error={errors.degree?.message}
+                        placeholder={
+                          !selectedUniversity
+                            ? "Pick a university first"
+                            : degreesLoading
+                              ? "Loading degrees…"
+                              : "Select a degree"
+                        }
+                        searchPlaceholder="Search degrees…"
+                        options={
+                          field.value && !degreeOptions.some((o) => o.value === field.value)
+                            ? [{ value: field.value, label: field.value }, ...degreeOptions]
+                            : degreeOptions
+                        }
+                      />
+                      {degreesUnavailable ? (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
+                          <Body as="p" size="small" color="muted">
+                            Couldn&apos;t load degrees for this school.
+                          </Body>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="small"
+                            disabled={degreesFetching}
+                            onClick={() => void refetchDegrees()}
+                          >
+                            {degreesFetching ? "Trying…" : "Try again"}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                />
+              </div>
 
-            <TextField
-              label="Base price per tour (USD)"
-              optional
-              type="number"
-              min={20}
-              max={200}
-              fieldClassName="max-w-[220px]"
-              error={errors.basePrice?.message}
-              hint="You can fine-tune pricing per tour later. Default is $28."
-              {...register("basePrice", {
-                // redundant with the input's native min/max + server validation
-                validate: /* istanbul ignore next */ (v) => {
-                  if (!v) return true;
-                  const n = Number(v);
-                  if (Number.isNaN(n)) return "Enter a number.";
-                  if (n < 20 || n > 200) return "Must be between $20 and $200.";
-                  return true;
-                },
-              })}
-            />
-          </div>
-        )}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Controller
+                  control={control}
+                  name="classYear"
+                  rules={{
+                    validate: (v) => {
+                      if (!v) return true;
+                      if (!/^\d{4}$/.test(v.trim())) return "Enter a 4-digit graduation year.";
+                      const min = currentYear - CLASS_YEAR_FLOOR_YEARS;
+                      const max = currentYear + gradYearBufferForDegree(getValues("degree"));
+                      const n = Number(v);
+                      if (n < min || n > max)
+                        return `Enter a graduation year between ${min} and ${max}.`;
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      label="Class year"
+                      optional
+                      inputMode="numeric"
+                      placeholder="2027"
+                      description="Expected if you're still enrolled, otherwise the year you graduated."
+                      error={errors.classYear?.message}
+                      value={field.value}
+                      // Numeric-only: strip non-digits as you type and cap at 4 digits.
+                      onChange={(e) =>
+                        field.onChange(e.target.value.replace(/\D/g, "").slice(0, 4))
+                      }
+                      onFocus={() => clearErrors("classYear")}
+                      onBlur={() => {
+                        field.onBlur();
+                        void trigger("classYear");
+                      }}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+          )}
 
-        {/* Step 3 — Verification (required to submit) */}
-        {step === 2 && (
-          <div className="flex flex-col gap-5">
+          {/* Step 2 — Your guiding (optional) */}
+          {step === 1 && (
+            <div className="flex flex-col gap-7">
+              <Textarea
+                label="Short bio"
+                className="min-h-[96px]"
+                maxLength={500}
+                description="Share your major, year, campus interests, and what students can expect from your tour."
+                placeholder="e.g. Third-year CS major who loves the maker space and late-night library runs."
+                error={errors.bio?.message}
+                onFocus={() => clearErrors("bio")}
+                {...register("bio", { required: "Please add a short bio." })}
+              />
+
+              <Controller
+                control={control}
+                name="languages"
+                rules={{ validate: (v) => v.length >= 1 || "Choose at least one language." }}
+                render={({ field }) => (
+                  <fieldset>
+                    <legend className="form-label">Languages you can guide in</legend>
+                    <Body size="small" color="muted" className="mb-2 block">
+                      Select all that apply. English is on by default; keep at least one.
+                    </Body>
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                      {LANGUAGES.map((l) => (
+                        <Checkbox
+                          key={l.value}
+                          label={l.label}
+                          checked={field.value.includes(l.value)}
+                          onChange={(e) => {
+                            field.onChange(
+                              e.target.checked
+                                ? [...field.value, l.value]
+                                : field.value.filter((v) => v !== l.value),
+                            );
+                            if (errors.languages) clearErrors("languages");
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {errors.languages ? (
+                      <Body role="alert" size="small" weight={600} color="error" className="mt-2">
+                        {errors.languages.message as string}
+                      </Body>
+                    ) : null}
+                  </fieldset>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="specialties"
+                rules={{ validate: (v) => v.length >= 1 || "Choose at least one specialty." }}
+                render={({ field }) => (
+                  <fieldset>
+                    <legend className="form-label">Tour specialties</legend>
+                    <Body size="small" color="muted" className="mb-2.5 block">
+                      Select all that apply.
+                    </Body>
+                    {topicOptions.length === 0 ? (
+                      <Body size="medium" color="muted">
+                        Loading…
+                      </Body>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                        {topicOptions.map((t) => (
+                          <Checkbox
+                            key={t.value}
+                            label={t.label}
+                            checked={field.value.includes(t.value)}
+                            onChange={(e) => {
+                              field.onChange(
+                                e.target.checked
+                                  ? [...field.value, t.value]
+                                  : field.value.filter((v) => v !== t.value),
+                              );
+                              if (errors.specialties) clearErrors("specialties");
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {errors.specialties ? (
+                      <Body role="alert" size="small" weight={600} color="error" className="mt-2">
+                        {errors.specialties.message as string}
+                      </Body>
+                    ) : null}
+                  </fieldset>
+                )}
+              />
+            </div>
+          )}
+
+          {/* Step 3 — Verification (required to submit) */}
+          {step === 2 && (
             <TextField
               label="School email address"
               type="email"
               autoComplete="email"
               placeholder="you@university.edu"
               error={errors.schoolEmail?.message}
+              onFocus={() => clearErrors("schoolEmail")}
               {...register("schoolEmail", {
-                required: "Enter your school email to verify your student status.",
+                required: "Enter your school email so we can send your verification link.",
                 pattern: {
                   value: /^[^@\s]+@[^@\s]+\.[^@\s]+$/,
                   message: "Enter a valid email address.",
                 },
               })}
             />
-            <Alert variant="info" role="status">
-              We use your school email to confirm you’re a current student. Your application is
-              reviewed before any tours go live — you’ll keep access to your dashboard while it’s
-              pending.
-            </Alert>
-          </div>
-        )}
-
-        {submitError && (
-          <Alert variant="error" className="mt-5">
-            {submitError}
-          </Alert>
-        )}
-
-        {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. */}
-        <div className="mt-8 flex items-center justify-end gap-3">
-          {step > 0 && (
-            <Button variant="ghost" onClick={back} disabled={isSubmitting}>
-              Back
-            </Button>
           )}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Spinner />}
-            {isSubmitting ? "Submitting…" : isLast ? "Submit" : "Continue"}
-          </Button>
-        </div>
-      </form>
+
+          {/* Footer pinned to the bottom of the card (mt-auto), so the buttons stay put while the
+              step content above grows/shrinks. pt-12 keeps a comfortable gap even when a dense step
+              (e.g. guide step 1) fills the card, so the buttons never look cramped against it. */}
+          <div className="mt-auto pt-12">
+            {submitError && (
+              <Alert variant="error" className="mb-5">
+                {submitError}
+              </Alert>
+            )}
+
+            {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. The empty span
+                keeps a lone Continue right-aligned when there's no Back to sit opposite it. */}
+            <ButtonRow align="between">
+              {step > 0 ? (
+                <Button variant="ghost" onClick={back} disabled={isSubmitting}>
+                  Back
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button type="submit" loading={isSubmitting}>
+                {isSubmitting ? "Submitting…" : isLast ? "Submit" : "Continue"}
+              </Button>
+            </ButtonRow>
+          </div>
+        </form>
+      </div>
     </>
   );
 }

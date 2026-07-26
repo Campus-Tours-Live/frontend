@@ -1,9 +1,13 @@
 import { type ReactElement } from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
+
+// These are heavy multi-step flows (esp. the "switch schools" fallback cases); give them headroom
+// beyond the default 5s per-test timeout so a loaded CI runner doesn't trip a false timeout.
+jest.setTimeout(20000);
 
 // Variants the main suite's fixed mock can't express: empty tour-topics, a
 // non-Error rejection, an empty base price, and the majors-hook edge cases below.
@@ -21,6 +25,8 @@ const UNIVERSITY_CATALOG: Record<string, { id: string; name: string; shortName?:
   state: { id: "u-1", name: "State University", shortName: "State" },
   tech: { id: "u-2", name: "Tech Institute", shortName: "Tech" },
   empty: { id: "u-3", name: "Empty Data University", shortName: "Empty Data" },
+  // Majors resolve, degrees don't — isolates the "degrees unavailable" path (no majors retry too).
+  nodeg: { id: "u-4", name: "No Degrees University", shortName: "NoDeg" },
 };
 
 // Layer 0b: the majors hook's degraded states. Defaults to "settled, no error" so the existing
@@ -32,12 +38,31 @@ let majorsState: { isLoading: boolean; isFetching: boolean; isError: boolean } =
   isError: false,
 };
 
+// Same overridable degraded states for the degrees hook (its own retry UI mirrors majors).
+const refetchDegrees = jest.fn();
+let degreesState: { isLoading: boolean; isFetching: boolean; isError: boolean } = {
+  isLoading: false,
+  isFetching: false,
+  isError: false,
+};
+
 const MAJORS_BY_SCHOOL: Record<string, Array<{ value: string; label: string }> | undefined> = {
   "u-1": [{ value: "computer_science", label: "Computer Science" }],
   "u-2": [{ value: "economics", label: "Economics" }],
   // Simulates the hook resolving without a `data` field (e.g. still settling) —
   // exercises the `{ data: majorOptions = [] }` default.
   "u-3": undefined,
+  "u-4": [{ value: "computer_science", label: "Computer Science" }],
+};
+
+// Degrees per school — a different set on u-2 so the "fallback option after switching" path is
+// reachable, and undefined on u-4 to exercise the `{ data: degreeOptions = [] }` default (u-3 keeps
+// real degrees so the majors-only "empty list" test still sees a single retry button).
+const DEGREES_BY_SCHOOL: Record<string, Array<{ value: string; label: string }> | undefined> = {
+  "u-1": [{ value: "Bachelor's Degree", label: "Bachelor's Degree" }],
+  "u-2": [{ value: "Master's Degree", label: "Master's Degree" }],
+  "u-3": [{ value: "Bachelor's Degree", label: "Bachelor's Degree" }],
+  "u-4": undefined,
 };
 
 jest.mock("@/lib/data-access", () => ({
@@ -53,6 +78,13 @@ jest.mock("@/lib/data-access", () => ({
     isFetching: majorsState.isFetching,
     isError: majorsState.isError,
     refetch: refetchMajors,
+  }),
+  useDegrees: (schoolId?: string | null) => ({
+    data: schoolId ? DEGREES_BY_SCHOOL[schoolId] : [],
+    isLoading: degreesState.isLoading,
+    isFetching: degreesState.isFetching,
+    isError: degreesState.isError,
+    refetch: refetchDegrees,
   }),
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => {
     const match = UNIVERSITY_CATALOG[query.trim().toLowerCase()];
@@ -76,7 +108,20 @@ async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   // per-school via useMajors(selectedUniversity?.id)).
   await user.type(screen.getByPlaceholderText(/search universities/i), "state");
   await user.click(await screen.findByRole("button", { name: /State University/i }));
-  await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
+  // Major + degree are SelectMenu dropdowns (open, then pick the option); degree is required.
+  await user.click(await screen.findByRole("combobox", { name: /major/i }));
+  await user.click(await screen.findByRole("option", { name: "Computer Science" }));
+  await user.click(await screen.findByRole("combobox", { name: /degree/i }));
+  await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
+}
+
+/** On step 2 ("Your guiding"), fill the now-required bio and pick a specialty. */
+async function completeStepTwo(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(
+    await screen.findByLabelText(/short bio/i),
+    "I love showing students the maker space, dorms, and the best study spots on campus.",
+  );
+  await user.click(screen.getByRole("checkbox", { name: /Academics/i }));
 }
 
 beforeEach(() => {
@@ -86,6 +131,8 @@ beforeEach(() => {
   topicsData = [{ value: "academics", label: "Academics" }];
   refetchMajors.mockReset();
   majorsState = { isLoading: false, isFetching: false, isError: false };
+  refetchDegrees.mockReset();
+  degreesState = { isLoading: false, isFetching: false, isError: false };
 });
 
 describe("GuideOnboardingForm edge cases", () => {
@@ -98,21 +145,6 @@ describe("GuideOnboardingForm edge cases", () => {
     expect(await screen.findByText(/^Loading…$/)).toBeInTheDocument();
   });
 
-  it("omits basePriceCents when the price is cleared", async () => {
-    const user = userEvent.setup();
-    renderWithQuery(<GuideOnboardingForm />);
-    await completeStepOne(user);
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-
-    await user.clear(await screen.findByLabelText(/base price per tour/i));
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
-    await user.click(screen.getByRole("button", { name: /^submit$/i }));
-
-    expect(mutateAsync).toHaveBeenCalledTimes(1);
-    expect(mutateAsync.mock.calls[0][0].basePriceCents).toBeUndefined();
-  });
-
   it("attributes a dismissed sign-in prompt to auth, not to onboarding failing", async () => {
     // AuthCancelledError IS an Error, so the old `err.message` path showed "Sign-in was
     // cancelled." — attributed correctly but unactionable, and worded unlike every other
@@ -122,6 +154,7 @@ describe("GuideOnboardingForm edge cases", () => {
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
+    await completeStepTwo(user);
     await user.click(await screen.findByRole("button", { name: /continue/i }));
     await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
@@ -136,6 +169,7 @@ describe("GuideOnboardingForm edge cases", () => {
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
+    await completeStepTwo(user);
     await user.click(await screen.findByRole("button", { name: /continue/i }));
     await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
@@ -154,11 +188,13 @@ describe("GuideOnboardingForm edge cases", () => {
     await user.click(await screen.findByRole("button", { name: /Empty Data University/i }));
 
     // useMajors("u-3") resolves to `{}` (no `data`) → majorOptions defaults to [] and the
-    // major select shows only the placeholder, without throwing.
-    const majorSelect = await screen.findByLabelText(/major/i);
-    expect(majorSelect).not.toBeDisabled();
-    expect(within(majorSelect).getAllByRole("option")).toHaveLength(1);
-    expect(within(majorSelect).getByRole("option", { name: "Select a major" })).toBeInTheDocument();
+    // major picker shows only the placeholder, without throwing.
+    const majorTrigger = await screen.findByRole("combobox", { name: /major/i });
+    expect(majorTrigger).not.toBeDisabled();
+    expect(majorTrigger).toHaveAttribute("placeholder", "Select a major");
+    await user.click(majorTrigger);
+    expect(screen.queryAllByRole("option")).toHaveLength(0);
+    expect(await screen.findByText(/no matches/i)).toBeInTheDocument();
   });
 
   // Layer 0b — major is REQUIRED and its options come from a live upstream. The Core swallows a
@@ -211,6 +247,69 @@ describe("GuideOnboardingForm edge cases", () => {
     expect(await screen.findByText(/couldn't load majors for this school/i)).toBeInTheDocument();
   });
 
+  it("explains a failed degrees fetch and offers a retry", async () => {
+    // Degrees error on a school whose majors are fine (u-1), so only the degrees retry shows.
+    degreesState = { isLoading: false, isFetching: false, isError: true };
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    await user.click(await screen.findByRole("button", { name: /State University/i }));
+
+    expect(await screen.findByText(/couldn't load degrees for this school/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /try again/i }));
+    expect(refetchDegrees).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the degrees retry as in-flight so it can't be spam-clicked", async () => {
+    degreesState = { isLoading: false, isFetching: true, isError: true };
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    await user.click(await screen.findByRole("button", { name: /State University/i }));
+
+    const retry = await screen.findByRole("button", { name: /trying…/i });
+    expect(retry).toBeDisabled();
+    expect(screen.getByText(/couldn't load degrees for this school/i)).toBeInTheDocument();
+  });
+
+  it("defaults degreeOptions to an empty list when useDegrees returns no data", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "nodeg");
+    await user.click(await screen.findByRole("button", { name: /No Degrees University/i }));
+
+    // useDegrees("u-4") resolves to `{}` (no `data`) → degreeOptions defaults to [] without throwing.
+    const degreeTrigger = await screen.findByRole("combobox", { name: /degree/i });
+    expect(degreeTrigger).not.toBeDisabled();
+    expect(degreeTrigger).toHaveAttribute("placeholder", "Select a degree");
+    await user.click(degreeTrigger);
+    expect(screen.queryAllByRole("option")).toHaveLength(0);
+  });
+
+  it("shows a loading placeholder on the degree select while degrees load", async () => {
+    degreesState = { isLoading: true, isFetching: true, isError: false };
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    await user.click(await screen.findByRole("button", { name: /State University/i }));
+
+    const degreeTrigger = await screen.findByRole("combobox", { name: /degree/i });
+    expect(degreeTrigger).toBeDisabled();
+    expect(degreeTrigger).toHaveAttribute("placeholder", "Loading degrees…");
+  });
+
   it("disables the major select while majors are loading, without claiming failure", async () => {
     majorsState = { isLoading: true, isFetching: true, isError: false };
     const user = userEvent.setup();
@@ -221,11 +320,9 @@ describe("GuideOnboardingForm edge cases", () => {
     await user.type(screen.getByPlaceholderText(/search universities/i), "state");
     await user.click(await screen.findByRole("button", { name: /State University/i }));
 
-    const majorSelect = await screen.findByLabelText(/major/i);
-    expect(majorSelect).toBeDisabled();
-    expect(
-      within(majorSelect).getByRole("option", { name: "Loading majors…" }),
-    ).toBeInTheDocument();
+    const majorTrigger = await screen.findByRole("combobox", { name: /major/i });
+    expect(majorTrigger).toBeDisabled();
+    expect(majorTrigger).toHaveAttribute("placeholder", "Loading majors…");
     // Still in flight — must not accuse the upstream of failing yet.
     expect(screen.queryByText(/couldn't load majors/i)).not.toBeInTheDocument();
   });
@@ -237,7 +334,7 @@ describe("GuideOnboardingForm edge cases", () => {
     expect(screen.queryByText(/couldn't load majors/i)).not.toBeInTheDocument();
   });
 
-  it("keeps a previously chosen major as a fallback option after switching schools", async () => {
+  it("keeps previously chosen major & degree as fallback options after switching schools", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
 
@@ -252,26 +349,44 @@ describe("GuideOnboardingForm edge cases", () => {
       target: { value: "state" },
     });
     await user.click(await screen.findByRole("button", { name: /State University/i }));
-    await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
+    // Pick a major AND a degree on the first school (SelectMenu: open, then choose).
+    await user.click(await screen.findByRole("combobox", { name: /major/i }));
+    await user.click(await screen.findByRole("option", { name: "Computer Science" }));
+    await user.click(await screen.findByRole("combobox", { name: /degree/i }));
+    await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
 
-    // Switch schools — the major field keeps its old value, but the new school's
-    // majors list ("economics") no longer contains it.
-    await user.click(screen.getByRole("button", { name: /Remove State University/i }));
+    // Switch schools — the major/degree fields keep their old values, but the new school's
+    // lists ("economics" / "Master's Degree") no longer contain them. (max=1 → the combobox's
+    // "Change university" control clears the selection and brings the search back.)
+    await user.click(screen.getByRole("button", { name: /change university/i }));
     // The input has remounted empty below max; set "tech" in one change event (see above).
     fireEvent.change(await screen.findByPlaceholderText(/search universities/i), {
       target: { value: "tech" },
     });
     await user.click(await screen.findByRole("button", { name: /Tech Institute/i }));
 
-    // The switch has settled (Tech is selected → setValue drove the majors query). The new
-    // school's option only exists once selectedUniversity is u-2.
-    const majorSelect = await screen.findByLabelText(/major/i);
+    // The switch has settled. The major picker keeps the old value as its label (fallback), and
+    // opening it offers both the new school's option and that fallback.
+    // Generous timeouts — the school switch + option render is slow on a loaded CI runner. Wait
+    // for the picker to re-enable after the switch before opening it (clicking a still-disabled
+    // combobox is a no-op, which is what made this flaky).
+    const majorTrigger = await screen.findByRole("combobox", { name: /major/i });
+    await waitFor(() => expect(majorTrigger).toBeEnabled(), { timeout: 5000 });
+    expect(majorTrigger).toHaveValue("computer_science");
+    await user.click(majorTrigger);
     expect(
-      await within(majorSelect).findByRole("option", { name: "Economics" }),
+      await screen.findByRole("option", { name: "Economics" }, { timeout: 5000 }),
     ).toBeInTheDocument();
-    expect(majorSelect).toHaveValue("computer_science");
+    expect(screen.getByRole("option", { name: "computer_science" })).toBeInTheDocument();
+
+    // Same fallback behaviour for the degree picker.
+    const degreeTrigger = screen.getByRole("combobox", { name: /degree/i });
+    await waitFor(() => expect(degreeTrigger).toBeEnabled(), { timeout: 5000 });
+    expect(degreeTrigger).toHaveValue("Bachelor's Degree");
+    await user.click(degreeTrigger);
     expect(
-      within(majorSelect).getByRole("option", { name: "computer_science" }),
+      await screen.findByRole("option", { name: "Master's Degree" }, { timeout: 5000 }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Bachelor's Degree" })).toBeInTheDocument();
   });
 });

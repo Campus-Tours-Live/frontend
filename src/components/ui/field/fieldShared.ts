@@ -18,6 +18,8 @@ export type ControlExtras = {
   label?: ReactNode;
   error?: ReactNode;
   hint?: ReactNode;
+  /** Help text rendered ABOVE the control (below the label). For help below the control, use `hint`. */
+  description?: ReactNode;
   optional?: boolean;
   /** Class for the wrapping Field (the control itself uses `className`). */
   fieldClassName?: string;
