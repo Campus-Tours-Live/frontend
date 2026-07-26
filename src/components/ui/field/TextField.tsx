@@ -21,6 +21,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     label,
     error,
     hint,
+    description,
     optional,
     id,
     className,
@@ -40,6 +41,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       htmlFor={inputId}
       error={error}
       hint={hint}
+      description={description}
       optional={optional}
       className={fieldClassName}
     >

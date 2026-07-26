@@ -68,6 +68,7 @@ export { Textarea, type TextareaProps } from "./field/Textarea";
 export { SelectField, type SelectFieldProps } from "./field/SelectField";
 export { type FieldSize } from "./field/fieldShared";
 export { Select, type SelectProps, type SelectSize } from "./select/Select";
+export { SelectMenu, type SelectMenuProps, type SelectMenuOption } from "./select-menu/SelectMenu";
 export { FormLabel, type FormLabelProps, type FormLabelSize } from "./form/FormLabel";
 export { FormHelperText, type FormHelperTextProps } from "./form/FormHelperText";
 export { FormGroup, type FormGroupProps } from "./form/FormGroup";
@@ -101,6 +102,7 @@ export {
   type WizardFooterProps,
   type WizardFooterButtonProps,
 } from "./wizard-footer/WizardFooter";
+export { WizardSteps, type WizardStepsProps } from "./wizard-steps/WizardSteps";
 export { MenuItem, type MenuItemProps, type MenuItemVariant } from "./menu/MenuItem";
 export { MenuSection, type MenuSectionProps } from "./menu/Menu";
 export { Modal, type ModalProps } from "./modal/Modal";

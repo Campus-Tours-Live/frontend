@@ -42,6 +42,10 @@ jest.mock("@/lib/data-access", () => ({
         ]
       : [],
   }),
+  // Degree levels are keyed off the selected school too (optional field).
+  useDegrees: (schoolId?: string | null) => ({
+    data: schoolId ? [{ value: "Bachelor's Degree", label: "Bachelor's Degree" }] : [],
+  }),
   // Used by the real UniversityMultiSelect rendered inside step 1.
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => ({
     data: opts?.enabled === false ? [] : query ? universityResults : [],
@@ -71,7 +75,20 @@ async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   // per-school via useMajors(selectedUniversity?.id)).
   await user.type(screen.getByPlaceholderText(/search universities/i), "state");
   await user.click(await screen.findByRole("button", { name: /State University/i }));
-  await user.selectOptions(await screen.findByLabelText(/major/i), "computer_science");
+  // Major + degree are SelectMenu dropdowns (open, then pick the option); degree is required.
+  await user.click(await screen.findByRole("combobox", { name: /major/i }));
+  await user.click(await screen.findByRole("option", { name: "Computer Science" }));
+  await user.click(screen.getByRole("combobox", { name: /degree/i }));
+  await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
+}
+
+/** On step 2 ("Your guiding"), fill the now-required bio and pick a specialty. */
+async function completeStepTwo(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(
+    await screen.findByLabelText(/short bio/i),
+    "I love showing students the maker space, dorms, and the best study spots on campus.",
+  );
+  await user.click(screen.getByRole("checkbox", { name: /Academics/i }));
 }
 
 describe("GuideOnboardingForm (multi-step wizard)", () => {
@@ -83,7 +100,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(screen.getByLabelText(/major/i)).toBeDisabled();
     expect(screen.getByText(/your university/i)).toBeInTheDocument();
     // Step indicator reflects step 1 of 3 and the current step name.
-    expect(screen.getByText(/step 1 of 3 · About you/i)).toBeInTheDocument();
+    expect(screen.getByText("Step 1 · About you")).toBeInTheDocument();
     expect(document.querySelector('[aria-label="Step 1 of 3"]')).toBeInTheDocument();
     await act(async () => {});
   });
@@ -105,7 +122,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(screen.getByText(/please select your major/i)).toBeInTheDocument();
     // Still on step 1 — step 2 content not shown.
     expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    expect(document.querySelector('[aria-label="Step 1 of 3"]')).toBeInTheDocument();
   });
 
   it("advances to step 2 once step 1 is valid, and Back returns to step 1", async () => {
@@ -115,15 +132,13 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    // Step 2 — "Your guiding".
-    expect(await screen.findByText(/step 2 of 3 · Your guiding/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/short bio/i)).toBeInTheDocument();
+    // Step 2 — "Your guiding" (the short-bio field marks the transition).
+    expect(await screen.findByLabelText(/short bio/i)).toBeInTheDocument();
     expect(screen.getByText(/languages you can guide in/i)).toBeInTheDocument();
 
     // Back → step 1, with name preserved.
     await user.click(screen.getByRole("button", { name: /back/i }));
-    expect(await screen.findByText(/step 1 of 3/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/first name/i)).toHaveValue("Jordan");
+    expect(await screen.findByLabelText(/first name/i)).toHaveValue("Jordan");
   });
 
   it("walks all three steps and submits the mapped payload (submit:true, cents from dollars)", async () => {
@@ -132,16 +147,13 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    // Step 2 — set a base price in dollars (→ cents) and pick a specialty.
-    const price = await screen.findByLabelText(/base price per tour/i);
-    await user.clear(price);
-    await user.type(price, "40");
-    await user.click(screen.getByRole("button", { name: /Academics/i }));
+    // Step 2 — "Your guiding": bio + specialty are required.
+    await completeStepTwo(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    // Step 3 — Verification.
-    expect(await screen.findByText(/step 3 of 3 · Verification/i)).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/school email address/i), "jordan@university.edu");
+    // Step 3 — Verification (the school-email field marks the transition).
+    const email = await screen.findByLabelText(/school email address/i);
+    await user.type(email, "jordan@university.edu");
 
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
@@ -152,7 +164,6 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
         lastName: "Lee",
         universityId: "u-1",
         major: "computer_science",
-        basePriceCents: 4000,
         verificationEmail: "jordan@university.edu",
         specialties: ["academics"],
         submit: true,
@@ -163,6 +174,36 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(push).toHaveBeenCalledWith("/dashboard");
   });
 
+  it("submits the selected degree and a valid class year", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user); // selects the required degree
+    const validYear = String(new Date().getFullYear() + 4);
+    await user.type(screen.getByLabelText(/class year/i), validYear);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await completeStepTwo(user);
+    await user.click(await screen.findByRole("button", { name: /continue/i }));
+    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ degree: "Bachelor's Degree", classYear: validYear }),
+    );
+  });
+
+  it("blocks step 1 when the class year is outside the allowed range", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    // Far in the future → past the per-degree cap → validation error, stays on step 1.
+    await user.type(screen.getByLabelText(/class year/i), String(new Date().getFullYear() + 40));
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(await screen.findByText(/graduation year between/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
   it("toggles language and specialty chips off (deselect branches)", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
@@ -170,10 +211,15 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
     // Step 2: drop the default "English", add "Spanish", and toggle a specialty on then off.
-    await user.click(await screen.findByRole("button", { name: /^English$/i })); // deselect default language
-    await user.click(screen.getByRole("button", { name: /^Spanish$/i })); // keep ≥1 language
-    await user.click(screen.getByRole("button", { name: /Academics/i })); // select specialty
-    await user.click(screen.getByRole("button", { name: /Academics/i })); // deselect specialty
+    await user.click(await screen.findByRole("checkbox", { name: /^English$/i })); // deselect default language
+    await user.click(screen.getByRole("checkbox", { name: /^Spanish$/i })); // keep ≥1 language
+    await user.click(screen.getByRole("checkbox", { name: /Academics/i })); // select a specialty (required ≥1)
+    await user.click(screen.getByRole("checkbox", { name: /Dorm life/i })); // select a second specialty
+    await user.click(screen.getByRole("checkbox", { name: /Dorm life/i })); // deselect it → exercises the filter branch
+    await user.type(
+      screen.getByLabelText(/short bio/i),
+      "I love showing students the maker space, dorms, and the best study spots on campus.",
+    );
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
     await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
@@ -181,23 +227,70 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
     const payload = mutateAsync.mock.calls[0][0];
     expect(payload.languages).toEqual(["es"]);
-    expect(payload.specialties).toEqual([]);
+    expect(payload.specialties).toEqual(["academics"]);
   });
 
-  it("does not advance past step 2 with an out-of-range base price", async () => {
+  it("requires at least one language before leaving 'Your guiding'", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
-    await user.click(screen.getByRole("button", { name: /continue/i })); // → step 2
-
-    const price = await screen.findByLabelText(/base price per tour/i);
-    await user.clear(price);
-    await user.type(price, "10"); // below the $20 minimum
+    await user.click(screen.getByRole("button", { name: /continue/i })); // → Your guiding
+    // English is on by default; deselect it → zero languages.
+    await user.click(await screen.findByRole("checkbox", { name: /^English$/i }));
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    // validate("10") hits the out-of-range branch → step 2 stays put, no step 3.
+    expect(await screen.findByText(/choose at least one language/i)).toBeInTheDocument();
+    // Stayed on this step — Verification (school email) not reached.
     expect(screen.queryByLabelText(/school email address/i)).not.toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("strips characters that aren't allowed in a name as you type", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    // Digits/symbols are removed on input (sanitizeName → setValue); allowed punctuation stays.
+    await user.type(screen.getByLabelText(/first name/i), "John5");
+    await user.type(screen.getByLabelText(/last name/i), "O'Br@ien");
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("John");
+    expect(screen.getByLabelText(/last name/i)).toHaveValue("O'Brien");
+  });
+
+  it("rejects a class year that isn't four digits", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    await user.type(screen.getByLabelText(/class year/i), "12"); // too short → format error
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(await screen.findByText(/enter a 4-digit graduation year/i)).toBeInTheDocument();
+  });
+
+  it("clears the languages error once a language is reselected", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    await user.click(screen.getByRole("button", { name: /continue/i })); // → Your guiding
+    await user.click(await screen.findByRole("checkbox", { name: /^English$/i })); // deselect default
+    await user.click(screen.getByRole("button", { name: /continue/i })); // → languages error
+    expect(await screen.findByText(/choose at least one language/i)).toBeInTheDocument();
+    // Reselecting a language clears the standing error (the `if (errors.languages)` branch).
+    await user.click(screen.getByRole("checkbox", { name: /^Spanish$/i }));
+    expect(screen.queryByText(/choose at least one language/i)).not.toBeInTheDocument();
+  });
+
+  it("clears the specialties error once a specialty is selected", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    await user.click(screen.getByRole("button", { name: /continue/i })); // → Your guiding
+    // Fill bio + keep the default language so only specialties (empty) blocks Continue.
+    await user.type(
+      await screen.findByLabelText(/short bio/i),
+      "I love giving campus tours of the maker space and dorms.",
+    );
+    await user.click(screen.getByRole("button", { name: /continue/i })); // → specialties error
+    expect(await screen.findByText(/choose at least one specialty/i)).toBeInTheDocument();
+    // Selecting one clears the standing error (the `if (errors.specialties)` branch).
+    await user.click(screen.getByRole("checkbox", { name: /Academics/i }));
+    expect(screen.queryByText(/choose at least one specialty/i)).not.toBeInTheDocument();
   });
 
   it("prefills first/last name from useMe without clobbering or marking dirty", async () => {
@@ -223,11 +316,29 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
     await user.click(screen.getByRole("button", { name: /continue/i }));
+    await completeStepTwo(user);
     await user.click(await screen.findByRole("button", { name: /continue/i }));
     await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     expect(await screen.findByText(/school email already in use/i)).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows the required error when submitting step 3 with an empty school email", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await completeStepTwo(user);
+    await user.click(await screen.findByRole("button", { name: /continue/i }));
+
+    // On step 3, submit without touching the email. The message must appear and STAY (RHF's
+    // focus-on-error must not trip the field's onFocus clearErrors and wipe it).
+    await screen.findByLabelText(/school email address/i);
+    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+
+    expect(await screen.findByText(/so we can send your verification link/i)).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 });

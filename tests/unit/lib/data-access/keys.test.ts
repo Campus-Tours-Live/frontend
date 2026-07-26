@@ -30,6 +30,10 @@ describe("queryKeys", () => {
       expect(queryKeys.guideOfferings()).toEqual(["guide-offerings"]);
     });
 
+    it("tours() → ['tours']", () => {
+      expect(queryKeys.tours()).toEqual(["tours"]);
+    });
+
     it("availabilityRules() → ['availability-rules']", () => {
       expect(queryKeys.availabilityRules()).toEqual(["availability-rules"]);
     });

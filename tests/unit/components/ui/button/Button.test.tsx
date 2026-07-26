@@ -111,6 +111,41 @@ describe("Button", () => {
     expect(ref.current).toBeInstanceOf(HTMLButtonElement);
   });
 
+  describe("loading", () => {
+    it("renders a spinner, disables the button, and marks it busy", async () => {
+      const onClick = jest.fn();
+      render(
+        <Button loading onClick={onClick}>
+          Saving…
+        </Button>,
+      );
+      const btn = screen.getByRole("button", { name: /saving/i });
+      // Spinner is decorative (aria-hidden) but present in the DOM.
+      expect(btn.querySelector("svg")).toBeInTheDocument();
+      expect(btn).toBeDisabled();
+      expect(btn).toHaveAttribute("aria-busy", "true");
+      await userEvent.click(btn);
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it("shows no spinner and stays enabled when not loading", () => {
+      render(<Button>Submit</Button>);
+      const btn = screen.getByRole("button");
+      expect(btn.querySelector("svg")).toBeNull();
+      expect(btn).toBeEnabled();
+      expect(btn).not.toHaveAttribute("aria-busy");
+    });
+
+    it("stays disabled when disabled even if not loading", () => {
+      render(
+        <Button disabled loading={false}>
+          x
+        </Button>,
+      );
+      expect(screen.getByRole("button")).toBeDisabled();
+    });
+  });
+
   describe("asChild (Slot)", () => {
     it("renders the child element instead of a <button> and applies styles", () => {
       render(

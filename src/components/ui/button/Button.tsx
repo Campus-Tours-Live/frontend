@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import { Slot } from "../slot/Slot";
+import { Spinner } from "../spinner/Spinner";
 
 /**
  * Button — wraps the design-system `.btn` classes (styles live in globals.css).
@@ -40,10 +41,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   block?: boolean;
   /** Apply the button styling to the single child element instead of a <button>. */
   asChild?: boolean;
+  /**
+   * Show a leading spinner and disable the button while an action is in flight (e.g. a submit).
+   * The caller still supplies the label — swap it to a progress verb ("Saving…") when loading.
+   * Ignored with `asChild` (Slot forwards to a single child, which a spinner would break).
+   */
+  loading?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant, size, block, asChild, className, type, children, ...props },
+  { variant, size, block, asChild, loading = false, className, type, children, disabled, ...props },
   ref,
 ) {
   const classes = cn(buttonClasses({ variant, size, block }), className);
@@ -58,7 +65,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
   return (
     // Default to type="button" so a Button never submits a form unintentionally.
-    <button ref={ref} type={type ?? "button"} className={classes} {...props}>
+    <button
+      ref={ref}
+      type={type ?? "button"}
+      className={classes}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...props}
+    >
+      {loading ? <Spinner size={16} /> : null}
       {children}
     </button>
   );
