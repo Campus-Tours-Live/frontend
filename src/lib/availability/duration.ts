@@ -1,17 +1,21 @@
 /**
  * Duration (availability WINDOW length) helpers — CTL-55 start+duration model.
  *
- * `windowMin` is a plain positive integer number of minutes measured from `startLocal`. There is
- * **no** end-of-day / 24:00 sentinel, no wraparound, and no snap-to-grid: a rule/exception that
- * starts at 22:00 with a 4h window simply carries `windowMin: 240` and may cross midnight — the
- * backend (materialized occurrences) is responsible for resolving that against calendar days, not
- * the form.
+ * `windowMin` is a plain positive integer number of minutes measured from `startLocal`: no
+ * sentinel value, no wraparound encoding, no snap-to-grid. This module validates that number and
+ * nothing else.
+ *
+ * It does NOT follow that a window may cross midnight — it may not. Ranges are same-day only, and
+ * `fromTo.ts` enforces it: `toWindowMin` throws on a range that would pass midnight, and the
+ * pickers offer `"24:00"` as the end-of-day option (`startLocal + windowMin === 1440`).
+ * Cross-midnight availability is expressed as two adjacent-day rows. So a 22:00 start with a 4h
+ * window is not a legal range here, even though 240 is a legal `windowMin`.
  *
  * NOTE: this is the availability WINDOW (how long the guide is bookable for), not
  * `durationsOffered` (the tour lengths a guide sells). Label UI copy accordingly.
  */
 
-/** A positive-integer minute count — no 24:00 sentinel, no wraparound. */
+/** A positive-integer minute count. Whether it fits the day is `fromTo.ts`'s business. */
 export function isValidWindowMin(value: unknown): value is number {
   return (
     typeof value === "number" && Number.isFinite(value) && Number.isInteger(value) && value > 0

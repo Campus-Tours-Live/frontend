@@ -23,6 +23,11 @@ describe("FormHelperText", () => {
     expect(screen.getByText("Required")).toHaveClass("text-error-foreground");
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden");
   });
+
+  it("dims the text when disabled", () => {
+    render(<FormHelperText disabled>Pick one</FormHelperText>);
+    expect(screen.getByText("Pick one")).toHaveClass("opacity-60");
+  });
 });
 
 describe("FormGroup", () => {
@@ -48,5 +53,37 @@ describe("FormGroup", () => {
     );
     expect(screen.getByText("Choose at least one")).toHaveClass("text-error-foreground");
     expect(screen.queryByText("Pick any")).not.toBeInTheDocument();
+  });
+
+  it("renders no legend at all when neither label nor helper is given", () => {
+    const { container } = render(
+      <FormGroup>
+        <input aria-label="a" type="checkbox" />
+      </FormGroup>,
+    );
+    expect(container.querySelector("legend")).not.toBeInTheDocument();
+  });
+
+  it("renders a legend with only helper text when label is omitted", () => {
+    const { container } = render(
+      <FormGroup helperText="Pick any">
+        <input aria-label="a" type="checkbox" />
+      </FormGroup>,
+    );
+    const legend = container.querySelector("legend");
+    expect(legend).toBeInTheDocument();
+    // No label rendered inside the legend — just the helper text.
+    expect(legend?.textContent).toBe("Pick any");
+  });
+
+  it("renders a legend with only the label when helper/error is omitted", () => {
+    const { container } = render(
+      <FormGroup label="Notify me">
+        <input aria-label="a" type="checkbox" />
+      </FormGroup>,
+    );
+    expect(container.querySelector("legend")).toHaveTextContent("Notify me");
+    // No FormHelperText rendered.
+    expect(container.querySelector("legend svg")).not.toBeInTheDocument();
   });
 });

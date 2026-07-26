@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { Button, Heading, Icon, List, ListItem } from "@/components/ui";
+import { Body, Heading, Icon, Link, List, ListItem } from "@/components/ui";
+import { assetUrl } from "@/lib/assets";
 
 /**
  * Hero — home hero from design_new (#home .home-hero).
@@ -8,7 +9,7 @@ import { Button, Heading, Icon, List, ListItem } from "@/components/ui";
  * Collapses to a single stacked column below the lg breakpoint.
  * CTAs are inert placeholders for now.
  *
- * Image asset: save the campus illustration to `public/assets/hero-campus.png`.
+ * Image asset: the campus illustration is served from R2 as `hero_campus.png` (see @/lib/assets).
  */
 const TRUST_SIGNALS = [
   "Verified current students",
@@ -25,14 +26,18 @@ export function Hero() {
         <Heading as="h1" size="display" className="mt-3 max-w-[720px]">
           Explore campus with someone who actually studies there.
         </Heading>
-        <p className="lead mt-5">
+        <Body as="p" size="lead" color="muted" className="mt-5">
           Ask the questions you cannot find on the university website. Book a live tour with a
           verified student guide.
-        </p>
+        </Body>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button variant="primary">Explore live tours</Button>
-          <Button variant="secondary">Become a guide</Button>
+          <Link href="/tours" variant="primary">
+            Explore tours
+          </Link>
+          <Link href="/signup/guide" variant="secondary">
+            Become a guide
+          </Link>
         </div>
 
         <List dividers={false} className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
@@ -57,7 +62,7 @@ export function Hero() {
           the real ratio). */}
       <div className="w-full overflow-hidden rounded-panel border border-border shadow-card">
         <Image
-          src="/assets/hero-campus.png"
+          src={assetUrl("hero_campus.png")}
           alt="Student guides and prospective students walking and talking on a sunlit campus quad"
           width={1536}
           height={1024}

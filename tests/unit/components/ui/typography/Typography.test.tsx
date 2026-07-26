@@ -38,6 +38,11 @@ describe("Heading", () => {
     expect(el).toHaveClass("font-semibold", "text-primary");
   });
 
+  it("defaults the semantic tag to h2 when `as` is omitted", () => {
+    render(<Heading>Untitled section</Heading>);
+    expect(screen.getByRole("heading", { level: 2, name: "Untitled section" }).tagName).toBe("H2");
+  });
+
   it("small maps to the ui-lg token", () => {
     render(
       <Heading as="h3" size="small">

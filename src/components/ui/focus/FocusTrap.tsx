@@ -19,6 +19,7 @@ const FOCUSABLE = [
 ].join(", ");
 
 function getFocusable(root: HTMLElement | null): HTMLElement[] {
+  /* istanbul ignore next -- defensive: rootRef is always attached post-mount before callers invoke this */
   if (!root) return [];
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE));
 }

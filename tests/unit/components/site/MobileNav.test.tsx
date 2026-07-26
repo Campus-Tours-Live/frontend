@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Home } from "lucide-react";
 import { MobileNav } from "@/components/site/MobileNav";
 import { useMe } from "@/lib/data-access";
+import { submitLogout } from "@/lib/auth/logout";
+
+jest.mock("@/lib/auth/logout", () => ({ submitLogout: jest.fn() }));
 
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
@@ -15,6 +19,18 @@ jest.mock("@/components/site/AccountNav", () => ({
   AccountNav: () => <div data-testid="account-nav" />,
 }));
 
+// NAV_LINKS is intentionally [] in production (see NavLinks.ts — "the header keeps only the
+// global search + account menu"), which every other test in this file relies on. A getter (read
+// fresh on each property access, unlike a destructured import) lets one test below flip it to a
+// non-empty vocabulary to exercise the Discover-section render branch the real data never reaches
+// today, without disturbing the empty default the rest of the suite exercises.
+let navLinks: { label: string; href: string; icon: typeof Home }[] = [];
+jest.mock("@/components/site/NavLinks", () => ({
+  get NAV_LINKS() {
+    return navLinks;
+  },
+}));
+
 function setupMe(opts?: { isLoading?: boolean; isOnboarded?: boolean }) {
   (useMe as jest.Mock).mockReturnValue({
     me: opts?.isOnboarded ? { displayName: "Ada" } : null,
@@ -25,6 +41,7 @@ function setupMe(opts?: { isLoading?: boolean; isOnboarded?: boolean }) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  navLinks = [];
 });
 
 describe("MobileNav — drawer toggle", () => {
@@ -68,8 +85,24 @@ describe("MobileNav — drawer toggle", () => {
   });
 });
 
-describe("MobileNav — primary links", () => {
-  it("always renders the Discover section with the nav links", async () => {
+describe("MobileNav — primary links (removed)", () => {
+  it("renders no Discover nav section", async () => {
+    const user = userEvent.setup();
+    setupMe({ isOnboarded: false });
+
+    render(<MobileNav />);
+    await user.click(screen.getByRole("button", { name: "Open menu" }));
+
+    expect(screen.queryByText("Discover")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Explore tours" })).not.toBeInTheDocument();
+    expect(screen.queryByText("How it works")).not.toBeInTheDocument();
+    expect(screen.queryByText("For students & parents")).not.toBeInTheDocument();
+  });
+});
+
+describe("MobileNav — primary links present (future-proofing the Discover section)", () => {
+  it("renders a Discover section item when NAV_LINKS has entries", async () => {
+    navLinks = [{ label: "Explore tours", href: "/tours", icon: Home }];
     const user = userEvent.setup();
     setupMe({ isOnboarded: false });
 
@@ -77,9 +110,7 @@ describe("MobileNav — primary links", () => {
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.getByText("Discover")).toBeInTheDocument();
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
-    expect(screen.getByText("How it works")).toBeInTheDocument();
-    expect(screen.getByText("For students & parents")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
   });
 });
 
@@ -101,14 +132,17 @@ describe("MobileNav — logged out (not onboarded)", () => {
 describe("MobileNav — logged in (onboarded)", () => {
   beforeEach(() => setupMe({ isOnboarded: true }));
 
-  it("renders AccountNav and a Sign out link, hides the sign-in CTA", async () => {
+  it("renders AccountNav and a Sign out button that POSTs logout, hides the sign-in CTA", async () => {
     const user = userEvent.setup();
     render(<MobileNav />);
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.getByTestId("account-nav")).toBeInTheDocument();
-    const signOut = screen.getByRole("link", { name: "Sign out" });
-    expect(signOut).toHaveAttribute("href", "/auth/logout");
+    // Sign out is a POST (not a CSRF-forgeable GET link) — a button that submits the logout form.
+    const signOut = screen.getByRole("button", { name: "Sign out" });
+    expect(signOut).not.toHaveAttribute("href");
+    await user.click(signOut);
+    expect(submitLogout).toHaveBeenCalled();
     expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
   });
 });
@@ -122,8 +156,6 @@ describe("MobileNav — auth-actions gate", () => {
     await user.click(screen.getByRole("button", { name: "Open menu" }));
 
     expect(screen.queryByText("Sign in or Join Now")).not.toBeInTheDocument();
-    // Primary links still show.
-    expect(screen.getByText("Explore tours")).toBeInTheDocument();
   });
 
   it("hides the welcome card when showAuthActions is false (logged out)", async () => {

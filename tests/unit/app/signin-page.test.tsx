@@ -13,7 +13,7 @@ jest.mock("@/components/signup/AuthOptions", () => ({
   ),
 }));
 
-import SignInPage from "@/app/signin/page";
+import SignInPage from "@/app/(auth)/signin/page";
 
 async function renderSignin(search: { error?: string; returnTo?: string } = {}): Promise<void> {
   const el = await SignInPage({ searchParams: Promise.resolve(search) });

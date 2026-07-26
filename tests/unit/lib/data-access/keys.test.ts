@@ -18,6 +18,10 @@ describe("queryKeys", () => {
       expect(queryKeys.tourTopics()).toEqual(["tour-topics"]);
     });
 
+    it("tourFeatures() → ['tour-features']", () => {
+      expect(queryKeys.tourFeatures()).toEqual(["tour-features"]);
+    });
+
     it("dashboard() → ['dashboard']", () => {
       expect(queryKeys.dashboard()).toEqual(["dashboard"]);
     });
@@ -92,6 +96,16 @@ describe("queryKeys", () => {
         "university-search",
         "New York University",
       ]);
+    });
+  });
+
+  describe("majors(schoolId)", () => {
+    it("returns ['majors', schoolId]", () => {
+      expect(queryKeys.majors("s1")).toEqual(["majors", "s1"]);
+    });
+
+    it("varies by schoolId", () => {
+      expect(queryKeys.majors("s1")).not.toEqual(queryKeys.majors("s2"));
     });
   });
 

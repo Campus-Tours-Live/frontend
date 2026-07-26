@@ -1,4 +1,4 @@
-import { Caption, Card, Heading, Link, StatusBadge } from "@/components/ui";
+import { Body, Caption, Card, Heading, Link, StatusBadge } from "@/components/ui";
 import { formatOfferingPrice } from "@/lib/format";
 
 /**
@@ -50,9 +50,9 @@ export function TourCard({
         <Heading as="h4" size="h4" className="mb-1.5 mt-3.5 min-h-[2.6em]">
           {title}
         </Heading>
-        <Caption as="div">
+        <Body as="div" size="small" color="muted">
           {university} · {guide} · {durationMinutes} min
-        </Caption>
+        </Body>
         <Caption as="div" weight={600} className="mt-2">
           {reviewCount > 0 ? `★ ${avgRating.toFixed(1)} (${reviewCount})` : "New tour"}
         </Caption>

@@ -146,6 +146,15 @@ export interface TourTopic {
   label: string;
 }
 
+/** A { value, label } option for a controlled vocabulary (Core MetaController.Option). */
+export interface MetaOption {
+  value: string;
+  label: string;
+}
+
+/** Tour feature options grouped by TourTopic name (GET /v1/meta/tour-features). */
+export type TourFeatureOptionsByTopic = Record<string, MetaOption[]>;
+
 /** Public marketplace card (Core TourSummaryResponse). */
 export interface TourSummary {
   id: string;
@@ -154,19 +163,34 @@ export interface TourSummary {
   topic: string;
   universityId: string;
   universityName: string;
+  /** Campus photo URL (Cloudflare R2), or null when the university has no photo yet — the card
+   *  falls back to {@link CAMPUS_FALLBACK_IMAGE} client-side. */
+  universityImageUrl?: string | null;
   guideId: string;
   guideDisplayName: string;
+  /** Guide's field of study (major). */
+  guideMajor: string;
+  /** Guide's degree level (e.g. "BS" | "MS" | "PhD"), or null if unknown. */
+  guideDegree: string | null;
+  /** Year the guide entered the university, or null if unknown. */
+  guideEntryYear: number | null;
   durationMin: number;
   priceCents: number;
   currency: string;
   avgRating: number;
   reviewCount: number;
+  /** Languages the tour can be given in (full list; the card shows the first). */
+  languages: string[];
+  /** Feature codes the guide attached (≤3), from the TourFeature catalog. */
+  features: string[];
+  /** True if created within the last 30 days (backend-computed) — drives the "New" chip. */
+  isNew: boolean;
 }
 
 /** Full public tour detail (Core TourDetailResponse). */
 export interface TourDetail extends TourSummary {
   description: string | null;
-  languages: string[] | null;
+  languages: string[];
   universitySlug: string;
   universityCity: string | null;
   universityRegion: string | null;
@@ -178,10 +202,27 @@ export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATI
 /** Query params for GET /v1/tours. */
 export interface TourCatalogFilters {
   universityId?: string;
-  topic?: string;
+  /** Already-canonical topic ids (see `canonicalizeTopicIds`) — never re-derived here. */
+  topicIds?: string[];
   q?: string;
   sort?: TourCatalogSort;
+  /** Zero-based page index. @default 0 */
+  page?: number;
+  /** Page size (max rows per page). @default 20 */
   limit?: number;
+}
+
+/** One page of GET /v1/tours results (Core `PagedResponse<TourSummary>`). */
+export interface TourCatalogPage {
+  items: TourSummary[];
+  /** Zero-based index of this page. */
+  page: number;
+  /** Page size. */
+  size: number;
+  /** Total matching tours across all pages. */
+  totalElements: number;
+  /** Total number of pages (0 when there are no results). */
+  totalPages: number;
 }
 
 // --- Availability v2 (CTL-55) — start + duration, BFF Contract A (/v1/availability*) --------------

@@ -14,7 +14,7 @@ jest.mock("@/components/signup/RoleCard", () => ({
 
 import { redirect } from "next/navigation";
 import { getServerMe } from "@/lib/http/serverMe";
-import SignupRolePage from "@/app/signup/role/page";
+import SignupRolePage from "@/app/(auth)/signup/role/page";
 
 describe("/signup/role with no session", () => {
   it("renders the chooser (no redirect) when getServerMe returns null", async () => {

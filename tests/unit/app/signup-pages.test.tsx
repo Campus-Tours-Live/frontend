@@ -16,8 +16,8 @@ jest.mock("@/components/signup/AuthOptions", () => ({
   ),
 }));
 
-import SignupGuidePage from "@/app/signup/guide/page";
-import SignupParticipantPage from "@/app/signup/participant/page";
+import SignupGuidePage from "@/app/(auth)/signup/guide/page";
+import SignupParticipantPage from "@/app/(auth)/signup/participant/page";
 
 describe("signup landing pages", () => {
   it("guide signup shows its heading and wires AuthOptions to guide onboarding", () => {

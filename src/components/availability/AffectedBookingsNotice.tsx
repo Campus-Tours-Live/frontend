@@ -1,4 +1,4 @@
-import { Alert } from "@/components/ui";
+import { Alert, Body } from "@/components/ui";
 import type { AffectedBooking } from "@/lib/data-access";
 
 /** One affected booking's scheduled window in the guide's settings timezone —
@@ -31,15 +31,17 @@ export function AffectedBookingsNotice({ bookings, timeZone }: AffectedBookingsN
   if (bookings.length === 0) return null;
   return (
     <Alert variant="warning" role="status">
-      <p className="font-medium">
+      <Body as="p" size="small" weight={500} color="inherit">
         Saved — but{" "}
         {bookings.length === 1 ? "1 existing booking" : `${bookings.length} existing bookings`}{" "}
         overlap this change. They are kept, not cancelled — please review:
-      </p>
+      </Body>
       <ul className="mt-1 space-y-1">
         {bookings.map((booking) => (
           <li key={booking.bookingId}>
-            <span className="font-semibold">{booking.bookingNumber}</span>{" "}
+            <Body as="span" size="small" weight={600} color="inherit">
+              {booking.bookingNumber}
+            </Body>{" "}
             <time dateTime={booking.scheduledStartAt}>
               {formatBookingWindow(booking.scheduledStartAt, booking.scheduledEndAt, timeZone)}
             </time>

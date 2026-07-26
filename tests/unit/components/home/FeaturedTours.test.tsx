@@ -14,12 +14,26 @@ const tours = Array.from({ length: 9 }, (_, index) => ({
   universityName: "Test University",
   guideId: "guide-id",
   guideDisplayName: "Jane Doe",
+  guideMajor: "Computer Science",
+  guideDegree: "BS",
+  guideEntryYear: 2024,
   durationMin: 30,
   priceCents: 2500,
   currency: "USD",
   avgRating: 4.5,
   reviewCount: 10,
+  languages: ["en-US"],
+  features: [],
+  isNew: false,
 }));
+
+const catalogPage = {
+  items: tours,
+  page: 0,
+  size: 20,
+  totalElements: tours.length,
+  totalPages: 1,
+};
 
 const mockUseTourCatalog = jest.fn();
 jest.mock("@/lib/data-access", () => ({
@@ -35,7 +49,7 @@ import { TourCard } from "@/components/tours/TourCard";
 import { ApiError } from "@/lib/data-access";
 
 beforeEach(() => {
-  mockUseTourCatalog.mockReturnValue({ data: tours, isLoading: false, error: null });
+  mockUseTourCatalog.mockReturnValue({ data: catalogPage, isLoading: false, error: null });
 });
 
 describe("FeaturedTours", () => {
@@ -59,20 +73,32 @@ describe("FeaturedTours", () => {
     expect(screen.getByRole("button", { name: /next tours/i })).toBeInTheDocument();
   });
 
+  it("links the view-all CTAs to the tours catalog", () => {
+    render(<FeaturedTours />);
+
+    for (const link of screen.getAllByRole("link", { name: /view all tours/i })) {
+      expect(link).toHaveAttribute("href", "/tours");
+    }
+  });
+
   it("shows loading, signed-out, and empty catalog states", () => {
-    mockUseTourCatalog.mockReturnValueOnce({ data: [], isLoading: true, error: null });
+    mockUseTourCatalog.mockReturnValueOnce({ data: undefined, isLoading: true, error: null });
     const { rerender } = render(<FeaturedTours />);
     expect(screen.getByText(/loading tours/i)).toBeInTheDocument();
 
     mockUseTourCatalog.mockReturnValueOnce({
-      data: [],
+      data: undefined,
       isLoading: false,
       error: new ApiError(401),
     });
     rerender(<FeaturedTours />);
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
 
-    mockUseTourCatalog.mockReturnValueOnce({ data: [], isLoading: false, error: null });
+    mockUseTourCatalog.mockReturnValueOnce({
+      data: { ...catalogPage, items: [], totalElements: 0, totalPages: 0 },
+      isLoading: false,
+      error: null,
+    });
     rerender(<FeaturedTours />);
     expect(screen.getByText(/no live tours are available/i)).toBeInTheDocument();
   });

@@ -66,6 +66,7 @@ describe("AccountNav — participant", () => {
   it("renders the participant nav (My bookings / Guardian & consent)", () => {
     render(<AccountNav />);
 
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("My bookings")).toBeInTheDocument();
     expect(screen.getByText("Guardian & consent")).toBeInTheDocument();
     // Guide-only items must NOT appear.
@@ -107,6 +108,7 @@ describe("AccountNav — guide", () => {
 
     render(<AccountNav />);
 
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("Upcoming tours")).toBeInTheDocument();
     // "Earnings" is both a section label and an item; assert the item button.
     expect(screen.getByRole("button", { name: "Earnings" })).toBeInTheDocument();
@@ -154,6 +156,7 @@ describe("AccountNav — defaults", () => {
 
     render(<AccountNav />);
 
+    expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("My bookings")).toBeInTheDocument();
     expect(screen.getByText("Participant account")).toBeInTheDocument();
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Heading, IconButton, Link, Spinner } from "@/components/ui";
+import { Alert, Container, IconButton, Link, SectionHeading, Spinner } from "@/components/ui";
 import { TourCard } from "@/components/tours/TourCard";
 import { ApiError, useTourCatalog } from "@/lib/data-access";
 import { cn } from "@/lib/utils";
@@ -54,14 +54,11 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 }
 
 export function FeaturedTours() {
-  const {
-    data: tours = [],
-    isLoading,
-    error,
-  } = useTourCatalog({
+  const { data, isLoading, error } = useTourCatalog({
     sort: "RECOMMENDED",
     limit: 20,
   });
+  const tours = data?.items ?? [];
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [pageCount, setPageCount] = useState(1);
@@ -93,19 +90,22 @@ export function FeaturedTours() {
   };
 
   return (
-    <section className="mx-auto max-w-content px-6 pb-[90px] pt-8 xl:max-w-[1280px] 2xl:max-w-[1400px]">
-      <div className="mb-6 flex items-end justify-between gap-5">
-        <div>
-          <div className="eyebrow">Featured tours</div>
-          <Heading as="h2" size="h2" className="mt-1">
-            Start with a campus that feels right.
-          </Heading>
-        </div>
-        {/* Desktop "View all" (mobile gets its own CTA below the stack) */}
-        <Link href="#" className="hidden shrink-0 font-semibold text-primary lg:inline-block">
-          View all tours
-        </Link>
-      </div>
+    <Container as="section" width="wide" className="pb-[90px] pt-8">
+      <SectionHeading
+        eyebrow="Featured tours"
+        title="Start with a campus that feels right."
+        level={2}
+        className="mb-6"
+        // Desktop "View all" (mobile gets its own CTA below the stack)
+        action={
+          <Link
+            href="/tours"
+            className="hidden shrink-0 font-semibold text-primary lg:inline-block"
+          >
+            View all tours
+          </Link>
+        }
+      />
 
       <div className="relative">
         {/* < lg: vertical stack. lg+: horizontal carousel. */}
@@ -178,21 +178,19 @@ export function FeaturedTours() {
         {/* Side chevrons (desktop carousel only) */}
         <IconButton
           a11yLabel="Previous tours"
-          size="large"
-          variant="soft"
+          variant="card"
           onClick={() => goToPage(active - 1)}
           disabled={active === 0}
-          className="absolute left-1 top-1/2 z-20 hidden -translate-y-1/2 border border-border bg-card text-ink shadow-card hover:border-primary lg:inline-flex"
+          className="absolute left-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 lg:inline-flex"
         >
           <Chevron dir="left" />
         </IconButton>
         <IconButton
           a11yLabel="Next tours"
-          size="large"
-          variant="soft"
+          variant="card"
           onClick={() => goToPage(active + 1)}
           disabled={active === pageCount - 1}
-          className="absolute right-1 top-1/2 z-20 hidden -translate-y-1/2 border border-border bg-card text-ink shadow-card hover:border-primary lg:inline-flex"
+          className="absolute right-1 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 lg:inline-flex"
         >
           <Chevron dir="right" />
         </IconButton>
@@ -217,10 +215,10 @@ export function FeaturedTours() {
 
       {/* Mobile "View all" CTA (vertical stack only) */}
       <div className="mt-6 flex justify-center lg:hidden">
-        <Link href="#" className="font-semibold text-primary">
+        <Link href="/tours" className="font-semibold text-primary">
           View all tours
         </Link>
       </div>
-    </section>
+    </Container>
   );
 }

@@ -6,7 +6,7 @@ import { useTourTopics } from "@/lib/data-access/hooks/use-tour-topics";
 /**
  * Exercises the REAL useTourTopics hook end-to-end: query → apiFetch →
  * fetch(/v1/meta/tour-topics) → apiJson envelope unwrap. This is an ambient
- * (interactive:false) read. Only global.fetch is mocked.
+ * (escalate: none) read. Only global.fetch is mocked.
  */
 
 function makeWrapper() {

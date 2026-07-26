@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { subscribeAuthGate, cancelAuth } from "@/lib/auth";
 import { Button, GoogleMark, Modal, SectionHeading, Spinner } from "@/components/ui";
+import { assetUrl } from "@/lib/assets";
 
 /**
  * Re-auth modal, styled like the /signin card (illustration + content) but shown
@@ -38,7 +39,7 @@ export function SessionExpiredModal() {
         {/* Illustration — banner on small screens, side panel on sm+. */}
         <div className="relative aspect-[16/9] w-full overflow-hidden sm:hidden">
           <Image
-            src="/assets/signin.png"
+            src={assetUrl("signin.png")}
             alt=""
             fill
             sizes="100vw"
@@ -47,7 +48,7 @@ export function SessionExpiredModal() {
         </div>
         <div className="relative hidden overflow-hidden sm:block">
           <Image
-            src="/assets/signin.png"
+            src={assetUrl("signin.png")}
             alt=""
             fill
             sizes="360px"

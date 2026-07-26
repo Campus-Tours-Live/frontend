@@ -11,17 +11,23 @@ const tour: TourDetailData = {
   languages: ["en-US", "zh-CN"],
   universityId: "university-id",
   universityName: "North Coast University",
+  universityImageUrl: null,
   universitySlug: "north-coast",
   universityCity: "Arcata",
   universityRegion: "CA",
   guideId: "guide-id",
   guideDisplayName: "Maya Chen",
+  guideMajor: "Public Health",
+  guideDegree: "BS",
+  guideEntryYear: 2024,
   guideBio: "Third-year student and campus tour lead.",
   durationMin: 60,
   priceCents: 4200,
   currency: "USD",
   avgRating: 4.5,
   reviewCount: 12,
+  features: [],
+  isNew: false,
 };
 
 describe("TourDetail", () => {
@@ -42,7 +48,7 @@ describe("TourDetail", () => {
         tour={{
           ...tour,
           description: null,
-          languages: null,
+          languages: [],
           universityCity: null,
           universityRegion: null,
           guideBio: null,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { Plus, Trash2 } from "lucide-react";
 import {
   Alert,
@@ -8,6 +9,7 @@ import {
   Button,
   Caption,
   Drawer,
+  Heading,
   IconButton,
   Modal,
   SegmentedControl,
@@ -365,6 +367,10 @@ function buildDayView(
  *  block-framed: it names the current windows and what they become once the block is applied. */
 function conflictSentences(conflictDays: DayView[], timeZone: string): string[] {
   return conflictDays.map((view) => {
+    /* istanbul ignore next -- defensive: only called with conflictDays (conflict===true), which
+     * requires !coversAvailability(before, after); coversAvailability(before=[], after) is
+     * vacuously true (every() on an empty array), so before.length is always >0 whenever a view
+     * reaches here — the "no hours" fallback is algebraically unreachable. */
     const currently =
       view.before.length > 0
         ? view.before.map((win) => formatOccurrence(win, timeZone)).join(", ")
@@ -382,6 +388,8 @@ function conflictSentences(conflictDays: DayView[], timeZone: string): string[] 
  *  modal never pre-computes or blocks on validity client-side (FE-never-recomputes). The dry-run
  *  preview + this 422 are the only sources of truth. */
 export function dateOverrideErrorMessage(err: unknown): string {
+  // A dismissed sign-in prompt is not this action failing — attribute it to auth.
+  if (isAuthCancelled(err)) return SIGN_IN_AGAIN_MESSAGE;
   if (err instanceof ApiError && err.status === 422) {
     return err.message || "This override could not be applied.";
   }
@@ -394,6 +402,8 @@ export function dateOverrideErrorMessage(err: unknown): string {
  *  — and falls back to a generic notice when the error carries none (e.g. a network failure).
  *  Pure presentation of `previewQuery.error`; never a recompute. */
 export function previewErrorMessage(err: unknown): string {
+  // A dismissed sign-in prompt is not this action failing — attribute it to auth.
+  if (isAuthCancelled(err)) return SIGN_IN_AGAIN_MESSAGE;
   if (err instanceof ApiError && err.message) {
     return err.message;
   }
@@ -438,6 +448,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
 
   // Switching the toggle re-loads THAT kind's existing slots (an empty list when the day has none).
   const selectMode = (next: AvailabilityExceptionKind) => {
+    /* istanbul ignore next -- defensive: SegmentedControl's own `select` already guards
+     * `if (next !== selected) onChange?.(next)`, so it never calls this `onChange` handler for the
+     * already-selected option in the first place — this early return is unreachable via the UI. */
     if (next === mode) return;
     setMode(next);
     setSlots(slotsFromExceptions(dayExceptions, next));
@@ -564,9 +577,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
   };
 
   const header = (
-    <h2 id="date-override-modal-title" className="font-display text-[22px] font-bold text-ink">
+    <Heading as="h2" id="date-override-modal-title" size="xlarge" weight={700} color="ink">
       Date-specific hours · {formatDayHeader(date)}
-    </h2>
+    </Heading>
   );
 
   const footer =
@@ -710,7 +723,9 @@ function DateOverrideModalContent({ date, dayExceptions, onClose }: DateOverride
                     <li key={index}>{message}</li>
                   ))}
                 </ul>
-                <p className="mt-1 font-medium">Confirm the change?</p>
+                <Body as="p" size="small" weight={500} color="inherit" className="mt-1">
+                  Confirm the change?
+                </Body>
               </Alert>
             ) : null}
             <ul className="mt-3 space-y-4">

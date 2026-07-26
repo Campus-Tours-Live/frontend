@@ -1,10 +1,16 @@
 import { type ReactElement } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 
-// Header nav reads the route (useInFunnel / AccountNav) — no app-router in tests.
-jest.mock("next/navigation", () => ({ usePathname: () => "/" }));
+// Header nav reads the route (useInFunnel / AccountNav) and the mounted global
+// search (SiteHeaderSearch) uses the app router — provide all three in tests.
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/",
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
+  useSearchParams: () => new URLSearchParams(""),
+}));
 
 beforeEach(() => {
   // Logged-out: /auth/session → 200 { authenticated:false }; /v1/userinfo → 401.
@@ -47,14 +53,67 @@ describe("SiteHeader", () => {
     await flush();
   });
 
-  it("renders the primary navigation links", async () => {
+  it("renders no primary navigation links (removed)", async () => {
     renderWithQuery(<SiteHeader />);
-    // Links appear in both the desktop inline nav and the mobile drawer.
-    expect(screen.getAllByRole("link", { name: /explore tours/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /how it works/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: /for students & parents/i }).length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.queryByRole("link", { name: /explore tours/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /how it works/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /for students & parents/i })).not.toBeInTheDocument();
     await flush();
+  });
+
+  it("Escape closes the Topic panel and returns focus to the Topic trigger without reopening it", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const trigger = screen.getByRole("button", { name: "Topic" });
+    await user.click(trigger);
+    expect(await screen.findByRole("region", { name: "Topic" })).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    // Focusing the trigger must not re-open the panel (it opens on click, not focus).
+    expect(screen.queryByRole("region", { name: "Topic" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a typed University value after clicking outside the header (does not wipe on blur)", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const uni = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(uni, "Stanford");
+    expect(uni).toHaveValue("Stanford");
+
+    // Clicking outside the header ends the interaction but must NOT revert the draft.
+    await user.click(document.body);
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
+  });
+
+  it("Escape keeps the typed University value and closes the popover (does not revert)", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const uni = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(uni, "Stanford");
+    await user.keyboard("{Escape}");
+    // Content kept; popover gone.
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
+    expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
+  });
+
+  it("blurring the University field keeps its content and hides the popover", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<SiteHeader />);
+    await flush();
+
+    const uni = within(screen.getByRole("search")).getByLabelText("University");
+    await user.type(uni, "Stanford");
+    await act(async () => uni.blur());
+    expect(within(screen.getByRole("search")).getByLabelText("University")).toHaveValue("Stanford");
+    expect(screen.queryByRole("region", { name: "University search" })).not.toBeInTheDocument();
   });
 });

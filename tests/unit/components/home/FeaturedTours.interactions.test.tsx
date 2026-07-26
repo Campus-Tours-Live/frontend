@@ -14,7 +14,17 @@ const tours = Array.from({ length: 9 }, (_, index) => ({
 
 jest.mock("@/lib/data-access", () => ({
   ApiError: class ApiError extends Error {},
-  useTourCatalog: () => ({ data: tours, isLoading: false, error: null }),
+  useTourCatalog: () => ({
+    data: {
+      items: tours,
+      page: 0,
+      size: 20,
+      totalElements: tours.length,
+      totalPages: 1,
+    },
+    isLoading: false,
+    error: null,
+  }),
 }));
 import { FeaturedTours } from "@/components/home/FeaturedTours";
 

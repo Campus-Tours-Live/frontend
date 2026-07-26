@@ -1,5 +1,5 @@
 import { type ReactElement } from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideProfileForm } from "@/components/profile/GuideProfileForm";
@@ -12,10 +12,15 @@ const mockUseTourTopics = jest.fn(() => ({
   isLoading: false,
 }));
 
+const mockUseMajors = jest.fn((_schoolId?: string | null) => ({
+  data: [] as { value: string; label: string }[],
+}));
+
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useUpdateGuideProfile: () => ({ mutateAsync, isPending: false }),
   useTourTopics: () => mockUseTourTopics(),
+  useMajors: (schoolId: string | null | undefined) => mockUseMajors(schoolId),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({
@@ -68,6 +73,7 @@ beforeEach(() => {
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
   });
+  mockUseMajors.mockReturnValue({ data: [] });
 });
 
 describe("GuideProfileForm", () => {
@@ -227,5 +233,48 @@ describe("GuideProfileForm", () => {
     await user.click(screen.getByRole("button", { name: "Save profile" }));
 
     expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ specialties: [] }));
+  });
+
+  it("seeds an empty major when the profile omits one", () => {
+    renderWithQuery(<GuideProfileForm profile={{ firstName: "Ada", lastName: "Lovelace" }} />);
+
+    expect(screen.getByLabelText(/major/i)).toHaveValue("");
+  });
+
+  it("defaults specialty and major options to empty lists when the hooks return no data", () => {
+    mockUseTourTopics.mockReturnValue({ data: undefined, isLoading: false } as never);
+    mockUseMajors.mockReturnValue({ data: undefined } as never);
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    // topicOptions defaults to [] → no specialty chips rendered (and not the loading copy).
+    expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "General campus" })).not.toBeInTheDocument();
+
+    // majorOptions defaults to [] → only the saved-major fallback option is present.
+    const majorSelect = screen.getByLabelText(/major/i);
+    expect(within(majorSelect).getAllByRole("option")).toHaveLength(2);
+    expect(
+      within(majorSelect).getByRole("option", { name: "Computer Science" }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to the saved major option when the live majors list doesn't include it", async () => {
+    mockUseMajors.mockReturnValue({ data: [{ value: "BIOLOGY", label: "Biology" }] });
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    const majorSelect = screen.getByLabelText(/major/i);
+    // The saved major ("Computer Science") isn't in the live list, so it's preserved as an option.
+    expect(
+      within(majorSelect).getByRole("option", { name: "Computer Science" }),
+    ).toBeInTheDocument();
+    expect(within(majorSelect).getByRole("option", { name: "Biology" })).toBeInTheDocument();
+
+    await user.selectOptions(majorSelect, "BIOLOGY");
+
+    // Once the selected major matches a live option, the fallback duplicate disappears.
+    expect(
+      within(majorSelect).queryByRole("option", { name: "Computer Science" }),
+    ).not.toBeInTheDocument();
   });
 });

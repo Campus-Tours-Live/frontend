@@ -28,4 +28,17 @@ describe("ButtonGroup", () => {
     render(<ButtonGroup aria-label="Pick one" options={OPTIONS} value="a" onChange={() => {}} />);
     expect(screen.getByRole("group", { name: "Pick one" })).toBeInTheDocument();
   });
+
+  it("applies the small size's compact padding/text classes", () => {
+    render(
+      <ButtonGroup
+        aria-label="Pick one"
+        options={OPTIONS}
+        value="a"
+        onChange={() => {}}
+        size="small"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Alpha" })).toHaveClass("px-3", "py-1.5", "text-xs");
+  });
 });

@@ -75,4 +75,37 @@ describe("Snackbar", () => {
       jest.useRealTimers();
     }
   });
+
+  it("lingers longer for messages over 120 chars (message-length-based duration)", async () => {
+    jest.useFakeTimers();
+    try {
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const message = "A".repeat(130);
+      renderWith({ message });
+
+      await user.click(screen.getByText("raise"));
+      expect(screen.getByText(message)).toBeInTheDocument();
+
+      // Default (short-message) duration is 3500ms; a 130-char message should still be
+      // showing at 3500ms because it gets 3500 + (130 - 120) * 60 = 4100ms.
+      act(() => {
+        jest.advanceTimersByTime(3500);
+      });
+      expect(screen.getByText(message)).toBeInTheDocument();
+
+      act(() => {
+        jest.advanceTimersByTime(600);
+      });
+      expect(screen.queryByText(message)).not.toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("no-ops when addSnack is called outside a SnackbarProvider (default context)", async () => {
+    const user = userEvent.setup();
+    render(<Trigger snack={{ message: "no provider" }} />);
+    await user.click(screen.getByText("raise"));
+    expect(screen.queryByText("no provider")).not.toBeInTheDocument();
+  });
 });

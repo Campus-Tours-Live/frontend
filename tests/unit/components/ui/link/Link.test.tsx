@@ -85,6 +85,24 @@ describe("Link — styling", () => {
     expect(screen.getByRole("link")).not.toHaveClass("btn");
   });
 
+  it("defaults rel to noopener noreferrer for target=_blank", () => {
+    render(
+      <Link href="https://example.com" target="_blank">
+        Ext
+      </Link>,
+    );
+    expect(screen.getByRole("link")).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("respects an explicit rel instead of the tab-nabbing default", () => {
+    render(
+      <Link href="https://example.com" target="_blank" rel="noopener">
+        Ext
+      </Link>,
+    );
+    expect(screen.getByRole("link")).toHaveAttribute("rel", "noopener");
+  });
+
   it("forwards href and a ref", () => {
     const ref = createRef<HTMLAnchorElement>();
     render(

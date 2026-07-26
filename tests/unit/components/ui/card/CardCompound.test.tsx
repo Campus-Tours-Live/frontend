@@ -33,6 +33,26 @@ describe("Card compound", () => {
     expect(within(card).getByRole("button", { name: "Action" })).toBeInTheDocument();
   });
 
+  it("renders no leading/trailing spans when CardHeader gets neither", () => {
+    const { container } = render(
+      <Card padded={false}>
+        <CardHeader title="Just a title" />
+      </Card>,
+    );
+    expect(screen.getByRole("heading", { name: "Just a title" })).toBeInTheDocument();
+    // Neither optional slot was passed, so their wrapper spans should not be rendered.
+    expect(container.querySelectorAll("span")).toHaveLength(0);
+  });
+
+  it("bumps the title's Heading size to 'large' inside a large Card", () => {
+    render(
+      <Card padded={false} size="large">
+        <CardHeader title="Big header" />
+      </Card>,
+    );
+    expect(screen.getByRole("heading", { name: "Big header" })).toHaveClass("text-[20px]");
+  });
+
   it("scales sub-component padding via the Card size context", () => {
     const { rerender } = render(
       <Card padded={false} size="small">

@@ -1,17 +1,12 @@
-import { ApiError, apiJson } from "@/lib/data-access/http";
+import { apiJson } from "@/lib/data-access/http";
 import { queryKeys } from "@/lib/data-access/keys";
-import { tourCatalogOptions, tourDetailOptions } from "@/lib/data-access/queries/tours.query";
+import {
+  tourCatalogOptions,
+  tourDetailOptions,
+  toursPath,
+} from "@/lib/data-access/queries/tours.query";
 
 jest.mock("@/lib/data-access/http", () => ({
-  ApiError: class ApiError extends Error {
-    constructor(
-      public readonly status: number,
-      message?: string,
-    ) {
-      super(message ?? `HTTP ${status}`);
-      this.name = "ApiError";
-    }
-  },
   apiJson: jest.fn(),
 }));
 
@@ -21,6 +16,23 @@ beforeEach(() => {
   mockedApiJson.mockReset();
 });
 
+describe("toursPath", () => {
+  it("emits one repeated topic param per id, in order", () => {
+    expect(toursPath({ topicIds: ["GENERAL_CAMPUS", "DORM_HOUSING"] })).toBe(
+      "/v1/tours?topic=GENERAL_CAMPUS&topic=DORM_HOUSING",
+    );
+  });
+
+  it("omits topic when empty/undefined", () => {
+    expect(toursPath({ topicIds: [] })).toBe("/v1/tours");
+    expect(toursPath({})).toBe("/v1/tours");
+  });
+
+  it("defaults filters to {} when called with no argument", () => {
+    expect(toursPath()).toBe("/v1/tours");
+  });
+});
+
 describe("tourCatalogOptions", () => {
   it("uses the tourCatalog queryKey", () => {
     const filters = { sort: "PRICE_ASC" as const, limit: 10 };
@@ -28,24 +40,33 @@ describe("tourCatalogOptions", () => {
     expect(tourCatalogOptions(filters).queryKey).toEqual(["tour-catalog", filters]);
   });
 
-  it("queryFn fetches /v1/tours with no query string in ambient mode when filters are empty", async () => {
-    const payload = [{ id: "t1" }];
+  it("marks catalog reads as public so anonymous browsing does not trigger re-auth UI", () => {
+    const queryFn = tourCatalogOptions().queryFn as () => Promise<unknown>;
+
+    mockedApiJson.mockResolvedValue({ items: [] } as never);
+    void queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
+  });
+
+  it("queryFn fetches /v1/tours with no query string when filters are empty", async () => {
+    const payload = { items: [{ id: "t1" }], page: 0, size: 20, totalElements: 1, totalPages: 1 };
     mockedApiJson.mockResolvedValue(payload as never);
 
     const queryFn = tourCatalogOptions().queryFn as () => Promise<unknown>;
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
     expect(result).toBe(payload);
   });
 
   it("queryFn builds the query string from filters", async () => {
-    mockedApiJson.mockResolvedValue([] as never);
+    mockedApiJson.mockResolvedValue({ items: [] } as never);
 
     const filters = {
       universityId: "u1",
-      topic: "GENERAL_CAMPUS",
+      topicIds: ["GENERAL_CAMPUS", "DORM_HOUSING"],
       q: "campus",
       sort: "RATING" as const,
       limit: 5,
@@ -54,26 +75,33 @@ describe("tourCatalogOptions", () => {
     await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledWith(
-      "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&q=campus&sort=RATING&limit=5",
-      { interactive: false },
+      "/v1/tours?universityId=u1&topic=GENERAL_CAMPUS&topic=DORM_HOUSING&q=campus&sort=RATING&limit=5",
+      { escalate: "none" },
     );
   });
 
   it("queryFn omits limit when it is 0", async () => {
-    mockedApiJson.mockResolvedValue([] as never);
+    mockedApiJson.mockResolvedValue({ items: [] } as never);
 
     const queryFn = tourCatalogOptions({ limit: 0 }).queryFn as () => Promise<unknown>;
     await queryFn();
 
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
   });
 
-  it("does not retry client errors but retries transient errors once", () => {
-    const retry = tourCatalogOptions().retry as (failureCount: number, error: Error) => boolean;
+  it("adds page when > 0 and omits it when 0", async () => {
+    mockedApiJson.mockResolvedValue({ items: [] } as never);
 
-    expect(retry(0, new ApiError(401))).toBe(false);
-    expect(retry(1, new Error("Network hiccup"))).toBe(true);
-    expect(retry(2, new Error("Still down"))).toBe(false);
+    const withPage = tourCatalogOptions({ page: 2, limit: 20 }).queryFn as () => Promise<unknown>;
+    await withPage();
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours?page=2&limit=20", {
+      escalate: "none",
+    });
+
+    mockedApiJson.mockClear();
+    const firstPage = tourCatalogOptions({ page: 0 }).queryFn as () => Promise<unknown>;
+    await firstPage();
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours", { escalate: "none" });
   });
 });
 
@@ -88,7 +116,7 @@ describe("tourDetailOptions", () => {
     expect(tourDetailOptions("abc").enabled).toBe(true);
   });
 
-  it("queryFn fetches /v1/tours/{id} and returns the resolved value in ambient mode", async () => {
+  it("queryFn fetches /v1/tours/{id} and returns the resolved value in public mode", async () => {
     const payload = { id: "abc", title: "Campus tour" };
     mockedApiJson.mockResolvedValue(payload as never);
 
@@ -96,7 +124,7 @@ describe("tourDetailOptions", () => {
     const result = await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledTimes(1);
-    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc", { interactive: false });
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/abc", { escalate: "none" });
     expect(result).toBe(payload);
   });
 
@@ -107,7 +135,7 @@ describe("tourDetailOptions", () => {
     await queryFn();
 
     expect(mockedApiJson).toHaveBeenCalledWith("/v1/tours/a%20b%2Fc%3Fd", {
-      interactive: false,
+      escalate: "none",
     });
   });
 });

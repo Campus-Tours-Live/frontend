@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
-import { useMe, useTourTopics, useUpdateGuideProfile } from "@/lib/data-access";
+import { useMajors, useMe, useTourTopics, useUpdateGuideProfile } from "@/lib/data-access";
 import {
   Alert,
   Body,
   Button,
   Chip,
   SectionHeading,
+  SelectField,
   Spinner,
   TextField,
   Textarea,
@@ -66,6 +68,7 @@ export function GuideOnboardingForm() {
   const {
     register,
     control,
+    watch,
     handleSubmit,
     trigger,
     setValue,
@@ -86,6 +89,27 @@ export function GuideOnboardingForm() {
     },
     mode: "onSubmit",
   });
+
+  // Majors are the fields of study the SELECTED school offers (live) — empty until one is picked.
+  const selectedUniversity = watch("university")?.[0];
+  const {
+    data: majorOptions = [],
+    isLoading: majorsLoading,
+    // `isLoading` is `isPending && isFetching` — true only on the FIRST load. A retry runs against
+    // an already-settled query (isPending false), so it would leave `isLoading` false and the retry
+    // would give no feedback at all. `isFetching` is what covers "a fetch is in flight right now".
+    isFetching: majorsFetching,
+    isError: majorsErrored,
+    refetch: refetchMajors,
+  } = useMajors(selectedUniversity?.id);
+
+  // Major is REQUIRED and its options come from a live upstream (College Scorecard). The Core
+  // swallows an upstream outage into an empty list, so the query SUCCEEDS with `[]` — meaning
+  // "settled but empty" is the realistic degradation signal, not `isError`. Without this the
+  // dropdown just sits permanently empty with no explanation and onboarding dead-ends on a field
+  // the guide cannot fill.
+  const majorsUnavailable =
+    Boolean(selectedUniversity) && !majorsLoading && (majorsErrored || majorOptions.length === 0);
 
   // Prefill the name from the account — a member acquiring a second role already
   // entered it for the first (or it came from Google at signup). Fills empty fields
@@ -126,7 +150,11 @@ export function GuideOnboardingForm() {
       router.push("/dashboard");
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again.",
+        isAuthCancelled(err)
+          ? SIGN_IN_AGAIN_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong. Please try again.",
       );
     }
   };
@@ -219,21 +247,64 @@ export function GuideOnboardingForm() {
               render={({ field }) => (
                 <UniversityField
                   label="Your university"
-                  description="The campus you currently attend and will guide for."
+                  description="Search any U.S. university you currently attend."
                   error={errors.university?.message as string}
                   value={field.value}
                   onChange={field.onChange}
                   max={1}
+                  source="live"
                 />
               )}
             />
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <TextField
-                label="Major"
-                placeholder="Computer Science"
-                error={errors.major?.message}
-                {...register("major", { required: "Please enter your major." })}
+              <Controller
+                control={control}
+                name="major"
+                rules={{ required: "Please select your major." }}
+                render={({ field }) => (
+                  <div>
+                    <SelectField
+                      label="Major"
+                      error={errors.major?.message}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!selectedUniversity || majorsLoading}
+                    >
+                      <option value="">
+                        {!selectedUniversity
+                          ? "Pick a university first"
+                          : majorsLoading
+                            ? "Loading majors…"
+                            : "Select a major"}
+                      </option>
+                      {field.value && !majorOptions.some((o) => o.value === field.value) ? (
+                        <option value={field.value}>{field.value}</option>
+                      ) : null}
+                      {majorOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </SelectField>
+                    {majorsUnavailable ? (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
+                        <Body as="p" size="small" color="muted">
+                          Couldn&apos;t load majors for this school.
+                        </Body>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="small"
+                          disabled={majorsFetching}
+                          onClick={() => void refetchMajors()}
+                        >
+                          {majorsFetching ? "Trying…" : "Try again"}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               />
               <TextField
                 label="Class year"

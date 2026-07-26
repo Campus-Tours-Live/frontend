@@ -28,12 +28,22 @@ export { CardContent, type CardContentProps } from "./card/CardContent";
 export { CardActions, type CardActionsProps } from "./card/CardActions";
 export { Panel, PanelHeader, type PanelProps, type PanelHeaderProps } from "./panel/Panel";
 export {
+  Glass,
+  glassClass,
+  GLASS_BASE,
+  GLASS_TONE_CLASS,
+  type GlassProps,
+  type GlassTone,
+} from "./glass/Glass";
+export { Pagination, type PaginationProps } from "./pagination/Pagination";
+export {
   MemberCard,
   type MemberCardProps,
   type MemberCardItem,
   type MemberCardHighlight,
   type MemberRole,
 } from "./member-card/MemberCard";
+export { Container, type ContainerProps, type ContainerWidth } from "./container/Container";
 export { SectionHeading, type SectionHeadingProps } from "./page/SectionHeading";
 export { PageContainer, type PageContainerProps, type PageWidth } from "./page/PageContainer";
 export { PageHeader, type PageHeaderProps } from "./page/PageHeader";

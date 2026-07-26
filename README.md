@@ -170,10 +170,11 @@ Next.js has a hard split between server-only and browser-exposed variables, whic
   secrets here. Changing one requires a dev-server restart (or rebuild) to take effect.
 - **No prefix** — available only on the **server** (RSC, route handlers, `next.config.ts`).
 
-| Variable              | Used by                                            | Purpose                                                                 | Default                 |
-| --------------------- | -------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------- |
-| `BFF_URL`             | `next.config.ts` rewrites + `getServerMe` (server) | BFF origin to proxy `/auth/*`, `/api/*`, `/v1/*` to, and for RSC guards | `http://localhost:4000` |
-| `NEXT_PUBLIC_BFF_URL` | `AuthOptions` (browser)                            | Where the browser starts sign-in. **Empty = same-origin (recommended)** | _(empty)_               |
+| Variable                      | Used by                                            | Purpose                                                                                                                                                                                              | Default                 |
+| ----------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `BFF_URL`                     | `next.config.ts` rewrites + `getServerMe` (server) | BFF origin to proxy `/auth/*`, `/api/*`, `/v1/*` to, and for RSC guards                                                                                                                              | `http://localhost:4000` |
+| `NEXT_PUBLIC_BFF_URL`         | `AuthOptions` (browser)                            | Where the browser starts sign-in. **Empty = same-origin (recommended)**                                                                                                                              | _(empty)_               |
+| `NEXT_PUBLIC_ASSETS_BASE_URL` | `lib/assets.ts` `assetUrl` (browser)               | Public base for the app's own static images. Optional — a working default is baked in; override only for a custom CDN, whose host must then be allow-listed in `next.config` `images.remotePatterns` | _(baked-in R2 base)_    |
 
 `NEXT_PUBLIC_BFF_URL` is empty by default on purpose: `"" + "/auth/login"` is a **same-origin
 relative URL**, which the rewrites forward to the BFF (keeping the session cookie first-party). Only
@@ -196,22 +197,39 @@ src/
 ├── app/                     # App Router — routes, layouts, RSC guards
 │   ├── layout.tsx           #   root: fonts, QueryProvider, SessionExpiredModal
 │   ├── globals.css          #   design tokens + semantic component classes
-│   ├── page.tsx             #   "/" home
-│   ├── (app)/               #   signed-in area (layout = server-side role guard)
+│   ├── (public)/            #   route group — public pages (own layout = SiteHeader)
+│   │   ├── page.tsx         #     "/" home
+│   │   ├── tours/           #     /tours — public tour listing
+│   │   └── layout.tsx
+│   ├── (auth)/              #   route group — sign-in / sign-up / onboarding (own layout)
+│   │   ├── signin/          #     /signin
+│   │   ├── signup/          #     role | participant | guide
+│   │   ├── onboarding/      #     guide / participant onboarding
+│   │   └── layout.tsx
+│   ├── (app)/               #   route group — signed-in area (layout = server-side role guard)
 │   │   ├── dashboard/ profile/ support/
-│   ├── onboarding/          #   guide / participant onboarding
-│   ├── signup/              #   role | participant | guide
-│   ├── signin/
+│   │   ├── guide/           #     guide supply side (own layout)
+│   │   │   ├── availability/          #   /guide/availability
+│   │   │   ├── tour-offerings/        #   /guide/tour-offerings
+│   │   │   │   └── new/               #   /guide/tour-offerings/new
+│   │   │   └── layout.tsx
+│   │   └── layout.tsx
 │   └── staff/               #   staff area (own layout)
 ├── components/
 │   ├── ui/                  #   design-system primitives (Button, Card, Modal, Badge, Field…)
 │   ├── site/                #   chrome: AppShell, headers, nav
 │   ├── home/ tours/ dashboard/ signup/ auth/   # feature components
+│   ├── availability/        #   guide availability: weekly hours, date overrides, calendars
+│   ├── offerings/           #   tour offerings (guide supply side)
+│   └── profile/             #   guide/participant profile views + forms
 ├── lib/
 │   ├── data-access/         #   React Query layer: http, keys, queries/, mutations/, hooks/, types
 │   ├── http/                #   apiFetch (client) + getServerMe (server-only) + barrel
-│   ├── auth/                #   authGate (mid-session re-auth) + returnTo helpers
+│   ├── auth/                #   authGate + authNotice (re-auth prompt vs banner) + returnTo helpers
+│   ├── availability/        #   from–to / duration / day-window helpers shared by the panels
 │   ├── utils/cn.ts          #   className merge (clsx + tailwind-merge)
+│   ├── assets.ts            #   assetUrl for the app's static images (R2)
+│   ├── errors.ts            #   shared error→message mapping for form submits
 │   └── format.ts            #   display formatting (e.g. "member since" month-year)
 └── hooks/                   # generic UI hooks (useDisclosure, useDropdown, useScrollLock…)
 ```
@@ -220,16 +238,21 @@ src/
 
 ## Routing & pages
 
-File-based **App Router** routing under `src/app/`. Folders are routes; `layout.tsx` wraps a subtree;
-the `(app)` folder is a **route group** (groups routes under one layout without adding a URL segment).
+File-based **App Router** routing under `src/app/`. Folders are routes; `layout.tsx` wraps a subtree.
+The app has three **route groups** — `(public)`, `(auth)`, and `(app)` — each with its own `layout.tsx`
+(groups routes under a shared layout without adding a URL segment).
 
 | Route                                    | Area      | Notes                                            |
 | ---------------------------------------- | --------- | ------------------------------------------------ |
 | `/`                                      | public    | Home / marketing                                 |
+| `/tours`                                 | public    | Browse tours (public listing)                    |
 | `/signin`                                | public    | Sign-in entry (delegates to the BFF)             |
 | `/signup/role` `…/participant` `…/guide` | public    | Choose a role / start onboarding                 |
 | `/onboarding/guide` `…/participant`      | protected | Complete a role's onboarding                     |
 | `/dashboard` `/profile` `/support`       | protected | Signed-in app area — `(app)` group, role-guarded |
+| `/guide/availability`                    | protected | Guide availability — weekly hours + overrides    |
+| `/guide/tour-offerings`                  | protected | Guide tour offerings (supply side)               |
+| `/guide/tour-offerings/new`              | protected | Create a new tour offering                       |
 | `/staff`                                 | protected | Staff (ADMIN / SUPPORT) area, own layout         |
 
 **Server vs Client Components:** pages and layouts are **Server Components** by default (they can read
@@ -258,6 +281,19 @@ Protection is layered, because no single layer covers every case:
    `Auth-Required: reauthenticate`, the gate opens the sign-in modal and (for safe requests) retries
    after re-auth. A plain `401`/`403` does **not** trigger this.
 
+   Dismissing the modal means "not right now", not "never ask again": the decline is recorded
+   against an auth **epoch** that any later auth event (a route change, an explicit sign-in) moves
+   past, so a deliberate action minutes later still prompts. The request that was interrupted
+   rejects with `AuthCancelledError`, which the UI reports as an auth state rather than letting it
+   fall into a component's generic "failed to load" branch — the cause was a user's choice, not a
+   broken page.
+
+4. **Session notice banner** (`SessionNoticeBanner`) — the non-blocking half. A **background** read
+   that discovers a dead session raises a banner instead of seizing the page, since the user did not
+   ask for anything; the modal is reserved for what they did ask for. It also carries the case where
+   the BFF answers `503` because it could not reach Google: the session is intact and the server
+   says so, so that state must not render as a sign-out and offers no sign-in button.
+
 The BFF is the source of truth: it silently refreshes when it can, and only emits
 `Auth-Required: reauthenticate` when a real re-login is needed.
 
@@ -270,11 +306,25 @@ All data access goes through `src/lib/data-access/` (a thin **TanStack Query** l
 are `application/problem+json`.
 
 - **`apiFetch(path, init)`** (`lib/http/api.ts`) — the only client allowed to touch the `/vN/*`
-  resource API. It rejects non-versioned paths, sends credentials `same-origin`, and implements the
-  interactive re-auth behaviour above. Use `interactive: false` for ambient reads that may run while
-  logged out (header/nav/probes) so a 401 reads as "logged out" instead of popping the modal.
+  resource API. It rejects non-versioned paths and sends credentials `same-origin`. How a re-auth
+  `401` surfaces is chosen per call with `escalate`, by asking **who caused the request**:
+  - `"prompt"` (default) — the user clicked, submitted, or opened a protected page, so interrupting
+    them is proportionate;
+  - `"ambient"` — the page issued it by itself (the header's principal read, a background refetch).
+    Raise a notice and keep the page usable;
+  - `"none"` — a genuinely public resource an anonymous visitor may read, so a `401` there is just
+    "not signed in" and is the caller's to interpret.
+
+  Do not pick `"none"` merely because a call can also run on a public page: `/v1/userinfo` is
+  protected and only issued once the session probe has said the user is authenticated, so a `401`
+  there is a session that died, not an anonymous visitor.
+
 - **`apiJson` / `patchJson` / `postJson`** (`data-access/http.ts`) — unwrap `{ data }` and throw
   `ApiError` (carrying the HTTP status) on non-2xx.
+- **`apiJsonRaw` / `postJsonRaw` / `patchJsonRaw` / `deleteJsonRaw`** (`data-access/http.ts`) — the same
+  helpers but returning the **full envelope** instead of just `data`, for endpoints whose extra fields
+  matter (e.g. the `affectedBookings` returned when writing availability, or the remaining list a
+  `DELETE` echoes back).
 - **`queryKeys`** (`data-access/keys.ts`) — one central key factory, so reads and the mutations that
   invalidate them can't drift.
 - **`queries/`, `mutations/`, `hooks/`** — each feature has a query/mutation definition and a

@@ -50,6 +50,7 @@ export function toWindowMin(from: string, to: string): number {
   }
 
   const windowMin = toMin - fromMin;
+  /* istanbul ignore next -- defensive: fromMin+windowMin === toMin, already ≤ 1440 by HHMM regex/sentinel */
   if (fromMin + windowMin > 1440) {
     throw new Error(`a same-day range cannot cross midnight (from "${from}" for ${windowMin}min)`);
   }
@@ -70,7 +71,7 @@ function formatClock12(totalMinutes: number): string {
 
 /** Parse a plain "HH:mm" clock time into minutes-from-midnight — the shared parser behind the
  *  `to`-picker grid (hoisted out of `DayHoursModal`/`DateOverrideModal`, which each had a
- *  byte-identical, unvalidated copy of this; CTL-55 v2.1 polish review M3). Unlike the internal
+ *  byte-identical, unvalidated copy of this). Unlike the internal
  *  {@link parseHHmm} this module's other exports use, callers here only ever pass grid-generated
  *  values, so a simple split/Number is enough. */
 export function minutesFromHHmm(value: string): number {

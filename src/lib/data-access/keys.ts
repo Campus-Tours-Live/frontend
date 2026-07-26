@@ -5,15 +5,19 @@ import type { OverrideMultiPreviewParams, TourCatalogFilters } from "./types";
  * so reads and the mutations that invalidate them can't drift.
  */
 export const queryKeys = {
+  session: () => ["session"] as const,
   me: () => ["me"] as const,
   participantProfile: () => ["participant-profile"] as const,
   guideProfile: () => ["guide-profile"] as const,
   tourTopics: () => ["tour-topics"] as const,
+  tourFeatures: () => ["tour-features"] as const,
   tourCatalog: (filters: TourCatalogFilters) => ["tour-catalog", filters] as const,
   tourDetail: (id: string) => ["tour-detail", id] as const,
   universitySearch: (q: string) => ["university-search", q] as const,
+  majors: (schoolId: string) => ["majors", schoolId] as const,
   dashboard: () => ["dashboard"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
+  tours: () => ["tours"] as const,
   onboarding: (role: string) => ["onboarding", role] as const,
   // Availability v2 (CTL-55) — BFF Contract A (/v1/availability*, /v1/offerings/:id/slots).
   availabilityRules: () => ["availability-rules"] as const,

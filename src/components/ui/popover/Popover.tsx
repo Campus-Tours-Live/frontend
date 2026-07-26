@@ -58,9 +58,14 @@ export function Popover({
 
   const reposition = () => {
     const anchor = anchorEl?.getBoundingClientRect();
+    /* istanbul ignore next -- defensive: every caller already checks anchorEl is truthy before
+     * calling reposition, and getBoundingClientRect never returns null/undefined in jsdom */
     if (!anchor) return;
     const box = popoverRef.current?.getBoundingClientRect();
+    /* istanbul ignore next -- defensive: popoverRef is attached whenever reposition runs (the
+     * portal only unmounts when open/anchorEl go false, which also stops reposition being called) */
     const height = box?.height ?? 0;
+    /* istanbul ignore next -- defensive: same as above — box is never undefined here */
     const width = box?.width ?? 0;
     const flipUp =
       anchor.bottom + height + GAP > window.innerHeight && anchor.top - height - GAP > 0;
