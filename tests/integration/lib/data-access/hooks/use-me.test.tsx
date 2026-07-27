@@ -59,7 +59,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { user: { id: "u1" }, roles: ["PARTICIPANT"], activeRole: "PARTICIPANT" },
+          data: { user: { id: "u1" }, roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" },
         }),
     });
 
@@ -110,7 +110,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { user: { id: "u1" }, roles: ["PARTICIPANT", "GUIDE"], activeRole: "GUIDE" },
+          data: { user: { id: "u1" }, roles: ["PARTICIPANT", "GUIDE"], currentRole: "GUIDE" },
         }),
     });
 
@@ -118,7 +118,7 @@ describe("useMe", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ user: { id: "u1" }, activeRole: "GUIDE" });
+    expect(result.current.me).toMatchObject({ user: { id: "u1" }, currentRole: "GUIDE" });
     expect(result.current.isOnboarded).toBe(true);
     expect(result.current.hasRole("PARTICIPANT")).toBe(true);
     expect(result.current.hasRole("GUIDE")).toBe(true);
@@ -129,7 +129,7 @@ describe("useMe", () => {
     routeFetch({
       authenticated: true,
       userinfo: () =>
-        jsonResponse(200, { user: { id: "u2" }, roles: ["GUIDE"], activeRole: "GUIDE" }),
+        jsonResponse(200, { user: { id: "u2" }, roles: ["GUIDE"], currentRole: "GUIDE" }),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
@@ -164,7 +164,7 @@ describe("useMe", () => {
     routeFetch({
       authenticated: true,
       userinfo: () =>
-        jsonResponse(200, { data: { user: { id: "u3" }, roles: [], activeRole: null } }),
+        jsonResponse(200, { data: { user: { id: "u3" }, roles: [], currentRole: null } }),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });

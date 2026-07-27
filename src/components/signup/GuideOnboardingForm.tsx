@@ -8,7 +8,7 @@ import {
   useDegrees,
   useMajors,
   useMe,
-  useSetActiveRole,
+  useSetCurrentRole,
   useTourTopics,
   useUpdateGuideProfile,
 } from "@/lib/data-access";
@@ -79,12 +79,12 @@ export function GuideOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
   const updateProfile = useUpdateGuideProfile();
-  const setActiveRole = useSetActiveRole();
+  const setCurrentRole = useSetCurrentRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
   // Set once onboarding has GRANTED the role (Core write succeeded) but the bff session's
-  // activeRole switch hasn't (yet). Distinct from submitError: the profile IS saved, so the
+  // currentRole switch hasn't (yet). Distinct from submitError: the profile IS saved, so the
   // retry below only re-runs the switch — never re-submits the onboarding form.
   const [sessionError, setSessionError] = useState<string | null>(null);
 
@@ -171,14 +171,14 @@ export function GuideOnboardingForm() {
   // via useTourTopics above. Languages are static (see LANGUAGES above).
 
   // Onboarding partial-success: the submit above only GRANTS the role (Core write). The bff's
-  // activeRole is separate per-session state (Profile Contract v2 — Core has no active-role
+  // currentRole is separate per-session state (Profile Contract v2 — Core has no current-role
   // concept), so the form independently switches into the just-granted role afterward. If that
   // switch fails, the role is still held — this is a session-init failure, not a save failure —
   // so retry re-runs ONLY this, never the onboarding submit above.
   const activateSession = async () => {
     setSessionError(null);
     try {
-      await setActiveRole.mutateAsync("GUIDE");
+      await setCurrentRole.mutateAsync("GUIDE");
       router.push("/dashboard");
     } catch (err) {
       setSessionError(
@@ -270,7 +270,7 @@ export function GuideOnboardingForm() {
             {sessionError}
           </Alert>
           <ButtonRow className="mt-6">
-            <Button onClick={() => void activateSession()} loading={setActiveRole.isPending}>
+            <Button onClick={() => void activateSession()} loading={setCurrentRole.isPending}>
               Try again
             </Button>
           </ButtonRow>

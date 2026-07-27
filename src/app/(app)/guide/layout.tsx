@@ -9,7 +9,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  */
 export default async function GuideLayout({ children }: { children: React.ReactNode }) {
   const me = await getServerMe();
-  if (!me || !me.roles.includes("GUIDE") || me.activeRole !== "GUIDE") {
+  if (!me || !me.roles.includes("GUIDE") || me.currentRole !== "GUIDE") {
     redirect("/dashboard");
   }
 

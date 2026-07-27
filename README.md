@@ -328,7 +328,7 @@ are `application/problem+json`.
 - **`queryKeys`** (`data-access/keys.ts`) — one central key factory, so reads and the mutations that
   invalidate them can't drift.
 - **`queries/`, `mutations/`, `hooks/`** — each feature has a query/mutation definition and a
-  `use-*` hook (e.g. `useDashboard`, `useUpdateGuideProfile`, `useSetActiveRole`).
+  `use-*` hook (e.g. `useDashboard`, `useUpdateGuideProfile`, `useSetCurrentRole`).
 - **`QueryProvider`** — one shared `QueryClient` (30s `staleTime`; retries only transient
   network/5xx errors, never a 4xx or a cancelled re-auth).
 - **`getServerMe()`** (`lib/http/serverMe.ts`) — **server-only** principal fetch for RSC guards; it

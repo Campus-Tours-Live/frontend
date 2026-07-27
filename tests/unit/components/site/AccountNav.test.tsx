@@ -15,7 +15,7 @@ jest.mock("@/components/site/RoleSwitcher", () => ({
 }));
 
 type MePartial = {
-  activeRole?: string | null;
+  currentRole?: string | null;
   displayName?: string | null;
   firstName?: string | null;
   roles?: string[];
@@ -26,7 +26,7 @@ function setupMe(me: MePartial | null, opts?: { isOnboarded?: boolean }) {
   (useMe as jest.Mock).mockReturnValue({
     me: me
       ? {
-          activeRole: me.activeRole,
+          currentRole: me.currentRole,
           roles: me.roles,
           user: { displayName: me.displayName, firstName: me.firstName },
         }
@@ -47,7 +47,7 @@ beforeEach(() => {
 
 describe("AccountNav — render gate", () => {
   it("renders nothing when not onboarded", () => {
-    setupMe({ activeRole: "PARTICIPANT" }, { isOnboarded: false });
+    setupMe({ currentRole: "PARTICIPANT" }, { isOnboarded: false });
 
     const { container } = render(<AccountNav />);
 
@@ -67,7 +67,7 @@ describe("AccountNav — participant", () => {
   beforeEach(() => {
     setupMe(
       {
-        activeRole: "PARTICIPANT",
+        currentRole: "PARTICIPANT",
         displayName: "Ada Lovelace",
         roles: ["PARTICIPANT"],
       },
@@ -110,7 +110,7 @@ describe("AccountNav — guide", () => {
   it("renders the guide nav (Upcoming tours / Earnings / Verification)", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
+        currentRole: "GUIDE",
         firstName: "Grace",
         roles: ["GUIDE"],
       },
@@ -134,7 +134,7 @@ describe("AccountNav — guide", () => {
   it("shows the default 'Guide account' subtitle when not pending verification", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
+        currentRole: "GUIDE",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
@@ -149,7 +149,7 @@ describe("AccountNav — guide", () => {
   it("shows 'pending verification' subtitle when guideStatus=PENDING", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
+        currentRole: "GUIDE",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
@@ -164,7 +164,7 @@ describe("AccountNav — guide", () => {
   it("shows the default 'Guide account' subtitle while the guide profile is still loading", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
+        currentRole: "GUIDE",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
@@ -178,8 +178,8 @@ describe("AccountNav — guide", () => {
 });
 
 describe("AccountNav — defaults", () => {
-  it("falls back to the participant nav when activeRole is null", () => {
-    setupMe({ activeRole: null, roles: ["PARTICIPANT"] }, { isOnboarded: true });
+  it("falls back to the participant nav when currentRole is null", () => {
+    setupMe({ currentRole: null, roles: ["PARTICIPANT"] }, { isOnboarded: true });
 
     render(<AccountNav />);
 

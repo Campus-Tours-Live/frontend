@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useSetActiveRole } from "@/lib/data-access/hooks/use-set-active-role";
+import { useSetCurrentRole } from "@/lib/data-access/hooks/use-set-current-role";
 
 /**
- * Exercises the REAL useSetActiveRole mutation end-to-end: mutate → mutation →
- * postJson → apiFetch → fetch(POST /v1/session/active-role) → apiJson unwrap →
- * onSuccess patches the cached ["me"] with the returned activeRole (no refetch) and
+ * Exercises the REAL useSetCurrentRole mutation end-to-end: mutate → mutation →
+ * postJson → apiFetch → fetch(POST /v1/session/current-role) → apiJson unwrap →
+ * onSuccess patches the cached ["me"] with the returned currentRole (no refetch) and
  * invalidates ["dashboard"]. Only global.fetch is mocked.
  */
 
@@ -42,12 +42,12 @@ beforeEach(() => {
   global.fetch = fetchMock as unknown as typeof fetch;
 });
 
-describe("useSetActiveRole", () => {
-  it("POSTs /v1/session/active-role with the role body and resolves with the lean { activeRole }", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { data: { activeRole: "GUIDE" } }));
+describe("useSetCurrentRole", () => {
+  it("POSTs /v1/session/current-role with the role body and resolves with the lean { currentRole }", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: { currentRole: "GUIDE" } }));
 
     const client = makeClient();
-    const { result } = renderHook(() => useSetActiveRole(), {
+    const { result } = renderHook(() => useSetCurrentRole(), {
       wrapper: wrapperFor(client),
     });
 
@@ -56,7 +56,7 @@ describe("useSetActiveRole", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/session/active-role",
+      "/v1/session/current-role",
       expect.objectContaining({
         method: "POST",
         credentials: "same-origin",
@@ -64,22 +64,22 @@ describe("useSetActiveRole", () => {
         body: JSON.stringify({ role: "GUIDE" }),
       }),
     );
-    expect(result.current.data).toEqual({ activeRole: "GUIDE" });
+    expect(result.current.data).toEqual({ currentRole: "GUIDE" });
   });
 
-  it("patches the cached me.activeRole (unwrapped Me shape) and invalidates [dashboard] only — no /userinfo refetch", async () => {
-    fetchMock.mockResolvedValue(jsonResponse(200, { data: { activeRole: "GUIDE" } }));
+  it("patches the cached me.currentRole (unwrapped Me shape) and invalidates [dashboard] only — no /userinfo refetch", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: { currentRole: "GUIDE" } }));
 
     const client = makeClient();
     // Seed the cache the way `me.query.ts` does — the UNWRAPPED Me, not an envelope.
     client.setQueryData(["me"], {
       user: { id: "u1" },
       roles: ["PARTICIPANT", "GUIDE"],
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
     });
     const invalidateSpy = jest.spyOn(client, "invalidateQueries");
 
-    const { result } = renderHook(() => useSetActiveRole(), {
+    const { result } = renderHook(() => useSetCurrentRole(), {
       wrapper: wrapperFor(client),
     });
 
@@ -87,11 +87,11 @@ describe("useSetActiveRole", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // The cache is patched in place — activeRole flips, everything else survives.
+    // The cache is patched in place — currentRole flips, everything else survives.
     expect(client.getQueryData(["me"])).toEqual({
       user: { id: "u1" },
       roles: ["PARTICIPANT", "GUIDE"],
-      activeRole: "GUIDE",
+      currentRole: "GUIDE",
     });
     // ["dashboard"] still invalidates (role-shaped aggregate); ["me"] is patched, not invalidated.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
@@ -105,11 +105,11 @@ describe("useSetActiveRole", () => {
     client.setQueryData(["me"], {
       user: { id: "u1" },
       roles: ["PARTICIPANT", "GUIDE"],
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
     });
     const invalidateSpy = jest.spyOn(client, "invalidateQueries");
 
-    const { result } = renderHook(() => useSetActiveRole(), {
+    const { result } = renderHook(() => useSetCurrentRole(), {
       wrapper: wrapperFor(client),
     });
 
@@ -118,6 +118,6 @@ describe("useSetActiveRole", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(invalidateSpy).not.toHaveBeenCalled();
     // A rejected switch must not patch the cache — the active role did not actually change.
-    expect(client.getQueryData(["me"])).toMatchObject({ activeRole: "PARTICIPANT" });
+    expect(client.getQueryData(["me"])).toMatchObject({ currentRole: "PARTICIPANT" });
   });
 });

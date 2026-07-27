@@ -21,13 +21,13 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
 
   if (roles.length === 0) redirect("/signup/role");
   if (!roles.includes("PARTICIPANT") && !roles.includes("GUIDE")) redirect("/staff");
-  // `activeRole` is per-session bff state, not a DB fact — it CAN be null even when roles are
+  // `currentRole` is per-session bff state, not a DB fact — it CAN be null even when roles are
   // held (see the bff auth callback: only a single held role is auto-initialised). Every page in
-  // this group reads `me.activeRole` to decide what to render, so a null here has nothing to
+  // this group reads `me.currentRole` to decide what to render, so a null here has nothing to
   // render — route to the same "route by roles" landing the bff itself uses. `/signup/role`
   // resolves this: its CTAs go through `/auth/login?role=…`, and the callback's "already holds
   // requestedRole" branch just activates it (see auth/routes.ts), no re-onboarding.
-  if (!me?.activeRole) redirect("/signup/role");
+  if (!me?.currentRole) redirect("/signup/role");
 
   return <AppShell>{children}</AppShell>;
 }

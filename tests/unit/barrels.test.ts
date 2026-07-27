@@ -99,7 +99,7 @@ describe("public barrels", () => {
       "useUniversitySearch",
       "useUpdateParticipantProfile",
       "useUpdateGuideProfile",
-      "useSetActiveRole",
+      "useSetCurrentRole",
       "useDashboard",
       "useOnboarding",
       "useOfferings",

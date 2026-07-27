@@ -18,10 +18,10 @@ export interface SetOnboardingRoleResult {
  * (`roles.includes(role) || session.onboardingRole === role`) admits the caller — a direct push
  * to `/onboarding/{role}` without this call first would 403 there. Rejects with `ApiError`:
  * 409 if `role` is already held (the caller should switch, not onboard — see
- * `setActiveRoleMutation`); 403 if not eligible (e.g. PARENT → GUIDE, code
+ * `setCurrentRoleMutation`); 403 if not eligible (e.g. PARENT → GUIDE, code
  * `PARENT_CANNOT_BECOME_GUIDE`); 400 for a bad role.
  *
- * No cache patch: unlike `setActiveRoleMutation`, `onboardingRole` isn't part of the cached
+ * No cache patch: unlike `setCurrentRoleMutation`, `onboardingRole` isn't part of the cached
  * `Me` — a successful call is immediately followed by a navigation to the onboarding route, so
  * nothing here needs to re-render before that happens.
  */

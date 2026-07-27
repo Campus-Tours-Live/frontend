@@ -194,10 +194,10 @@ describe("postJson", () => {
       makeRes({ ok: true, status: 200, json: { data: { role: "GUIDE" } } }),
     );
 
-    const result = await postJson("/v1/session/active-role", body);
+    const result = await postJson("/v1/session/current-role", body);
 
     expect(result).toEqual({ role: "GUIDE" });
-    expect(mockedApiFetch).toHaveBeenCalledWith("/v1/session/active-role", {
+    expect(mockedApiFetch).toHaveBeenCalledWith("/v1/session/current-role", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -207,7 +207,7 @@ describe("postJson", () => {
   it("propagates ApiError from a failed POST", async () => {
     mockedApiFetch.mockResolvedValue(makeRes({ ok: false, status: 422 }));
 
-    await expect(postJson("/v1/session/active-role", { role: "STAFF" })).rejects.toMatchObject({
+    await expect(postJson("/v1/session/current-role", { role: "STAFF" })).rejects.toMatchObject({
       name: "ApiError",
       status: 422,
     });

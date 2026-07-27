@@ -14,7 +14,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mutateAsync = jest.fn();
-const setActiveRoleMutateAsync = jest.fn();
+const setCurrentRoleMutateAsync = jest.fn();
 let meValue: {
   user?: { firstName?: string; lastName?: string };
   roles?: string[];
@@ -37,7 +37,7 @@ jest.mock("@/lib/data-access", () => ({
     ],
   }),
   useUpdateParticipantProfile: () => ({ mutateAsync }),
-  useSetActiveRole: () => ({ mutateAsync: setActiveRoleMutateAsync, isPending: false }),
+  useSetCurrentRole: () => ({ mutateAsync: setCurrentRoleMutateAsync, isPending: false }),
   useUniversitySearch: (query: string, opts?: { enabled?: boolean; source?: string }) => {
     lastUniversitySource = opts?.source;
     return {
@@ -56,8 +56,8 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
-  setActiveRoleMutateAsync.mockReset();
-  setActiveRoleMutateAsync.mockResolvedValue({ activeRole: "PARTICIPANT" });
+  setCurrentRoleMutateAsync.mockReset();
+  setCurrentRoleMutateAsync.mockResolvedValue({ currentRole: "PARTICIPANT" });
   meValue = null;
   lastUniversitySource = undefined;
   // id is a College Scorecard school id (participant uses the live Scorecard directory).
@@ -142,8 +142,8 @@ describe("ParticipantOnboardingForm (wizard)", () => {
       topicsOfInterest: ["academics"],
     });
     // Onboarding partial-success: the profile grant is followed by an independent session
-    // switch into the just-granted role (bff activeRole is session state, not a Core write).
-    expect(setActiveRoleMutateAsync).toHaveBeenCalledWith("PARTICIPANT");
+    // switch into the just-granted role (bff currentRole is session state, not a Core write).
+    expect(setCurrentRoleMutateAsync).toHaveBeenCalledWith("PARTICIPANT");
     expect(push).toHaveBeenCalledWith("/dashboard");
   });
 

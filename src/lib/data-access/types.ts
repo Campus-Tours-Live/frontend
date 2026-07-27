@@ -17,7 +17,7 @@ export interface MeUser {
 export interface Me {
   user: MeUser;
   roles: Role[];
-  activeRole: Role | null;
+  currentRole: Role | null;
 }
 
 export interface ParticipantProfile {

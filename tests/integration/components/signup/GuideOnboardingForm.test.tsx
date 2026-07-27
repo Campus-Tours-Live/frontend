@@ -15,7 +15,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mutateAsync = jest.fn();
-const setActiveRoleMutateAsync = jest.fn();
+const setCurrentRoleMutateAsync = jest.fn();
 let meValue: {
   user?: { firstName?: string; lastName?: string };
   roles?: string[];
@@ -36,7 +36,7 @@ jest.mock("@/lib/data-access", () => ({
     ],
   }),
   useUpdateGuideProfile: () => ({ mutateAsync }),
-  useSetActiveRole: () => ({ mutateAsync: setActiveRoleMutateAsync, isPending: false }),
+  useSetCurrentRole: () => ({ mutateAsync: setCurrentRoleMutateAsync, isPending: false }),
   // Majors are keyed off the selected school — empty until one is picked, matching
   // the real hook's `enabled: Boolean(schoolId)` gate.
   useMajors: (schoolId?: string | null) => ({
@@ -67,8 +67,8 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
-  setActiveRoleMutateAsync.mockReset();
-  setActiveRoleMutateAsync.mockResolvedValue({ activeRole: "GUIDE" });
+  setCurrentRoleMutateAsync.mockReset();
+  setCurrentRoleMutateAsync.mockResolvedValue({ currentRole: "GUIDE" });
   meValue = null;
   universityResults = [{ id: "u-1", name: "State University", shortName: "State" }];
 });
@@ -179,8 +179,8 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     // Languages default included.
     expect(mutateAsync.mock.calls[0][0].spokenLanguages).toContain("en-US");
     // Onboarding partial-success: the profile grant is followed by an independent session
-    // switch into the just-granted role (bff activeRole is session state, not a Core write).
-    expect(setActiveRoleMutateAsync).toHaveBeenCalledWith("GUIDE");
+    // switch into the just-granted role (bff currentRole is session state, not a Core write).
+    expect(setCurrentRoleMutateAsync).toHaveBeenCalledWith("GUIDE");
     expect(push).toHaveBeenCalledWith("/dashboard");
   });
 

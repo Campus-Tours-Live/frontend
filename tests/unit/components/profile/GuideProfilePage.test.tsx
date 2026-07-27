@@ -51,7 +51,7 @@ beforeEach(() => {
         email: "ada@example.com",
         createdAt: "2025-03-15T00:00:00Z",
       },
-      activeRole: "GUIDE",
+      currentRole: "GUIDE",
     },
   });
   mockUseGuideProfile.mockReturnValue({
@@ -106,7 +106,7 @@ describe("GuideProfilePage", () => {
           email: null,
           createdAt: "2025-03-15T00:00:00Z",
         },
-        activeRole: "GUIDE",
+        currentRole: "GUIDE",
       },
     });
     render(<GuideProfilePage />);

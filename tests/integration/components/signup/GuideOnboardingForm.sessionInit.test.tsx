@@ -6,8 +6,8 @@ import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 // Onboarding partial-success (Profile Contract v2): the Core write (grant the GUIDE role) and
-// the bff session's activeRole switch are two independent calls. These tests cover the case
-// the main suite's always-resolving `useSetActiveRole` mock can't: submit succeeds, the switch
+// the bff session's currentRole switch are two independent calls. These tests cover the case
+// the main suite's always-resolving `useSetCurrentRole` mock can't: submit succeeds, the switch
 // fails. The requirement (see the v2c-t1.5FE brief) is that this reads as a SESSION-init
 // failure, not a save failure — no re-submit, retryable, no "not saved" wording.
 
@@ -15,13 +15,13 @@ const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const mutateAsync = jest.fn();
-const setActiveRoleMutateAsync = jest.fn();
+const setCurrentRoleMutateAsync = jest.fn();
 
 jest.mock("@/lib/data-access", () => ({
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
   useTourTopics: () => ({ data: [{ value: "academics", label: "Academics" }] }),
   useUpdateGuideProfile: () => ({ mutateAsync }),
-  useSetActiveRole: () => ({ mutateAsync: setActiveRoleMutateAsync, isPending: false }),
+  useSetCurrentRole: () => ({ mutateAsync: setCurrentRoleMutateAsync, isPending: false }),
   useMajors: (schoolId?: string | null) => ({
     data: schoolId ? [{ value: "computer_science", label: "Computer Science" }] : [],
   }),
@@ -68,20 +68,20 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
-  setActiveRoleMutateAsync.mockReset();
+  setCurrentRoleMutateAsync.mockReset();
 });
 
 describe("GuideOnboardingForm — onboarding-OK, session-init failed", () => {
   it("shows a session-init error (not a save failure), never re-submits, and is retryable", async () => {
-    setActiveRoleMutateAsync.mockRejectedValueOnce(new Error("403"));
+    setCurrentRoleMutateAsync.mockRejectedValueOnce(new Error("403"));
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
 
     await submitOnboarding(user);
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
-    expect(setActiveRoleMutateAsync).toHaveBeenCalledTimes(1);
-    expect(setActiveRoleMutateAsync).toHaveBeenCalledWith("GUIDE");
+    expect(setCurrentRoleMutateAsync).toHaveBeenCalledTimes(1);
+    expect(setCurrentRoleMutateAsync).toHaveBeenCalledWith("GUIDE");
     expect(push).not.toHaveBeenCalled();
 
     // The profile IS saved — the message must say so, not claim the opposite.
@@ -94,16 +94,16 @@ describe("GuideOnboardingForm — onboarding-OK, session-init failed", () => {
     expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
 
     // Retry re-runs ONLY the session switch.
-    setActiveRoleMutateAsync.mockResolvedValueOnce({ activeRole: "GUIDE" });
+    setCurrentRoleMutateAsync.mockResolvedValueOnce({ currentRole: "GUIDE" });
     await user.click(screen.getByRole("button", { name: /try again/i }));
 
     expect(mutateAsync).toHaveBeenCalledTimes(1); // never re-submitted
-    expect(setActiveRoleMutateAsync).toHaveBeenCalledTimes(2);
+    expect(setCurrentRoleMutateAsync).toHaveBeenCalledTimes(2);
     expect(push).toHaveBeenCalledWith("/dashboard");
   });
 
   it("attributes a dismissed sign-in prompt (during the switch) to auth, not the save", async () => {
-    setActiveRoleMutateAsync.mockRejectedValueOnce(new AuthCancelledError());
+    setCurrentRoleMutateAsync.mockRejectedValueOnce(new AuthCancelledError());
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
 

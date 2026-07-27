@@ -19,7 +19,7 @@ jest.mock("@/components/signup/ParticipantOnboardingForm", () => ({
   ParticipantOnboardingForm: () => <div data-testid="participant-form" />,
 }));
 jest.mock("@/lib/data-access", () => ({
-  useMe: jest.fn(() => ({ me: { activeRole: "PARTICIPANT" }, isLoading: false })),
+  useMe: jest.fn(() => ({ me: { currentRole: "PARTICIPANT" }, isLoading: false })),
 }));
 jest.mock("@/components/profile/GuideProfilePage", () => ({
   GuideProfilePage: () => <div data-testid="guide-profile-page" />,
@@ -71,7 +71,7 @@ describe("static / shell pages", () => {
   });
 
   it("profile placeholder shows its heading", () => {
-    mockUseMe.mockReturnValue({ me: { activeRole: "PARTICIPANT" }, isLoading: false });
+    mockUseMe.mockReturnValue({ me: { currentRole: "PARTICIPANT" }, isLoading: false });
     render(<ProfilePage />);
     expect(screen.getByText("Profile")).toBeInTheDocument();
   });
@@ -97,7 +97,7 @@ describe("static / shell pages", () => {
   });
 
   it("profile renders guide page when active role is GUIDE", () => {
-    mockUseMe.mockReturnValue({ me: { activeRole: "GUIDE" }, isLoading: false });
+    mockUseMe.mockReturnValue({ me: { currentRole: "GUIDE" }, isLoading: false });
     render(<ProfilePage />);
     expect(screen.getByTestId("guide-profile-page")).toBeInTheDocument();
   });

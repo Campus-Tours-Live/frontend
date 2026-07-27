@@ -116,26 +116,26 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   // Only fetch the guide profile when it's actually needed (the subtitle below) — a
   // participant-context render never issues this call. Called unconditionally (before the
   // render-gate return) per the rules of hooks; `enabled` does the actual gating.
-  const { data: guideProfile } = useGuideProfile(me?.activeRole === "GUIDE");
+  const { data: guideProfile } = useGuideProfile(me?.currentRole === "GUIDE");
 
   // Bare account (no roles) or logged out → render nothing.
   if (!isOnboarded || !me) return null;
 
-  // Active role decides which area's nav we render. Read activeRole (the authoritative
+  // Active role decides which area's nav we render. Read currentRole (the authoritative
   // UX role) — there is no legacy `role` field on the wire.
-  const activeRole: Role = me.activeRole ?? "PARTICIPANT";
+  const currentRole: Role = me.currentRole ?? "PARTICIPANT";
   /* istanbul ignore next -- display-name fallbacks; split() always yields an element */
   const name = (me.user.displayName ?? me.user.firstName ?? "").split(" ")[0] ?? "";
   // While the guide profile is still loading, `guideProfile` is undefined, which reads as
   // not-pending — the same safe default the rest of the app uses for an unresolved status.
   const subtitle =
-    activeRole === "GUIDE"
+    currentRole === "GUIDE"
       ? guideProfile?.guideStatus === "PENDING"
         ? "Guide · pending verification"
         : "Guide account"
       : "Participant account";
 
-  const groups = activeRole === "GUIDE" ? GUIDE_NAV : PARTICIPANT_NAV;
+  const groups = currentRole === "GUIDE" ? GUIDE_NAV : PARTICIPANT_NAV;
 
   return (
     <div>

@@ -7,7 +7,7 @@ import {
   ApiError,
   useMe,
   useParticipantProfile,
-  useSetActiveRole,
+  useSetCurrentRole,
   useSetOnboardingRole,
   type Role,
 } from "@/lib/data-access";
@@ -17,7 +17,7 @@ import { Alert, Button, SegmentedControl } from "@/components/ui";
  * Role switcher, shown in the account menu. Three states by how
  * many self-acquirable roles you hold:
  *  - BOTH (participant + guide) → a segmented toggle [ Participant | Guide ]; tapping
- *    the inactive side switches the active context (setActiveRole; the shared
+ *    the inactive side switches the active context (setCurrentRole; the shared
  *    /dashboard re-renders once ["me"] is patched and ["dashboard"] invalidates).
  *  - ONE → a "Become a {other}" button that starts that role's onboarding IN-APP, via
  *    `POST /v1/session/onboarding-role` (never `/auth/login?role=…`). This is always a
@@ -39,11 +39,11 @@ export function RoleSwitcher({
   navigate?: (url: string) => void;
 }) {
   const { me, hasRole } = useMe();
-  const setActiveRole = useSetActiveRole();
+  const setCurrentRole = useSetCurrentRole();
   const setOnboardingRole = useSetOnboardingRole();
   const [failed, setFailed] = useState<string | null>(null);
 
-  const active = me?.activeRole;
+  const active = me?.currentRole;
   // Only fetch the participant profile when it could matter (deciding whether a participant
   // can become a guide, below) — called unconditionally per the rules of hooks; `enabled` does
   // the actual gating.
@@ -53,14 +53,14 @@ export function RoleSwitcher({
   // Only a participant/guide context has a switcher (staff is excluded).
   if (active !== "PARTICIPANT" && active !== "GUIDE") return null;
 
-  const pending = setActiveRole.isPending;
+  const pending = setCurrentRole.isPending;
 
   async function switchTo(role: Role) {
     /* istanbul ignore next -- guard: the active role's control never triggers a switch */
     if (role === active) return;
     setFailed(null);
     try {
-      await setActiveRole.mutateAsync(role);
+      await setCurrentRole.mutateAsync(role);
       onNavigate?.();
     } catch (err) {
       // 403 (revoked mid-session) or network/5xx — surface a retry hint, don't fail silently.
@@ -108,7 +108,7 @@ export function RoleSwitcher({
   }
 
   const targetLabel = target === "GUIDE" ? "Guide" : "Participant";
-  const becomePending = setOnboardingRole.isPending || setActiveRole.isPending;
+  const becomePending = setOnboardingRole.isPending || setCurrentRole.isPending;
 
   const become = async () => {
     setFailed(null);
@@ -128,7 +128,7 @@ export function RoleSwitcher({
         // than onboard (mirrors switchTo, since the segmented-toggle branch isn't reachable
         // from here — this account only holds one role).
         try {
-          await setActiveRole.mutateAsync(target);
+          await setCurrentRole.mutateAsync(target);
           onNavigate?.();
           navigate("/dashboard");
         } catch (switchErr) {
