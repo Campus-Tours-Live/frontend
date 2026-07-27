@@ -21,32 +21,15 @@ const mockUseTourTopics = jest.fn(() => ({
   data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
   isLoading: false,
 }));
+const mockUseGuideProfile = jest.fn(() => ({
+  data: { universityId: "uni-1", universityName: "State University" },
+  isLoading: false,
+}));
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useCreateOffering: () => ({ mutateAsync, isPending: false }),
   useTourTopics: () => mockUseTourTopics(),
-}));
-
-jest.mock("@/components/signup/UniversityMultiSelect", () => ({
-  UniversityMultiSelect: ({
-    value,
-    onChange,
-  }: {
-    value: Array<{ id: string; name: string }>;
-    onChange: (next: Array<{ id: string; name: string }>) => void;
-  }) => (
-    <>
-      <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
-        {value.length && value[0] ? value[0].name : "Pick university"}
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange([null as unknown as { id: string; name: string }])}
-      >
-        Set invalid university
-      </button>
-    </>
-  ),
+  useGuideProfile: () => mockUseGuideProfile(),
 }));
 
 function renderWithQuery(ui: ReactElement) {
@@ -62,6 +45,10 @@ beforeEach(() => {
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
   });
+  mockUseGuideProfile.mockReturnValue({
+    data: { universityId: "uni-1", universityName: "State University" },
+    isLoading: false,
+  });
 });
 
 describe("CreateOfferingForm", () => {
@@ -69,8 +56,9 @@ describe("CreateOfferingForm", () => {
     const user = userEvent.setup();
     renderWithQuery(<CreateOfferingForm />);
 
+    expect(screen.getByText("State University")).toBeInTheDocument();
+
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
@@ -91,37 +79,11 @@ describe("CreateOfferingForm", () => {
     renderWithQuery(<CreateOfferingForm />);
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     fireEvent.change(screen.getByLabelText(/price \(usd\)/i), { target: { value: "10" } });
     fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
 
     expect(await screen.findByText("Price must be between $20 and $200")).toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("does not submit when university is missing", async () => {
-    const user = userEvent.setup();
-    renderWithQuery(<CreateOfferingForm />);
-
-    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
-    fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
-
-    expect(await screen.findByText("University is required")).toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("rejects an invalid university selection before calling the API", async () => {
-    const user = userEvent.setup();
-    renderWithQuery(<CreateOfferingForm />);
-
-    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Set invalid university" }));
-    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
-    await user.click(screen.getByRole("button", { name: "Save draft" }));
-
-    expect(await screen.findByText("University is required")).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
@@ -131,12 +93,11 @@ describe("CreateOfferingForm", () => {
     renderWithQuery(<CreateOfferingForm />);
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Check your inputs — title, university, topic, duration, and price are required.",
+      "Check your inputs — title, topic, duration, and price are required.",
     );
   });
 
@@ -155,12 +116,58 @@ describe("CreateOfferingForm", () => {
     renderWithQuery(<CreateOfferingForm />);
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Could not save this offering. Please try again.",
     );
+  });
+
+  it("disables submit while the verified university is loading", () => {
+    mockUseGuideProfile.mockReturnValue({ data: undefined, isLoading: true } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(screen.queryByText("State University")).not.toBeInTheDocument();
+  });
+
+  it("disables submit and warns when the guide has no verified university", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { universityId: null, universityName: null },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(
+      screen.getByText(/Finish guide onboarding \(verify your school email\)/i),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to a default campus label when the university name is missing", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { universityId: "uni-1", universityName: null },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByText("Your campus")).toBeInTheDocument();
+  });
+
+  it("does not submit when the verified university is missing, even if the form is force-submitted", async () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { universityId: null, universityName: null },
+      isLoading: false,
+    } as never);
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
+
+    expect(mutateAsync).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
   });
 });
