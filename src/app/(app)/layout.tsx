@@ -8,7 +8,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  * before any page in the group renders:
  *   - no session / no role           → /signup/role (finish onboarding to get a role)
  *   - staff-only (no consumer role)  → /staff (the shared /dashboard has no view for them)
- *   - held role(s), no ACTIVE role   → /signup/role (bff session state, `Role | null` — see
+ *   - held role(s), no CURRENT role   → /signup/role (bff session state, `Role | null` — see
  *                                       below); normally the login callback initialises it for a
  *                                       single held role, so this is the rare multi-role case.
  *

@@ -10,7 +10,7 @@ export interface SetCurrentRoleResult {
 }
 
 /**
- * Switch the caller's active role (UX context only — authorization is unchanged; the bff
+ * Switch the caller's current role (UX context only — authorization is unchanged; the bff
  * validates "held" against Core on every call, no session-cached copy).
  *
  * `onSuccess` (authoritative — never `onMutate` optimistic, since the switch is

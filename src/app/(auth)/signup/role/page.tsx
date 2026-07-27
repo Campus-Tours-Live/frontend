@@ -50,7 +50,7 @@ export default async function SignupRolePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  // A logged-in member with an ACTIVE role doesn't pick a role here — they acquire a
+  // A logged-in member with a CURRENT role doesn't pick a role here — they acquire a
   // second role via the in-app "Become X" onboarding, not the signup funnel. A bare
   // account (signed in, 0 roles, mid first-signup) is allowed: this is where it picks
   // its first role. (Role-aware → must be the RSC guard; proxy can't read roles.)

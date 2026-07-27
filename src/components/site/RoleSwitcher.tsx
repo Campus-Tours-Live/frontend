@@ -56,7 +56,7 @@ export function RoleSwitcher({
   const pending = setCurrentRole.isPending;
 
   async function switchTo(role: Role) {
-    /* istanbul ignore next -- guard: the active role's control never triggers a switch */
+    /* istanbul ignore next -- guard: the current role's control never triggers a switch */
     if (role === active) return;
     setFailed(null);
     try {
@@ -78,7 +78,7 @@ export function RoleSwitcher({
     return (
       <div className="border-b border-border px-2.5 py-4">
         <SegmentedControl
-          aria-label="Active role"
+          aria-label="Current role"
           size="small"
           value={active}
           disabled={pending}

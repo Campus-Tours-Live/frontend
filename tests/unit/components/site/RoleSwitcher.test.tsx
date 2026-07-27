@@ -81,7 +81,7 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     expect(participant).toBeEnabled();
     expect(guide).toHaveAttribute("aria-pressed", "false");
     expect(guide).toBeEnabled();
-    expect(screen.getByRole("group", { name: "Active role" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Current role" })).toBeInTheDocument();
   });
 
   it("clicking Guide calls setCurrentRole.mutateAsync('GUIDE')", async () => {

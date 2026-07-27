@@ -121,7 +121,7 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   // Bare account (no roles) or logged out → render nothing.
   if (!isOnboarded || !me) return null;
 
-  // Active role decides which area's nav we render. Read currentRole (the authoritative
+  // Current role decides which area's nav we render. Read currentRole (the authoritative
   // UX role) — there is no legacy `role` field on the wire.
   const currentRole: Role = me.currentRole ?? "PARTICIPANT";
   /* istanbul ignore next -- display-name fallbacks; split() always yields an element */
@@ -157,7 +157,7 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
         </Body>
       </div>
 
-      {/* Switch active role / start a second role's onboarding */}
+      {/* Switch current role / start a second role's onboarding */}
       <RoleSwitcher onNavigate={onNavigate} />
 
       {/* Groups */}
