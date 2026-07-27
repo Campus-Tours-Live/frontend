@@ -109,7 +109,7 @@ export interface OnboardingProgress {
   started: boolean;
   complete: boolean;
   canSubmit: boolean;
-  applicationStatus: string | null;
+  guideStatus: string | null;
   verificationStatus: string | null;
   steps: OnboardingStep[];
 }

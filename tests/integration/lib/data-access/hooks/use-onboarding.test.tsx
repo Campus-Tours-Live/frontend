@@ -44,7 +44,7 @@ describe("useOnboarding", () => {
       started: true,
       complete: false,
       canSubmit: false,
-      applicationStatus: "DRAFT",
+      guideStatus: "DRAFT",
       verificationStatus: null,
       steps: [{ key: "profile", label: "Profile", done: true }],
     };
