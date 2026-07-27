@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+import { buildLoginUrl, isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { UserPlus } from "lucide-react";
 import { useMe, useParticipantProfile, useSetActiveRole, type Role } from "@/lib/data-access";
 import { Alert, Button, SegmentedControl } from "@/components/ui";
@@ -12,12 +11,21 @@ import { Alert, Button, SegmentedControl } from "@/components/ui";
  * many self-acquirable roles you hold:
  *  - BOTH (participant + guide) → a segmented toggle [ Participant | Guide ]; tapping
  *    the inactive side switches the active context (setActiveRole; the shared
- *    /dashboard re-renders once ["me"]/["dashboard"] invalidate).
- *  - ONE → a "Become a {other}" button that starts that role's onboarding.
+ *    /dashboard re-renders once ["me"] is patched and ["dashboard"] invalidates).
+ *  - ONE → a "Become a {other}" button that starts that role's onboarding, via
+ *    `/auth/login?role=…` (not a plain client-side push) — the role is not yet held, so the
+ *    bff auth callback needs `requestedRole` to gate eligibility and set `session.onboardingRole`
+ *    (see auth/routes.ts); pushing straight to /onboarding/* would skip that and 403.
  *  - PARENT (can't become a guide) or a non-consumer/null context → nothing.
  */
-export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
-  const router = useRouter();
+export function RoleSwitcher({
+  onNavigate,
+  navigate = (url: string) => window.location.assign(url),
+}: {
+  onNavigate?: () => void;
+  /** Override navigation in tests without replacing jsdom's window.location. */
+  navigate?: (url: string) => void;
+}) {
   const { me, hasRole } = useMe();
   const setActiveRole = useSetActiveRole();
   const [failed, setFailed] = useState<string | null>(null);
@@ -89,7 +97,8 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const targetLabel = target === "GUIDE" ? "Guide" : "Participant";
   const become = () => {
     onNavigate?.();
-    router.push(target === "GUIDE" ? "/onboarding/guide" : "/onboarding/participant");
+    const returnTo = target === "GUIDE" ? "/onboarding/guide" : "/onboarding/participant";
+    navigate(buildLoginUrl({ intent: "signup", returnTo, role: target }));
   };
 
   return (

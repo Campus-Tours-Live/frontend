@@ -27,3 +27,4 @@ export {
   type AuthNoticeState,
   type AuthNotice,
 } from "./authNotice";
+export { buildLoginUrl, type LoginUrlParams } from "./loginUrl";

@@ -15,6 +15,7 @@ const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const mutateAsync = jest.fn();
+const setActiveRoleMutateAsync = jest.fn();
 let topicsData: Array<{ value: string; label: string }> | undefined;
 
 // A small catalog keyed by search text, so a test can pick between multiple schools —
@@ -69,6 +70,7 @@ jest.mock("@/lib/data-access", () => ({
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
   useTourTopics: () => ({ data: topicsData }),
   useUpdateGuideProfile: () => ({ mutateAsync }),
+  useSetActiveRole: () => ({ mutateAsync: setActiveRoleMutateAsync, isPending: false }),
   // Majors are keyed off the selected school — empty until one is picked, matching
   // the real hook's `enabled: Boolean(schoolId)` gate. The loading/error flags are
   // overridable so the degraded states can be driven per test.
@@ -128,6 +130,8 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
+  setActiveRoleMutateAsync.mockReset();
+  setActiveRoleMutateAsync.mockResolvedValue({ activeRole: "GUIDE" });
   topicsData = [{ value: "academics", label: "Academics" }];
   refetchMajors.mockReset();
   majorsState = { isLoading: false, isFetching: false, isError: false };

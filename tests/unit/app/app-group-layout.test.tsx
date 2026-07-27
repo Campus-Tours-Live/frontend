@@ -40,11 +40,20 @@ describe("(app) layout guard", () => {
   });
 
   it("renders AppShell for a consumer role (no redirect)", async () => {
-    getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"] });
+    getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"], activeRole: "PARTICIPANT" });
     const el = await AppGroupLayout({ children: <span>kids</span> });
     render(el);
     expect(screen.getByTestId("appshell")).toBeInTheDocument();
     expect(screen.getByText("kids")).toBeInTheDocument();
     expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects to /signup/role when a held role has no ACTIVE role yet (rare multi-role case)", async () => {
+    getServerMeMock.mockResolvedValue({
+      roles: ["PARTICIPANT", "GUIDE"],
+      activeRole: null,
+    });
+    await expect(AppGroupLayout({ children: null })).rejects.toThrow("REDIRECT:/signup/role");
+    expect(redirectMock).toHaveBeenCalledWith("/signup/role");
   });
 });

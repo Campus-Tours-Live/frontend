@@ -8,6 +8,7 @@ import {
   useDegrees,
   useMajors,
   useMe,
+  useSetActiveRole,
   useTourTopics,
   useUpdateGuideProfile,
 } from "@/lib/data-access";
@@ -77,9 +78,14 @@ export function GuideOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
   const updateProfile = useUpdateGuideProfile();
+  const setActiveRole = useSetActiveRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set once onboarding has GRANTED the role (Core write succeeded) but the bff session's
+  // activeRole switch hasn't (yet). Distinct from submitError: the profile IS saved, so the
+  // retry below only re-runs the switch — never re-submits the onboarding form.
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   const {
     register,
@@ -162,12 +168,31 @@ export function GuideOnboardingForm() {
   // Tour specialties are a controlled backend vocabulary (tour_topic enum), loaded
   // via useTourTopics above. Languages are static (see LANGUAGES above).
 
+  // Onboarding partial-success: the submit above only GRANTS the role (Core write). The bff's
+  // activeRole is separate per-session state (Profile Contract v2 — Core has no active-role
+  // concept), so the form independently switches into the just-granted role afterward. If that
+  // switch fails, the role is still held — this is a session-init failure, not a save failure —
+  // so retry re-runs ONLY this, never the onboarding submit above.
+  const activateSession = async () => {
+    setSessionError(null);
+    try {
+      await setActiveRole.mutateAsync("GUIDE");
+      router.push("/dashboard");
+    } catch (err) {
+      setSessionError(
+        isAuthCancelled(err)
+          ? SIGN_IN_AGAIN_MESSAGE
+          : "Your guide profile is saved. We couldn't switch you into guide mode — try again.",
+      );
+    }
+  };
+
   const persist = async (values: FormValues) => {
     setSubmitError(null);
     try {
-      // onSuccess invalidates ["me"] + the guide profile (submit=true grants GUIDE),
-      // so the header reflects it immediately. Land in the guide area. Base price is not set here —
-      // the backend keeps its default and the guide tunes pricing per tour later.
+      // onSuccess invalidates ["me"] + the guide profile (submit=true grants GUIDE), so the
+      // header reflects the held role immediately. Base price is not set here — the backend
+      // keeps its default and the guide tunes pricing per tour later.
       await updateProfile.mutateAsync({
         // firstName/lastName/university/major are required on step 1 → the fallbacks never run
         firstName: /* istanbul ignore next */ values.firstName || undefined,
@@ -183,7 +208,6 @@ export function GuideOnboardingForm() {
         verificationEmail: values.schoolEmail,
         submit: true,
       });
-      router.push("/dashboard");
     } catch (err) {
       setSubmitError(
         isAuthCancelled(err)
@@ -192,7 +216,10 @@ export function GuideOnboardingForm() {
             ? err.message
             : "Something went wrong. Please try again.",
       );
+      return;
     }
+    // The role is granted — land in the guide area only once the session actually reflects it.
+    await activateSession();
   };
 
   const submit = handleSubmit(persist);
@@ -223,6 +250,31 @@ export function GuideOnboardingForm() {
     else void advance();
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
+
+  // Onboarding is DONE (the guide role is granted); only the session switch remains. Replace the
+  // wizard with a dedicated retry panel — never let the guide re-fill and re-submit a profile
+  // that's already saved.
+  if (sessionError) {
+    return (
+      <>
+        <div className="mb-8">
+          <OnboardingBreadcrumb current="Guide onboarding" />
+        </div>
+        <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+          <div className="eyebrow">Guide application</div>
+          <SectionHeading title="Set up your guide profile" lead="Almost there." />
+          <Alert variant="error" className="mt-6">
+            {sessionError}
+          </Alert>
+          <ButtonRow className="mt-6">
+            <Button onClick={() => void activateSession()} loading={setActiveRole.isPending}>
+              Try again
+            </Button>
+          </ButtonRow>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

@@ -11,12 +11,14 @@ const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const mutateAsync = jest.fn();
+const setActiveRoleMutateAsync = jest.fn();
 let topicsData: Array<{ value: string; label: string }> | undefined;
 
 jest.mock("@/lib/data-access", () => ({
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
   useTourTopics: () => ({ data: topicsData }),
   useUpdateParticipantProfile: () => ({ mutateAsync }),
+  useSetActiveRole: () => ({ mutateAsync: setActiveRoleMutateAsync, isPending: false }),
   useUniversitySearch: () => ({ data: [], isFetching: false }),
 }));
 
@@ -29,6 +31,8 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
+  setActiveRoleMutateAsync.mockReset();
+  setActiveRoleMutateAsync.mockResolvedValue({ activeRole: "PARTICIPANT" });
   topicsData = undefined;
 });
 

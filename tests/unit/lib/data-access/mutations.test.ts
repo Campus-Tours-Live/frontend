@@ -16,9 +16,9 @@ jest.mock("@/lib/data-access/http", () => ({
 const mockedPostJson = postJson as jest.MockedFunction<typeof postJson>;
 const mockedPatchJson = patchJson as jest.MockedFunction<typeof patchJson>;
 
-/** A QueryClient stub exposing only the method the mutations use. */
+/** A QueryClient stub exposing only the methods the mutations use. */
 function makeQc() {
-  return { invalidateQueries: jest.fn() } as unknown as QueryClient;
+  return { invalidateQueries: jest.fn(), setQueryData: jest.fn() } as unknown as QueryClient;
 }
 
 beforeEach(() => {
@@ -46,14 +46,34 @@ describe("setActiveRoleMutation", () => {
     expect(mockedPatchJson).not.toHaveBeenCalled();
   });
 
-  it("onSuccess invalidates ['me'] and ['dashboard']", () => {
+  it("onSuccess patches the me cache with the returned activeRole (not a refetch) and invalidates ['dashboard'] only", () => {
     const qc = makeQc();
-    setActiveRoleMutation(qc).onSuccess();
+    setActiveRoleMutation(qc).onSuccess({ activeRole: "GUIDE" });
+
+    // ["me"] is PATCHED, not invalidated — no /userinfo refetch on a successful switch.
+    expect(qc.setQueryData).toHaveBeenCalledTimes(1);
+    const [key, updater] = (qc.setQueryData as jest.Mock).mock.calls[0] as [
+      unknown,
+      (prev: unknown) => unknown,
+    ];
+    expect(key).toEqual(queryKeys.me());
+
+    // The unwrapped Me shape (see me.query.ts / fetchMe) — patch is `p.activeRole`, not
+    // `p.data.activeRole`. Other fields survive untouched.
+    const prevMe = {
+      user: { id: "u1" },
+      roles: ["PARTICIPANT", "GUIDE"],
+      activeRole: "PARTICIPANT",
+    };
+    expect(updater(prevMe)).toEqual({ ...prevMe, activeRole: "GUIDE" });
+    // No-op when nothing is cached yet — never fabricate a Me from a role alone.
+    expect(updater(undefined)).toBeUndefined();
+    expect(updater(null)).toBeNull();
 
     const keys = invalidatedKeys(qc);
-    expect(keys).toContainEqual(queryKeys.me());
     expect(keys).toContainEqual(queryKeys.dashboard());
-    expect(qc.invalidateQueries).toHaveBeenCalledTimes(2);
+    expect(keys).not.toContainEqual(queryKeys.me());
+    expect(qc.invalidateQueries).toHaveBeenCalledTimes(1);
   });
 });
 

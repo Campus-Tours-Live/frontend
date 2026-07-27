@@ -27,6 +27,29 @@ describe("AuthOptions", () => {
       expect(url).toContain(encodeURIComponent("/onboarding/guide"));
     });
 
+    it("includes role= when a target role is known (role-specific entry)", () => {
+      navigate = jest.fn();
+      render(
+        <AuthOptions
+          intent="signup"
+          returnTo="/onboarding/guide"
+          role="GUIDE"
+          navigate={navigate}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /continue with google/i }));
+      const url = navigate.mock.calls[0][0] as string;
+      expect(url).toContain("role=GUIDE");
+    });
+
+    it("omits role= for a role-agnostic entry", () => {
+      navigate = jest.fn();
+      render(<AuthOptions intent="signin" navigate={navigate} />);
+      fireEvent.click(screen.getByRole("button", { name: /continue with google/i }));
+      const url = navigate.mock.calls[0][0] as string;
+      expect(url).not.toContain("role=");
+    });
+
     it("defaults to a signin intent and the dashboard return", () => {
       navigate = jest.fn();
       render(<AuthOptions navigate={navigate} />);

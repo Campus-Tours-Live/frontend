@@ -84,6 +84,7 @@ describe("public barrels", () => {
       "cancelAuth",
       "resetAuthGate",
       "AuthCancelledError",
+      "buildLoginUrl",
     ]);
   });
 

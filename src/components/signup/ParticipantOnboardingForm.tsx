@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
-import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
+import {
+  useMe,
+  useSetActiveRole,
+  useTourTopics,
+  useUpdateParticipantProfile,
+} from "@/lib/data-access";
 import {
   Alert,
   Body,
@@ -49,9 +54,14 @@ export function ParticipantOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
   const updateProfile = useUpdateParticipantProfile();
+  const setActiveRole = useSetActiveRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set once onboarding has GRANTED the role (Core write succeeded) but the bff session's
+  // activeRole switch hasn't (yet). Distinct from submitError: the profile IS saved, so the
+  // retry below only re-runs the switch — never re-submits the onboarding form.
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   const {
     register,
@@ -83,6 +93,25 @@ export function ParticipantOnboardingForm() {
     if (me.user.lastName && !getValues("lastName")) setValue("lastName", me.user.lastName);
   }, [me, setValue, getValues]);
 
+  // Onboarding partial-success: the submit above only GRANTS the role (Core write). The bff's
+  // activeRole is separate per-session state (Profile Contract v2 — Core has no active-role
+  // concept), so the form independently switches into the just-granted role afterward. If that
+  // switch fails, the role is still held — this is a session-init failure, not a save failure —
+  // so retry re-runs ONLY this, never the onboarding submit above.
+  const activateSession = async () => {
+    setSessionError(null);
+    try {
+      await setActiveRole.mutateAsync("PARTICIPANT");
+      router.push("/dashboard");
+    } catch (err) {
+      setSessionError(
+        isAuthCancelled(err)
+          ? SIGN_IN_AGAIN_MESSAGE
+          : "Your profile is saved. We couldn't switch you into participant mode — try again.",
+      );
+    }
+  };
+
   const persist = async (values: FormValues) => {
     setSubmitError(null);
     try {
@@ -96,7 +125,6 @@ export function ParticipantOnboardingForm() {
         universitiesOfInterest: values.universities.map((u) => u.id),
         topicsOfInterest: values.topics,
       });
-      router.push("/dashboard");
     } catch (err) {
       setSubmitError(
         isAuthCancelled(err)
@@ -105,7 +133,10 @@ export function ParticipantOnboardingForm() {
             ? err.message
             : "Something went wrong. Please try again.",
       );
+      return;
     }
+    // The role is granted — land in the participant area only once the session reflects it.
+    await activateSession();
   };
 
   const submit = handleSubmit(persist);
@@ -128,6 +159,31 @@ export function ParticipantOnboardingForm() {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   const bothNameMissing = Boolean(errors.firstName && errors.lastName);
+
+  // Onboarding is DONE (the participant role is granted); only the session switch remains.
+  // Replace the wizard with a dedicated retry panel — never let the participant re-fill and
+  // re-submit a profile that's already saved.
+  if (sessionError) {
+    return (
+      <>
+        <div className="mb-8">
+          <OnboardingBreadcrumb current="Onboarding" />
+        </div>
+        <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+          <div className="eyebrow">Participant onboarding</div>
+          <SectionHeading title="Tell us about yourself?" lead="Almost there." />
+          <Alert variant="error" className="mt-6">
+            {sessionError}
+          </Alert>
+          <ButtonRow className="mt-6">
+            <Button onClick={() => void activateSession()} loading={setActiveRole.isPending}>
+              Try again
+            </Button>
+          </ButtonRow>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

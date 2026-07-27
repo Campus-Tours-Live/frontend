@@ -4,10 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { RoleSwitcher } from "@/components/site/RoleSwitcher";
 import { useMe, useParticipantProfile, useSetActiveRole } from "@/lib/data-access";
 
-const push = jest.fn();
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
-}));
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
   useParticipantProfile: jest.fn(),
@@ -180,45 +176,76 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
 });
 
 describe("RoleSwitcher — holds ONE role (become the other)", () => {
-  it("GUIDE only → 'Become a Participant' navigates to participant onboarding", async () => {
+  it("GUIDE only → 'Become a Participant' navigates through /auth/login?role=PARTICIPANT", async () => {
     setupMe({ activeRole: "GUIDE", roles: ["GUIDE"] });
     setupSetActiveRole();
+    const navigate = jest.fn();
 
-    render(<RoleSwitcher />);
+    render(<RoleSwitcher navigate={navigate} />);
 
     const btn = screen.getByRole("button", { name: /become a participant/i });
     await userEvent.click(btn);
 
-    expect(push).toHaveBeenCalledWith("/onboarding/participant");
+    expect(navigate).toHaveBeenCalledTimes(1);
+    const url = navigate.mock.calls[0][0] as string;
+    expect(url).toContain("/auth/login?");
+    expect(url).toContain("intent=signup");
+    expect(url).toContain("role=PARTICIPANT");
+    expect(url).toContain(encodeURIComponent("/onboarding/participant"));
   });
 
-  it("PARTICIPANT only (not parent) → 'Become a Guide' navigates to guide onboarding", async () => {
+  it("PARTICIPANT only (not parent) → 'Become a Guide' navigates through /auth/login?role=GUIDE", async () => {
     setupMe({
       activeRole: "PARTICIPANT",
       roles: ["PARTICIPANT"],
     });
     setupParticipantProfile("STUDENT");
     setupSetActiveRole();
+    const navigate = jest.fn();
 
-    render(<RoleSwitcher />);
+    render(<RoleSwitcher navigate={navigate} />);
 
     const btn = screen.getByRole("button", { name: /become a guide/i });
     await userEvent.click(btn);
 
-    expect(push).toHaveBeenCalledWith("/onboarding/guide");
+    expect(navigate).toHaveBeenCalledTimes(1);
+    const url = navigate.mock.calls[0][0] as string;
+    expect(url).toContain("role=GUIDE");
+    expect(url).toContain(encodeURIComponent("/onboarding/guide"));
   });
 
   it("calls onNavigate before navigating", async () => {
     setupMe({ activeRole: "GUIDE", roles: ["GUIDE"] });
     setupSetActiveRole();
     const onNavigate = jest.fn();
+    const navigate = jest.fn();
 
-    render(<RoleSwitcher onNavigate={onNavigate} />);
+    render(<RoleSwitcher onNavigate={onNavigate} navigate={navigate} />);
 
     await userEvent.click(screen.getByRole("button", { name: /become a participant/i }));
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("without a navigate prop, falls back to window.location.assign", async () => {
+    setupMe({ activeRole: "GUIDE", roles: ["GUIDE"] });
+    setupSetActiveRole();
+    const assign = jest.fn();
+    const original = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...original, assign },
+    });
+
+    try {
+      render(<RoleSwitcher />);
+      await userEvent.click(screen.getByRole("button", { name: /become a participant/i }));
+      expect(assign).toHaveBeenCalledTimes(1);
+      expect(assign.mock.calls[0][0] as string).toContain("/auth/login?");
+    } finally {
+      Object.defineProperty(window, "location", { configurable: true, value: original });
+    }
   });
 });
 

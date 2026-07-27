@@ -39,8 +39,8 @@ async function renderPage(
 }
 
 describe("/signup/role page", () => {
-  it("redirects a member who already holds a role to /dashboard", async () => {
-    getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"] });
+  it("redirects a member with an active role to /dashboard", async () => {
+    getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"], activeRole: "PARTICIPANT" });
     await expect(SignupRolePage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
       "REDIRECT:/dashboard",
     );
@@ -51,6 +51,15 @@ describe("/signup/role page", () => {
     expect(screen.getByText(/how would you like to use/i)).toBeInTheDocument();
     expect(screen.getAllByTestId("role-card")).toHaveLength(2);
     expect(screen.queryByText(/can.t become guides/i)).not.toBeInTheDocument();
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the role chooser (no redirect) for a held role with no active role yet", async () => {
+    // Rare multi-role, activeRole===null case (see (app)/layout.tsx) — this page is its
+    // landing. Gating on roles.length here would bounce it straight back to /dashboard, which
+    // bounces right back — an infinite loop. Gating on activeRole avoids that.
+    await renderPage({}, { roles: ["PARTICIPANT", "GUIDE"], activeRole: null });
+    expect(screen.getByText(/how would you like to use/i)).toBeInTheDocument();
     expect(redirectMock).not.toHaveBeenCalled();
   });
 
