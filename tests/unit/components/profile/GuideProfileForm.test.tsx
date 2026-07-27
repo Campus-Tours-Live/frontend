@@ -61,10 +61,16 @@ jest.mock("@/components/signup/UniversityMultiSelect", () => ({
 }));
 
 const profile: GuideProfile = {
-  universityId: "uni-1",
-  universityName: "State University",
-  major: "Computer Science",
-  classYear: "2027",
+  universities: [
+    {
+      universityId: "uni-1",
+      universityName: "State University",
+      universityShortName: null,
+      major: "Computer Science",
+      classYear: "2027",
+      verificationStatus: "VERIFIED",
+    },
+  ],
   bio: "Campus explorer.",
   languages: ["en-US"],
   specialties: ["GENERAL_CAMPUS"],
@@ -146,7 +152,21 @@ describe("GuideProfileForm", () => {
 
   it("seeds empty defaults when profile fields are missing", () => {
     mockUseMe.mockReturnValue({ me: { user: { firstName: null, lastName: null } } });
-    renderWithQuery(<GuideProfileForm profile={{ major: "Physics" }} />);
+    renderWithQuery(
+      <GuideProfileForm
+        profile={{
+          universities: [
+            {
+              universityId: "",
+              universityName: null,
+              universityShortName: null,
+              major: "Physics",
+              verificationStatus: "NOT_SUBMITTED",
+            },
+          ],
+        }}
+      />,
+    );
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("");
     expect(screen.getByLabelText(/last name/i)).toHaveValue("");
@@ -159,10 +179,15 @@ describe("GuideProfileForm", () => {
     renderWithQuery(
       <GuideProfileForm
         profile={{
-          universityId: "uni-1",
-          universityName: "Stanford University",
-          universityShortName: "Stanford",
-          major: "CS",
+          universities: [
+            {
+              universityId: "uni-1",
+              universityName: "Stanford University",
+              universityShortName: "Stanford",
+              major: "CS",
+              verificationStatus: "VERIFIED",
+            },
+          ],
         }}
       />,
     );
@@ -173,7 +198,21 @@ describe("GuideProfileForm", () => {
 
   it("requires a university before submitting", async () => {
     const user = userEvent.setup();
-    renderWithQuery(<GuideProfileForm profile={{ major: "Math" }} />);
+    renderWithQuery(
+      <GuideProfileForm
+        profile={{
+          universities: [
+            {
+              universityId: "",
+              universityName: null,
+              universityShortName: null,
+              major: "Math",
+              verificationStatus: "NOT_SUBMITTED",
+            },
+          ],
+        }}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Save profile" }));
 

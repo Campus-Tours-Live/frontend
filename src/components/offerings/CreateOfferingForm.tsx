@@ -35,8 +35,9 @@ export function CreateOfferingForm() {
   const createOffering = useCreateOffering();
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const { data: guideProfile, isLoading: profileLoading } = useGuideProfile();
-  const university = guideProfile?.universityId
-    ? { id: guideProfile.universityId, name: guideProfile.universityName ?? "Your campus" }
+  const guideUniversity = guideProfile?.universities?.[0];
+  const university = guideUniversity?.universityId
+    ? { id: guideUniversity.universityId, name: guideUniversity.universityName ?? "Your campus" }
     : null;
 
   const {

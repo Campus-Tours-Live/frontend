@@ -30,20 +30,27 @@ export interface ParticipantProfile {
   applicationStatus?: string;
 }
 
-export interface GuideProfile {
-  universityId?: string | null;
-  universityName?: string | null;
-  universityShortName?: string | null;
+/** A guide's affiliation with one university (Profile Contract v2's per-university shape).
+ *  The UI is single-entry today (reads/writes `universities[0]`), but the backend already
+ *  models this as an array — a guide could have more than one in the future. */
+export interface GuideUniversity {
+  universityId: string;
+  universityName: string | null;
+  universityShortName: string | null;
   major?: string;
   degree?: string;
   classYear?: string;
+  verificationStatus: string;
+}
+
+export interface GuideProfile {
+  universities?: GuideUniversity[];
   bio?: string | null;
   languages?: string[];
   specialties?: string[];
   basePriceCents?: number | null;
   currency?: string;
   applicationStatus?: string | null;
-  verificationStatus?: string | null;
 }
 
 /** Lifecycle status of a guide's tour offering (Core TourOfferingStatus). */

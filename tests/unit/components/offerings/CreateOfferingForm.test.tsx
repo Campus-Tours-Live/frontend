@@ -22,7 +22,9 @@ const mockUseTourTopics = jest.fn(() => ({
   isLoading: false,
 }));
 const mockUseGuideProfile = jest.fn(() => ({
-  data: { universityId: "uni-1", universityName: "State University" },
+  data: {
+    universities: [{ universityId: "uni-1", universityName: "State University" }],
+  },
   isLoading: false,
 }));
 jest.mock("@/lib/data-access", () => ({
@@ -46,7 +48,9 @@ beforeEach(() => {
     isLoading: false,
   });
   mockUseGuideProfile.mockReturnValue({
-    data: { universityId: "uni-1", universityName: "State University" },
+    data: {
+      universities: [{ universityId: "uni-1", universityName: "State University" }],
+    },
     isLoading: false,
   });
 });
@@ -134,7 +138,20 @@ describe("CreateOfferingForm", () => {
 
   it("disables submit and warns when the guide has no verified university", () => {
     mockUseGuideProfile.mockReturnValue({
-      data: { universityId: null, universityName: null },
+      data: { universities: [{ universityId: null, universityName: null }] },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(
+      screen.getByText(/Finish guide onboarding \(verify your school email\)/i),
+    ).toBeInTheDocument();
+  });
+
+  it("disables submit and warns when the guide has no universities at all", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { universities: [] },
       isLoading: false,
     } as never);
     renderWithQuery(<CreateOfferingForm />);
@@ -147,7 +164,7 @@ describe("CreateOfferingForm", () => {
 
   it("falls back to a default campus label when the university name is missing", () => {
     mockUseGuideProfile.mockReturnValue({
-      data: { universityId: "uni-1", universityName: null },
+      data: { universities: [{ universityId: "uni-1", universityName: null }] },
       isLoading: false,
     } as never);
     renderWithQuery(<CreateOfferingForm />);
@@ -157,7 +174,7 @@ describe("CreateOfferingForm", () => {
 
   it("does not submit when the verified university is missing, even if the form is force-submitted", async () => {
     mockUseGuideProfile.mockReturnValue({
-      data: { universityId: null, universityName: null },
+      data: { universities: [{ universityId: null, universityName: null }] },
       isLoading: false,
     } as never);
     const user = userEvent.setup();

@@ -73,7 +73,7 @@ export function GuideProfilePage() {
               Verification
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {verificationStatusLabel(profile.verificationStatus)}
+              {verificationStatusLabel(profile.universities?.[0]?.verificationStatus)}
             </Body>
           </div>
         </dl>

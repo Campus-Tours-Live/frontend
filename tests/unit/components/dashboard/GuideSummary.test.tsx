@@ -33,7 +33,15 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
   return {
     kind: "guide",
     guide: {
-      major: "Computer Science",
+      universities: [
+        {
+          universityId: "uni-1",
+          universityName: "State University",
+          universityShortName: null,
+          major: "Computer Science",
+          verificationStatus: "VERIFIED",
+        },
+      ],
       applicationStatus: "APPROVED",
     },
     guideStatus: "APPROVED",
@@ -94,11 +102,17 @@ describe("GuideSummary", () => {
 
   it("falls back to — for the major when absent", () => {
     const data = makeData();
-    delete data.guide.major;
+    delete data.guide.universities![0]!.major;
     render(<GuideSummary data={data} />);
     expect(screen.getByText("Major")).toBeInTheDocument();
     expect(screen.queryByText("Computer Science")).not.toBeInTheDocument();
     // The Major row value should fall back to the em-dash.
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("falls back to — for the major when the guide has no universities at all", () => {
+    render(<GuideSummary data={makeData({ guide: { universities: [] } })} />);
+    expect(screen.getByText("Major")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 

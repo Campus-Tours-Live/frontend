@@ -24,17 +24,22 @@ const mockUseMe = useMe as jest.Mock;
 const mockUseGuideProfile = useGuideProfile as jest.Mock;
 
 const profile: GuideProfile = {
-  universityId: "uni-1",
-  universityName: "State University",
-  major: "Computer Science",
-  classYear: "2027",
+  universities: [
+    {
+      universityId: "uni-1",
+      universityName: "State University",
+      universityShortName: null,
+      major: "Computer Science",
+      classYear: "2027",
+      verificationStatus: "VERIFIED",
+    },
+  ],
   bio: "Campus explorer.",
   languages: ["en-US"],
   specialties: ["GENERAL_CAMPUS"],
   basePriceCents: 4200,
   currency: "USD",
   applicationStatus: "APPROVED",
-  verificationStatus: "VERIFIED",
 };
 
 beforeEach(() => {
@@ -110,5 +115,16 @@ describe("GuideProfilePage", () => {
     render(<GuideProfilePage />);
 
     expect(screen.getAllByText("—")).toHaveLength(2);
+  });
+
+  it("falls back to an em dash for verification when the guide has no universities yet", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { ...profile, universities: [] },
+      isLoading: false,
+      isError: false,
+    });
+    render(<GuideProfilePage />);
+
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });

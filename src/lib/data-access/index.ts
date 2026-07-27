@@ -44,6 +44,7 @@ export type {
   Role,
   ParticipantProfile,
   GuideProfile,
+  GuideUniversity,
   ParticipantProfileUpdate,
   GuideProfileUpdate,
   University,

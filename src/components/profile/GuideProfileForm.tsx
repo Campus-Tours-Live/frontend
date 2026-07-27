@@ -55,12 +55,13 @@ export interface GuideProfileFormProps {
 }
 
 function universitySeed(profile: GuideProfile): UniversityOption[] {
-  if (!profile.universityId || !profile.universityName) return [];
+  const university = profile.universities?.[0];
+  if (!university?.universityId || !university.universityName) return [];
   return [
     {
-      id: profile.universityId,
-      name: profile.universityName,
-      shortName: profile.universityShortName ?? null,
+      id: university.universityId,
+      name: university.universityName,
+      shortName: university.universityShortName ?? null,
     },
   ];
 }
@@ -70,12 +71,13 @@ function toFormValues(
   identity?: Pick<MeUser, "firstName" | "lastName"> | null,
 ): FormValues {
   const basePriceCents = profile.basePriceCents ?? 2800;
+  const university = profile.universities?.[0];
   return {
     firstName: identity?.firstName ?? "",
     lastName: identity?.lastName ?? "",
     university: universitySeed(profile),
-    major: profile.major ?? "",
-    classYear: profile.classYear ?? "",
+    major: university?.major ?? "",
+    classYear: university?.classYear ?? "",
     bio: profile.bio ?? "",
     languages: profile.languages?.length ? profile.languages : ["en-US"],
     specialties: profile.specialties ?? [],

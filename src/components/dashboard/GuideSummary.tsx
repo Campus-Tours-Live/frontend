@@ -15,7 +15,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
   const { me } = useMe();
 
   const items: MemberCardItem[] = [
-    { icon: GraduationCap, label: "Major", value: guide.major ?? "—" },
+    { icon: GraduationCap, label: "Major", value: guide.universities?.[0]?.major ?? "—" },
     { icon: BadgeCheck, label: "Application", value: guideStatus ?? "—" },
     { icon: List, label: "Offerings", value: String(offerings.length) },
     { icon: CalendarDays, label: "Member since", value: formatMonthYear(createdAt) },

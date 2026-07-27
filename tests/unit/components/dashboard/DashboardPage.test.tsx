@@ -18,7 +18,15 @@ const mockUseMe = useMe as jest.Mock;
 const guideData: GuideDashboard = {
   kind: "guide",
   guide: {
-    major: "Computer Science",
+    universities: [
+      {
+        universityId: "uni-1",
+        universityName: "State University",
+        universityShortName: null,
+        major: "Computer Science",
+        verificationStatus: "VERIFIED",
+      },
+    ],
     applicationStatus: "APPROVED",
   },
   guideStatus: "APPROVED",
