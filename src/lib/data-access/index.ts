@@ -19,6 +19,7 @@ export { useDegrees } from "./hooks/use-degrees";
 export { useUpdateParticipantProfile } from "./hooks/use-update-participant-profile";
 export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
 export { useSetActiveRole } from "./hooks/use-set-active-role";
+export { useSetOnboardingRole } from "./hooks/use-set-onboarding-role";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useOnboarding } from "./hooks/use-onboarding";
 export { useOfferings } from "./hooks/use-offerings";
