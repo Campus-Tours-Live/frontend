@@ -40,4 +40,10 @@ describe("TourDetailRoute", () => {
     render(<TourDetailRoute tourId="tour-id" />);
     expect(screen.getByText(message)).toBeInTheDocument();
   });
+
+  it("keeps the error-state back link on the tours index", () => {
+    mockUseTourDetail.mockReturnValue({ isLoading: false, error: new ApiError(404) });
+    render(<TourDetailRoute tourId="tour-id" />);
+    expect(screen.getByRole("link", { name: /back to tours/i })).toHaveAttribute("href", "/tours");
+  });
 });

@@ -1,7 +1,8 @@
+import { useState } from "react";
+import Image from "next/image";
 import {
   Clock3,
   GraduationCap,
-  ImageIcon,
   Languages,
   MapPin,
   MessageCircleQuestion,
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui";
 import { formatOfferingPrice } from "@/lib/format";
 import type { TourDetail as TourDetailData } from "@/lib/data-access";
+import { CAMPUS_FALLBACK_IMAGE } from "./tourCard.visuals";
 
 function guideInitials(name: string): string {
   return name
@@ -43,12 +45,16 @@ function topicLabel(topic: string): string {
 export function TourDetail({ tour }: { tour: TourDetailData }) {
   const location = campusLocation(tour);
   const languages = tour.languages?.length ? tour.languages.join(" · ") : "Ask the guide";
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageSrc = imageFailed
+    ? CAMPUS_FALLBACK_IMAGE
+    : (tour.universityImageUrl ?? CAMPUS_FALLBACK_IMAGE);
 
   return (
     <main>
       <section className="border-b border-border/70 bg-gradient-to-b from-sage-soft/70 to-background">
         <div className="mx-auto max-w-content px-6 pb-10 pt-8 md:pb-14 md:pt-12">
-          <Link href="/" className="font-semibold text-primary-dark">
+          <Link href="/tours" className="font-semibold text-primary-dark">
             ← Back to tours
           </Link>
 
@@ -56,14 +62,18 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
             <div>
               <Card
                 padded={false}
-                className="relative grid min-h-[300px] place-items-center overflow-hidden rounded-hero bg-gradient-to-br from-primary-soft via-card to-sage-soft md:min-h-[430px]"
+                className="relative min-h-[300px] overflow-hidden rounded-hero bg-gradient-to-br from-primary-soft via-card to-sage-soft md:min-h-[430px]"
               >
-                <div className="text-center text-ink-soft/55">
-                  <Icon icon={ImageIcon} size={54} strokeWidth={1.2} className="mx-auto" />
-                  <Caption as="p" weight={700} className="mt-3">
-                    Campus tour preview
-                  </Caption>
-                </div>
+                <Image
+                  src={imageSrc}
+                  alt={`${tour.universityName} campus`}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 820px"
+                  className="object-cover"
+                  onError={() => setImageFailed(true)}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/45 via-ink/5 to-transparent" />
                 <StatusBadge
                   variant="success"
                   className="absolute left-5 top-5 bg-card/95 shadow-sm"

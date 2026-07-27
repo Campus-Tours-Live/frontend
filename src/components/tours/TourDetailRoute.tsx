@@ -35,7 +35,7 @@ export function TourDetailRoute({ tourId }: { tourId: string }) {
               Sign in
             </Link>
           ) : null}
-          <Link href="/" variant="secondary">
+          <Link href="/tours" variant="secondary">
             Back to tours
           </Link>
         </div>

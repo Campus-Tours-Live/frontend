@@ -1,6 +1,21 @@
 import { render, screen } from "@testing-library/react";
+import type { ImgHTMLAttributes } from "react";
 import { TourDetail } from "@/components/tours/TourDetail";
 import type { TourDetail as TourDetailData } from "@/lib/data-access";
+
+jest.mock("next/image", () => ({
+  __esModule: true,
+  default: ({
+    src,
+    alt,
+    fill: _fill,
+    priority: _priority,
+    ...props
+  }: ImgHTMLAttributes<HTMLImageElement> & {
+    fill?: boolean;
+    priority?: boolean;
+  }) => <img src={String(src)} alt={alt ?? ""} {...props} />,
+}));
 
 const tour: TourDetailData = {
   id: "a0000000-0000-4000-8000-000000000001",
@@ -17,24 +32,26 @@ const tour: TourDetailData = {
   universityRegion: "CA",
   guideId: "guide-id",
   guideDisplayName: "Maya Chen",
-  guideMajor: "Public Health",
-  guideDegree: "BS",
-  guideEntryYear: 2024,
   guideBio: "Third-year student and campus tour lead.",
   durationMin: 60,
   priceCents: 4200,
   currency: "USD",
   avgRating: 4.5,
   reviewCount: 12,
-  features: [],
-  isNew: false,
 };
 
 describe("TourDetail", () => {
   it("renders fields supplied by the backend contract", () => {
-    render(<TourDetail tour={tour} />);
+    const imageUrl =
+      "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/North%20Coast%20University.png";
+
+    render(<TourDetail tour={{ ...tour, universityImageUrl: imageUrl }} />);
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(tour.title);
+    expect(screen.getByRole("img", { name: /north coast university campus/i })).toHaveAttribute(
+      "src",
+      imageUrl,
+    );
     expect(screen.getByText("Arcata, CA")).toBeInTheDocument();
     expect(screen.getByText("$42.00")).toBeInTheDocument();
     expect(screen.getByText("en-US · zh-CN")).toBeInTheDocument();
