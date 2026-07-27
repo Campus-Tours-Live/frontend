@@ -2,7 +2,7 @@ import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lu
 import { MemberCard, type MemberCardHighlight, type MemberCardItem } from "@/components/ui";
 import { useMe, type GuideDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
-import { applicationStatusLabel } from "@/components/profile/guideProfileStatus";
+import { guideStatusLabel } from "@/components/profile/guideProfileStatus";
 
 /**
  * Guide dashboard slice — presentational. The /v1/dashboard aggregate composed the
@@ -17,7 +17,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
 
   const items: MemberCardItem[] = [
     { icon: GraduationCap, label: "Major", value: guide.universities?.[0]?.major ?? "—" },
-    { icon: BadgeCheck, label: "Application", value: applicationStatusLabel(guideStatus) },
+    { icon: BadgeCheck, label: "Application", value: guideStatusLabel(guideStatus) },
     { icon: List, label: "Offerings", value: String(offerings.length) },
     { icon: CalendarDays, label: "Member since", value: formatMonthYear(createdAt) },
   ];

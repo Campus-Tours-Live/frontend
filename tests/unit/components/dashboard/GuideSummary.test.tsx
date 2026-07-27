@@ -42,7 +42,7 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
           verificationStatus: "VERIFIED",
         },
       ],
-      applicationStatus: "VERIFIED",
+      guideStatus: "VERIFIED",
     },
     guideStatus: "VERIFIED",
     canPublish: true,

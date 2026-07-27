@@ -35,9 +35,9 @@ const profile: GuideProfile = {
     },
   ],
   bio: "Campus explorer.",
-  languages: ["en-US"],
-  specialties: ["GENERAL_CAMPUS"],
-  applicationStatus: "VERIFIED",
+  spokenLanguages: ["en-US"],
+  tourTopics: ["GENERAL_CAMPUS"],
+  guideStatus: "VERIFIED",
 };
 
 beforeEach(() => {

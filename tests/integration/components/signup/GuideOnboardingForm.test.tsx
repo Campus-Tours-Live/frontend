@@ -172,12 +172,12 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
         universityId: "u-1",
         major: "computer_science",
         verificationEmail: "jordan@university.edu",
-        specialties: ["academics"],
+        tourTopics: ["academics"],
         submit: true,
       }),
     );
     // Languages default included.
-    expect(mutateAsync.mock.calls[0][0].languages).toContain("en-US");
+    expect(mutateAsync.mock.calls[0][0].spokenLanguages).toContain("en-US");
     // Onboarding partial-success: the profile grant is followed by an independent session
     // switch into the just-granted role (bff activeRole is session state, not a Core write).
     expect(setActiveRoleMutateAsync).toHaveBeenCalledWith("GUIDE");
@@ -285,8 +285,8 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     const payload = mutateAsync.mock.calls[0][0];
-    expect(payload.languages).toEqual(["es"]);
-    expect(payload.specialties).toEqual(["academics"]);
+    expect(payload.spokenLanguages).toEqual(["es"]);
+    expect(payload.tourTopics).toEqual(["academics"]);
   });
 
   it("requires at least one language before leaving 'Your guiding'", async () => {

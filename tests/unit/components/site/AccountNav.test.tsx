@@ -36,8 +36,8 @@ function setupMe(me: MePartial | null, opts?: { isOnboarded?: boolean }) {
 }
 
 /** Guide application status now comes from useGuideProfile(), not me.guideStatus. */
-function setupGuideProfile(applicationStatus: string | null = null) {
-  (useGuideProfile as jest.Mock).mockReturnValue({ data: { applicationStatus } });
+function setupGuideProfile(guideStatus: string | null = null) {
+  (useGuideProfile as jest.Mock).mockReturnValue({ data: { guideStatus } });
 }
 
 beforeEach(() => {
@@ -146,7 +146,7 @@ describe("AccountNav — guide", () => {
     expect(screen.getByText("Guide account")).toBeInTheDocument();
   });
 
-  it("shows 'pending verification' subtitle when applicationStatus=PENDING", () => {
+  it("shows 'pending verification' subtitle when guideStatus=PENDING", () => {
     setupMe(
       {
         activeRole: "GUIDE",

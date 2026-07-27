@@ -1,6 +1,6 @@
 import type { StatusVariant } from "@/components/ui";
 
-export function applicationStatusLabel(status: string | null | undefined): string {
+export function guideStatusLabel(status: string | null | undefined): string {
   switch (status) {
     case "PENDING":
       return "Pending verification";
@@ -28,7 +28,7 @@ export function verificationStatusLabel(status: string | null | undefined): stri
   }
 }
 
-export function applicationStatusVariant(status: string | null | undefined): StatusVariant {
+export function guideStatusVariant(status: string | null | undefined): StatusVariant {
   switch (status) {
     case "VERIFIED":
       return "success";

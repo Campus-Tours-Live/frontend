@@ -27,7 +27,7 @@ export interface ParticipantProfile {
   topicsOfInterest?: string[];
   universitiesOfInterest?: string[];
   guardianRequired?: boolean;
-  applicationStatus?: string;
+  participantStatus?: string;
 }
 
 /** A guide's affiliation with one university (Profile Contract v2's per-university shape).
@@ -49,9 +49,9 @@ export interface GuideUniversity {
 export interface GuideProfile {
   universities?: GuideUniversity[];
   bio?: string | null;
-  languages?: string[];
-  specialties?: string[];
-  applicationStatus?: string | null;
+  spokenLanguages?: string[];
+  tourTopics?: string[];
+  guideStatus?: string | null;
 }
 
 /** Lifecycle status of a guide's tour offering (Core TourOfferingStatus). */
@@ -132,8 +132,8 @@ export interface GuideProfileUpdate {
   /** Year the guide entered the university (onboarding education step). */
   entryYear?: number;
   bio?: string;
-  languages?: string[];
-  specialties?: string[];
+  spokenLanguages?: string[];
+  tourTopics?: string[];
   verificationEmail?: string;
   submit?: boolean;
 }

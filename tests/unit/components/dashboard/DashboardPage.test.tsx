@@ -27,7 +27,7 @@ const guideData: GuideDashboard = {
         verificationStatus: "VERIFIED",
       },
     ],
-    applicationStatus: "VERIFIED",
+    guideStatus: "VERIFIED",
   },
   guideStatus: "VERIFIED",
   canPublish: true,

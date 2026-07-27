@@ -77,8 +77,8 @@ function toFormValues(
     major: university?.major ?? "",
     classYear: university?.classYear ?? "",
     bio: profile.bio ?? "",
-    languages: profile.languages?.length ? profile.languages : ["en-US"],
-    specialties: profile.specialties ?? [],
+    languages: profile.spokenLanguages?.length ? profile.spokenLanguages : ["en-US"],
+    specialties: profile.tourTopics ?? [],
   };
 }
 
@@ -129,8 +129,8 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
         major: values.major.trim(),
         classYear: values.classYear.trim() || undefined,
         bio: values.bio.trim() || undefined,
-        languages: values.languages,
-        specialties: values.specialties,
+        spokenLanguages: values.languages,
+        tourTopics: values.specialties,
       });
       setSaveMessage("Profile saved.");
     } catch (err) {

@@ -205,8 +205,8 @@ export function GuideOnboardingForm() {
         // degree + bio are required (steps 1 and 2), so the `|| undefined` fallback is never taken
         degree: /* istanbul ignore next */ values.degree || undefined,
         bio: /* istanbul ignore next */ values.bio || undefined,
-        languages: values.languages,
-        specialties: values.specialties,
+        spokenLanguages: values.languages,
+        tourTopics: values.specialties,
         verificationEmail: values.schoolEmail,
         submit: true,
       });

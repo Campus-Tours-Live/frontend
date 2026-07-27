@@ -72,8 +72,8 @@ const profile: GuideProfile = {
     },
   ],
   bio: "Campus explorer.",
-  languages: ["en-US"],
-  specialties: ["GENERAL_CAMPUS"],
+  spokenLanguages: ["en-US"],
+  tourTopics: ["GENERAL_CAMPUS"],
 };
 
 function renderWithQuery(ui: ReactElement) {
@@ -108,8 +108,8 @@ describe("GuideProfileForm", () => {
       major: "Computer Science",
       classYear: "2027",
       bio: "Campus explorer.",
-      languages: ["en-US"],
-      specialties: ["GENERAL_CAMPUS"],
+      spokenLanguages: ["en-US"],
+      tourTopics: ["GENERAL_CAMPUS"],
     });
     expect(screen.getByText("Profile saved.")).toBeInTheDocument();
   });
@@ -244,7 +244,7 @@ describe("GuideProfileForm", () => {
     await user.click(screen.getByRole("button", { name: "English" }));
     await user.click(screen.getByRole("button", { name: "Save profile" }));
 
-    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ languages: ["es"] }));
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ spokenLanguages: ["es"] }));
   });
 
   it("shows loading copy while tour topics load", () => {
@@ -256,19 +256,19 @@ describe("GuideProfileForm", () => {
 
   it("toggles specialty chips", async () => {
     const user = userEvent.setup();
-    renderWithQuery(<GuideProfileForm profile={{ ...profile, specialties: [] }} />);
+    renderWithQuery(<GuideProfileForm profile={{ ...profile, tourTopics: [] }} />);
 
     await user.click(screen.getByRole("button", { name: "General campus" }));
     await user.click(screen.getByRole("button", { name: "Save profile" }));
 
     expect(mutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ specialties: ["GENERAL_CAMPUS"] }),
+      expect.objectContaining({ tourTopics: ["GENERAL_CAMPUS"] }),
     );
 
     await user.click(screen.getByRole("button", { name: "General campus" }));
     await user.click(screen.getByRole("button", { name: "Save profile" }));
 
-    expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ specialties: [] }));
+    expect(mutateAsync).toHaveBeenLastCalledWith(expect.objectContaining({ tourTopics: [] }));
   });
 
   it("seeds an empty major when the profile omits one", () => {

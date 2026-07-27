@@ -6,8 +6,8 @@ import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import {
-  applicationStatusLabel,
-  applicationStatusVariant,
+  guideStatusLabel,
+  guideStatusVariant,
   verificationStatusLabel,
 } from "./guideProfileStatus";
 
@@ -63,8 +63,8 @@ export function GuideProfilePage() {
               Application
             </Body>
             <dd className="mt-1">
-              <StatusBadge variant={applicationStatusVariant(profile.applicationStatus)}>
-                {applicationStatusLabel(profile.applicationStatus)}
+              <StatusBadge variant={guideStatusVariant(profile.guideStatus)}>
+                {guideStatusLabel(profile.guideStatus)}
               </StatusBadge>
             </dd>
           </div>

@@ -130,7 +130,7 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   // not-pending — the same safe default the rest of the app uses for an unresolved status.
   const subtitle =
     activeRole === "GUIDE"
-      ? guideProfile?.applicationStatus === "PENDING"
+      ? guideProfile?.guideStatus === "PENDING"
         ? "Guide · pending verification"
         : "Guide account"
       : "Participant account";

@@ -45,7 +45,7 @@ beforeEach(() => {
 describe("useUpdateGuideProfile", () => {
   it("PATCHes /v1/guide/profile with the body and resolves with the updated profile", async () => {
     const update = { major: "CS", classYear: "2027", submit: true };
-    const saved = { major: "CS", classYear: "2027", applicationStatus: "SUBMITTED" };
+    const saved = { major: "CS", classYear: "2027", guideStatus: "SUBMITTED" };
     fetchMock.mockResolvedValue(jsonResponse(200, { data: saved }));
 
     const client = makeClient();
