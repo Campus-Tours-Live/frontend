@@ -6,9 +6,8 @@ import {
 
 describe("guideProfileStatus helpers", () => {
   it.each([
-    ["DRAFT", "Draft", "info"],
-    ["PENDING_REVIEW", "Pending review", "warning"],
-    ["APPROVED", "Approved", "success"],
+    ["PENDING", "Pending verification", "warning"],
+    ["VERIFIED", "Verified", "success"],
     ["REJECTED", "Rejected", "error"],
   ] as const)("maps application %s to %s / %s", (status, label, variant) => {
     expect(applicationStatusLabel(status)).toBe(label);
@@ -29,5 +28,10 @@ describe("guideProfileStatus helpers", () => {
     expect(applicationStatusLabel("ON_HOLD")).toBe("ON_HOLD");
     expect(verificationStatusLabel(undefined)).toBe("—");
     expect(verificationStatusLabel("CUSTOM")).toBe("CUSTOM");
+  });
+
+  it("falls back to the 'info' variant for unknown or missing application statuses", () => {
+    expect(applicationStatusVariant(null)).toBe("info");
+    expect(applicationStatusVariant("ON_HOLD")).toBe("info");
   });
 });

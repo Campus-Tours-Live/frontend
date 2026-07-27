@@ -1,16 +1,19 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formSubmitErrorMessage } from "@/lib/errors";
 import { useForm } from "react-hook-form";
 import {
   Alert,
+  Body,
   Button,
   Card,
-  FormLabel,
+  FormGroup,
   Icon,
   Link,
   Nudge,
+  Radio,
   SectionHeading,
   SelectField,
   Skeleton,
@@ -22,8 +25,11 @@ import { ApiError, useCreateOffering, useGuideProfile, useTourTopics } from "@/l
 
 const DURATIONS = [30, 45, 60, 90] as const;
 
+const UNVERIFIED_REASON = "Verify your school email to create tours for this campus.";
+
 interface FormValues {
   title: string;
+  universityId: string;
   topic: string;
   durationMin: string;
   price: string;
@@ -35,19 +41,22 @@ export function CreateOfferingForm() {
   const createOffering = useCreateOffering();
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const { data: guideProfile, isLoading: profileLoading } = useGuideProfile();
-  const guideUniversity = guideProfile?.universities?.[0];
-  const university = guideUniversity?.universityId
-    ? { id: guideUniversity.universityId, name: guideUniversity.universityName ?? "Your campus" }
-    : null;
+  const universities = guideProfile?.universities ?? [];
+  const firstVerifiedId =
+    universities.find((u) => u.verificationStatus === "VERIFIED" && u.universityId)?.universityId ??
+    "";
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
     defaultValues: {
       title: "",
+      universityId: "",
       topic: "",
       durationMin: "60",
       price: "42",
@@ -55,8 +64,20 @@ export function CreateOfferingForm() {
     },
   });
 
+  const selectedUniversityId = watch("universityId");
+
+  // Default-select the guide's first VERIFIED university once the profile loads. Runs again only
+  // if the resolved default itself changes (e.g. profile refetches with a different verified
+  // school first) — it never clobbers a selection the guide already made among several verified
+  // campuses.
+  useEffect(() => {
+    if (firstVerifiedId) {
+      setValue("universityId", firstVerifiedId);
+    }
+  }, [firstVerifiedId, setValue]);
+
   const onSubmit = handleSubmit(async (values) => {
-    if (!university) return;
+    if (!values.universityId) return;
 
     const dollars = Number(values.price);
     if (Number.isNaN(dollars) || dollars < 20 || dollars > 200) {
@@ -67,7 +88,7 @@ export function CreateOfferingForm() {
     try {
       await createOffering.mutateAsync({
         title: values.title.trim(),
-        universityId: university.id,
+        universityId: values.universityId,
         topic: values.topic,
         durationMin: Number(values.durationMin),
         priceCents: Math.round(dollars * 100),
@@ -109,19 +130,62 @@ export function CreateOfferingForm() {
         />
 
         <div>
-          <FormLabel>University</FormLabel>
           {profileLoading ? (
-            <Skeleton className="mt-2 h-11 w-full rounded-field" />
-          ) : university ? (
-            <div className="mt-2 flex items-center gap-2 rounded-field border border-border bg-canvas px-3 py-3">
-              <Icon name="success" className="text-sage-foreground" />
-              <span className="font-semibold text-ink">{university.name}</span>
-              <span className="ml-auto text-ui-sm text-ink-soft">your verified campus</span>
-            </div>
+            <>
+              <Body as="span" size="medium" weight={600} color="ink" className="mb-2 block">
+                University
+              </Body>
+              <Skeleton className="h-11 w-full rounded-field" />
+            </>
+          ) : universities.length === 0 ? (
+            <>
+              <Body as="span" size="medium" weight={600} color="ink" className="mb-2 block">
+                University
+              </Body>
+              <Alert variant="warning" className="mt-2">
+                Finish guide onboarding (verify your school email) before creating an offering.
+              </Alert>
+            </>
           ) : (
-            <Alert variant="warning" className="mt-2">
-              Finish guide onboarding (verify your school email) before creating an offering.
-            </Alert>
+            <FormGroup
+              label="University"
+              error={
+                !firstVerifiedId
+                  ? "None of your universities are verified yet. Verify your school email for at least one campus before you can create a tour offering."
+                  : undefined
+              }
+            >
+              {universities.map((uni, index) => {
+                const verified = uni.verificationStatus === "VERIFIED" && Boolean(uni.universityId);
+                const reasonId = `university-reason-${uni.universityId || index}`;
+                return (
+                  <div key={uni.universityId || `${uni.universityName ?? "campus"}-${index}`}>
+                    <Radio
+                      name="universityId"
+                      value={uni.universityId ?? ""}
+                      label={uni.universityName ?? "Your campus"}
+                      checked={verified && selectedUniversityId === uni.universityId}
+                      disabled={!verified}
+                      aria-describedby={!verified ? reasonId : undefined}
+                      // Defence-in-depth: the radio is also `disabled` for a non-VERIFIED entry, but
+                      // guard here too rather than assume the browser always blocks the interaction.
+                      onChange={() => {
+                        if (verified) {
+                          setValue("universityId", uni.universityId as string, {
+                            shouldValidate: true,
+                          });
+                        }
+                      }}
+                    />
+                    {!verified ? (
+                      <Body id={reasonId} size="small" color="muted" className="ml-7 mt-0.5">
+                        {UNVERIFIED_REASON}
+                      </Body>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </FormGroup>
           )}
         </div>
 
@@ -174,7 +238,9 @@ export function CreateOfferingForm() {
       <Button
         type="submit"
         variant="primary"
-        disabled={isSubmitting || createOffering.isPending || profileLoading || !university}
+        disabled={
+          isSubmitting || createOffering.isPending || profileLoading || !selectedUniversityId
+        }
       >
         {isSubmitting || createOffering.isPending ? (
           <>

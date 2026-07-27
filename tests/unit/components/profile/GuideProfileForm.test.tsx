@@ -1,5 +1,5 @@
 import { type ReactElement } from "react";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideProfileForm } from "@/components/profile/GuideProfileForm";
@@ -74,7 +74,6 @@ const profile: GuideProfile = {
   bio: "Campus explorer.",
   languages: ["en-US"],
   specialties: ["GENERAL_CAMPUS"],
-  basePriceCents: 4200,
 };
 
 function renderWithQuery(ui: ReactElement) {
@@ -111,19 +110,8 @@ describe("GuideProfileForm", () => {
       bio: "Campus explorer.",
       languages: ["en-US"],
       specialties: ["GENERAL_CAMPUS"],
-      basePriceCents: 4200,
     });
     expect(screen.getByText("Profile saved.")).toBeInTheDocument();
-  });
-
-  it("rejects out-of-range base prices before submitting", async () => {
-    renderWithQuery(<GuideProfileForm profile={profile} />);
-
-    fireEvent.change(screen.getByLabelText(/base price per tour/i), { target: { value: "10" } });
-    fireEvent.submit(screen.getByRole("button", { name: "Save profile" }).closest("form")!);
-
-    expect(await screen.findByText("Price must be between $20 and $200")).toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
   });
 
   it("shows a validation message for 422 responses", async () => {
@@ -171,7 +159,6 @@ describe("GuideProfileForm", () => {
     expect(screen.getByLabelText(/first name/i)).toHaveValue("");
     expect(screen.getByLabelText(/last name/i)).toHaveValue("");
     expect(screen.getByLabelText(/major/i)).toHaveValue("Physics");
-    expect(screen.getByLabelText(/base price per tour/i)).toHaveValue(28);
     expect(screen.getByText("Pick university")).toBeInTheDocument();
   });
 

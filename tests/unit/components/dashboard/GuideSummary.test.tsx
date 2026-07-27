@@ -42,9 +42,9 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
           verificationStatus: "VERIFIED",
         },
       ],
-      applicationStatus: "APPROVED",
+      applicationStatus: "VERIFIED",
     },
-    guideStatus: "APPROVED",
+    guideStatus: "VERIFIED",
     canPublish: true,
     offerings: [offering("1"), offering("2")],
     createdAt: "2025-03-15T00:00:00Z",
@@ -64,10 +64,15 @@ describe("GuideSummary", () => {
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
   });
 
-  it("shows the application status from guideStatus", () => {
+  it("shows the friendly application status label for guideStatus", () => {
     render(<GuideSummary data={makeData({ guideStatus: "PENDING" })} />);
     expect(screen.getByText("Application")).toBeInTheDocument();
-    expect(screen.getByText("PENDING")).toBeInTheDocument();
+    expect(screen.getByText("Pending verification")).toBeInTheDocument();
+  });
+
+  it("passes an unknown guideStatus through as-is", () => {
+    render(<GuideSummary data={makeData({ guideStatus: "SOMETHING_ELSE" })} />);
+    expect(screen.getByText("SOMETHING_ELSE")).toBeInTheDocument();
   });
 
   it("falls back to — when guideStatus is null", () => {

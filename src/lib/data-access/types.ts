@@ -31,8 +31,9 @@ export interface ParticipantProfile {
 }
 
 /** A guide's affiliation with one university (Profile Contract v2's per-university shape).
- *  The UI is single-entry today (reads/writes `universities[0]`), but the backend already
- *  models this as an array — a guide could have more than one in the future. */
+ *  The offering-create flow selects among ALL entries (gated on `verificationStatus`); profile
+ *  editing (`GuideProfileForm`) still reads/writes `universities[0]` — multi-university profile
+ *  editing is a future enhancement. */
 export interface GuideUniversity {
   universityId: string;
   universityName: string | null;
@@ -40,6 +41,8 @@ export interface GuideUniversity {
   major?: string;
   degree?: string;
   classYear?: string;
+  /** Year the guide entered this university, or null/undefined if unknown. */
+  entryYear?: number | null;
   verificationStatus: string;
 }
 
@@ -48,8 +51,6 @@ export interface GuideProfile {
   bio?: string | null;
   languages?: string[];
   specialties?: string[];
-  basePriceCents?: number | null;
-  currency?: string;
   applicationStatus?: string | null;
 }
 
@@ -128,10 +129,11 @@ export interface GuideProfileUpdate {
   major?: string;
   classYear?: string;
   degree?: string;
+  /** Year the guide entered the university (onboarding education step). */
+  entryYear?: number;
   bio?: string;
   languages?: string[];
   specialties?: string[];
-  basePriceCents?: number;
   verificationEmail?: string;
   submit?: boolean;
 }

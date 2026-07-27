@@ -37,9 +37,7 @@ const profile: GuideProfile = {
   bio: "Campus explorer.",
   languages: ["en-US"],
   specialties: ["GENERAL_CAMPUS"],
-  basePriceCents: 4200,
-  currency: "USD",
-  applicationStatus: "APPROVED",
+  applicationStatus: "VERIFIED",
 };
 
 beforeEach(() => {
@@ -93,8 +91,7 @@ describe("GuideProfilePage", () => {
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
     expect(screen.getByText("March 2025")).toBeInTheDocument();
-    expect(screen.getByText("Approved")).toBeInTheDocument();
-    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.getAllByText("Verified")).toHaveLength(2);
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Ada");
     expect(screen.getByRole("button", { name: "Save profile" })).toBeInTheDocument();
   });

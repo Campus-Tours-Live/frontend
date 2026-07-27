@@ -116,7 +116,7 @@ describe("AccountNav — guide", () => {
       },
       { isOnboarded: true },
     );
-    setupGuideProfile("APPROVED");
+    setupGuideProfile("VERIFIED");
 
     render(<AccountNav />);
 
@@ -131,7 +131,7 @@ describe("AccountNav — guide", () => {
     expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
   });
 
-  it("shows the default 'Guide account' subtitle when not pending review", () => {
+  it("shows the default 'Guide account' subtitle when not pending verification", () => {
     setupMe(
       {
         activeRole: "GUIDE",
@@ -139,14 +139,14 @@ describe("AccountNav — guide", () => {
       },
       { isOnboarded: true },
     );
-    setupGuideProfile("APPROVED");
+    setupGuideProfile("VERIFIED");
 
     render(<AccountNav />);
 
     expect(screen.getByText("Guide account")).toBeInTheDocument();
   });
 
-  it("shows 'pending review' subtitle when applicationStatus=PENDING_REVIEW", () => {
+  it("shows 'pending verification' subtitle when applicationStatus=PENDING", () => {
     setupMe(
       {
         activeRole: "GUIDE",
@@ -154,11 +154,11 @@ describe("AccountNav — guide", () => {
       },
       { isOnboarded: true },
     );
-    setupGuideProfile("PENDING_REVIEW");
+    setupGuideProfile("PENDING");
 
     render(<AccountNav />);
 
-    expect(screen.getByText("Guide · pending review")).toBeInTheDocument();
+    expect(screen.getByText("Guide · pending verification")).toBeInTheDocument();
   });
 
   it("shows the default 'Guide account' subtitle while the guide profile is still loading", () => {

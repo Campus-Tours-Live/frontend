@@ -47,7 +47,6 @@ interface FormValues {
   bio: string;
   languages: string[];
   specialties: string[];
-  basePrice: string;
 }
 
 export interface GuideProfileFormProps {
@@ -70,7 +69,6 @@ function toFormValues(
   profile: GuideProfile,
   identity?: Pick<MeUser, "firstName" | "lastName"> | null,
 ): FormValues {
-  const basePriceCents = profile.basePriceCents ?? 2800;
   const university = profile.universities?.[0];
   return {
     firstName: identity?.firstName ?? "",
@@ -81,7 +79,6 @@ function toFormValues(
     bio: profile.bio ?? "",
     languages: profile.languages?.length ? profile.languages : ["en-US"],
     specialties: profile.specialties ?? [],
-    basePrice: String(Math.round(basePriceCents / 100)),
   };
 }
 
@@ -116,12 +113,6 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   const onSubmit = handleSubmit(async (values) => {
     setSaveMessage(null);
 
-    const dollars = Number(values.basePrice);
-    if (Number.isNaN(dollars) || dollars < 20 || dollars > 200) {
-      setError("basePrice", { message: "Price must be between $20 and $200" });
-      return;
-    }
-
     // Defence-in-depth: the Controller's rules.validate already blocks submit on an
     // empty selection, so this only fires for the [null] slot case.
     const university = values.university[0];
@@ -140,7 +131,6 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
         bio: values.bio.trim() || undefined,
         languages: values.languages,
         specialties: values.specialties,
-        basePriceCents: Math.round(dollars * 100),
       });
       setSaveMessage("Profile saved.");
     } catch (err) {
@@ -298,18 +288,6 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
               )}
             </fieldset>
           )}
-        />
-
-        <TextField
-          label="Base price per tour (USD)"
-          type="number"
-          min={20}
-          max={200}
-          step={1}
-          fieldClassName="max-w-[220px]"
-          error={errors.basePrice?.message}
-          hint="Default pricing for new tour offerings."
-          {...register("basePrice", { required: "Price is required" })}
         />
       </Card>
 

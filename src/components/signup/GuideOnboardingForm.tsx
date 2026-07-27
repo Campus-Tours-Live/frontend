@@ -42,6 +42,7 @@ interface FormValues {
   major: string;
   degree: string;
   classYear: string;
+  entryYear: string;
   bio: string;
   languages: string[];
   specialties: string[];
@@ -105,6 +106,7 @@ export function GuideOnboardingForm() {
       major: "",
       degree: "",
       classYear: "",
+      entryYear: "",
       bio: "",
       languages: ["en-US"],
       specialties: [],
@@ -191,8 +193,7 @@ export function GuideOnboardingForm() {
     setSubmitError(null);
     try {
       // onSuccess invalidates ["me"] + the guide profile (submit=true grants GUIDE), so the
-      // header reflects the held role immediately. Base price is not set here — the backend
-      // keeps its default and the guide tunes pricing per tour later.
+      // header reflects the held role immediately.
       await updateProfile.mutateAsync({
         // firstName/lastName/university/major are required on step 1 → the fallbacks never run
         firstName: /* istanbul ignore next */ values.firstName || undefined,
@@ -200,6 +201,7 @@ export function GuideOnboardingForm() {
         universityId: /* istanbul ignore next */ values.university[0]?.id,
         major: /* istanbul ignore next */ values.major || undefined,
         classYear: values.classYear || undefined,
+        entryYear: values.entryYear ? Number(values.entryYear) : undefined,
         // degree + bio are required (steps 1 and 2), so the `|| undefined` fallback is never taken
         degree: /* istanbul ignore next */ values.degree || undefined,
         bio: /* istanbul ignore next */ values.bio || undefined,
@@ -234,6 +236,7 @@ export function GuideOnboardingForm() {
         "major",
         "degree",
         "classYear",
+        "entryYear",
       ]);
       if (!ok) return;
     } else if (step === 1) {
@@ -488,6 +491,42 @@ export function GuideOnboardingForm() {
                       onBlur={() => {
                         field.onBlur();
                         void trigger("classYear");
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="entryYear"
+                  rules={{
+                    validate: (v) => {
+                      if (!v) return true;
+                      if (!/^\d{4}$/.test(v.trim())) return "Enter a 4-digit entry year.";
+                      const min = currentYear - CLASS_YEAR_FLOOR_YEARS;
+                      const max = currentYear + 1;
+                      const n = Number(v);
+                      if (n < min || n > max)
+                        return `Enter an entry year between ${min} and ${max}.`;
+                      return true;
+                    },
+                  }}
+                  render={({ field }) => (
+                    <TextField
+                      label="Entry year"
+                      optional
+                      inputMode="numeric"
+                      placeholder="2023"
+                      description="The year you started at this university."
+                      error={errors.entryYear?.message}
+                      value={field.value}
+                      // Numeric-only: strip non-digits as you type and cap at 4 digits.
+                      onChange={(e) =>
+                        field.onChange(e.target.value.replace(/\D/g, "").slice(0, 4))
+                      }
+                      onFocus={() => clearErrors("entryYear")}
+                      onBlur={() => {
+                        field.onBlur();
+                        void trigger("entryYear");
                       }}
                     />
                   )}

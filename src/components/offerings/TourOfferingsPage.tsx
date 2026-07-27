@@ -30,7 +30,7 @@ export function TourOfferingsPage() {
   const { data: topics = [] } = useTourTopics();
   const [filter, setFilter] = useState<OfferingFilter>("all");
 
-  const canPublish = guideProfile?.applicationStatus === "APPROVED";
+  const canPublish = guideProfile?.applicationStatus === "VERIFIED";
 
   const topicByValue = useMemo(() => new Map(topics.map((t) => [t.value, t.label])), [topics]);
 

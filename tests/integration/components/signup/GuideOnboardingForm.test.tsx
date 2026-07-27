@@ -184,12 +184,14 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(push).toHaveBeenCalledWith("/dashboard");
   });
 
-  it("submits the selected degree and a valid class year", async () => {
+  it("submits the selected degree, a valid class year, and a valid entry year (as a number)", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user); // selects the required degree
     const validYear = String(new Date().getFullYear() + 4);
+    const validEntryYear = String(new Date().getFullYear() - 2);
     await user.type(screen.getByLabelText(/class year/i), validYear);
+    await user.type(screen.getByLabelText(/entry year/i), validEntryYear);
     await user.click(screen.getByRole("button", { name: /continue/i }));
     await completeStepTwo(user);
     await user.click(await screen.findByRole("button", { name: /continue/i }));
@@ -197,7 +199,11 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     expect(mutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({ degree: "Bachelor's Degree", classYear: validYear }),
+      expect.objectContaining({
+        degree: "Bachelor's Degree",
+        classYear: validYear,
+        entryYear: Number(validEntryYear),
+      }),
     );
   });
 
@@ -212,6 +218,49 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(await screen.findByText(/graduation year between/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects an entry year that isn't four digits", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    await user.type(screen.getByLabelText(/entry year/i), "12"); // too short → format error
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(await screen.findByText(/enter a 4-digit entry year/i)).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("blocks step 1 when the entry year is outside the allowed range", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    // Far in the future → past the +1 cap → validation error, stays on step 1.
+    await user.type(screen.getByLabelText(/entry year/i), String(new Date().getFullYear() + 40));
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(await screen.findByText(/entry year between/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("clears the entry-year error on focus and re-validates on blur", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    const entryYearField = screen.getByLabelText(/entry year/i);
+    await user.type(entryYearField, "12");
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    expect(await screen.findByText(/enter a 4-digit entry year/i)).toBeInTheDocument();
+
+    // Focusing clears the standing error (matches the classYear/bio/etc. pattern in this form).
+    await user.click(entryYearField);
+    expect(screen.queryByText(/enter a 4-digit entry year/i)).not.toBeInTheDocument();
+
+    // Blurring with a valid value re-validates (via `trigger`) without raising a new error.
+    await user.clear(entryYearField);
+    await user.type(entryYearField, String(new Date().getFullYear() - 1));
+    await user.tab();
+    expect(screen.queryByText(/enter a 4-digit entry year/i)).not.toBeInTheDocument();
   });
 
   it("toggles language and specialty chips off (deselect branches)", async () => {

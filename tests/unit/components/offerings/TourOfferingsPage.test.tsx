@@ -42,7 +42,7 @@ const sampleOffering: Offering = {
 
 function makeGuideProfile(overrides: Partial<GuideProfile> = {}): GuideProfile {
   return {
-    applicationStatus: "APPROVED",
+    applicationStatus: "VERIFIED",
     ...overrides,
   };
 }
@@ -144,13 +144,13 @@ describe("TourOfferingsPage", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("enables publish when the guide profile's applicationStatus is APPROVED", () => {
+  it("enables publish when the guide profile's applicationStatus is VERIFIED", () => {
     render(<TourOfferingsPage />);
 
     expect(screen.getByRole("button", { name: "Publish" })).toBeEnabled();
   });
 
-  it("disables publish when the guide profile's applicationStatus is not APPROVED", () => {
+  it("disables publish when the guide profile's applicationStatus is not VERIFIED", () => {
     setHooks({ guideProfile: { data: makeGuideProfile({ applicationStatus: "PENDING" }) } });
     render(<TourOfferingsPage />);
 

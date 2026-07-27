@@ -23,7 +23,13 @@ const mockUseTourTopics = jest.fn(() => ({
 }));
 const mockUseGuideProfile = jest.fn(() => ({
   data: {
-    universities: [{ universityId: "uni-1", universityName: "State University" }],
+    universities: [
+      {
+        universityId: "uni-1",
+        universityName: "State University",
+        verificationStatus: "VERIFIED",
+      },
+    ],
   },
   isLoading: false,
 }));
@@ -49,18 +55,24 @@ beforeEach(() => {
   });
   mockUseGuideProfile.mockReturnValue({
     data: {
-      universities: [{ universityId: "uni-1", universityName: "State University" }],
+      universities: [
+        {
+          universityId: "uni-1",
+          universityName: "State University",
+          verificationStatus: "VERIFIED",
+        },
+      ],
     },
     isLoading: false,
   });
 });
 
 describe("CreateOfferingForm", () => {
-  it("creates a draft and navigates back to the list", async () => {
+  it("creates a draft with the auto-selected verified university and navigates back to the list", async () => {
     const user = userEvent.setup();
     renderWithQuery(<CreateOfferingForm />);
 
-    expect(screen.getByText("State University")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "State University" })).toBeChecked();
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
@@ -128,25 +140,12 @@ describe("CreateOfferingForm", () => {
     );
   });
 
-  it("disables submit while the verified university is loading", () => {
+  it("disables submit while the guide profile is loading", () => {
     mockUseGuideProfile.mockReturnValue({ data: undefined, isLoading: true } as never);
     renderWithQuery(<CreateOfferingForm />);
 
     expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
-    expect(screen.queryByText("State University")).not.toBeInTheDocument();
-  });
-
-  it("disables submit and warns when the guide has no verified university", () => {
-    mockUseGuideProfile.mockReturnValue({
-      data: { universities: [{ universityId: null, universityName: null }] },
-      isLoading: false,
-    } as never);
-    renderWithQuery(<CreateOfferingForm />);
-
-    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
-    expect(
-      screen.getByText(/Finish guide onboarding \(verify your school email\)/i),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   });
 
   it("disables submit and warns when the guide has no universities at all", () => {
@@ -162,19 +161,150 @@ describe("CreateOfferingForm", () => {
     ).toBeInTheDocument();
   });
 
-  it("falls back to a default campus label when the university name is missing", () => {
+  it("lists every university, but only lets the VERIFIED one be selected — with a per-item reason and a group warning", async () => {
+    const user = userEvent.setup();
     mockUseGuideProfile.mockReturnValue({
-      data: { universities: [{ universityId: "uni-1", universityName: null }] },
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "VERIFIED",
+          },
+          {
+            universityId: "uni-2",
+            universityName: "Other College",
+            verificationStatus: "PENDING",
+          },
+        ],
+      },
       isLoading: false,
     } as never);
     renderWithQuery(<CreateOfferingForm />);
 
-    expect(screen.getByText("Your campus")).toBeInTheDocument();
+    const verifiedRadio = screen.getByRole("radio", { name: "State University" });
+    const unverifiedRadio = screen.getByRole("radio", { name: "Other College" });
+    expect(verifiedRadio).toBeChecked();
+    expect(verifiedRadio).toBeEnabled();
+    expect(unverifiedRadio).toBeDisabled();
+    expect(
+      screen.getByText("Verify your school email to create tours for this campus."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+
+    // A real user can't interact with a disabled radio at all (userEvent respects `disabled`).
+    await user.click(unverifiedRadio);
+    expect(verifiedRadio).toBeChecked();
+    expect(unverifiedRadio).not.toBeChecked();
+
+    // Defence-in-depth: even a forced change event (bypassing the disabled-attribute guard, as
+    // fireEvent does) must not move the selection onto the unverified campus.
+    fireEvent.click(unverifiedRadio);
+    expect(verifiedRadio).toBeChecked();
+    expect(unverifiedRadio).not.toBeChecked();
   });
 
-  it("does not submit when the verified university is missing, even if the form is force-submitted", async () => {
+  it("disables submit and explains when the guide has universities but none verified", () => {
     mockUseGuideProfile.mockReturnValue({
-      data: { universities: [{ universityId: null, universityName: null }] },
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "PENDING",
+          },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("radio", { name: "State University" })).toBeDisabled();
+    expect(screen.getByText(/None of your universities are verified yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  });
+
+  it("treats a VERIFIED entry without a universityId as unselectable (defensive)", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          { universityId: null, universityName: null, verificationStatus: "VERIFIED" },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    const radio = screen.getByRole("radio", { name: "Your campus" });
+    expect(radio).toBeDisabled();
+    expect(
+      screen.getByText("Verify your school email to create tours for this campus."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/None of your universities are verified yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  });
+
+  it("lets the guide switch between multiple verified universities", async () => {
+    const user = userEvent.setup();
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "VERIFIED",
+          },
+          {
+            universityId: "uni-2",
+            universityName: "Metro University",
+            verificationStatus: "VERIFIED",
+          },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("radio", { name: "State University" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Metro University" })).not.toBeChecked();
+
+    await user.click(screen.getByRole("radio", { name: "Metro University" }));
+
+    expect(screen.getByRole("radio", { name: "Metro University" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "State University" })).not.toBeChecked();
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ universityId: "uni-2" }));
+  });
+
+  it("falls back to a default campus label when the university name is missing", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          { universityId: "uni-1", universityName: null, verificationStatus: "VERIFIED" },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("radio", { name: "Your campus" })).toBeChecked();
+  });
+
+  it("does not submit when no verified university is selected, even if the form is force-submitted", async () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "PENDING",
+          },
+        ],
+      },
       isLoading: false,
     } as never);
     const user = userEvent.setup();
