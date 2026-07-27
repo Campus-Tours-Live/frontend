@@ -129,6 +129,7 @@ export interface GuideProfileUpdate {
   universityId?: string;
   major?: string;
   classYear?: string;
+  degree?: string;
   bio?: string;
   languages?: string[];
   specialties?: string[];

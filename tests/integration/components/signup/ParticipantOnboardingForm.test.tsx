@@ -16,6 +16,8 @@ jest.mock("next/navigation", () => ({
 const mutateAsync = jest.fn();
 let meValue: { firstName?: string; lastName?: string; roles?: string[] } | null = null;
 let universityResults: Array<{ id: string; name: string; shortName?: string }> = [];
+// Records the `source` the form asks the university search to use ("live" vs "catalog").
+let lastUniversitySource: string | undefined;
 
 jest.mock("@/lib/data-access", () => ({
   useMe: () => ({
@@ -31,10 +33,13 @@ jest.mock("@/lib/data-access", () => ({
     ],
   }),
   useUpdateParticipantProfile: () => ({ mutateAsync }),
-  useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => ({
-    data: opts?.enabled === false ? [] : query ? universityResults : [],
-    isFetching: false,
-  }),
+  useUniversitySearch: (query: string, opts?: { enabled?: boolean; source?: string }) => {
+    lastUniversitySource = opts?.source;
+    return {
+      data: opts?.enabled === false ? [] : query ? universityResults : [],
+      isFetching: false,
+    };
+  },
 }));
 
 function renderWithQuery(ui: ReactElement) {
@@ -47,7 +52,9 @@ beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({});
   meValue = null;
-  universityResults = [{ id: "u-1", name: "State University", shortName: "State" }];
+  lastUniversitySource = undefined;
+  // id is a College Scorecard school id (participant uses the live Scorecard directory).
+  universityResults = [{ id: "166683", name: "State University", shortName: "State" }];
 });
 
 describe("ParticipantOnboardingForm (wizard)", () => {
@@ -71,6 +78,16 @@ describe("ParticipantOnboardingForm (wizard)", () => {
     expect(screen.queryByText(/universities of interest/i)).not.toBeInTheDocument();
   });
 
+  it("strips characters that aren't allowed in a name as you type", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<ParticipantOnboardingForm />);
+    // Digits / symbols are removed on input (sanitizeName → setValue), keeping allowed punctuation.
+    await user.type(screen.getByLabelText(/first name/i), "John5");
+    await user.type(screen.getByLabelText(/last name/i), "O'Br@ien");
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("John");
+    expect(screen.getByLabelText(/last name/i)).toHaveValue("O'Brien");
+  });
+
   it("advances to the Universities step once names are filled", async () => {
     const user = userEvent.setup();
     renderWithQuery(<ParticipantOnboardingForm />);
@@ -79,6 +96,17 @@ describe("ParticipantOnboardingForm (wizard)", () => {
     await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(await screen.findByText(/universities of interest/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/search universities/i)).toBeInTheDocument();
+  });
+
+  it("searches universities via the live College Scorecard source (not the local catalog)", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<ParticipantOnboardingForm />);
+    await user.type(screen.getByLabelText(/first name/i), "Jordan");
+    await user.type(screen.getByLabelText(/last name/i), "Lee");
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+    await screen.findByPlaceholderText(/search universities/i);
+    // Selected school ids are Scorecard ids, which feed /v1/meta/majors and the profile payload.
+    expect(lastUniversitySource).toBe("live");
   });
 
   it("walks all steps and submits the mapped payload, then navigates", async () => {
@@ -95,7 +123,7 @@ describe("ParticipantOnboardingForm (wizard)", () => {
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
     // Topics step — pick one, then Submit.
-    await user.click(await screen.findByRole("button", { name: /Academics/i }));
+    await user.click(await screen.findByRole("checkbox", { name: /Academics/i }));
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
@@ -103,7 +131,7 @@ describe("ParticipantOnboardingForm (wizard)", () => {
       firstName: "Jordan",
       lastName: "Lee",
       participantType: "PARENT",
-      universitiesOfInterest: ["u-1"],
+      universitiesOfInterest: ["166683"],
       topicsOfInterest: ["academics"],
     });
     expect(push).toHaveBeenCalledWith("/dashboard");
@@ -117,7 +145,7 @@ describe("ParticipantOnboardingForm (wizard)", () => {
     await user.click(screen.getByRole("button", { name: /continue/i })); // → universities
     await user.click(await screen.findByRole("button", { name: /continue/i })); // → topics
 
-    const academics = await screen.findByRole("button", { name: /Academics/i });
+    const academics = await screen.findByRole("checkbox", { name: /Academics/i });
     await user.click(academics); // select
     await user.click(academics); // deselect → exercises the filter branch
     await user.click(screen.getByRole("button", { name: /^submit$/i }));

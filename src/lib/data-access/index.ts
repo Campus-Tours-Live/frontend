@@ -16,6 +16,7 @@ export { useTourCatalog } from "./hooks/use-tour-catalog";
 export { useTourDetail } from "./hooks/use-tour-detail";
 export { useUniversitySearch } from "./hooks/use-university-search";
 export { useMajors } from "./hooks/use-majors";
+export { useDegrees } from "./hooks/use-degrees";
 export { useUpdateParticipantProfile } from "./hooks/use-update-participant-profile";
 export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
 export { useSetActiveRole } from "./hooks/use-set-active-role";
