@@ -1,4 +1,4 @@
-import type { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import { setActiveRoleMutation } from "@/lib/data-access/mutations/set-active-role.mutation";
 import { updateParticipantProfileMutation } from "@/lib/data-access/mutations/update-participant-profile.mutation";
 import { updateGuideProfileMutation } from "@/lib/data-access/mutations/update-guide-profile.mutation";
@@ -6,6 +6,7 @@ import { createOfferingMutation } from "@/lib/data-access/mutations/create-offer
 import { activateOfferingMutation } from "@/lib/data-access/mutations/activate-offering.mutation";
 import { postJson, patchJson } from "@/lib/data-access/http";
 import { queryKeys } from "@/lib/data-access/keys";
+import type { Me } from "@/lib/data-access/types";
 
 // Mock the HTTP helpers the mutations call so mutationFn does not hit the network.
 jest.mock("@/lib/data-access/http", () => ({
@@ -18,7 +19,11 @@ const mockedPatchJson = patchJson as jest.MockedFunction<typeof patchJson>;
 
 /** A QueryClient stub exposing only the methods the mutations use. */
 function makeQc() {
-  return { invalidateQueries: jest.fn(), setQueryData: jest.fn() } as unknown as QueryClient;
+  return {
+    invalidateQueries: jest.fn(),
+    setQueryData: jest.fn(),
+    cancelQueries: jest.fn().mockResolvedValue(undefined),
+  } as unknown as QueryClient;
 }
 
 beforeEach(() => {
@@ -46,9 +51,17 @@ describe("setActiveRoleMutation", () => {
     expect(mockedPatchJson).not.toHaveBeenCalled();
   });
 
-  it("onSuccess patches the me cache with the returned activeRole (not a refetch) and invalidates ['dashboard'] only", () => {
+  it("onSuccess cancels in-flight ['me'] fetches, patches the me cache with the returned activeRole (not a refetch), and invalidates ['dashboard'] only", async () => {
     const qc = makeQc();
-    setActiveRoleMutation(qc).onSuccess({ activeRole: "GUIDE" });
+    await setActiveRoleMutation(qc).onSuccess({ activeRole: "GUIDE" });
+
+    // The in-flight ["me"] refetch must be cancelled BEFORE the patch is applied — otherwise
+    // a preceding invalidateQueries(["me"]) (e.g. from updateGuide/ParticipantProfile) could
+    // still be racing and its stale (not-yet-switched) activeRole could land after the patch.
+    expect(qc.cancelQueries).toHaveBeenCalledWith({ queryKey: queryKeys.me() });
+    const cancelOrder = (qc.cancelQueries as jest.Mock).mock.invocationCallOrder[0];
+    const setDataOrder = (qc.setQueryData as jest.Mock).mock.invocationCallOrder[0];
+    expect(cancelOrder).toBeLessThan(setDataOrder);
 
     // ["me"] is PATCHED, not invalidated — no /userinfo refetch on a successful switch.
     expect(qc.setQueryData).toHaveBeenCalledTimes(1);
@@ -74,6 +87,48 @@ describe("setActiveRoleMutation", () => {
     expect(keys).toContainEqual(queryKeys.dashboard());
     expect(keys).not.toContainEqual(queryKeys.me());
     expect(qc.invalidateQueries).toHaveBeenCalledTimes(1);
+  });
+
+  it("CTL-97 regression: a concurrent ['me'] refetch that resolves AFTER onSuccess with the stale (not-yet-switched) activeRole does not clobber the patched role", async () => {
+    // A REAL QueryClient is required here — the fix relies on the actual TanStack Query v5
+    // cancellation/revert machinery (a stub QueryClient can't reproduce the race).
+    const qc = new QueryClient();
+    const seeded: Me = {
+      user: {
+        id: "u1",
+        firstName: null,
+        lastName: null,
+        displayName: null,
+        email: null,
+        accountStatus: null,
+        ageBand: null,
+        createdAt: null,
+      },
+      roles: ["PARTICIPANT", "GUIDE"],
+      activeRole: null,
+    };
+    qc.setQueryData(queryKeys.me(), seeded);
+
+    // Simulate R1: a ["me"] refetch already in flight (e.g. triggered by
+    // updateGuideProfileMutation's invalidateQueries(["me"])) whose queryFn resolves LATE,
+    // with the session's activeRole not yet switched (still null).
+    let resolveLateRefetch!: (me: Me) => void;
+    const lateRefetch = new Promise<Me>((resolve) => {
+      resolveLateRefetch = resolve;
+    });
+    const r1 = qc.fetchQuery({ queryKey: queryKeys.me(), queryFn: () => lateRefetch });
+
+    // R2: the active-role switch settles and its onSuccess patches the cache.
+    await setActiveRoleMutation(qc).onSuccess({ activeRole: "GUIDE" });
+
+    // R1 resolves only NOW — strictly after R2's patch — with the stale null it read before
+    // the session actually switched.
+    resolveLateRefetch({ ...seeded, activeRole: null });
+    await r1;
+
+    // The late null refetch must not win: the final cache state is deterministically the
+    // switched role in both resolution orderings.
+    expect(qc.getQueryData<Me>(queryKeys.me())?.activeRole).toBe("GUIDE");
   });
 });
 

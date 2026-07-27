@@ -22,10 +22,24 @@ export interface SetActiveRoleResult {
  * the aggregate is role-shaped (`kind`), so switching must refetch it to render the other area.
  * A rejected switch (403 not-held/disabled, or network/5xx) must not patch anything — callers
  * catch the rejection and surface it.
+ *
+ * `cancelQueries(["me"])` runs FIRST, before the patch (CTL-97) — guarding against a
+ * cache-coherence race with a `["me"]` refetch already in flight. Guide/participant onboarding
+ * completion does `await updateGuide/ParticipantProfileMutation` (which `invalidateQueries(["me"])`,
+ * kicking off a background `/userinfo` refetch) immediately before `activateSession()` (this
+ * mutation). At that instant the bff session's `activeRole` hasn't switched yet, so that refetch
+ * can resolve with the STALE (still `null`/previous) `activeRole`. If it resolves AFTER this
+ * `setQueryData` patch, it silently overwrites the just-switched role — the session cookie and
+ * Core end up consistent (GUIDE), but the cached `me.activeRole` reverts to null, and
+ * `(app)/layout.tsx`'s `if (!me?.activeRole) redirect("/signup/role")` bounces the user out of
+ * the area they just unlocked. Cancelling (with the default `revert: true`) makes any such
+ * in-flight fetch settle back to its pre-fetch state instead of writing its late result, so the
+ * patch below is guaranteed to be the LAST write to `["me"]` regardless of resolution order.
  */
 export const setActiveRoleMutation = (qc: QueryClient) => ({
   mutationFn: (role: Role) => postJson<SetActiveRoleResult>("/v1/session/active-role", { role }),
-  onSuccess: (result: SetActiveRoleResult) => {
+  onSuccess: async (result: SetActiveRoleResult) => {
+    await qc.cancelQueries({ queryKey: queryKeys.me() });
     qc.setQueryData<Me | null | undefined>(queryKeys.me(), (prev) =>
       prev ? { ...prev, activeRole: result.activeRole } : prev,
     );
