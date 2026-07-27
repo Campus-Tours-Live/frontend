@@ -24,11 +24,6 @@ const mockUseMe = useMe as jest.Mock;
 const mockUseGuideProfile = useGuideProfile as jest.Mock;
 
 const profile: GuideProfile = {
-  userId: "u1",
-  firstName: "Ada",
-  lastName: "Lovelace",
-  displayName: "Ada Lovelace",
-  email: "ada@example.com",
   universityId: "uni-1",
   universityName: "State University",
   major: "Computer Science",
@@ -45,7 +40,16 @@ const profile: GuideProfile = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseMe.mockReturnValue({
-    me: { createdAt: "2025-03-15T00:00:00Z", activeRole: "GUIDE" },
+    me: {
+      user: {
+        firstName: "Ada",
+        lastName: "Lovelace",
+        displayName: "Ada Lovelace",
+        email: "ada@example.com",
+        createdAt: "2025-03-15T00:00:00Z",
+      },
+      activeRole: "GUIDE",
+    },
   });
   mockUseGuideProfile.mockReturnValue({
     data: profile,
@@ -91,10 +95,17 @@ describe("GuideProfilePage", () => {
   });
 
   it("falls back to em dashes when display name and email are missing", () => {
-    mockUseGuideProfile.mockReturnValue({
-      data: { ...profile, displayName: undefined, email: undefined },
-      isLoading: false,
-      isError: false,
+    mockUseMe.mockReturnValue({
+      me: {
+        user: {
+          firstName: null,
+          lastName: null,
+          displayName: null,
+          email: null,
+          createdAt: "2025-03-15T00:00:00Z",
+        },
+        activeRole: "GUIDE",
+      },
     });
     render(<GuideProfilePage />);
 

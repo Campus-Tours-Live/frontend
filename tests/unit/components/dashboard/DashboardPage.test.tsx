@@ -1,22 +1,23 @@
 import { render, screen } from "@testing-library/react";
 import DashboardPage from "@/app/(app)/dashboard/page";
-import { useDashboard } from "@/lib/data-access";
+import { useDashboard, useMe } from "@/lib/data-access";
 import type { GuideDashboard, ParticipantDashboard } from "@/lib/data-access";
 
 // The page is a thin role-router over the useDashboard() hook; mock the hook so we
 // can drive each branch (loading / error / no-data / guide / participant). We let
-// the real GuideSummary / ParticipantSummary (and MemberCard / Alert) render.
+// the real GuideSummary / ParticipantSummary (and MemberCard / Alert) render. Identity
+// (display name / email) now comes from useMe(), not the role-shaped aggregate.
 jest.mock("@/lib/data-access", () => ({
   useDashboard: jest.fn(),
+  useMe: jest.fn(),
 }));
 
 const mockUseDashboard = useDashboard as jest.Mock;
+const mockUseMe = useMe as jest.Mock;
 
 const guideData: GuideDashboard = {
   kind: "guide",
   guide: {
-    displayName: "Ada Lovelace",
-    email: "ada@example.com",
     major: "Computer Science",
     applicationStatus: "APPROVED",
   },
@@ -41,9 +42,7 @@ const guideData: GuideDashboard = {
 const participantData: ParticipantDashboard = {
   kind: "participant",
   participant: {
-    displayName: "Grace Hopper",
-    email: "grace@example.com",
-    participantType: "STUDENT",
+    type: "STUDENT",
     topicsOfInterest: ["cs", "math"],
     universitiesOfInterest: ["mit"],
   },
@@ -58,6 +57,11 @@ function setHook(overrides: Partial<ReturnType<typeof useDashboard>>) {
     ...overrides,
   } as ReturnType<typeof useDashboard>);
 }
+
+beforeEach(() => {
+  // Identity is read off useMe() by the summaries now; a display name is set per-branch below.
+  mockUseMe.mockReturnValue({ me: { user: { displayName: null } } });
+});
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -97,6 +101,7 @@ describe("DashboardPage", () => {
 
   it("renders the guide summary branch when data.kind is 'guide'", () => {
     setHook({ data: guideData });
+    mockUseMe.mockReturnValue({ me: { user: { displayName: "Ada Lovelace" } } });
     render(<DashboardPage />);
 
     // Guide-specific signals: the guide's name + the guide role pill.
@@ -111,6 +116,7 @@ describe("DashboardPage", () => {
 
   it("renders the participant summary branch when data.kind is 'participant'", () => {
     setHook({ data: participantData });
+    mockUseMe.mockReturnValue({ me: { user: { displayName: "Grace Hopper" } } });
     render(<DashboardPage />);
 
     // Participant-specific signals: the welcome heading + lead copy.

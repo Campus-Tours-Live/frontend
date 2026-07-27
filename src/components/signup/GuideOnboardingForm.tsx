@@ -155,8 +155,8 @@ export function GuideOnboardingForm() {
   useEffect(() => {
     if (prefilled.current || !me) return;
     prefilled.current = true;
-    if (me.firstName && !getValues("firstName")) setValue("firstName", me.firstName);
-    if (me.lastName && !getValues("lastName")) setValue("lastName", me.lastName);
+    if (me.user.firstName && !getValues("firstName")) setValue("firstName", me.user.firstName);
+    if (me.user.lastName && !getValues("lastName")) setValue("lastName", me.user.lastName);
   }, [me, setValue, getValues]);
 
   // Tour specialties are a controlled backend vocabulary (tour_topic enum), loaded

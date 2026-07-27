@@ -39,7 +39,7 @@ export function GuideProfilePage() {
               Display name
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {profile.displayName ?? "—"}
+              {me?.user.displayName ?? "—"}
             </Body>
           </div>
           <div>
@@ -47,7 +47,7 @@ export function GuideProfilePage() {
               Email
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {profile.email ?? "—"}
+              {me?.user.email ?? "—"}
             </Body>
           </div>
           <div>
@@ -55,7 +55,7 @@ export function GuideProfilePage() {
               Member since
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {formatMonthYear(me?.createdAt)}
+              {formatMonthYear(me?.user.createdAt)}
             </Body>
           </div>
           <div>

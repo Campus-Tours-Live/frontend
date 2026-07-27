@@ -1,12 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { AccountNav } from "@/components/site/AccountNav";
-import { useMe } from "@/lib/data-access";
+import { useGuideProfile, useMe } from "@/lib/data-access";
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
 }));
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
+  useGuideProfile: jest.fn(),
 }));
 // Isolate AccountNav from the RoleSwitcher's own data dependencies.
 jest.mock("@/components/site/RoleSwitcher", () => ({
@@ -15,7 +16,6 @@ jest.mock("@/components/site/RoleSwitcher", () => ({
 
 type MePartial = {
   activeRole?: string | null;
-  guideStatus?: string | null;
   displayName?: string | null;
   firstName?: string | null;
   roles?: string[];
@@ -24,13 +24,25 @@ type MePartial = {
 function setupMe(me: MePartial | null, opts?: { isOnboarded?: boolean }) {
   const roles = me?.roles ?? (me ? ["PARTICIPANT"] : []);
   (useMe as jest.Mock).mockReturnValue({
-    me,
+    me: me
+      ? {
+          activeRole: me.activeRole,
+          roles: me.roles,
+          user: { displayName: me.displayName, firstName: me.firstName },
+        }
+      : null,
     isOnboarded: opts?.isOnboarded ?? (!!me && roles.length > 0),
   });
 }
 
+/** Guide application status now comes from useGuideProfile(), not me.guideStatus. */
+function setupGuideProfile(applicationStatus: string | null = null) {
+  (useGuideProfile as jest.Mock).mockReturnValue({ data: { applicationStatus } });
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  setupGuideProfile();
 });
 
 describe("AccountNav — render gate", () => {
@@ -100,11 +112,11 @@ describe("AccountNav — guide", () => {
       {
         activeRole: "GUIDE",
         firstName: "Grace",
-        guideStatus: "APPROVED",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
     );
+    setupGuideProfile("APPROVED");
 
     render(<AccountNav />);
 
@@ -123,30 +135,45 @@ describe("AccountNav — guide", () => {
     setupMe(
       {
         activeRole: "GUIDE",
-        guideStatus: "APPROVED",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
     );
+    setupGuideProfile("APPROVED");
 
     render(<AccountNav />);
 
     expect(screen.getByText("Guide account")).toBeInTheDocument();
   });
 
-  it("shows 'pending review' subtitle when guideStatus=PENDING_REVIEW", () => {
+  it("shows 'pending review' subtitle when applicationStatus=PENDING_REVIEW", () => {
     setupMe(
       {
         activeRole: "GUIDE",
-        guideStatus: "PENDING_REVIEW",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
     );
+    setupGuideProfile("PENDING_REVIEW");
 
     render(<AccountNav />);
 
     expect(screen.getByText("Guide · pending review")).toBeInTheDocument();
+  });
+
+  it("shows the default 'Guide account' subtitle while the guide profile is still loading", () => {
+    setupMe(
+      {
+        activeRole: "GUIDE",
+        roles: ["GUIDE"],
+      },
+      { isOnboarded: true },
+    );
+    (useGuideProfile as jest.Mock).mockReturnValue({ data: undefined });
+
+    render(<AccountNav />);
+
+    expect(screen.getByText("Guide account")).toBeInTheDocument();
   });
 });
 

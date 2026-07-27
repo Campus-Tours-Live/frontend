@@ -85,12 +85,12 @@ describe("useMe exposes 'could not verify' as its own state", () => {
     routeFetch(() => {
       attempt += 1;
       return attempt === 1
-        ? jsonResponse(200, { data: { id: "u1", roles: ["GUIDE"] } })
+        ? jsonResponse(200, { data: { user: { id: "u1" }, roles: ["GUIDE"] } })
         : jsonResponse(503, UNVERIFIABLE);
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
-    await waitFor(() => expect(result.current.me?.id).toBe("u1"));
+    await waitFor(() => expect(result.current.me?.user.id).toBe("u1"));
 
     // We know who they are; nothing is unverified from the UI's point of view.
     expect(result.current.sessionUnverified).toBe(false);

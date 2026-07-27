@@ -16,11 +16,23 @@ const mockUseMajors = jest.fn((_schoolId?: string | null) => ({
   data: [] as { value: string; label: string }[],
 }));
 
+// firstName/lastName are identity fields — no longer part of GuideProfile (Profile Contract
+// v2), so the form sources its name defaults from useMe().user instead of the `profile` prop.
+const mockUseMe = jest.fn(() => ({
+  me: {
+    user: { firstName: "Ada", lastName: "Lovelace" } as {
+      firstName: string | null;
+      lastName: string | null;
+    },
+  },
+}));
+
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useUpdateGuideProfile: () => ({ mutateAsync, isPending: false }),
   useTourTopics: () => mockUseTourTopics(),
   useMajors: (schoolId: string | null | undefined) => mockUseMajors(schoolId),
+  useMe: () => mockUseMe(),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({
@@ -49,8 +61,6 @@ jest.mock("@/components/signup/UniversityMultiSelect", () => ({
 }));
 
 const profile: GuideProfile = {
-  firstName: "Ada",
-  lastName: "Lovelace",
   universityId: "uni-1",
   universityName: "State University",
   major: "Computer Science",
@@ -74,6 +84,7 @@ beforeEach(() => {
     isLoading: false,
   });
   mockUseMajors.mockReturnValue({ data: [] });
+  mockUseMe.mockReturnValue({ me: { user: { firstName: "Ada", lastName: "Lovelace" } } });
 });
 
 describe("GuideProfileForm", () => {
@@ -134,6 +145,7 @@ describe("GuideProfileForm", () => {
   });
 
   it("seeds empty defaults when profile fields are missing", () => {
+    mockUseMe.mockReturnValue({ me: { user: { firstName: null, lastName: null } } });
     renderWithQuery(<GuideProfileForm profile={{ major: "Physics" }} />);
 
     expect(screen.getByLabelText(/first name/i)).toHaveValue("");
@@ -161,9 +173,7 @@ describe("GuideProfileForm", () => {
 
   it("requires a university before submitting", async () => {
     const user = userEvent.setup();
-    renderWithQuery(
-      <GuideProfileForm profile={{ firstName: "Ada", lastName: "Lovelace", major: "Math" }} />,
-    );
+    renderWithQuery(<GuideProfileForm profile={{ major: "Math" }} />);
 
     await user.click(screen.getByRole("button", { name: "Save profile" }));
 
@@ -236,7 +246,7 @@ describe("GuideProfileForm", () => {
   });
 
   it("seeds an empty major when the profile omits one", () => {
-    renderWithQuery(<GuideProfileForm profile={{ firstName: "Ada", lastName: "Lovelace" }} />);
+    renderWithQuery(<GuideProfileForm profile={{}} />);
 
     expect(screen.getByLabelText(/major/i)).toHaveValue("");
   });

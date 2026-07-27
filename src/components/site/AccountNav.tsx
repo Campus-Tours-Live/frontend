@@ -18,7 +18,7 @@ import {
   CircleDollarSign,
   type LucideIcon,
 } from "lucide-react";
-import { useMe } from "@/lib/data-access";
+import { useGuideProfile, useMe } from "@/lib/data-access";
 import { Body, Heading, MenuItem, MenuSection } from "@/components/ui";
 import { assetUrl } from "@/lib/assets";
 import { RoleSwitcher } from "./RoleSwitcher";
@@ -113,6 +113,10 @@ const GUIDE_NAV: NavGroup[] = [
 export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { me, isOnboarded } = useMe();
+  // Only fetch the guide profile when it's actually needed (the subtitle below) — a
+  // participant-context render never issues this call. Called unconditionally (before the
+  // render-gate return) per the rules of hooks; `enabled` does the actual gating.
+  const { data: guideProfile } = useGuideProfile(me?.activeRole === "GUIDE");
 
   // Bare account (no roles) or logged out → render nothing.
   if (!isOnboarded || !me) return null;
@@ -121,10 +125,12 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   // UX role) — there is no legacy `role` field on the wire.
   const activeRole: Role = me.activeRole ?? "PARTICIPANT";
   /* istanbul ignore next -- display-name fallbacks; split() always yields an element */
-  const name = (me.displayName ?? me.firstName ?? "").split(" ")[0] ?? "";
+  const name = (me.user.displayName ?? me.user.firstName ?? "").split(" ")[0] ?? "";
+  // While the guide profile is still loading, `guideProfile` is undefined, which reads as
+  // not-pending — the same safe default the rest of the app uses for an unresolved status.
   const subtitle =
     activeRole === "GUIDE"
-      ? me.guideStatus === "PENDING_REVIEW"
+      ? guideProfile?.applicationStatus === "PENDING_REVIEW"
         ? "Guide · pending review"
         : "Guide account"
       : "Participant account";

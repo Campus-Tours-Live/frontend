@@ -1,6 +1,6 @@
 import { BadgeCheck, CalendarDays, Clock, GraduationCap, List, Trophy } from "lucide-react";
 import { MemberCard, type MemberCardHighlight, type MemberCardItem } from "@/components/ui";
-import type { GuideDashboard } from "@/lib/data-access";
+import { useMe, type GuideDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 
 /**
@@ -12,6 +12,7 @@ import { formatMonthYear } from "@/lib/format";
  */
 export function GuideSummary({ data }: { data: GuideDashboard }) {
   const { guide, guideStatus, canPublish, offerings, createdAt } = data;
+  const { me } = useMe();
 
   const items: MemberCardItem[] = [
     { icon: GraduationCap, label: "Major", value: guide.major ?? "—" },
@@ -34,7 +35,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
 
   return (
     <MemberCard
-      name={guide.displayName ?? "Member"}
+      name={me?.user.displayName ?? "Member"}
       role="GUIDE"
       roleLabel="Student Guide"
       verification={canPublish ? "Identity and University Verified" : undefined}

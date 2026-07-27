@@ -4,7 +4,7 @@ import { useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
-import { useMe, useSetActiveRole, type Role } from "@/lib/data-access";
+import { useMe, useParticipantProfile, useSetActiveRole, type Role } from "@/lib/data-access";
 import { Alert, Button, SegmentedControl } from "@/components/ui";
 
 /**
@@ -23,6 +23,12 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
   const [failed, setFailed] = useState<string | null>(null);
 
   const active = me?.activeRole;
+  // Only fetch the participant profile when it could matter (deciding whether a participant
+  // can become a guide, below) — called unconditionally per the rules of hooks; `enabled` does
+  // the actual gating.
+  const { data: participantProfile, isLoading: participantProfileLoading } = useParticipantProfile(
+    active === "PARTICIPANT",
+  );
   // Only a participant/guide context has a switcher (staff is excluded).
   if (active !== "PARTICIPANT" && active !== "GUIDE") return null;
 
@@ -72,9 +78,12 @@ export function RoleSwitcher({ onNavigate }: { onNavigate?: () => void }) {
 
   // --- Holds one role → acquire the other (onboarding) ---
   const target: Role = active === "PARTICIPANT" ? "GUIDE" : "PARTICIPANT";
-  // PARENT or guardian accounts can't become guides → hide the affordance.
-  if (active === "PARTICIPANT" && target === "GUIDE" && me?.participantType === "PARENT") {
-    return null;
+  // PARENT or guardian accounts can't become guides → hide the affordance. While the
+  // participant profile is still loading we don't yet know, so hold off rather than flash
+  // the button and then hide it once the PARENT status arrives.
+  if (active === "PARTICIPANT" && target === "GUIDE") {
+    if (participantProfileLoading) return null;
+    if (participantProfile?.type === "PARENT") return null;
   }
 
   const targetLabel = target === "GUIDE" ? "Guide" : "Participant";

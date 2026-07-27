@@ -33,7 +33,7 @@ type MePartial = {
 
 function setupMe(me: MePartial | null, opts?: { isLoading?: boolean; isOnboarded?: boolean }) {
   (useMe as jest.Mock).mockReturnValue({
-    me,
+    me: me ? { user: me } : null,
     isLoading: opts?.isLoading ?? false,
     isOnboarded: opts?.isOnboarded ?? false,
   });

@@ -17,9 +17,11 @@ import {
 import {
   ApiError,
   useMajors,
+  useMe,
   useTourTopics,
   useUpdateGuideProfile,
   type GuideProfile,
+  type MeUser,
 } from "@/lib/data-access";
 import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
@@ -63,11 +65,14 @@ function universitySeed(profile: GuideProfile): UniversityOption[] {
   ];
 }
 
-function toFormValues(profile: GuideProfile): FormValues {
+function toFormValues(
+  profile: GuideProfile,
+  identity?: Pick<MeUser, "firstName" | "lastName"> | null,
+): FormValues {
   const basePriceCents = profile.basePriceCents ?? 2800;
   return {
-    firstName: profile.firstName ?? "",
-    lastName: profile.lastName ?? "",
+    firstName: identity?.firstName ?? "",
+    lastName: identity?.lastName ?? "",
     university: universitySeed(profile),
     major: profile.major ?? "",
     classYear: profile.classYear ?? "",
@@ -79,6 +84,7 @@ function toFormValues(profile: GuideProfile): FormValues {
 }
 
 export function GuideProfileForm({ profile }: GuideProfileFormProps) {
+  const { me } = useMe();
   const updateProfile = useUpdateGuideProfile();
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -92,7 +98,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
-    defaultValues: toFormValues(profile),
+    defaultValues: toFormValues(profile, me?.user),
   });
 
   // Majors are the fields of study the SELECTED school actually offers (live). Empty until a school
@@ -102,8 +108,8 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   const { data: majorOptions = [] } = useMajors(selectedUniversity?.id);
 
   useEffect(() => {
-    reset(toFormValues(profile));
-  }, [profile, reset]);
+    reset(toFormValues(profile, me?.user));
+  }, [profile, me, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     setSaveMessage(null);

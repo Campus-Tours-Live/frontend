@@ -14,7 +14,10 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mutateAsync = jest.fn();
-let meValue: { firstName?: string; lastName?: string; roles?: string[] } | null = null;
+let meValue: {
+  user?: { firstName?: string; lastName?: string };
+  roles?: string[];
+} | null = null;
 let universityResults: Array<{ id: string; name: string; shortName?: string }> = [];
 // Records the `source` the form asks the university search to use ("live" vs "catalog").
 let lastUniversitySource: string | undefined;
@@ -168,7 +171,7 @@ describe("ParticipantOnboardingForm (wizard)", () => {
   });
 
   it("prefills first/last name from useMe", async () => {
-    meValue = { firstName: "Sam", lastName: "Rivera", roles: ["PARTICIPANT"] };
+    meValue = { user: { firstName: "Sam", lastName: "Rivera" }, roles: ["PARTICIPANT"] };
     renderWithQuery(<ParticipantOnboardingForm />);
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Sam");
     expect(screen.getByLabelText(/last name/i)).toHaveValue("Rivera");

@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import userEvent from "@testing-library/user-event";
 import { RoleSwitcher } from "@/components/site/RoleSwitcher";
-import { useMe, useSetActiveRole } from "@/lib/data-access";
+import { useMe, useParticipantProfile, useSetActiveRole } from "@/lib/data-access";
 
 const push = jest.fn();
 jest.mock("next/navigation", () => ({
@@ -10,12 +10,12 @@ jest.mock("next/navigation", () => ({
 }));
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
+  useParticipantProfile: jest.fn(),
   useSetActiveRole: jest.fn(),
 }));
 
 type MePartial = {
   activeRole?: string | null;
-  participantType?: string | null;
   roles?: string[];
 };
 
@@ -24,6 +24,14 @@ function setupMe(me: MePartial | null) {
   (useMe as jest.Mock).mockReturnValue({
     me,
     hasRole: (r: string) => roles.includes(r),
+  });
+}
+
+/** The PARENT-hides-guide-CTA signal now comes from useParticipantProfile().type. */
+function setupParticipantProfile(type: string | null = null, opts?: { isLoading?: boolean }) {
+  (useParticipantProfile as jest.Mock).mockReturnValue({
+    data: { type },
+    isLoading: opts?.isLoading ?? false,
   });
 }
 
@@ -38,6 +46,7 @@ function setupSetActiveRole(opts?: { mutateAsync?: jest.Mock; isPending?: boolea
 
 beforeEach(() => {
   jest.clearAllMocks();
+  setupParticipantProfile();
 });
 
 describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
@@ -186,9 +195,9 @@ describe("RoleSwitcher — holds ONE role (become the other)", () => {
   it("PARTICIPANT only (not parent) → 'Become a Guide' navigates to guide onboarding", async () => {
     setupMe({
       activeRole: "PARTICIPANT",
-      participantType: "STUDENT",
       roles: ["PARTICIPANT"],
     });
+    setupParticipantProfile("STUDENT");
     setupSetActiveRole();
 
     render(<RoleSwitcher />);
@@ -214,12 +223,25 @@ describe("RoleSwitcher — holds ONE role (become the other)", () => {
 });
 
 describe("RoleSwitcher — renders nothing", () => {
-  it("PARTICIPANT only + participantType=PARENT → empty (can't become a guide)", () => {
+  it("PARTICIPANT only + type=PARENT → empty (can't become a guide)", () => {
     setupMe({
       activeRole: "PARTICIPANT",
-      participantType: "PARENT",
       roles: ["PARTICIPANT"],
     });
+    setupParticipantProfile("PARENT");
+    setupSetActiveRole();
+
+    const { container } = render(<RoleSwitcher />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("PARTICIPANT only, participant profile still loading → empty (hold off until known)", () => {
+    setupMe({
+      activeRole: "PARTICIPANT",
+      roles: ["PARTICIPANT"],
+    });
+    setupParticipantProfile(null, { isLoading: true });
     setupSetActiveRole();
 
     const { container } = render(<RoleSwitcher />);

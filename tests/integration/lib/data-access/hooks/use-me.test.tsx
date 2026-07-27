@@ -59,7 +59,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { id: "u1", roles: ["PARTICIPANT"], activeRole: "PARTICIPANT" },
+          data: { user: { id: "u1" }, roles: ["PARTICIPANT"], activeRole: "PARTICIPANT" },
         }),
     });
 
@@ -110,7 +110,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { id: "u1", roles: ["PARTICIPANT", "GUIDE"], activeRole: "GUIDE" },
+          data: { user: { id: "u1" }, roles: ["PARTICIPANT", "GUIDE"], activeRole: "GUIDE" },
         }),
     });
 
@@ -118,7 +118,7 @@ describe("useMe", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ id: "u1", activeRole: "GUIDE" });
+    expect(result.current.me).toMatchObject({ user: { id: "u1" }, activeRole: "GUIDE" });
     expect(result.current.isOnboarded).toBe(true);
     expect(result.current.hasRole("PARTICIPANT")).toBe(true);
     expect(result.current.hasRole("GUIDE")).toBe(true);
@@ -128,14 +128,15 @@ describe("useMe", () => {
   it("unwraps a bare (non-enveloped) userinfo body too", async () => {
     routeFetch({
       authenticated: true,
-      userinfo: () => jsonResponse(200, { id: "u2", roles: ["GUIDE"], activeRole: "GUIDE" }),
+      userinfo: () =>
+        jsonResponse(200, { user: { id: "u2" }, roles: ["GUIDE"], activeRole: "GUIDE" }),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.me).not.toBeNull());
 
-    expect(result.current.me?.id).toBe("u2");
+    expect(result.current.me?.user.id).toBe("u2");
     expect(result.current.hasRole("GUIDE")).toBe(true);
   });
 
@@ -162,14 +163,15 @@ describe("useMe", () => {
   it("roles=[] → onboarded false even though me is present", async () => {
     routeFetch({
       authenticated: true,
-      userinfo: () => jsonResponse(200, { data: { id: "u3", roles: [], activeRole: null } }),
+      userinfo: () =>
+        jsonResponse(200, { data: { user: { id: "u3" }, roles: [], activeRole: null } }),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ id: "u3" });
+    expect(result.current.me).toMatchObject({ user: { id: "u3" } });
     expect(result.current.isOnboarded).toBe(false);
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
   });

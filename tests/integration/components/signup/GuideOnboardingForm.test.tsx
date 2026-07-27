@@ -15,7 +15,10 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mutateAsync = jest.fn();
-let meValue: { firstName?: string; lastName?: string; roles?: string[] } | null = null;
+let meValue: {
+  user?: { firstName?: string; lastName?: string };
+  roles?: string[];
+} | null = null;
 let universityResults: Array<{ id: string; name: string; shortName?: string }> = [];
 
 jest.mock("@/lib/data-access", () => ({
@@ -295,7 +298,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
   it("prefills first/last name from useMe without clobbering or marking dirty", async () => {
     const user = userEvent.setup();
-    meValue = { firstName: "Sam", lastName: "Rivera", roles: ["PARTICIPANT"] };
+    meValue = { user: { firstName: "Sam", lastName: "Rivera" }, roles: ["PARTICIPANT"] };
     renderWithQuery(<GuideOnboardingForm />);
 
     // Prefilled from the account.

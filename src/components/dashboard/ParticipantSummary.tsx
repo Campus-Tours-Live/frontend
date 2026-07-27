@@ -6,7 +6,7 @@ import {
   type MemberCardItem,
   type MemberRole,
 } from "@/components/ui";
-import type { ParticipantDashboard } from "@/lib/data-access";
+import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 
 /**
@@ -15,13 +15,14 @@ import { formatMonthYear } from "@/lib/format";
  * only renders its slice; no data fetching here. Sibling of GuideSummary.
  */
 export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
+  const { me } = useMe();
   const p = data.participant;
   // A parent/guardian participant reads as a Guardian card (purple accent).
-  const guardian = p.participantType === "PARENT";
+  const guardian = p.type === "PARENT";
   const role: MemberRole = guardian ? "GUARDIAN" : "PARTICIPANT";
 
   const items: MemberCardItem[] = [
-    { icon: UserRound, label: "Type", value: p.participantType ?? "—" },
+    { icon: UserRound, label: "Type", value: p.type ?? "—" },
     {
       icon: Compass,
       label: "Topics",
@@ -55,15 +56,15 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
     <div>
       <SectionHeading
         eyebrow="Dashboard"
-        title={`Welcome${p.displayName ? `, ${p.displayName}` : ""}.`}
+        title={`Welcome${me?.user.displayName ? `, ${me.user.displayName}` : ""}.`}
         lead="Your participant profile is saved."
       />
 
       <MemberCard
         className="mt-8"
-        name={p.displayName ?? "Member"}
+        name={me?.user.displayName ?? "Member"}
         role={role}
-        verification={p.email ? "Email Verified" : undefined}
+        verification={me?.user.email ? "Email Verified" : undefined}
         items={items}
         highlight={highlight}
       />

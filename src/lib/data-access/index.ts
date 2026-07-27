@@ -39,6 +39,7 @@ export {
 
 export type {
   Me,
+  MeUser,
   Role,
   ParticipantProfile,
   GuideProfile,

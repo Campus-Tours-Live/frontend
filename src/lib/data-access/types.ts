@@ -2,45 +2,40 @@
 
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
 
-export interface Me {
+/** The signed-in principal's identity — nested under `Me.user` (Profile Contract v2). */
+export interface MeUser {
   id: string;
-  roles: Role[];
-  activeRole: Role | null;
-  participantType: string | null;
-  guideStatus: string | null;
-  accountStatus: string | null;
   firstName: string | null;
   lastName: string | null;
   displayName: string | null;
   email: string | null;
+  accountStatus: string | null;
   ageBand: string | null;
   createdAt: string | null; // ISO-8601 (UTC) account creation; rendered as "Member since <Month Year>"
 }
 
+export interface Me {
+  user: MeUser;
+  roles: Role[];
+  activeRole: Role | null;
+}
+
 export interface ParticipantProfile {
-  firstName?: string;
-  lastName?: string;
-  displayName?: string;
-  email?: string;
-  participantType?: string;
+  type?: string;
   gradeLevel?: string;
   intendedMajor?: string;
   topicsOfInterest?: string[];
   universitiesOfInterest?: string[];
   guardianRequired?: boolean;
+  applicationStatus?: string;
 }
 
 export interface GuideProfile {
-  userId?: string;
-  firstName?: string;
-  lastName?: string;
-  displayName?: string;
-  email?: string;
-  accountStatus?: string;
   universityId?: string | null;
   universityName?: string | null;
   universityShortName?: string | null;
   major?: string;
+  degree?: string;
   classYear?: string;
   bio?: string | null;
   languages?: string[];

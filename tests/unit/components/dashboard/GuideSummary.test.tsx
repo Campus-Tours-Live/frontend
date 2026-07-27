@@ -1,10 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import { GuideSummary } from "@/components/dashboard/GuideSummary";
+import { useMe } from "@/lib/data-access";
 import type { GuideDashboard, Offering } from "@/lib/data-access";
 
-// Renders the real MemberCard + Alert (no mocks). GuideSummary is purely
-// presentational: name + role pill, label→value rows (Major / Application /
-// Offerings) and a highlight callout gated on canPublish.
+// Renders the real MemberCard + Alert (no mocks, except useMe — identity now comes from
+// there, not the dashboard aggregate). GuideSummary is purely presentational: name + role
+// pill, label→value rows (Major / Application / Offerings) and a highlight callout gated
+// on canPublish.
+
+jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
+  useMe: jest.fn(),
+}));
+
+const mockUseMe = useMe as jest.Mock;
 
 function offering(id: string): Offering {
   return {
@@ -24,8 +33,6 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
   return {
     kind: "guide",
     guide: {
-      displayName: "Ada Lovelace",
-      email: "ada@example.com",
       major: "Computer Science",
       applicationStatus: "APPROVED",
     },
@@ -37,8 +44,14 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
   };
 }
 
+beforeEach(() => {
+  mockUseMe.mockReturnValue({
+    me: { user: { displayName: "Ada Lovelace", email: "ada@example.com" } },
+  });
+});
+
 describe("GuideSummary", () => {
-  it("renders the guide display name", () => {
+  it("renders the guide display name from useMe", () => {
     render(<GuideSummary data={makeData()} />);
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
   });
@@ -107,14 +120,13 @@ describe("GuideSummary", () => {
   });
 
   it("falls back to 'Member' when displayName is missing", () => {
-    const data = makeData();
-    delete data.guide.displayName;
-    render(<GuideSummary data={data} />);
+    mockUseMe.mockReturnValue({ me: { user: { displayName: null } } });
+    render(<GuideSummary data={makeData()} />);
     expect(screen.getByText("Member")).toBeInTheDocument();
   });
 
   it("does NOT render the guide's email anywhere", () => {
-    // Documents current behavior: GuideSummary never surfaces guide.email.
+    // Documents current behavior: GuideSummary never surfaces the account email.
     render(<GuideSummary data={makeData()} />);
     expect(screen.queryByText("ada@example.com")).not.toBeInTheDocument();
     expect(screen.queryByText(/Email Verified/)).not.toBeInTheDocument();
