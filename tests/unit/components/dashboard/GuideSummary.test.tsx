@@ -132,8 +132,8 @@ describe("GuideSummary", () => {
   it("does NOT show the under-review highlight when canPublish is true", () => {
     render(<GuideSummary data={makeData({ canPublish: true })} />);
     expect(screen.queryByText("Application under review")).not.toBeInTheDocument();
-    // Instead it shows the approved-to-host highlight.
-    expect(screen.getByText("Approved to host")).toBeInTheDocument();
+    // Instead it shows the verified-to-host highlight.
+    expect(screen.getByText("Verified to host")).toBeInTheDocument();
     // Role pill is always "Student Guide"; "verified" is conveyed by the green pill.
     expect(screen.getByText("Student Guide")).toBeInTheDocument();
   });

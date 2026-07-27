@@ -25,7 +25,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
   const highlight: MemberCardHighlight = canPublish
     ? {
         icon: Trophy,
-        title: "Approved to host",
+        title: "Verified to host",
         description: "You can publish offerings and accept bookings.",
       }
     : {
