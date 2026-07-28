@@ -15,6 +15,5 @@ export const updateParticipantProfileMutation = (qc: QueryClient) => ({
     qc.invalidateQueries({ queryKey: queryKeys.me() });
     qc.invalidateQueries({ queryKey: queryKeys.participantProfile() });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
-    qc.invalidateQueries({ queryKey: queryKeys.onboarding("participant") });
   },
 });

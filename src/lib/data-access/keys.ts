@@ -19,7 +19,6 @@ export const queryKeys = {
   dashboard: () => ["dashboard"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
   tours: () => ["tours"] as const,
-  onboarding: (role: string) => ["onboarding", role] as const,
   // Availability v2 (CTL-55) — BFF Contract A (/v1/availability*, /v1/offerings/:id/slots).
   availabilityRules: () => ["availability-rules"] as const,
   availabilityExceptions: () => ["availability-exceptions"] as const,

@@ -145,7 +145,7 @@ describe("updateParticipantProfileMutation", () => {
     expect(mockedPostJson).not.toHaveBeenCalled();
   });
 
-  it("onSuccess invalidates me, participant-profile, dashboard and onboarding(participant)", () => {
+  it("onSuccess invalidates me, participant-profile and dashboard", () => {
     const qc = makeQc();
     updateParticipantProfileMutation(qc).onSuccess();
 
@@ -153,8 +153,7 @@ describe("updateParticipantProfileMutation", () => {
     expect(keys).toContainEqual(queryKeys.me());
     expect(keys).toContainEqual(queryKeys.participantProfile());
     expect(keys).toContainEqual(queryKeys.dashboard());
-    expect(keys).toContainEqual(queryKeys.onboarding("participant"));
-    expect(qc.invalidateQueries).toHaveBeenCalledTimes(4);
+    expect(qc.invalidateQueries).toHaveBeenCalledTimes(3);
   });
 });
 
@@ -171,7 +170,7 @@ describe("updateGuideProfileMutation", () => {
     expect(mockedPostJson).not.toHaveBeenCalled();
   });
 
-  it("onSuccess invalidates me, guide-profile, dashboard and onboarding(guide)", () => {
+  it("onSuccess invalidates me, guide-profile and dashboard", () => {
     const qc = makeQc();
     updateGuideProfileMutation(qc).onSuccess();
 
@@ -179,8 +178,7 @@ describe("updateGuideProfileMutation", () => {
     expect(keys).toContainEqual(queryKeys.me());
     expect(keys).toContainEqual(queryKeys.guideProfile());
     expect(keys).toContainEqual(queryKeys.dashboard());
-    expect(keys).toContainEqual(queryKeys.onboarding("guide"));
-    expect(qc.invalidateQueries).toHaveBeenCalledTimes(4);
+    expect(qc.invalidateQueries).toHaveBeenCalledTimes(3);
   });
 });
 

@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { UserPlus } from "lucide-react";
-import {
-  ApiError,
-  useMe,
-  useParticipantProfile,
-  useSetCurrentRole,
-  useSetOnboardingRole,
-  type Role,
-} from "@/lib/data-access";
+import { useMe, useParticipantProfile, useSetCurrentRole, type Role } from "@/lib/data-access";
 import { Alert, Button, SegmentedControl } from "@/components/ui";
 
 /**
@@ -19,15 +12,14 @@ import { Alert, Button, SegmentedControl } from "@/components/ui";
  *  - BOTH (participant + guide) → a segmented toggle [ Participant | Guide ]; tapping
  *    the inactive side switches the active context (setCurrentRole; the shared
  *    /dashboard re-renders once ["me"] is patched and ["dashboard"] invalidates).
- *  - ONE → a "Become a {other}" button that starts that role's onboarding IN-APP, via
- *    `POST /v1/session/onboarding-role` (never `/auth/login?role=…`). This is always a
- *    logged-in context — round-tripping through the bff's OAuth entry would re-run Google
- *    sign-in and force an account re-selection for a user who is already authenticated, which
- *    is wrong here (that redirect is still correct for the genuinely-unauthenticated entries in
- *    `AuthOptions`). On 200 the bff sets `session.onboardingRole` (gating `/onboarding/*` — see
- *    auth/routes.ts) and this navigates there; 403 means not eligible (e.g. PARENT → GUIDE) and
- *    surfaces a message with no navigation; 409 (already held — shouldn't happen on this path)
- *    defensively falls back to switching instead of onboarding.
+ *  - ONE → a "Become a {other}" button that navigates straight to that role's onboarding
+ *    route IN-APP (never `/auth/login?role=…`). This is always a logged-in context —
+ *    round-tripping through the bff's OAuth entry would re-run Google sign-in and force an
+ *    account re-selection for a user who is already authenticated, which is wrong here (that
+ *    redirect is still correct for the genuinely-unauthenticated entries in `AuthOptions`).
+ *    There's no session call to make first: the onboarding page itself (its RSC guard) owns
+ *    eligibility — e.g. it bounces a PARENT away from `/onboarding/guide` — so this button can
+ *    navigate blindly and let the destination enforce the rule.
  *  - PARENT (can't become a guide) or a non-consumer/null context → nothing.
  */
 export function RoleSwitcher({
@@ -40,7 +32,6 @@ export function RoleSwitcher({
 }) {
   const { me, hasRole } = useMe();
   const setCurrentRole = useSetCurrentRole();
-  const setOnboardingRole = useSetOnboardingRole();
   const [failed, setFailed] = useState<string | null>(null);
 
   const active = me?.currentRole;
@@ -108,63 +99,18 @@ export function RoleSwitcher({
   }
 
   const targetLabel = target === "GUIDE" ? "Guide" : "Participant";
-  const becomePending = setOnboardingRole.isPending || setCurrentRole.isPending;
 
-  const become = async () => {
-    setFailed(null);
-    try {
-      await setOnboardingRole.mutateAsync(target);
-      onNavigate?.();
-      navigate(target === "GUIDE" ? "/onboarding/guide" : "/onboarding/participant");
-    } catch (err) {
-      // A dismissed sign-in prompt is NOT the onboarding call failing — check it first, before
-      // any status-code branch (it isn't an HTTP failure at all).
-      if (isAuthCancelled(err)) {
-        setFailed(SIGN_IN_AGAIN_MESSAGE);
-        return;
-      }
-      if (err instanceof ApiError && err.status === 409) {
-        // Already held — shouldn't happen on the become path, but if it does, switch rather
-        // than onboard (mirrors switchTo, since the segmented-toggle branch isn't reachable
-        // from here — this account only holds one role).
-        try {
-          await setCurrentRole.mutateAsync(target);
-          onNavigate?.();
-          navigate("/dashboard");
-        } catch (switchErr) {
-          setFailed(
-            isAuthCancelled(switchErr)
-              ? SIGN_IN_AGAIN_MESSAGE
-              : "Couldn't switch right now. Please try again.",
-          );
-        }
-        return;
-      }
-      if (err instanceof ApiError && err.status === 403) {
-        // Not eligible (e.g. PARENT → GUIDE). The button is already hidden for that case above
-        // — this only fires if eligibility changed server-side mid-session.
-        setFailed(
-          target === "GUIDE"
-            ? "Parent or guardian accounts can't become guides."
-            : `You're not eligible to become a ${targetLabel} right now.`,
-        );
-        return;
-      }
-      setFailed("Couldn't start onboarding right now. Please try again.");
-    }
+  const become = () => {
+    onNavigate?.();
+    navigate(target === "GUIDE" ? "/onboarding/guide" : "/onboarding/participant");
   };
 
   return (
     <div className="border-b border-border px-2.5 py-4">
-      <Button variant="secondary" block onClick={become} disabled={becomePending}>
+      <Button variant="secondary" block onClick={become}>
         <UserPlus size={16} strokeWidth={1.8} />
         Become a {targetLabel}
       </Button>
-      {failed && (
-        <Alert variant="error" className="mt-2.5 text-ui-sm">
-          {failed}
-        </Alert>
-      )}
     </div>
   );
 }

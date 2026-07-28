@@ -13,6 +13,5 @@ export const updateGuideProfileMutation = (qc: QueryClient) => ({
     qc.invalidateQueries({ queryKey: queryKeys.me() });
     qc.invalidateQueries({ queryKey: queryKeys.guideProfile() });
     qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
-    qc.invalidateQueries({ queryKey: queryKeys.onboarding("guide") });
   },
 });

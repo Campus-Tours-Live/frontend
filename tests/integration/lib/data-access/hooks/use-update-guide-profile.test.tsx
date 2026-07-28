@@ -6,8 +6,8 @@ import { useUpdateGuideProfile } from "@/lib/data-access/hooks/use-update-guide-
 /**
  * Exercises the REAL useUpdateGuideProfile mutation end-to-end: mutate → mutation
  * → patchJson → apiFetch → fetch(PATCH /v1/guide/profile) → apiJson unwrap →
- * onSuccess invalidates ["me"], ["guide-profile"], ["dashboard"],
- * ["onboarding","guide"]. Only global.fetch is mocked.
+ * onSuccess invalidates ["me"], ["guide-profile"], ["dashboard"]. Only global.fetch
+ * is mocked.
  */
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -69,7 +69,7 @@ describe("useUpdateGuideProfile", () => {
     expect(result.current.data).toEqual(saved);
   });
 
-  it("invalidates me / guide-profile / dashboard / onboarding caches on success", async () => {
+  it("invalidates me / guide-profile / dashboard caches on success", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { data: {} }));
 
     const client = makeClient();
@@ -86,7 +86,6 @@ describe("useUpdateGuideProfile", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["me"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["guide-profile"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["onboarding", "guide"] });
   });
 
   it("rejects (isError) when the response is not ok and does not invalidate", async () => {
