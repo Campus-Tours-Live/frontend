@@ -98,22 +98,6 @@ export interface ParticipantDashboard {
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;
 
-/** GET /v1/onboarding?role= — derived onboarding progress. */
-export interface OnboardingStep {
-  key: string;
-  label: string;
-  done: boolean;
-}
-export interface OnboardingProgress {
-  role: "guide" | "participant";
-  started: boolean;
-  complete: boolean;
-  canSubmit: boolean;
-  guideStatus: string | null;
-  verificationStatus: string | null;
-  steps: OnboardingStep[];
-}
-
 export interface ParticipantProfileUpdate {
   firstName?: string;
   lastName?: string;

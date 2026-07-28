@@ -21,7 +21,6 @@ export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
 export { useSetCurrentRole } from "./hooks/use-set-current-role";
 export { useSetOnboardingRole } from "./hooks/use-set-onboarding-role";
 export { useDashboard } from "./hooks/use-dashboard";
-export { useOnboarding } from "./hooks/use-onboarding";
 export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
@@ -61,8 +60,6 @@ export type {
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,
-  OnboardingProgress,
-  OnboardingStep,
   AvailabilityRule,
   AvailabilityException,
   AvailabilityExceptionKind,
