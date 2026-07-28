@@ -12,12 +12,6 @@ jest.mock("@/components/home/FeaturedTours", () => ({
 jest.mock("@/components/tours/AllToursPage", () => ({
   AllToursPage: () => <div data-testid="all-tours-page" />,
 }));
-jest.mock("@/components/signup/GuideOnboardingForm", () => ({
-  GuideOnboardingForm: () => <div data-testid="guide-form" />,
-}));
-jest.mock("@/components/signup/ParticipantOnboardingForm", () => ({
-  ParticipantOnboardingForm: () => <div data-testid="participant-form" />,
-}));
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(() => ({ me: { currentRole: "PARTICIPANT" }, isLoading: false })),
 }));
@@ -32,8 +26,6 @@ import AuthLayout from "@/app/(auth)/layout";
 import ProfilePage from "@/app/(app)/profile/page";
 import SupportPage from "@/app/(app)/support/page";
 import StaffPage from "@/app/staff/page";
-import GuideOnboardingPage from "@/app/(auth)/onboarding/guide/page";
-import ParticipantOnboardingPage from "@/app/(auth)/onboarding/participant/page";
 import { useMe } from "@/lib/data-access";
 
 const mockUseMe = useMe as jest.Mock;
@@ -112,13 +104,7 @@ describe("static / shell pages", () => {
     expect(screen.getByText(/staff area/i)).toBeInTheDocument();
   });
 
-  it("guide onboarding shell mounts the form", () => {
-    render(<GuideOnboardingPage />);
-    expect(screen.getByTestId("guide-form")).toBeInTheDocument();
-  });
-
-  it("participant onboarding shell mounts the form", () => {
-    render(<ParticipantOnboardingPage />);
-    expect(screen.getByTestId("participant-form")).toBeInTheDocument();
-  });
+  // The guide/participant onboarding page guards (getServerMe/getServerParticipantType +
+  // redirect) are async RSCs now — covered by their own dedicated guard test files:
+  // tests/unit/app/onboarding-guide-page.test.tsx and onboarding-participant-page.test.tsx.
 });
