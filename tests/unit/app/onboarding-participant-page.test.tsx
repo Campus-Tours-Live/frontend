@@ -15,7 +15,7 @@ jest.mock("@/components/signup/ParticipantOnboardingForm", () => ({
 import { redirect } from "next/navigation";
 import { getServerMe } from "@/lib/http/serverMe";
 import ParticipantOnboardingPage from "@/app/(auth)/onboarding/participant/page";
-import { provisionedMe } from "../../support/meFixtures";
+import { pendingMe, provisionedMe } from "../../support/meFixtures";
 
 const redirectMock = redirect as unknown as jest.Mock;
 const getServerMeMock = getServerMe as jest.Mock;
@@ -29,6 +29,14 @@ describe("/onboarding/participant page guard", () => {
   it("redirects to /signin when there is no session", async () => {
     getServerMeMock.mockResolvedValue(null);
     await expect(ParticipantOnboardingPage()).rejects.toThrow("REDIRECT:/signin");
+  });
+
+  it("renders the participant onboarding form for a PENDING user (first onboarding)", async () => {
+    getServerMeMock.mockResolvedValue(pendingMe());
+    const el = await ParticipantOnboardingPage();
+    render(el);
+    expect(screen.getByTestId("participant-onboarding-form")).toBeInTheDocument();
+    expect(redirectMock).not.toHaveBeenCalled();
   });
 
   it("redirects a user who already holds PARTICIPANT to /dashboard", async () => {

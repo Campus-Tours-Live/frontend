@@ -17,7 +17,7 @@ import { redirect } from "next/navigation";
 import { getServerMe } from "@/lib/http/serverMe";
 import { getServerParticipantType } from "@/lib/http/serverParticipantType";
 import GuideOnboardingPage from "@/app/(auth)/onboarding/guide/page";
-import { provisionedMe } from "../../support/meFixtures";
+import { pendingMe, provisionedMe } from "../../support/meFixtures";
 
 const redirectMock = redirect as unknown as jest.Mock;
 const getServerMeMock = getServerMe as jest.Mock;
@@ -33,6 +33,15 @@ describe("/onboarding/guide page guard", () => {
   it("redirects to /signin when there is no session", async () => {
     getServerMeMock.mockResolvedValue(null);
     await expect(GuideOnboardingPage()).rejects.toThrow("REDIRECT:/signin");
+    expect(getServerParticipantTypeMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the guide onboarding form for a PENDING user (first onboarding) without checking participant type", async () => {
+    getServerMeMock.mockResolvedValue(pendingMe());
+    const el = await GuideOnboardingPage();
+    render(el);
+    expect(screen.getByTestId("guide-onboarding-form")).toBeInTheDocument();
+    expect(redirectMock).not.toHaveBeenCalled();
     expect(getServerParticipantTypeMock).not.toHaveBeenCalled();
   });
 
