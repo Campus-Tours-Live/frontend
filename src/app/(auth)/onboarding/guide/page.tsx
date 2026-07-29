@@ -12,7 +12,10 @@ import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
 export default async function GuideOnboardingPage() {
   const me = await getServerMe();
   if (!me) redirect("/signin");
-  if (me.roles.includes("GUIDE")) redirect("/dashboard");
+  // A PENDING principal holds no roles yet (first onboarding) — only a PROVISIONED `me` can
+  // already hold GUIDE (second-role acquisition is Task 2; this preserves today's behaviour
+  // for a PendingMe, which never matches, while narrowing `roles` for the union).
+  if (me.accountState === "PROVISIONED" && me.roles.includes("GUIDE")) redirect("/dashboard");
   if ((await getServerParticipantType()) === "PARENT") {
     redirect("/signup/role?error=parent_no_guide");
   }

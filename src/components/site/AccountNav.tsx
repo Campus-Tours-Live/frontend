@@ -112,14 +112,16 @@ const GUIDE_NAV: NavGroup[] = [
 
 export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { me, isOnboarded } = useMe();
+  const { me } = useMe();
   // Only fetch the guide profile when it's actually needed (the subtitle below) — a
   // participant-context render never issues this call. Called unconditionally (before the
   // render-gate return) per the rules of hooks; `enabled` does the actual gating.
   const { data: guideProfile } = useGuideProfile(me?.currentRole === "GUIDE");
 
-  // Bare account (no roles) or logged out → render nothing.
-  if (!isOnboarded || !me) return null;
+  // Logged out, or a bare/pending account (no roles yet) → render nothing. Checked directly on
+  // `me` (not a separate `isOnboarded` boolean) so TS narrows `me` to `ProvisionedMe` below —
+  // gating on accountState, never on `roles.length` (CTL-97 constraint 2).
+  if (!me || me.accountState !== "PROVISIONED") return null;
 
   // Current role decides which area's nav we render. Read currentRole (the authoritative
   // UX role) — there is no legacy `role` field on the wire.

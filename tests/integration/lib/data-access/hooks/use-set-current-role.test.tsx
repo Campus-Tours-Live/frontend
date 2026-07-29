@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useSetCurrentRole } from "@/lib/data-access/hooks/use-set-current-role";
+import { provisionedMe } from "../../../../support/meFixtures";
 
 /**
  * Exercises the REAL useSetCurrentRole mutation end-to-end: mutate → mutation →
@@ -72,11 +73,8 @@ describe("useSetCurrentRole", () => {
 
     const client = makeClient();
     // Seed the cache the way `me.query.ts` does — the UNWRAPPED Me, not an envelope.
-    client.setQueryData(["me"], {
-      user: { id: "u1" },
-      roles: ["PARTICIPANT", "GUIDE"],
-      currentRole: "PARTICIPANT",
-    });
+    const seeded = provisionedMe({ roles: ["PARTICIPANT", "GUIDE"], currentRole: "PARTICIPANT" });
+    client.setQueryData(["me"], seeded);
     const invalidateSpy = jest.spyOn(client, "invalidateQueries");
 
     const { result } = renderHook(() => useSetCurrentRole(), {
@@ -88,11 +86,7 @@ describe("useSetCurrentRole", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // The cache is patched in place — currentRole flips, everything else survives.
-    expect(client.getQueryData(["me"])).toEqual({
-      user: { id: "u1" },
-      roles: ["PARTICIPANT", "GUIDE"],
-      currentRole: "GUIDE",
-    });
+    expect(client.getQueryData(["me"])).toEqual({ ...seeded, currentRole: "GUIDE" });
     // ["dashboard"] still invalidates (role-shaped aggregate); ["me"] is patched, not invalidated.
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ["me"] });
@@ -102,11 +96,10 @@ describe("useSetCurrentRole", () => {
     fetchMock.mockResolvedValue(jsonResponse(403, {}));
 
     const client = makeClient();
-    client.setQueryData(["me"], {
-      user: { id: "u1" },
-      roles: ["PARTICIPANT", "GUIDE"],
-      currentRole: "PARTICIPANT",
-    });
+    client.setQueryData(
+      ["me"],
+      provisionedMe({ roles: ["PARTICIPANT", "GUIDE"], currentRole: "PARTICIPANT" }),
+    );
     const invalidateSpy = jest.spyOn(client, "invalidateQueries");
 
     const { result } = renderHook(() => useSetCurrentRole(), {

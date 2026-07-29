@@ -38,7 +38,11 @@ export {
 
 export type {
   Me,
+  PendingMe,
+  ProvisionedMe,
   MeUser,
+  PendingUser,
+  ProvisionedUser,
   Role,
   ParticipantProfile,
   GuideProfile,

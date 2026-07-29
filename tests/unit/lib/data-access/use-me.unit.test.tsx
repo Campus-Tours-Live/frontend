@@ -7,6 +7,7 @@ jest.mock("@tanstack/react-query", () => {
 });
 
 import { useMe } from "@/lib/data-access/hooks/use-me";
+import { pendingMe, provisionedMe } from "../../../support/meFixtures";
 
 describe("useMe", () => {
   it("null principal → loading, not onboarded, no roles", () => {
@@ -18,16 +19,19 @@ describe("useMe", () => {
     expect(result.current.hasRole("GUIDE")).toBe(false);
   });
 
-  it("principal with roles → onboarded, membership reflected", () => {
-    useQueryMock.mockReturnValue({ data: { roles: ["PARTICIPANT"] }, isLoading: false });
+  it("PROVISIONED principal with roles → onboarded, membership reflected", () => {
+    useQueryMock.mockReturnValue({
+      data: provisionedMe({ roles: ["PARTICIPANT"] }),
+      isLoading: false,
+    });
     const { result } = renderHook(() => useMe());
     expect(result.current.isOnboarded).toBe(true);
     expect(result.current.hasRole("PARTICIPANT")).toBe(true);
     expect(result.current.hasRole("GUIDE")).toBe(false);
   });
 
-  it("principal without a roles array → not onboarded (?? 0 fallback)", () => {
-    useQueryMock.mockReturnValue({ data: {}, isLoading: false });
+  it("PENDING principal (no roles yet) → not onboarded, gated on accountState not roles.length", () => {
+    useQueryMock.mockReturnValue({ data: pendingMe(), isLoading: false });
     const { result } = renderHook(() => useMe());
     expect(result.current.isOnboarded).toBe(false);
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);

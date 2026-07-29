@@ -17,6 +17,7 @@ import { redirect } from "next/navigation";
 import { getServerMe } from "@/lib/http/serverMe";
 import { getServerParticipantType } from "@/lib/http/serverParticipantType";
 import GuideOnboardingPage from "@/app/(auth)/onboarding/guide/page";
+import { provisionedMe } from "../../support/meFixtures";
 
 const redirectMock = redirect as unknown as jest.Mock;
 const getServerMeMock = getServerMe as jest.Mock;
@@ -36,13 +37,15 @@ describe("/onboarding/guide page guard", () => {
   });
 
   it("redirects a user who already holds GUIDE to /dashboard", async () => {
-    getServerMeMock.mockResolvedValue({ roles: ["GUIDE"], currentRole: "GUIDE" });
+    getServerMeMock.mockResolvedValue(provisionedMe({ roles: ["GUIDE"], currentRole: "GUIDE" }));
     await expect(GuideOnboardingPage()).rejects.toThrow("REDIRECT:/dashboard");
     expect(getServerParticipantTypeMock).not.toHaveBeenCalled();
   });
 
   it("redirects a PARENT participant to /signup/role?error=parent_no_guide", async () => {
-    getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" });
+    getServerMeMock.mockResolvedValue(
+      provisionedMe({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" }),
+    );
     getServerParticipantTypeMock.mockResolvedValue("PARENT");
     await expect(GuideOnboardingPage()).rejects.toThrow(
       "REDIRECT:/signup/role?error=parent_no_guide",
@@ -50,7 +53,9 @@ describe("/onboarding/guide page guard", () => {
   });
 
   it("renders the guide onboarding form for an eligible user", async () => {
-    getServerMeMock.mockResolvedValue({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" });
+    getServerMeMock.mockResolvedValue(
+      provisionedMe({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" }),
+    );
     getServerParticipantTypeMock.mockResolvedValue("STUDENT");
     const el = await GuideOnboardingPage();
     render(el);

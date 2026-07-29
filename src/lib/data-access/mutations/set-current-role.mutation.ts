@@ -41,7 +41,12 @@ export const setCurrentRoleMutation = (qc: QueryClient) => ({
   onSuccess: async (result: SetCurrentRoleResult) => {
     await qc.cancelQueries({ queryKey: queryKeys.me() });
     qc.setQueryData<Me | null | undefined>(queryKeys.me(), (prev) =>
-      prev ? { ...prev, currentRole: result.currentRole } : prev,
+      // Only a PROVISIONED `me` can hold a role to switch into — a role switch is
+      // unreachable for a PENDING principal (RoleSwitcher never renders for one), so this
+      // is defensive: never fabricate a `currentRole` onto a cached `PendingMe`.
+      prev && prev.accountState === "PROVISIONED"
+        ? { ...prev, currentRole: result.currentRole }
+        : prev,
     );
     qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
   },

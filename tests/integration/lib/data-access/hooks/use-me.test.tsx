@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMe } from "@/lib/data-access/hooks/use-me";
+import { pendingMe, provisionedMe } from "../../../../support/meFixtures";
 
 /**
  * Exercises the REAL useMe hook end-to-end. It is two-phase: GET /auth/session (always 200,
@@ -59,7 +60,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { user: { id: "u1" }, roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" },
+          data: provisionedMe({ id: "u1", roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" }),
         }),
     });
 
@@ -110,7 +111,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { user: { id: "u1" }, roles: ["PARTICIPANT", "GUIDE"], currentRole: "GUIDE" },
+          data: provisionedMe({ id: "u1", roles: ["PARTICIPANT", "GUIDE"], currentRole: "GUIDE" }),
         }),
     });
 
@@ -129,7 +130,7 @@ describe("useMe", () => {
     routeFetch({
       authenticated: true,
       userinfo: () =>
-        jsonResponse(200, { user: { id: "u2" }, roles: ["GUIDE"], currentRole: "GUIDE" }),
+        jsonResponse(200, provisionedMe({ id: "u2", roles: ["GUIDE"], currentRole: "GUIDE" })),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
@@ -160,18 +161,17 @@ describe("useMe", () => {
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
   });
 
-  it("roles=[] → onboarded false even though me is present", async () => {
+  it("PENDING (no roles yet) → onboarded false even though me is present — gated on accountState, not roles.length", async () => {
     routeFetch({
       authenticated: true,
-      userinfo: () =>
-        jsonResponse(200, { data: { user: { id: "u3" }, roles: [], currentRole: null } }),
+      userinfo: () => jsonResponse(200, { data: pendingMe() }),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ user: { id: "u3" } });
+    expect(result.current.me).toMatchObject({ accountState: "PENDING" });
     expect(result.current.isOnboarded).toBe(false);
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
   });

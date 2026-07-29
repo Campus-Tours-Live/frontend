@@ -2,8 +2,25 @@
 
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
 
-/** The signed-in principal's identity — nested under `Me.user` (Profile Contract v2). */
-export interface MeUser {
+/**
+ * The identity fields common to BOTH principal states — nested under `Me.user`
+ * (Profile Contract v2, CTL-97 defer-provisioning). `id`/`accountStatus`/`ageBand`
+ * differ by state (see {@link PendingUser}/{@link ProvisionedUser}); everything else
+ * (name, email, createdAt) is populated even pre-provisioning.
+ */
+export interface PendingUser {
+  /** No Core account exists yet. */
+  id: null;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  email: string | null;
+  accountStatus: null;
+  ageBand: null;
+  createdAt: string | null;
+}
+
+export interface ProvisionedUser {
   id: string;
   firstName: string | null;
   lastName: string | null;
@@ -14,11 +31,31 @@ export interface MeUser {
   createdAt: string | null; // ISO-8601 (UTC) account creation; rendered as "Member since <Month Year>"
 }
 
-export interface Me {
-  user: MeUser;
-  roles: Role[];
+/** Union of both principal-identity shapes — for code that only touches fields common to
+ *  both (e.g. name prefill), not the state-specific `id`/`accountStatus`/`ageBand`. */
+export type MeUser = PendingUser | ProvisionedUser;
+
+/**
+ * Discriminated `Me` (CTL-97 defer-provisioning). A signed-in principal may exist in Core
+ * without having chosen a role yet ("PENDING") — gate every consumer on `accountState`,
+ * never infer pending-ness from `user.id === null` or `roles.length` directly.
+ */
+export interface PendingMe {
+  accountState: "PENDING";
+  user: PendingUser;
+  roles: readonly [];
+  currentRole: null;
+}
+
+export interface ProvisionedMe {
+  accountState: "PROVISIONED";
+  user: ProvisionedUser;
+  /** Always holds ≥1 role — a bff invariant enforced at parse time by `meSchema`. */
+  roles: readonly [Role, ...Role[]];
   currentRole: Role | null;
 }
+
+export type Me = PendingMe | ProvisionedMe;
 
 export interface ParticipantProfile {
   type?: string;
