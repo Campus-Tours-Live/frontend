@@ -19,6 +19,9 @@ export { useDegrees } from "./hooks/use-degrees";
 export { useUpdateParticipantProfile } from "./hooks/use-update-participant-profile";
 export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
 export { useSetCurrentRole } from "./hooks/use-set-current-role";
+export { useOnboardRole } from "./hooks/use-onboard-role";
+export { OnboardRetryableError } from "./mutations/onboard-role.mutation";
+export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
@@ -35,6 +38,9 @@ export {
   useUpdateAvailabilityRule,
   useUpdateAvailabilitySettings,
 } from "./hooks/use-guide-availability";
+
+export type { OnboardableRole } from "./hooks/use-onboard-role";
+export type { OnboardingPrefill } from "./onboardingPrefill";
 
 export type {
   Me,

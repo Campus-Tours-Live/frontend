@@ -3,19 +3,19 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
+import { ApiError } from "@/lib/data-access";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 // These are heavy multi-step flows (esp. the "switch schools" fallback cases); give them headroom
 // beyond the default 5s per-test timeout so a loaded CI runner doesn't trip a false timeout.
 jest.setTimeout(20000);
 
-// Variants the main suite's fixed mock can't express: empty tour-topics, a
-// non-Error rejection, an empty base price, and the majors-hook edge cases below.
+// Variants the main suite's fixed mock can't express: empty tour-topics, non-ApiError/ApiError
+// rejection variants, an empty base price, and the majors-hook edge cases below.
 const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const mutateAsync = jest.fn();
-const setCurrentRoleMutateAsync = jest.fn();
 let topicsData: Array<{ value: string; label: string }> | undefined;
 
 // A small catalog keyed by search text, so a test can pick between multiple schools —
@@ -67,10 +67,10 @@ const DEGREES_BY_SCHOOL: Record<string, Array<{ value: string; label: string }> 
 };
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
   useTourTopics: () => ({ data: topicsData }),
-  useUpdateGuideProfile: () => ({ mutateAsync }),
-  useSetCurrentRole: () => ({ mutateAsync: setCurrentRoleMutateAsync, isPending: false }),
+  useOnboardRole: () => ({ mutateAsync, isPending: false }),
   // Majors are keyed off the selected school — empty until one is picked, matching
   // the real hook's `enabled: Boolean(schoolId)` gate. The loading/error flags are
   // overridable so the degraded states can be driven per test.
@@ -126,12 +126,18 @@ async function completeStepTwo(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("checkbox", { name: /Academics/i }));
 }
 
+async function completeAndSubmit(user: ReturnType<typeof userEvent.setup>) {
+  await completeStepOne(user);
+  await user.click(screen.getByRole("button", { name: /continue/i }));
+  await completeStepTwo(user);
+  await user.click(await screen.findByRole("button", { name: /continue/i }));
+  await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
+  await user.click(screen.getByRole("button", { name: /^submit$/i }));
+}
+
 beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
-  mutateAsync.mockResolvedValue({});
-  setCurrentRoleMutateAsync.mockReset();
-  setCurrentRoleMutateAsync.mockResolvedValue({ currentRole: "GUIDE" });
   topicsData = [{ value: "academics", label: "Academics" }];
   refetchMajors.mockReset();
   majorsState = { isLoading: false, isFetching: false, isError: false };
@@ -150,35 +156,57 @@ describe("GuideOnboardingForm edge cases", () => {
   });
 
   it("attributes a dismissed sign-in prompt to auth, not to onboarding failing", async () => {
-    // AuthCancelledError IS an Error, so the old `err.message` path showed "Sign-in was
-    // cancelled." — attributed correctly but unactionable, and worded unlike every other
-    // site. Route it through the canonical message.
+    // AuthCancelledError IS an Error, so a naive `err.message` path would show "Sign-in was
+    // cancelled." — correctly attributed but unactionable, and worded unlike every other site.
+    // Route it through the canonical message, checked FIRST (before the ApiError branches).
     mutateAsync.mockRejectedValueOnce(new AuthCancelledError());
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
-    await completeStepOne(user);
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-    await completeStepTwo(user);
-    await user.click(await screen.findByRole("button", { name: /continue/i }));
-    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
-    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+    await completeAndSubmit(user);
 
     expect(await screen.findByText(SIGN_IN_AGAIN_MESSAGE)).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("shows a generic message when the rejection is not an Error", async () => {
-    mutateAsync.mockRejectedValueOnce("boom"); // non-Error rejection
+  it("shows a generic message for a non-ApiError rejection (Error or otherwise) — never the raw text", async () => {
+    // Keyed on the ApiError type, not "is this an Error" — an internal contract-violation Error
+    // (e.g. a malformed 201) is just as unactionable to show raw as a bare string throw.
+    mutateAsync.mockRejectedValueOnce("boom");
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
-    await completeStepOne(user);
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-    await completeStepTwo(user);
-    await user.click(await screen.findByRole("button", { name: /continue/i }));
-    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
-    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+    await completeAndSubmit(user);
 
     expect(await screen.findByText(/something went wrong\. please try again/i)).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("keys the parent-not-eligible message on ROLE_NOT_ELIGIBLE + properties.role === GUIDE, not on message text", async () => {
+    // Deliberately an unrelated message string — the branch must key on code + properties, never
+    // on what the message SAYS.
+    mutateAsync.mockRejectedValueOnce(
+      new ApiError(409, "conflict", "ROLE_NOT_ELIGIBLE", undefined, { role: "GUIDE" }),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeAndSubmit(user);
+
+    expect(await screen.findByText(/can.t become guides/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^conflict$/i)).not.toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the ApiError's own message for ROLE_NOT_ELIGIBLE on a role other than GUIDE", async () => {
+    mutateAsync.mockRejectedValueOnce(
+      new ApiError(409, "Role already granted elsewhere", "ROLE_NOT_ELIGIBLE", undefined, {
+        role: "PARTICIPANT",
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeAndSubmit(user);
+
+    expect(await screen.findByText(/role already granted elsewhere/i)).toBeInTheDocument();
+    expect(screen.queryByText(/can.t become guides/i)).not.toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
   });
 

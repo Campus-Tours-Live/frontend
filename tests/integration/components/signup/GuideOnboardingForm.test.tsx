@@ -1,13 +1,20 @@
 import { type ReactElement } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
+import { ApiError, type Me } from "@/lib/data-access";
+import { pendingMe, provisionedMe } from "../../../support/meFixtures";
 
 // ── Network/navigation + data-access boundary ───────────────────────────────
 // We exercise the REAL react-hook-form flow and the component's own step state;
 // only the data-access hooks (the network boundary) are mocked so we can drive
 // `useMe` prefill, supply topic/university options, and assert the submit payload.
+// `jest.requireActual` keeps the REAL `ApiError`/`OnboardRetryableError`/`getOnboardingPrefill`
+// (spread onto the mock) so the component's `instanceof`/branch logic exercises the genuine
+// classes, not fakes — and the test file importing the same names gets the same identities.
 
 const push = jest.fn();
 jest.mock("next/navigation", () => ({
@@ -15,18 +22,15 @@ jest.mock("next/navigation", () => ({
 }));
 
 const mutateAsync = jest.fn();
-const setCurrentRoleMutateAsync = jest.fn();
-let meValue: {
-  user?: { firstName?: string; lastName?: string };
-  roles?: string[];
-} | null = null;
+let meValue: Me | null = null;
 let universityResults: Array<{ id: string; name: string; shortName?: string }> = [];
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useMe: () => ({
     me: meValue,
     isLoading: false,
-    isOnboarded: !!meValue && (meValue.roles?.length ?? 0) > 0,
+    isOnboarded: meValue?.accountState === "PROVISIONED",
     hasRole: () => false,
   }),
   useTourTopics: () => ({
@@ -35,8 +39,7 @@ jest.mock("@/lib/data-access", () => ({
       { value: "dorms", label: "Dorm life" },
     ],
   }),
-  useUpdateGuideProfile: () => ({ mutateAsync }),
-  useSetCurrentRole: () => ({ mutateAsync: setCurrentRoleMutateAsync, isPending: false }),
+  useOnboardRole: () => ({ mutateAsync, isPending: false }),
   // Majors are keyed off the selected school — empty until one is picked, matching
   // the real hook's `enabled: Boolean(schoolId)` gate.
   useMajors: (schoolId?: string | null) => ({
@@ -47,7 +50,7 @@ jest.mock("@/lib/data-access", () => ({
         ]
       : [],
   }),
-  // Degree levels are keyed off the selected school too (optional field).
+  // Degree levels the SELECTED school awards (live) — empty until one is picked (optional field).
   useDegrees: (schoolId?: string | null) => ({
     data: schoolId ? [{ value: "Bachelor's Degree", label: "Bachelor's Degree" }] : [],
   }),
@@ -66,9 +69,7 @@ function renderWithQuery(ui: ReactElement) {
 beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
-  mutateAsync.mockResolvedValue({});
-  setCurrentRoleMutateAsync.mockReset();
-  setCurrentRoleMutateAsync.mockResolvedValue({ currentRole: "GUIDE" });
+  mutateAsync.mockResolvedValue(provisionedMe({ roles: ["GUIDE"], currentRole: "GUIDE" }));
   meValue = null;
   universityResults = [{ id: "u-1", name: "State University", shortName: "State" }];
 });
@@ -96,6 +97,16 @@ async function completeStepTwo(user: ReturnType<typeof userEvent.setup>) {
     "I love showing students the maker space, dorms, and the best study spots on campus.",
   );
   await user.click(screen.getByRole("checkbox", { name: /Academics/i }));
+}
+
+/** Walks the wizard to the final step and clicks Submit — does not assert the outcome. */
+async function completeAndSubmit(user: ReturnType<typeof userEvent.setup>) {
+  await completeStepOne(user);
+  await user.click(screen.getByRole("button", { name: /continue/i }));
+  await completeStepTwo(user);
+  await user.click(await screen.findByRole("button", { name: /continue/i }));
+  await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
+  await user.click(screen.getByRole("button", { name: /^submit$/i }));
 }
 
 describe("GuideOnboardingForm (multi-step wizard)", () => {
@@ -148,24 +159,15 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(await screen.findByLabelText(/first name/i)).toHaveValue("Jordan");
   });
 
-  it("walks all three steps and submits the mapped payload (submit:true, cents from dollars)", async () => {
+  it("walks all three steps and submits the mapped command body ONCE (no `submit` field)", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
-    await completeStepOne(user);
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-
-    // Step 2 — "Your guiding": bio + specialty are required.
-    await completeStepTwo(user);
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-
-    // Step 3 — Verification (the school-email field marks the transition).
-    const email = await screen.findByLabelText(/school email address/i);
-    await user.type(email, "jordan@university.edu");
-
-    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+    await completeAndSubmit(user);
 
     expect(mutateAsync).toHaveBeenCalledTimes(1);
-    expect(mutateAsync).toHaveBeenCalledWith(
+    const [arg] = mutateAsync.mock.calls[0] as [{ role: string; body: Record<string, unknown> }];
+    expect(arg.role).toBe("GUIDE");
+    expect(arg.body).toEqual(
       expect.objectContaining({
         firstName: "Jordan",
         lastName: "Lee",
@@ -173,15 +175,37 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
         major: "computer_science",
         verificationEmail: "jordan@university.edu",
         tourTopics: ["academics"],
-        submit: true,
       }),
     );
+    // The command body has NO `submit` field — that was the old PATCH-submit's field; the
+    // command endpoint has no such field.
+    expect(arg.body).not.toHaveProperty("submit");
     // Languages default included.
-    expect(mutateAsync.mock.calls[0][0].spokenLanguages).toContain("en-US");
-    // Onboarding partial-success: the profile grant is followed by an independent session
-    // switch into the just-granted role (bff currentRole is session state, not a Core write).
-    expect(setCurrentRoleMutateAsync).toHaveBeenCalledWith("GUIDE");
+    expect(arg.body.spokenLanguages).toContain("en-US");
+    // Navigation happens ONLY once the mutation RESOLVES a ProvisionedMe holding GUIDE — there is
+    // no separate setCurrentRole step any more.
     expect(push).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("does NOT navigate while the mutation is pending; navigates only once it resolves", async () => {
+    let resolveMutation!: (me: unknown) => void;
+    mutateAsync.mockReset();
+    mutateAsync.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveMutation = resolve;
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeAndSubmit(user);
+
+    // Still pending — never an optimistic early flip.
+    expect(push).not.toHaveBeenCalled();
+
+    // Resolves (e.g. after the mutation's own internal §4.3 reconcile following a
+    // SESSION_CONVERSION_FAILED/network hiccup) — navigation follows the resolve, not before it.
+    resolveMutation(provisionedMe({ roles: ["GUIDE"], currentRole: "GUIDE" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/dashboard"));
   });
 
   it("submits the selected degree, a valid class year, and a valid entry year (as a number)", async () => {
@@ -198,7 +222,8 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
-    expect(mutateAsync).toHaveBeenCalledWith(
+    const [arg] = mutateAsync.mock.calls[0] as [{ body: Record<string, unknown> }];
+    expect(arg.body).toEqual(
       expect.objectContaining({
         degree: "Bachelor's Degree",
         classYear: validYear,
@@ -284,9 +309,9 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
     await user.click(screen.getByRole("button", { name: /^submit$/i }));
 
-    const payload = mutateAsync.mock.calls[0][0];
-    expect(payload.spokenLanguages).toEqual(["es"]);
-    expect(payload.tourTopics).toEqual(["academics"]);
+    const [arg] = mutateAsync.mock.calls[0] as [{ body: Record<string, unknown> }];
+    expect(arg.body.spokenLanguages).toEqual(["es"]);
+    expect(arg.body.tourTopics).toEqual(["academics"]);
   });
 
   it("requires at least one language before leaving 'Your guiding'", async () => {
@@ -352,33 +377,38 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(screen.queryByText(/choose at least one specialty/i)).not.toBeInTheDocument();
   });
 
-  it("prefills first/last name from useMe without clobbering or marking dirty", async () => {
-    const user = userEvent.setup();
-    meValue = { user: { firstName: "Sam", lastName: "Rivera" }, roles: ["PARTICIPANT"] };
+  it("prefills from getOnboardingPrefill for a PendingMe (first onboarding)", async () => {
+    meValue = pendingMe({ firstName: "Sam", lastName: "Rivera" });
     renderWithQuery(<GuideOnboardingForm />);
 
-    // Prefilled from the account.
     expect(screen.getByLabelText(/first name/i)).toHaveValue("Sam");
     expect(screen.getByLabelText(/last name/i)).toHaveValue("Rivera");
+    await act(async () => {});
+  });
+
+  it("prefills from getOnboardingPrefill for a ProvisionedMe (second-role acquisition), without clobbering or marking dirty", async () => {
+    const user = userEvent.setup();
+    meValue = provisionedMe({ roles: ["PARTICIPANT"], firstName: "Grace", lastName: "Hopper" });
+    renderWithQuery(<GuideOnboardingForm />);
+
+    expect(screen.getByLabelText(/first name/i)).toHaveValue("Grace");
+    expect(screen.getByLabelText(/last name/i)).toHaveValue("Hopper");
 
     // Prefill uses setValue without shouldDirty → Cancel must NOT confirm
     // (a pristine form leaves immediately). Clicking Cancel navigates straight away.
     await user.click(screen.getByRole("button", { name: /cancel/i }));
     expect(screen.queryByText(/discard your progress/i)).not.toBeInTheDocument();
-    // isOnboarded (has a role) → leaves to /dashboard.
+    // isOnboarded (PROVISIONED) → leaves to /dashboard.
     expect(push).toHaveBeenCalledWith("/dashboard");
   });
 
-  it("renders an error alert when the submit mutation rejects", async () => {
+  it("renders an error alert (the ApiError's message) when the submit mutation rejects with a terminal error", async () => {
     const user = userEvent.setup();
-    mutateAsync.mockRejectedValueOnce(new Error("School email already in use."));
+    mutateAsync.mockRejectedValueOnce(
+      new ApiError(422, "School email already in use.", "VALIDATION_FAILED"),
+    );
     renderWithQuery(<GuideOnboardingForm />);
-    await completeStepOne(user);
-    await user.click(screen.getByRole("button", { name: /continue/i }));
-    await completeStepTwo(user);
-    await user.click(await screen.findByRole("button", { name: /continue/i }));
-    await user.type(await screen.findByLabelText(/school email address/i), "jordan@university.edu");
-    await user.click(screen.getByRole("button", { name: /^submit$/i }));
+    await completeAndSubmit(user);
 
     expect(await screen.findByText(/school email already in use/i)).toBeInTheDocument();
     expect(push).not.toHaveBeenCalled();
@@ -399,5 +429,15 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
     expect(await screen.findByText(/so we can send your verification link/i)).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("[grep-acceptance] no longer imports useSetCurrentRole or useUpdateGuideProfile for the submit path", () => {
+    const source = readFileSync(
+      join(__dirname, "../../../../src/components/signup/GuideOnboardingForm.tsx"),
+      "utf8",
+    );
+    expect(source).not.toMatch(/useSetCurrentRole/);
+    expect(source).not.toMatch(/useUpdateGuideProfile/);
+    expect(source).toMatch(/useOnboardRole/);
   });
 });

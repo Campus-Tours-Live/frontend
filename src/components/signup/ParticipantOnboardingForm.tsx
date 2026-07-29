@@ -5,10 +5,13 @@ import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import {
+  ApiError,
+  getOnboardingPrefill,
+  OnboardRetryableError,
   useMe,
-  useSetCurrentRole,
+  useOnboardRole,
   useTourTopics,
-  useUpdateParticipantProfile,
+  type ParticipantProfileUpdate,
 } from "@/lib/data-access";
 import {
   Alert,
@@ -53,15 +56,15 @@ const STEP_LEADS = [
 export function ParticipantOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
-  const updateProfile = useUpdateParticipantProfile();
-  const setCurrentRole = useSetCurrentRole();
+  const onboardRole = useOnboardRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Set once onboarding has GRANTED the role (Core write succeeded) but the bff session's
-  // currentRole switch hasn't (yet). Distinct from submitError: the profile IS saved, so the
-  // retry below only re-runs the switch — never re-submits the onboarding form.
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  // Set when the command resolves STILL_PENDING (OnboardRetryableError) — Core's commit state is
+  // genuinely ambiguous, so this is neither a save failure nor a confirmed grant. Distinct from
+  // submitError: the form stays filled and retry RESUBMITS the same command — there is no
+  // separate session step any more, so a resolve from the command IS "session usable".
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -89,55 +92,61 @@ export function ParticipantOnboardingForm() {
   useEffect(() => {
     if (prefilled.current || !me) return;
     prefilled.current = true;
-    if (me.user.firstName && !getValues("firstName")) setValue("firstName", me.user.firstName);
-    if (me.user.lastName && !getValues("lastName")) setValue("lastName", me.user.lastName);
+    const prefill = getOnboardingPrefill(me);
+    if (prefill.firstName && !getValues("firstName")) setValue("firstName", prefill.firstName);
+    if (prefill.lastName && !getValues("lastName")) setValue("lastName", prefill.lastName);
   }, [me, setValue, getValues]);
 
-  // Onboarding partial-success: the submit above only GRANTS the role (Core write). The bff's
-  // currentRole is separate per-session state (Profile Contract v2 — Core has no current-role
-  // concept), so the form independently switches into the just-granted role afterward. If that
-  // switch fails, the role is still held — this is a session-init failure, not a save failure —
-  // so retry re-runs ONLY this, never the onboarding submit above.
-  const activateSession = async () => {
-    setSessionError(null);
-    try {
-      await setCurrentRole.mutateAsync("PARTICIPANT");
-      router.push("/dashboard");
-    } catch (err) {
-      setSessionError(
-        isAuthCancelled(err)
-          ? SIGN_IN_AGAIN_MESSAGE
-          : "Your profile is saved. We couldn't switch you into participant mode — try again.",
-      );
-    }
-  };
+  /** Maps the wizard's form values to the onboarding COMMAND body — the same field mapping the
+   *  old PATCH used (the participant PATCH never had a `submit` field to strip). */
+  const buildBody = (values: FormValues): ParticipantProfileUpdate => ({
+    // names are required on step 1, so the `|| undefined` fallback is never taken
+    firstName: /* istanbul ignore next */ values.firstName || undefined,
+    lastName: /* istanbul ignore next */ values.lastName || undefined,
+    participantType: values.participantType,
+    universitiesOfInterest: values.universities.map((u) => u.id),
+    topicsOfInterest: values.topics,
+  });
 
-  const persist = async (values: FormValues) => {
+  /**
+   * One command call, reconcile-driven navigation: `onboardRole.mutateAsync` only RESOLVES a
+   * `ProvisionedMe` once the PARTICIPANT role is CONFIRMED held (its own 201, or an internal
+   * §4.3 reconcile) — there is no separate "activate session" step any more, so a resolve here IS
+   * the "session usable + currentRole set" signal and is the ONLY path that navigates.
+   *
+   * Shared by both the wizard's Submit (`persist`) and the retry panel (`retry`) below, so a
+   * STILL_PENDING retry resubmits the EXACT same mapped body rather than re-deriving it.
+   */
+  const submitOnboarding = async (values: FormValues) => {
     setSubmitError(null);
     try {
-      // The mutation's onSuccess invalidates ["me"] + the participant profile, so
-      // the header/dashboard reflect the just-granted role immediately.
-      await updateProfile.mutateAsync({
-        // names are required on step 1, so the `|| undefined` fallback is never taken
-        firstName: /* istanbul ignore next */ values.firstName || undefined,
-        lastName: /* istanbul ignore next */ values.lastName || undefined,
-        participantType: values.participantType,
-        universitiesOfInterest: values.universities.map((u) => u.id),
-        topicsOfInterest: values.topics,
-      });
+      await onboardRole.mutateAsync({ role: "PARTICIPANT", body: buildBody(values) });
     } catch (err) {
+      // Core's commit state is genuinely ambiguous (§4.3 STILL_PENDING) — not a terminal failure,
+      // so no submitError message; the retry panel below owns its own copy.
+      if (err instanceof OnboardRetryableError) {
+        setRetryMessage(err.message);
+        return;
+      }
+      setRetryMessage(null);
       setSubmitError(
         isAuthCancelled(err)
           ? SIGN_IN_AGAIN_MESSAGE
-          : err instanceof Error
+          : err instanceof ApiError
             ? err.message
             : "Something went wrong. Please try again.",
       );
       return;
     }
-    // The role is granted — land in the participant area only once the session reflects it.
-    await activateSession();
+    setRetryMessage(null);
+    router.push("/dashboard");
   };
+
+  const persist = (values: FormValues) => submitOnboarding(values);
+
+  // Resubmits the LAST wizard values (react-hook-form retains them once submitted — nothing here
+  // clears or resets the form) — never a fresh partial re-fill, and never a separate session call.
+  const retry = () => submitOnboarding(getValues());
 
   const submit = handleSubmit(persist);
   const isLast = step === STEPS.length - 1;
@@ -160,10 +169,11 @@ export function ParticipantOnboardingForm() {
 
   const bothNameMissing = Boolean(errors.firstName && errors.lastName);
 
-  // Onboarding is DONE (the participant role is granted); only the session switch remains.
-  // Replace the wizard with a dedicated retry panel — never let the participant re-fill and
-  // re-submit a profile that's already saved.
-  if (sessionError) {
+  // Core's commit state is ambiguous (§4.3 STILL_PENDING) — the role may or may not be held yet.
+  // Replace the wizard with a dedicated retry panel rather than a full re-fill: `retry` resubmits
+  // the SAME mapped body (a re-POST of an already-granted role reconciles to a resolve, never a
+  // duplicate grant).
+  if (retryMessage) {
     return (
       <>
         <div className="mb-8">
@@ -173,10 +183,10 @@ export function ParticipantOnboardingForm() {
           <div className="eyebrow">Participant onboarding</div>
           <SectionHeading title="Tell us about yourself?" lead="Almost there." />
           <Alert variant="error" className="mt-6">
-            {sessionError}
+            {retryMessage}
           </Alert>
           <ButtonRow className="mt-6">
-            <Button onClick={() => void activateSession()} loading={setCurrentRole.isPending}>
+            <Button onClick={() => void retry()} loading={onboardRole.isPending}>
               Try again
             </Button>
           </ButtonRow>

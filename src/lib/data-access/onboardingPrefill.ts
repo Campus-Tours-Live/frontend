@@ -13,22 +13,14 @@ export interface OnboardingPrefill {
 }
 
 /**
- * Derives onboarding form prefill from a `Me`. Branches on `accountState` — a PendingMe (first
- * onboarding, no Core account yet) prefills from the pending IDENTITY claims (the Google
- * identity); a ProvisionedMe (second-role acquisition) prefills from the provisioned user
- * record. These are DISTINCT `accountState` cases even though the extracted field set happens
- * to overlap — each branch narrows on `accountState` before reading `me.user`, rather than
- * reading fields off the union unnarrowed.
+ * Derives onboarding form prefill from a `Me`. A PendingMe (first onboarding, no Core account
+ * yet) prefills from the pending IDENTITY claims (the Google identity); a ProvisionedMe
+ * (second-role acquisition) prefills from the provisioned user record. These are DISTINCT
+ * `accountState` cases that happen to extract the same field set — `me.user` is read through
+ * the `MeUser` union (both members share `firstName`/`lastName`/`email`) rather than
+ * duplicating identical branches per `accountState`.
  */
 export function getOnboardingPrefill(me: Me): OnboardingPrefill {
-  if (me.accountState === "PENDING") {
-    return {
-      firstName: me.user.firstName,
-      lastName: me.user.lastName,
-      email: me.user.email,
-    };
-  }
-
   return {
     firstName: me.user.firstName,
     lastName: me.user.lastName,
