@@ -7,6 +7,7 @@ import {
 } from "@/lib/data-access/mutations/onboard-role.mutation";
 import { ApiError, getJson, postJson } from "@/lib/data-access/http";
 import { queryKeys } from "@/lib/data-access/keys";
+import { AuthCancelledError, isAuthCancelled } from "@/lib/auth";
 import { pendingMe, provisionedMe } from "../../../../support/meFixtures";
 
 // `postJson` (the command) and `getJson` (what the real, UN-mocked `getFreshMe` calls
@@ -176,6 +177,30 @@ describe("onboardRole — OnboardingCommandResponse contract validation (never t
     const result = onboardingCommandResponseSchema.safeParse(commandResponse());
     expect(result.success).toBe(true);
   });
+
+  it("rejects a 201 that is SELF-consistent (acquiredRole ∈ roles) but grants a DIFFERENT role than requested — does not patch the cache, does not reconcile, and does not resolve", async () => {
+    const qc = makeQc();
+    // Self-consistent per the schema (acquiredRole/currentRole are both ∈ roles), but the
+    // caller asked for GUIDE and this body only ever mentions PARTICIPANT — a contract
+    // violation the schema's superRefine cannot see because it never looks at the requested
+    // role, only at internal consistency.
+    const wrongRoleBody = commandResponse({
+      roles: ["PARTICIPANT"],
+      acquiredRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
+    });
+    // Sanity: the schema alone considers this body well-formed — proves the rejection below
+    // comes from the target-role assertion, not from schema validation.
+    expect(onboardingCommandResponseSchema.safeParse(wrongRoleBody).success).toBe(true);
+    mockedPostJson.mockResolvedValueOnce(wrongRoleBody);
+
+    await expect(onboardRole(qc, "GUIDE", {})).rejects.toThrow();
+
+    expect(qc.setQueryData).not.toHaveBeenCalled();
+    expect(qc.invalidateQueries).not.toHaveBeenCalled();
+    expect(qc.cancelQueries).not.toHaveBeenCalled();
+    expect(mockedGetJson).not.toHaveBeenCalled();
+  });
 });
 
 describe("onboardRole — reconcile triggers (§4.3)", () => {
@@ -313,6 +338,24 @@ describe("onboardRole — terminal failures (never reconcile)", () => {
 
     await expect(onboardRole(qc, "GUIDE", {})).rejects.toBe(error);
     expect(mockedGetJson).not.toHaveBeenCalled();
+  });
+
+  it("AuthCancelledError (user dismissed the re-auth modal mid-POST) → terminal rethrow of the SAME error object, never a reconcile", async () => {
+    const qc = makeQc();
+    const cancelled = new AuthCancelledError();
+    mockedPostJson.mockRejectedValueOnce(cancelled);
+
+    // Assert exact object identity — a wrapped/rebuilt error would lose the
+    // `instanceof AuthCancelledError` check `isAuthCancelled` (and every downstream
+    // "please sign in again" branch) depends on.
+    await expect(onboardRole(qc, "GUIDE", {})).rejects.toBe(cancelled);
+    expect(isAuthCancelled(cancelled)).toBe(true);
+
+    // No reconcile round-trip: shouldReconcile must treat AuthCancelledError as terminal
+    // BEFORE the generic "non-ApiError → reconcile" fallback would otherwise catch it.
+    expect(mockedGetJson).not.toHaveBeenCalled();
+    expect(qc.setQueryData).not.toHaveBeenCalled();
+    expect(qc.invalidateQueries).not.toHaveBeenCalled();
   });
 });
 

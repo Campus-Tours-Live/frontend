@@ -5,6 +5,7 @@ import { queryKeys } from "../keys";
 import { currentRoleValueSchema, provisionedUserSchema, roleSchema } from "../me.schema";
 import type { ProvisionedMe, Role } from "../types";
 import { getFreshMe } from "@/lib/http/getFreshMe";
+import { isAuthCancelled } from "@/lib/auth";
 
 /** The two roles a PENDING or PROVISIONED principal can onboard into. Narrower than the
  *  4-value `Role` — a staff account is never granted through this command. */
@@ -83,8 +84,18 @@ export class OnboardRetryableError extends Error {
  * Every other case is TERMINAL by design, most importantly a generic `500` with no
  * `SESSION_CONVERSION_FAILED` code: the command may never have reached Core at all, so
  * reconciling would risk treating a role the user does NOT hold as acquired.
+ *
+ * A cancelled re-auth (`AuthCancelledError`, thrown when the user dismisses the sign-in
+ * modal mid-request — see `authGate.ts`) is checked FIRST and is always TERMINAL, even though
+ * it is a non-`ApiError` throw that would otherwise fall into the "unknown, so reconcile"
+ * bucket below: the request's OWN outcome is unknown, but that is irrelevant — there is no
+ * live session to reconcile against, so a reconcile would just 401 and (worse) replace the
+ * `AuthCancelledError` the caller needs with a generic one, losing the distinction
+ * `isAuthCancelled` (T4 and every sibling form) depends on to show "please sign in again"
+ * instead of a spurious failure message.
  */
 function shouldReconcile(err: unknown): boolean {
+  if (isAuthCancelled(err)) return false;
   if (err instanceof ApiError) {
     if (err.status === 500 && err.code === "SESSION_CONVERSION_FAILED") return true;
     if (err.status === 409 && err.code === "ROLE_ALREADY_GRANTED") return true;
@@ -144,12 +155,14 @@ async function reconcile(role: OnboardableRole): Promise<ReconcileResult> {
  * /v1/users/me/roles/{guide|participant}`.
  *
  * Resolves `Promise<ProvisionedMe>` ONLY when the target role is CONFIRMED held — either directly
- * from a `201` (validated against {@link onboardingCommandResponseSchema} before being trusted;
- * never a bare TS cast), or from a reconcile that classifies as `ACQUIRED`. Every other outcome
- * REJECTS:
- *  - a malformed `201` body (contract violation) — rejects WITHOUT ever reconciling (the request
- *    itself succeeded; this is not one of the three ambiguous-result triggers) and without
- *    patching a cache with data that hasn't been validated.
+ * from a `201` (validated against {@link onboardingCommandResponseSchema} before being trusted,
+ * never a bare TS cast, AND checked that the REQUESTED `role` is actually in the response's
+ * `roles` — self-consistency of the response is not enough), or from a reconcile that classifies
+ * as `ACQUIRED`. Every other outcome REJECTS:
+ *  - a malformed `201` body, OR a well-formed-but-wrong `201` body that grants a DIFFERENT role
+ *    than the one requested (contract violation either way) — rejects WITHOUT ever reconciling
+ *    (the request itself succeeded; this is not one of the three ambiguous-result triggers) and
+ *    without patching a cache with data that doesn't confirm the target role.
  *  - a terminal command failure (`409 ROLE_NOT_ELIGIBLE`, `422`, `404
  *    ACCOUNT_NOT_PROVISIONED`, a GENERIC `500`, any other 4xx) — rejects with the original
  *    `ApiError` (code + `properties` intact for the form/T4 to render).
@@ -188,6 +201,16 @@ export async function onboardRole(
   if (!parsed.success) {
     throw new Error(
       `onboardRole: 201 OnboardingCommandResponse failed validation: ${parsed.error.message}`,
+    );
+  }
+  // Self-consistency (acquiredRole ∈ roles) is checked by the schema above, but that alone
+  // does NOT prove the role WE asked for is what got granted — mirrors the reconcile branch's
+  // `fresh.roles.includes(role)` check. Fail closed rather than patch the cache/resolve with a
+  // `ProvisionedMe` that doesn't actually hold the target role.
+  if (!parsed.data.roles.includes(role)) {
+    throw new Error(
+      `onboardRole: 201 OnboardingCommandResponse did not grant the requested role "${role}" ` +
+        `(acquiredRole: ${parsed.data.acquiredRole}, roles: [${parsed.data.roles.join(", ")}])`,
     );
   }
 

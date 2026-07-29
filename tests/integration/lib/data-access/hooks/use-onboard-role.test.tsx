@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useOnboardRole } from "@/hooks/use-onboard-role";
+import { useOnboardRole } from "@/lib/data-access/hooks/use-onboard-role";
 import { OnboardRetryableError } from "@/lib/data-access/mutations/onboard-role.mutation";
-import { provisionedMe } from "../../support/meFixtures";
+import { provisionedMe } from "../../../../support/meFixtures";
 
 /**
  * Exercises the REAL useOnboardRole mutation end-to-end: mutate → onboardRoleMutation →
