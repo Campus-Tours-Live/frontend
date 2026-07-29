@@ -1,6 +1,7 @@
 import {
   apiJson,
   apiJsonRaw,
+  getJson,
   patchJson,
   patchJsonRaw,
   postJson,
@@ -157,6 +158,55 @@ describe("apiJson", () => {
       status: 503,
       message: "Request failed (503)",
     });
+  });
+
+  it("captures RFC7807 EXTENSION members (e.g. `role`) onto ApiError.properties, alongside an unaffected code/message", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({
+        ok: false,
+        status: 409,
+        json: { title: "Not eligible for this role", code: "ROLE_NOT_ELIGIBLE", role: "GUIDE" },
+      }),
+    );
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 409,
+      code: "ROLE_NOT_ELIGIBLE",
+      message: "Not eligible for this role",
+      properties: { role: "GUIDE" },
+    });
+  });
+
+  it("leaves ApiError.properties undefined when the body carries no extension member beyond the standard problem+json fields", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({
+        ok: false,
+        status: 422,
+        json: { type: "about:blank", title: "Bad input", status: 422, code: "VALIDATION_FAILED" },
+      }),
+    );
+
+    await expect(apiJson("/v1/thing")).rejects.toMatchObject({ properties: undefined });
+  });
+});
+
+describe("getJson", () => {
+  it("forwards init (e.g. cache: no-store) through to apiFetch and returns the unwrapped data", async () => {
+    mockedApiFetch.mockResolvedValue(
+      makeRes({ ok: true, status: 200, json: { data: { accountState: "PENDING" } } }),
+    );
+
+    const result = await getJson("/v1/userinfo", { cache: "no-store" });
+
+    expect(result).toEqual({ accountState: "PENDING" });
+    expect(mockedApiFetch).toHaveBeenCalledWith("/v1/userinfo", { cache: "no-store" });
+  });
+
+  it("propagates ApiError from a failed GET", async () => {
+    mockedApiFetch.mockResolvedValue(makeRes({ ok: false, status: 401 }));
+
+    await expect(getJson("/v1/userinfo")).rejects.toMatchObject({ name: "ApiError", status: 401 });
   });
 });
 

@@ -13,12 +13,17 @@ import type { Me, PendingMe, ProvisionedMe, Role } from "./types";
  */
 
 const ROLE_VALUES = ["PARTICIPANT", "GUIDE", "ADMIN", "SUPPORT"] as const satisfies readonly Role[];
-const roleSchema = z.enum(ROLE_VALUES);
+// Exported so other runtime validators of role-bearing bff responses (e.g. the onboarding
+// command's `OnboardingCommandResponse` in onboard-role.mutation.ts) reuse the SAME atom
+// instead of a second, hand-rolled `z.enum` that could silently drift from this one.
+export const roleSchema = z.enum(ROLE_VALUES);
 
 // `currentRole` is the ACTIVE consumer-facing role — narrower than the 4-value `Role` used for
 // `roles` (a staff account's `currentRole` is never ADMIN/SUPPORT). Widened back to `Role | null`
 // on the way out (via the transform below) to match `ProvisionedMe.currentRole`'s declared type.
-const currentRoleValueSchema = z.enum(["GUIDE", "PARTICIPANT"]);
+// Exported for the same reason as `roleSchema` above — reused verbatim by the onboarding
+// command response validator instead of re-declared.
+export const currentRoleValueSchema = z.enum(["GUIDE", "PARTICIPANT"]);
 
 // Mirrors the bff's PENDING wire shape EXACTLY (bff `PendingUserInfo`,
 // src/api/userinfo/pendingIdentity.ts, and `PendingUserinfoDataSchema`,
@@ -34,7 +39,10 @@ const pendingUserSchema = z.object({
   email: z.string(),
 });
 
-const provisionedUserSchema = z.object({
+// Exported so `OnboardingCommandResponse` (onboard-role.mutation.ts) validates its `user` with
+// the SAME atom `ProvisionedMe.user` is validated with — the 201 command response's `user` is
+// name-for-name the same `ProvisionedUser` shape `/v1/userinfo` returns.
+export const provisionedUserSchema = z.object({
   id: z.string().min(1),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
