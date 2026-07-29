@@ -92,4 +92,86 @@ describe("meSchema", () => {
     expect(meSchema.safeParse({}).success).toBe(false);
     expect(meSchema.safeParse(null).success).toBe(false);
   });
+
+  /**
+   * REGRESSION (CTL-97): the bff's real PENDING `/v1/userinfo` body (bff `PendingUserInfo`,
+   * src/api/userinfo/pendingIdentity.ts, and `PendingUserinfoDataSchema`,
+   * src/openapi/schemas.ts) carries ONLY `id`/`email`/`firstName`/`lastName`/`displayName` on
+   * `user` — it NEVER sends `accountStatus`/`ageBand`/`createdAt` (there is no Core account yet
+   * to source them from). Earlier, `pendingUserSchema` REQUIRED those three keys, so zod's
+   * "missing key → undefined" treatment failed `z.null()` for every genuine pending principal —
+   * `meSchema.safeParse` returned `success: false` for EVERY real pending body, which sent a
+   * legitimately-signed-in pending user back to `/signin`. This pins the real wire shape (no
+   * fixture embellishment) so the schema can't require fields the bff never sends again.
+   */
+  it("parses the REAL bff PENDING wire body — no accountStatus/ageBand/createdAt keys at all", () => {
+    const realBffPendingBody = {
+      accountState: "PENDING",
+      user: {
+        id: null,
+        email: "x@y.z",
+        firstName: "A",
+        lastName: "B",
+        displayName: "A B",
+      },
+      roles: [],
+      currentRole: null,
+    };
+    // Sanity: this fixture genuinely omits the three keys, not just sets them to undefined.
+    expect(Object.keys(realBffPendingBody.user)).toEqual([
+      "id",
+      "email",
+      "firstName",
+      "lastName",
+      "displayName",
+    ]);
+
+    const result = meSchema.safeParse(realBffPendingBody);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.accountState).toBe("PENDING");
+      expect(result.data.user).toEqual({
+        id: null,
+        email: "x@y.z",
+        firstName: "A",
+        lastName: "B",
+        displayName: "A B",
+      });
+      // Also confirms the schema does not fabricate/reintroduce the dropped fields.
+      expect(result.data.user).not.toHaveProperty("accountStatus");
+      expect(result.data.user).not.toHaveProperty("ageBand");
+      expect(result.data.user).not.toHaveProperty("createdAt");
+    }
+  });
+
+  // zod's `z.object` strips unknown keys by default — extra keys a caller (or a not-yet-migrated
+  // bff response) tacks on are tolerated rather than rejected. The bug this file regresses
+  // against was REQUIRING accountStatus/ageBand/createdAt, not merely allowing them, so a body
+  // that still happens to carry them must keep parsing too.
+  it("still parses a PENDING body that ALSO carries the (now-unused) legacy keys", () => {
+    const bodyWithLegacyKeys = {
+      accountState: "PENDING",
+      user: {
+        id: null,
+        email: "x@y.z",
+        firstName: "A",
+        lastName: "B",
+        displayName: "A B",
+        accountStatus: null,
+        ageBand: null,
+        createdAt: null,
+      },
+      roles: [],
+      currentRole: null,
+    };
+
+    const result = meSchema.safeParse(bodyWithLegacyKeys);
+
+    expect(result.success).toBe(true);
+    // The legacy keys are stripped from the parsed output — the schema's shape is authoritative.
+    if (result.success) {
+      expect(result.data.user).not.toHaveProperty("accountStatus");
+    }
+  });
 });

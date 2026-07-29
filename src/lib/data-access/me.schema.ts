@@ -20,15 +20,18 @@ const roleSchema = z.enum(ROLE_VALUES);
 // on the way out (via the transform below) to match `ProvisionedMe.currentRole`'s declared type.
 const currentRoleValueSchema = z.enum(["GUIDE", "PARTICIPANT"]);
 
+// Mirrors the bff's PENDING wire shape EXACTLY (bff `PendingUserInfo`,
+// src/api/userinfo/pendingIdentity.ts, and `PendingUserinfoDataSchema`,
+// src/openapi/schemas.ts): NO `accountStatus`/`ageBand`/`createdAt` keys — a pending principal
+// has no Core account yet, so those fields simply do not exist on the wire (they are not merely
+// null-valued). `email` is non-null: the bff throws `IDENTITY_CLAIMS_INVALID` (mapped to a 5xx)
+// rather than ever emit a pending user without a verified email claim.
 const pendingUserSchema = z.object({
   id: z.null(),
   firstName: z.string().nullable(),
   lastName: z.string().nullable(),
   displayName: z.string().nullable(),
-  email: z.string().nullable(),
-  accountStatus: z.null(),
-  ageBand: z.null(),
-  createdAt: z.string().nullable(),
+  email: z.string(),
 });
 
 const provisionedUserSchema = z.object({

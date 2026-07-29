@@ -3,10 +3,12 @@
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
 
 /**
- * The identity fields common to BOTH principal states — nested under `Me.user`
- * (Profile Contract v2, CTL-97 defer-provisioning). `id`/`accountStatus`/`ageBand`
- * differ by state (see {@link PendingUser}/{@link ProvisionedUser}); everything else
- * (name, email, createdAt) is populated even pre-provisioning.
+ * The identity fields nested under `Me.user`. `PendingUser` and `ProvisionedUser` are
+ * deliberately NOT the same shape padded with optionality: a pending principal (no Core account
+ * yet) genuinely has no `accountStatus`/`ageBand`/`createdAt` on the wire — those keys are absent
+ * entirely, not present-and-null (bff `PendingUserInfo`,
+ * ../bff/src/api/userinfo/pendingIdentity.ts). Only `id`/`firstName`/`lastName`/`displayName`/
+ * `email` are common to both.
  */
 export interface PendingUser {
   /** No Core account exists yet. */
@@ -14,10 +16,9 @@ export interface PendingUser {
   firstName: string | null;
   lastName: string | null;
   displayName: string | null;
-  email: string | null;
-  accountStatus: null;
-  ageBand: null;
-  createdAt: string | null;
+  /** The bff guarantees a verified email for every PENDING principal — it 5xxs rather than
+   *  emit one without it (`IDENTITY_CLAIMS_INVALID`). */
+  email: string;
 }
 
 export interface ProvisionedUser {

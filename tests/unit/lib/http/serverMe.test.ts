@@ -135,4 +135,36 @@ describe("getServerMe — with a session cookie and BFF_URL set", () => {
 
     await expect(getServerMe()).resolves.toBeNull();
   });
+
+  /**
+   * REGRESSION (CTL-97): the real bff PENDING `/v1/userinfo` body never carries
+   * `accountStatus`/`ageBand`/`createdAt` on `user` — an earlier version of `pendingUserSchema`
+   * required them, so this exact body used to fail `meSchema.safeParse` and `getServerMe` would
+   * return `null` for a genuinely-signed-in pending user, bouncing them to `/signin` from the
+   * onboarding guards. Pin the fix: this body must parse into a PENDING `Me`, not null.
+   */
+  it("returns a PENDING Me (not null) for the real bff PENDING wire body", async () => {
+    const realBffPendingBody = {
+      accountState: "PENDING",
+      user: {
+        id: null,
+        email: "x@y.z",
+        firstName: "A",
+        lastName: "B",
+        displayName: "A B",
+      },
+      roles: [],
+      currentRole: null,
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ data: realBffPendingBody }),
+    });
+
+    const result = await getServerMe();
+
+    expect(result).not.toBeNull();
+    expect(result).toEqual(realBffPendingBody);
+    expect(result?.accountState).toBe("PENDING");
+  });
 });
