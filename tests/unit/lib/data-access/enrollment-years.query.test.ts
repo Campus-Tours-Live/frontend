@@ -2,6 +2,15 @@ import {
   enrollmentYearRulesSchema,
   enrollmentYearsQuery,
 } from "@/lib/data-access/queries/enrollment-years.query";
+import { apiJson } from "@/lib/data-access/http";
+
+jest.mock("@/lib/data-access/http", () => ({ apiJson: jest.fn() }));
+
+const mockedApiJson = apiJson as jest.MockedFunction<typeof apiJson>;
+
+beforeEach(() => {
+  mockedApiJson.mockReset();
+});
 
 describe("enrollmentYearRulesSchema", () => {
   const valid = {
@@ -84,6 +93,45 @@ describe("enrollmentYearRulesSchema", () => {
     const options = enrollmentYearsQuery();
     expect(options.staleTime).toBe(60 * 60 * 1000);
     expect(options.refetchInterval).toBe(60 * 60 * 1000);
+    expect(options.refetchIntervalInBackground).toBe(false);
     expect(options.refetchOnWindowFocus).toBe(true);
+  });
+});
+
+describe("enrollmentYearsQuery queryFn", () => {
+  it("fetches /v1/meta/enrollment-years with the signal and returns the parsed payload", async () => {
+    const payload = {
+      entryYear: { min: 2016, max: 2027 },
+      maxYearsToGraduate: [{ matches: ["bachelor"], years: 6 }],
+      defaultMaxYearsToGraduate: 8,
+    };
+    mockedApiJson.mockResolvedValue(payload as never);
+
+    const signal = new AbortController().signal;
+    const queryFn = enrollmentYearsQuery().queryFn as (ctx: {
+      signal: AbortSignal;
+    }) => Promise<unknown>;
+    const result = await queryFn({ signal });
+
+    expect(mockedApiJson).toHaveBeenCalledTimes(1);
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/meta/enrollment-years", { signal });
+    expect(result).toEqual(payload);
+  });
+
+  /**
+   * Pins "fails closed" at the query boundary, not just the schema boundary: the schema tests
+   * above prove `enrollmentYearRulesSchema` rejects a malformed payload, but only this proves the
+   * query's `queryFn` doesn't swallow that rejection (e.g. via a stray `.safeParse(...).data!`) —
+   * it must propagate as a rejected promise so the query enters its error state.
+   */
+  it("rejects when apiJson resolves a malformed payload, rather than swallowing the parse failure", async () => {
+    mockedApiJson.mockResolvedValue({ nope: true } as never);
+
+    const signal = new AbortController().signal;
+    const queryFn = enrollmentYearsQuery().queryFn as (ctx: {
+      signal: AbortSignal;
+    }) => Promise<unknown>;
+
+    await expect(queryFn({ signal })).rejects.toThrow();
   });
 });
