@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
-import { ApiError } from "@/lib/data-access";
+import { ApiError, type EnrollmentYearRules } from "@/lib/data-access";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 // These are heavy multi-step flows (esp. the "switch schools" fallback cases); give them headroom
@@ -66,9 +66,30 @@ const DEGREES_BY_SCHOOL: Record<string, Array<{ value: string; label: string }> 
   "u-4": undefined,
 };
 
+// The server's enrolment-year rules (CTL-97). Mocked at the same data-access boundary as the
+// hooks below — otherwise the form's query would hit the network from these tests. A stable
+// module-level const: `useEnrollmentYearFields` keys an effect on the rules object.
+const YEAR_RULES: EnrollmentYearRules = {
+  entryYear: { min: 2016, max: 2027 },
+  maxYearsToGraduate: [
+    { matches: ["doctor", "first professional"], years: 9 },
+    { matches: ["master", "post-baccalaureate"], years: 3 },
+    { matches: ["bachelor"], years: 6 },
+    { matches: ["associate", "certificate", "diploma"], years: 3 },
+  ],
+  defaultMaxYearsToGraduate: 8,
+};
+const refetchRules = jest.fn();
+
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
+  useEnrollmentYears: () => ({
+    data: YEAR_RULES,
+    isLoading: false,
+    isError: false,
+    refetch: refetchRules,
+  }),
   useTourTopics: () => ({ data: topicsData }),
   useOnboardRole: () => ({ mutateAsync, isPending: false }),
   // Majors are keyed off the selected school — empty until one is picked, matching
@@ -115,6 +136,8 @@ async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("option", { name: "Computer Science" }));
   await user.click(await screen.findByRole("combobox", { name: /degree/i }));
   await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
+  // Entry year is REQUIRED now (CTL-97) — 2023 sits inside the fixture's 2016–2027 window.
+  await user.type(screen.getByLabelText(/entry year/i), "2023");
 }
 
 /** On step 2 ("Your guiding"), fill the now-required bio and pick a specialty. */
@@ -143,6 +166,7 @@ beforeEach(() => {
   majorsState = { isLoading: false, isFetching: false, isError: false };
   refetchDegrees.mockReset();
   degreesState = { isLoading: false, isFetching: false, isError: false };
+  refetchRules.mockReset();
 });
 
 describe("GuideOnboardingForm edge cases", () => {

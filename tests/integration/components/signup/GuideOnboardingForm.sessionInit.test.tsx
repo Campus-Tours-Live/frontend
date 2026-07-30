@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
-import { OnboardRetryableError } from "@/lib/data-access";
+import { OnboardRetryableError, type EnrollmentYearRules } from "@/lib/data-access";
 import { provisionedMe } from "../../../support/meFixtures";
 
 // CTL-97 defer-provisioning (Task 4): the onboarding form is now a SINGLE command call —
@@ -22,9 +22,23 @@ jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const mutateAsync = jest.fn();
 
+// The server's enrolment-year rules (CTL-97) — mocked at the data-access boundary like the hooks
+// below, so these tests never reach the network for them.
+const YEAR_RULES: EnrollmentYearRules = {
+  entryYear: { min: 2016, max: 2027 },
+  maxYearsToGraduate: [{ matches: ["bachelor"], years: 6 }],
+  defaultMaxYearsToGraduate: 8,
+};
+
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
+  useEnrollmentYears: () => ({
+    data: YEAR_RULES,
+    isLoading: false,
+    isError: false,
+    refetch: jest.fn(),
+  }),
   useTourTopics: () => ({ data: [{ value: "academics", label: "Academics" }] }),
   useOnboardRole: () => ({ mutateAsync, isPending: false }),
   useMajors: (schoolId?: string | null) => ({
@@ -56,6 +70,8 @@ async function submitOnboarding(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("option", { name: "Computer Science" }));
   await user.click(screen.getByRole("combobox", { name: /degree/i }));
   await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
+  // Entry year is REQUIRED now (CTL-97) — 2023 sits inside the fixture's 2016–2027 window.
+  await user.type(screen.getByLabelText(/entry year/i), "2023");
   await user.click(screen.getByRole("button", { name: /continue/i }));
 
   await user.type(

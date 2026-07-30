@@ -5,7 +5,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
-import { ApiError, type Me } from "@/lib/data-access";
+import { ApiError, type EnrollmentYearRules, type Me } from "@/lib/data-access";
 import { pendingMe, provisionedMe } from "../../../support/meFixtures";
 
 // ── Network/navigation + data-access boundary ───────────────────────────────
@@ -24,6 +24,25 @@ jest.mock("next/navigation", () => ({
 const mutateAsync = jest.fn();
 let meValue: Me | null = null;
 let universityResults: Array<{ id: string; name: string; shortName?: string }> = [];
+
+// ── Enrolment-year rules (CTL-97) ───────────────────────────────────────────
+// The window and the degree→years table come from the SERVER now, never from `new Date()`, so the
+// fixture is a fixed table and every year assertion below is a literal. Deliberately a stable
+// module-level const: `useEnrollmentYearFields` keys an effect on the rules object, and a fresh
+// object per render would re-run it on every keystroke.
+const YEAR_RULES: EnrollmentYearRules = {
+  entryYear: { min: 2016, max: 2027 },
+  maxYearsToGraduate: [
+    { matches: ["doctor", "first professional"], years: 9 },
+    { matches: ["master", "post-baccalaureate"], years: 3 },
+    { matches: ["bachelor"], years: 6 },
+    { matches: ["associate", "certificate", "diploma"], years: 3 },
+  ],
+  defaultMaxYearsToGraduate: 8,
+};
+type RulesState = "ready" | "loading" | "error";
+let rulesState: RulesState = "ready";
+const refetchRules = jest.fn();
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
@@ -50,9 +69,25 @@ jest.mock("@/lib/data-access", () => ({
         ]
       : [],
   }),
-  // Degree levels the SELECTED school awards (live) — empty until one is picked (optional field).
+  // Degree levels the SELECTED school awards (live) — empty until one is picked. Two levels with
+  // DIFFERENT class-year ceilings (bachelor +6, master +3), so switching degree visibly moves the
+  // graduation window.
   useDegrees: (schoolId?: string | null) => ({
-    data: schoolId ? [{ value: "Bachelor's Degree", label: "Bachelor's Degree" }] : [],
+    data: schoolId
+      ? [
+          { value: "Bachelor's Degree", label: "Bachelor's Degree" },
+          { value: "Master's Degree", label: "Master's Degree" },
+        ]
+      : [],
+  }),
+  // The enrolment-year rules — mocked at the same data-access boundary as the hooks above rather
+  // than seeded into a QueryClient, so a test can express "loading" and "failed" without faking
+  // React Query internals.
+  useEnrollmentYears: () => ({
+    data: rulesState === "ready" ? YEAR_RULES : undefined,
+    isLoading: rulesState === "loading",
+    isError: rulesState === "error",
+    refetch: refetchRules,
   }),
   // Used by the real UniversityMultiSelect rendered inside step 1.
   useUniversitySearch: (query: string, opts?: { enabled?: boolean }) => ({
@@ -61,7 +96,12 @@ jest.mock("@/lib/data-access", () => ({
   }),
 }));
 
-function renderWithQuery(ui: ReactElement) {
+/**
+ * The single render harness for this file. `rulesState` drives the mocked `useEnrollmentYears`
+ * above — an option rather than a second harness, so every test renders the form the same way.
+ */
+function renderWithQuery(ui: ReactElement, options: { rulesState?: RulesState } = {}) {
+  rulesState = options.rulesState ?? "ready";
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
@@ -72,9 +112,15 @@ beforeEach(() => {
   mutateAsync.mockResolvedValue(provisionedMe({ roles: ["GUIDE"], currentRole: "GUIDE" }));
   meValue = null;
   universityResults = [{ id: "u-1", name: "State University", shortName: "State" }];
+  rulesState = "ready";
+  refetchRules.mockReset();
 });
 
-/** Fill step 1 required fields and pick a university, leaving the form on step 1. */
+/**
+ * Fill step 1 required fields and pick a university, leaving the form on step 1.
+ * Entry year is REQUIRED now, so it is part of "step 1 complete"; 2023 sits inside the fixture's
+ * 2016–2027 window and gives a bachelor's class-year window of 2024–2029.
+ */
 async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/first name/i), "Jordan");
   await user.type(screen.getByLabelText(/last name/i), "Lee");
@@ -88,6 +134,7 @@ async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("option", { name: "Computer Science" }));
   await user.click(screen.getByRole("combobox", { name: /degree/i }));
   await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
+  await user.type(screen.getByLabelText(/entry year/i), "2023");
 }
 
 /** On step 2 ("Your guiding"), fill the now-required bio and pick a specialty. */
@@ -211,11 +258,9 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
   it("submits the selected degree, a valid class year, and a valid entry year (as a number)", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
-    await completeStepOne(user); // selects the required degree
-    const validYear = String(new Date().getFullYear() + 4);
-    const validEntryYear = String(new Date().getFullYear() - 2);
-    await user.type(screen.getByLabelText(/class year/i), validYear);
-    await user.type(screen.getByLabelText(/entry year/i), validEntryYear);
+    await completeStepOne(user); // selects the required degree and enters 2023
+    // Anchored on the entry year, not on today: 2023 + 1 … 2023 + 6 (bachelor's).
+    await user.type(screen.getByLabelText(/class year/i), "2027");
     await user.click(screen.getByRole("button", { name: /continue/i }));
     await completeStepTwo(user);
     await user.click(await screen.findByRole("button", { name: /continue/i }));
@@ -226,8 +271,8 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(arg.body).toEqual(
       expect.objectContaining({
         degree: "Bachelor's Degree",
-        classYear: validYear,
-        entryYear: Number(validEntryYear),
+        classYear: "2027",
+        entryYear: 2023,
       }),
     );
   });
@@ -236,11 +281,11 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
-    // Far in the future → past the per-degree cap → validation error, stays on step 1.
-    await user.type(screen.getByLabelText(/class year/i), String(new Date().getFullYear() + 40));
+    // Past the entry year's per-degree cap (2023 + 6 = 2029) → validation error, stays on step 1.
+    await user.type(screen.getByLabelText(/class year/i), "2040");
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    expect(await screen.findByText(/graduation year between/i)).toBeInTheDocument();
+    expect(await screen.findByText(/graduation year between 2024 and 2029/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
@@ -249,6 +294,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
+    await user.clear(screen.getByLabelText(/entry year/i));
     await user.type(screen.getByLabelText(/entry year/i), "12"); // too short → format error
     await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(await screen.findByText(/enter a 4-digit entry year/i)).toBeInTheDocument();
@@ -259,11 +305,12 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
-    // Far in the future → past the +1 cap → validation error, stays on step 1.
-    await user.type(screen.getByLabelText(/entry year/i), String(new Date().getFullYear() + 40));
+    // Past the server's window (2016–2027) → validation error, stays on step 1.
+    await user.clear(screen.getByLabelText(/entry year/i));
+    await user.type(screen.getByLabelText(/entry year/i), "2040");
     await user.click(screen.getByRole("button", { name: /continue/i }));
 
-    expect(await screen.findByText(/entry year between/i)).toBeInTheDocument();
+    expect(await screen.findByText(/entry year between 2016 and 2027/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
@@ -273,6 +320,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     renderWithQuery(<GuideOnboardingForm />);
     await completeStepOne(user);
     const entryYearField = screen.getByLabelText(/entry year/i);
+    await user.clear(entryYearField);
     await user.type(entryYearField, "12");
     await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(await screen.findByText(/enter a 4-digit entry year/i)).toBeInTheDocument();
@@ -283,7 +331,7 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
 
     // Blurring with a valid value re-validates (via `trigger`) without raising a new error.
     await user.clear(entryYearField);
-    await user.type(entryYearField, String(new Date().getFullYear() - 1));
+    await user.type(entryYearField, "2019");
     await user.tab();
     expect(screen.queryByText(/enter a 4-digit entry year/i)).not.toBeInTheDocument();
   });
@@ -439,5 +487,125 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(source).not.toMatch(/useSetCurrentRole/);
     expect(source).not.toMatch(/useUpdateGuideProfile/);
     expect(source).toMatch(/useOnboardRole/);
+  });
+
+  it("[grep-acceptance] never reads the browser clock for the year windows (I2)", () => {
+    const source = readFileSync(
+      join(__dirname, "../../../../src/components/signup/GuideOnboardingForm.tsx"),
+      "utf8",
+    );
+    // The entry-year window and the class-year ceiling both come from the server. A `new Date()`
+    // anywhere in this file is the defect being deleted, not an implementation detail.
+    expect(source).not.toMatch(/new Date\(/);
+    // …and no local copy of the rule numbers either — both come from the shared hook.
+    expect(source).not.toMatch(/from "\.\/classYear"/);
+    expect(source).toMatch(/useEnrollmentYearFields/);
+  });
+});
+
+// ── CTL-97: entry year first, required, and the source of the class-year window ─────────────
+describe("GuideOnboardingForm — enrolment years", () => {
+  it("puts entry year before class year", async () => {
+    renderWithQuery(<GuideOnboardingForm />);
+    const labels = screen.getAllByText(/Entry year|Class year/).map((el) => el.textContent);
+    expect(labels[0]).toMatch(/Entry year/);
+    expect(labels[1]).toMatch(/Class year/);
+    await act(async () => {});
+  });
+
+  it("marks entry year required and class year optional", async () => {
+    renderWithQuery(<GuideOnboardingForm />);
+    // The DOM attribute, not just RHF's rule — without it the input isn't required to a screen
+    // reader, whatever the validation does.
+    expect(screen.getByLabelText(/Entry year/)).toBeRequired();
+    expect(screen.getByText(/Class year/).textContent).toMatch(/optional/i);
+    await act(async () => {});
+  });
+
+  it("shows the acceptable entry-year window BEFORE the user types", async () => {
+    renderWithQuery(<GuideOnboardingForm />);
+    // The window comes from the server, not from new Date().
+    expect(screen.getByText(/2016.*2027/)).toBeInTheDocument();
+    await act(async () => {});
+  });
+
+  it("keeps class year disabled until entry year holds a valid value", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    expect(screen.getByLabelText(/Class year/)).toBeDisabled();
+    expect(screen.getByText(/Enter your entry year first/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/Entry year/), "2023");
+    await user.tab();
+
+    expect(screen.getByLabelText(/Class year/)).toBeEnabled();
+  });
+
+  it("keeps class year disabled when entry year is out of range", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await user.type(screen.getByLabelText(/Entry year/), "1999");
+    await user.tab();
+    expect(screen.getByLabelText(/Class year/)).toBeDisabled();
+  });
+
+  it("shows the class-year window derived from entry year and degree", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user); // Bachelor's Degree + entry year 2023
+    // 2023 + 1 .. 2023 + 6
+    expect(screen.getByText(/2024.*2029/)).toBeInTheDocument();
+  });
+
+  it("moves the class-year window when the DEGREE changes, and re-checks an already-typed year", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    // Valid under a bachelor's ceiling (2024–2029) — typed and accepted.
+    await user.type(screen.getByLabelText(/Class year/), "2029");
+    await user.tab();
+    expect(screen.queryByText(/graduation year between/i)).not.toBeInTheDocument();
+
+    // Switch to a master's (+3): the window contracts to 2024–2026 and the value already sitting
+    // in the form is re-validated against it — no Continue click, no second blur.
+    await user.click(screen.getByRole("combobox", { name: /degree/i }));
+    await user.click(await screen.findByRole("option", { name: "Master's Degree" }));
+
+    expect(await screen.findByText(/Expected graduation — 2024 to 2026/)).toBeInTheDocument();
+    expect(await screen.findByText(/graduation year between 2024 and 2026/i)).toBeInTheDocument();
+  });
+
+  it("blocks submission when entry year is empty", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await user.click(screen.getByRole("button", { name: /continue|submit/i }));
+    expect(await screen.findByText(/please enter your entry year/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("disables both year fields while the rules are loading", async () => {
+    renderWithQuery(<GuideOnboardingForm />, { rulesState: "loading" });
+    expect(screen.getByLabelText(/Entry year/)).toBeDisabled();
+    expect(screen.getByLabelText(/Class year/)).toBeDisabled();
+    // Still in flight — it must not accuse the server of failing yet.
+    expect(screen.queryByText(/couldn't load the year rules/i)).not.toBeInTheDocument();
+    await act(async () => {});
+  });
+
+  /** I4 — an unknown window must never be a dead end for a REQUIRED field. */
+  it("offers a working retry when the rules fail to load", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />, { rulesState: "error" });
+    expect(screen.getByLabelText(/Entry year/)).toBeDisabled();
+    expect(screen.getByLabelText(/Class year/)).toBeDisabled();
+    expect(screen.getByText(/couldn't load/i)).toBeInTheDocument();
+    // No window to show, so the description falls back to the plain explanation.
+    expect(screen.getByText(/The year you started at this university/i)).toBeInTheDocument();
+
+    const retry = screen.getByRole("button", { name: /try again/i });
+    await user.click(retry);
+
+    expect(refetchRules).toHaveBeenCalled();
   });
 });
