@@ -14,8 +14,10 @@ jest.mock("@/components/signup/GuideOnboardingForm", () => ({
 }));
 
 import { redirect } from "next/navigation";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getServerMe } from "@/lib/http/serverMe";
 import { getServerParticipantType } from "@/lib/http/serverParticipantType";
+import { queryKeys } from "@/lib/data-access/keys";
 import GuideOnboardingPage from "@/app/(auth)/onboarding/guide/page";
 import { pendingMe, provisionedMe } from "../../support/meFixtures";
 
@@ -29,6 +31,19 @@ beforeEach(() => {
   getServerParticipantTypeMock.mockReset();
 });
 
+/**
+ * The page seeds the query cache via `MeHydration`, so it needs a real client in context —
+ * in production the root layout's `QueryProvider` supplies one. Returning the client lets each
+ * render assertion also prove the principal actually landed in the cache; without that the
+ * tests would only show the form rendered, which stays true even if hydration silently no-ops
+ * and the client refetches what the server already had.
+ */
+function renderPage(el: React.ReactElement) {
+  const client = new QueryClient();
+  render(<QueryClientProvider client={client}>{el}</QueryClientProvider>);
+  return client;
+}
+
 describe("/onboarding/guide page guard", () => {
   it("redirects to /signin when there is no session", async () => {
     getServerMeMock.mockResolvedValue(null);
@@ -37,12 +52,17 @@ describe("/onboarding/guide page guard", () => {
   });
 
   it("renders the guide onboarding form for a PENDING user (first onboarding) without checking participant type", async () => {
-    getServerMeMock.mockResolvedValue(pendingMe());
+    const me = pendingMe();
+    getServerMeMock.mockResolvedValue(me);
     const el = await GuideOnboardingPage();
-    render(el);
+    const client = renderPage(el);
     expect(screen.getByTestId("guide-onboarding-form")).toBeInTheDocument();
     expect(redirectMock).not.toHaveBeenCalled();
     expect(getServerParticipantTypeMock).not.toHaveBeenCalled();
+    // The pending IDENTITY claims are the form's only prefill source (Core has no row yet),
+    // so this seed is what saves the client round-trip rather than merely duplicating it.
+    expect(client.getQueryData(queryKeys.me())).toEqual(me);
+    expect(client.getQueryData(queryKeys.session())).toBe(true);
   });
 
   it("redirects a user who already holds GUIDE to /dashboard", async () => {
@@ -62,13 +82,15 @@ describe("/onboarding/guide page guard", () => {
   });
 
   it("renders the guide onboarding form for an eligible user", async () => {
-    getServerMeMock.mockResolvedValue(
-      provisionedMe({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" }),
-    );
+    const me = provisionedMe({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" });
+    getServerMeMock.mockResolvedValue(me);
     getServerParticipantTypeMock.mockResolvedValue("STUDENT");
     const el = await GuideOnboardingPage();
-    render(el);
+    const client = renderPage(el);
     expect(screen.getByTestId("guide-onboarding-form")).toBeInTheDocument();
     expect(redirectMock).not.toHaveBeenCalled();
+    // Second-role acquisition seeds the PROVISIONED principal, not a pending stand-in — the
+    // form's prefill source differs between the two cases.
+    expect(client.getQueryData(queryKeys.me())).toEqual(me);
   });
 });
