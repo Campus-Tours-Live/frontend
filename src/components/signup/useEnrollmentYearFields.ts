@@ -19,6 +19,13 @@ export interface EnrollmentYearFormFields {
   degree: string;
 }
 
+/** The slice of `useForm`'s return both the hook and {@link EnrollmentYearFields} need. */
+export interface UseEnrollmentYearFieldsArgs<T extends FieldValues & EnrollmentYearFormFields> {
+  control: Control<T>;
+  getValues: UseFormGetValues<T>;
+  trigger: UseFormTrigger<T>;
+}
+
 /**
  * Everything both year fields need, derived once. Extracted because `GuideOnboardingForm` and
  * `GuideProfileForm` must behave identically here — and a second hand-written copy would drift on
@@ -29,11 +36,9 @@ export interface EnrollmentYearFormFields {
  * Generic over the form shape so both callers pass their own `control` without casting; both have
  * `entryYear`, `classYear` and `degree` string fields.
  */
-export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFormFields>(args: {
-  control: Control<T>;
-  getValues: UseFormGetValues<T>;
-  trigger: UseFormTrigger<T>;
-}) {
+export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFormFields>(
+  args: UseEnrollmentYearFieldsArgs<T>,
+) {
   const { control, getValues, trigger } = args;
   // The field names are literals on `EnrollmentYearFormFields`, but TypeScript can't see through
   // the generic to say so — hence the one cast per name, kept here rather than at each call site.
@@ -44,6 +49,10 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
   const {
     data: yearRules,
     isLoading: rulesLoading,
+    // `isLoading` is `isPending && isFetching` — FIRST load only. A retry runs against a query that
+    // already settled into `error`, so isLoading stays false and `yearsUnavailable` stays true:
+    // without isFetching the retry button gives no feedback at all for the whole round trip.
+    isFetching: rulesFetching,
     isError: rulesErrored,
     refetch: refetchRules,
   } = useEnrollmentYears();
@@ -76,9 +85,12 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
   return {
     yearRules,
     rulesLoading,
+    rulesFetching,
     yearsUnavailable,
     refetchRules,
     entryYearIsValid,
     classRange,
+    // Handed back so `EnrollmentYearFields` can name its Controllers without repeating the casts.
+    names: { entryYear: entryYearName, classYear: classYearName },
   };
 }

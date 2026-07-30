@@ -29,8 +29,7 @@ import {
 } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
 import { NAME_MAX_LENGTH, sanitizeName, validateName } from "@/lib/validation/name";
-import { validateClassYear, validateEntryYear } from "./enrollmentYears";
-import { useEnrollmentYearFields } from "./useEnrollmentYearFields";
+import { EnrollmentYearFields } from "./EnrollmentYearFields";
 import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
@@ -165,12 +164,6 @@ export function GuideOnboardingForm() {
     Boolean(selectedUniversity) &&
     !degreesLoading &&
     (degreesErrored || degreeOptions.length === 0);
-
-  // Entry year and class year, in one place — the SAME hook `GuideProfileForm` uses, so the two
-  // forms cannot drift on the window, the gate, the retry copy, or the re-validation trigger.
-  // The browser clock is never consulted here (I2): the window is the server's, not this tab's.
-  const { yearRules, rulesLoading, yearsUnavailable, refetchRules, entryYearIsValid, classRange } =
-    useEnrollmentYearFields({ control, getValues, trigger });
 
   // Prefill the name from the account — a member acquiring a second role already
   // entered it for the first (or it came from Google at signup). Fills empty fields
@@ -495,102 +488,16 @@ export function GuideOnboardingForm() {
                 />
               </div>
 
-              {/* Entry year FIRST: class year's window is derived from it, so asking for the
-                  derived value before its input is what made the old rule feel arbitrary. */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Controller
-                  control={control}
-                  name="entryYear"
-                  rules={{
-                    required: "Please enter your entry year.",
-                    // Shared with GuideProfileForm — see enrollmentYears.ts. Not inlined, so a
-                    // change to the message or the bounds check cannot land in one form and miss
-                    // the other.
-                    validate: (v) => validateEntryYear(v, yearRules),
-                  }}
-                  render={({ field }) => (
-                    <TextField
-                      label="Entry year"
-                      // The HTML attribute, not just the RHF rule: `rules.required` drives
-                      // validation only, so without this the input is not `required` to assistive
-                      // tech. TextField spreads unknown props onto the <input>, so it lands.
-                      required
-                      inputMode="numeric"
-                      placeholder="2023"
-                      // The window is visible BEFORE typing — the old form only revealed it in an
-                      // error after a blur.
-                      description={
-                        yearRules
-                          ? `The year you started — ${yearRules.entryYear.min} to ${yearRules.entryYear.max}.`
-                          : "The year you started at this university."
-                      }
-                      disabled={rulesLoading || yearsUnavailable}
-                      error={errors.entryYear?.message}
-                      value={field.value}
-                      // Numeric-only: strip non-digits as you type and cap at 4 digits.
-                      onChange={(e) =>
-                        field.onChange(e.target.value.replace(/\D/g, "").slice(0, 4))
-                      }
-                      onFocus={() => clearErrors("entryYear")}
-                      onBlur={() => {
-                        field.onBlur();
-                        void trigger("entryYear");
-                        // The window below depends on this value, so re-check it too.
-                        void trigger("classYear");
-                      }}
-                    />
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="classYear"
-                  rules={{ validate: (v) => validateClassYear(v, classRange) }}
-                  render={({ field }) => (
-                    <TextField
-                      label="Class year"
-                      optional
-                      inputMode="numeric"
-                      placeholder="2027"
-                      // Gated, not merely validated: its window is UNKNOWABLE without entryYear,
-                      // so letting someone fill it first guarantees an error about a field they
-                      // are not looking at.
-                      disabled={rulesLoading || yearsUnavailable || !entryYearIsValid}
-                      description={
-                        classRange
-                          ? `Expected graduation — ${classRange.min} to ${classRange.max}.`
-                          : "Enter your entry year first."
-                      }
-                      error={errors.classYear?.message}
-                      value={field.value}
-                      // Numeric-only: strip non-digits as you type and cap at 4 digits.
-                      onChange={(e) =>
-                        field.onChange(e.target.value.replace(/\D/g, "").slice(0, 4))
-                      }
-                      onFocus={() => clearErrors("classYear")}
-                      onBlur={() => {
-                        field.onBlur();
-                        void trigger("classYear");
-                      }}
-                    />
-                  )}
-                />
-              </div>
-
-              {/* I4 — entry year is REQUIRED, so an unknown window would otherwise dead-end
-                  onboarding entirely. Always offer the way out. */}
-              {yearsUnavailable ? (
-                <div className="flex flex-wrap items-center gap-x-2">
-                  <p className="field-error">We couldn&apos;t load the year rules.</p>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="small"
-                    onClick={() => void refetchRules()}
-                  >
-                    Try again
-                  </Button>
-                </div>
-              ) : null}
+              {/* Entry year + class year + the rules-unavailable retry, all of it shared with
+                  GuideProfileForm. Everything about these two fields — order, the required rule,
+                  the gate, the windows, the copy — lives in that component, so a change here
+                  cannot land in one form and miss the other. */}
+              <EnrollmentYearFields
+                control={control}
+                getValues={getValues}
+                trigger={trigger}
+                clearErrors={clearErrors}
+              />
             </div>
           )}
 

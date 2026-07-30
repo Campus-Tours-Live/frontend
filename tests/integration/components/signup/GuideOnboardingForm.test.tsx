@@ -40,7 +40,10 @@ const YEAR_RULES: EnrollmentYearRules = {
   ],
   defaultMaxYearsToGraduate: 8,
 };
-type RulesState = "ready" | "loading" | "error";
+// "retrying" = the query already settled into `error` and a refetch is in flight. TanStack keeps
+// `isLoading` FALSE there (it is `isPending && isFetching`, first-load only), so `isFetching` is
+// the only signal that anything is happening — hence its own state here.
+type RulesState = "ready" | "loading" | "error" | "retrying";
 let rulesState: RulesState = "ready";
 const refetchRules = jest.fn();
 
@@ -86,7 +89,8 @@ jest.mock("@/lib/data-access", () => ({
   useEnrollmentYears: () => ({
     data: rulesState === "ready" ? YEAR_RULES : undefined,
     isLoading: rulesState === "loading",
-    isError: rulesState === "error",
+    isFetching: rulesState === "loading" || rulesState === "retrying",
+    isError: rulesState === "error" || rulesState === "retrying",
     refetch: refetchRules,
   }),
   // Used by the real UniversityMultiSelect rendered inside step 1.
@@ -489,17 +493,36 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(source).toMatch(/useOnboardRole/);
   });
 
-  it("[grep-acceptance] never reads the browser clock for the year windows (I2)", () => {
+  /**
+   * The window logic is spread across four files now, and the two most likely places for a clock
+   * read to reappear are the derivation modules, not the form — so grep all of them, not just the
+   * file the defect originally lived in.
+   */
+  it.each([
+    "GuideOnboardingForm.tsx",
+    "EnrollmentYearFields.tsx",
+    "useEnrollmentYearFields.ts",
+    "enrollmentYears.ts",
+  ])("[grep-acceptance] %s never reads the browser clock for the year windows (I2)", (file) => {
+    const source = readFileSync(join(__dirname, "../../../../src/components/signup", file), "utf8");
+    // The entry-year window and the class-year ceiling both come from the server. A `new Date()`
+    // anywhere in this path is the defect being deleted, not an implementation detail.
+    expect(source).not.toMatch(/new Date\(/);
+    // …and no local copy of the rule numbers either.
+    expect(source).not.toMatch(/from "\.\/classYear"/);
+  });
+
+  it("[grep-acceptance] the form delegates both year fields rather than spelling them out", () => {
     const source = readFileSync(
       join(__dirname, "../../../../src/components/signup/GuideOnboardingForm.tsx"),
       "utf8",
     );
-    // The entry-year window and the class-year ceiling both come from the server. A `new Date()`
-    // anywhere in this file is the defect being deleted, not an implementation detail.
-    expect(source).not.toMatch(/new Date\(/);
-    // …and no local copy of the rule numbers either — both come from the shared hook.
-    expect(source).not.toMatch(/from "\.\/classYear"/);
-    expect(source).toMatch(/useEnrollmentYearFields/);
+    // The whole point of the extraction: no copy of the required message, the gate, the
+    // descriptions or the retry copy survives here for GuideProfileForm to have to re-type.
+    expect(source).toMatch(/<EnrollmentYearFields/);
+    expect(source).not.toMatch(/Please enter your entry year/);
+    expect(source).not.toMatch(/Enter your entry year first/);
+    expect(source).not.toMatch(/entryYearIsValid|classRange|yearsUnavailable/);
   });
 });
 
@@ -607,5 +630,18 @@ describe("GuideOnboardingForm — enrolment years", () => {
     await user.click(retry);
 
     expect(refetchRules).toHaveBeenCalled();
+  });
+
+  it("shows the rules retry as in-flight so it can't be spam-clicked", async () => {
+    // Mirrors the majors/degrees retries beside it. This matters MORE here: the query is already
+    // settled into `error`, so `isLoading` stays false and the failure block stays mounted —
+    // without `isFetching` literally nothing on screen changes for the whole round trip.
+    renderWithQuery(<GuideOnboardingForm />, { rulesState: "retrying" });
+
+    const retry = await screen.findByRole("button", { name: /trying…/i });
+    expect(retry).toBeDisabled();
+    // The explanation stays put rather than flickering out and back.
+    expect(screen.getByText(/couldn't load the year rules/i)).toBeInTheDocument();
+    await act(async () => {});
   });
 });

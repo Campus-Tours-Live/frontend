@@ -87,6 +87,7 @@ jest.mock("@/lib/data-access", () => ({
   useEnrollmentYears: () => ({
     data: YEAR_RULES,
     isLoading: false,
+    isFetching: false,
     isError: false,
     refetch: refetchRules,
   }),

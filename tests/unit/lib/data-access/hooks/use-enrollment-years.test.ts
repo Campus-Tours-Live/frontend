@@ -28,12 +28,17 @@ describe("useEnrollmentYears", () => {
     const { result } = renderHook(() => useEnrollmentYears());
 
     expect(useQueryMock).toHaveBeenCalledTimes(1);
-    const passedOptions = useQueryMock.mock.calls[0][0];
-    expect(passedOptions.queryKey).toEqual(enrollmentYearsQuery().queryKey);
-    // The one-hour staleTime + the explicit hourly ask are the whole point of this query — a hook
-    // that quietly dropped them would leave a tab on last year's window.
-    expect(passedOptions.staleTime).toBe(enrollmentYearsQuery().staleTime);
-    expect(passedOptions.refetchInterval).toBe(enrollmentYearsQuery().refetchInterval);
+    // The WHOLE options object, not a field-by-field spot check: the staleTime, the hourly
+    // refetchInterval, refetchIntervalInBackground and the focus-refetch override are all load
+    // bearing (I6), and asserting them one at a time against the factory means an option dropped
+    // from BOTH sides compares undefined to undefined and passes.
+    expect(useQueryMock).toHaveBeenCalledWith({
+      ...enrollmentYearsQuery(),
+      // The factory mints a fresh arrow per call, so identity can never match; its behaviour is
+      // covered by enrollment-years.query.test.ts. Every other key is compared exactly, and an
+      // extra or missing one fails the whole object.
+      queryFn: expect.any(Function),
+    });
     expect(result.current).toBe(queryResult);
   });
 });

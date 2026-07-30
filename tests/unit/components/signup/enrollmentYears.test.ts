@@ -34,6 +34,13 @@ describe("maxYearsToGraduate", () => {
     ["Undergraduate Certificate", 3],
     ["Diploma", 3],
     ["Some Other Credential", 8],
+    // The Java suite carries these to pin Locale.ROOT lowercasing (a Turkish default locale maps
+    // "I" to "ı" and would break `DIPLOMA`). JS's toLowerCase() is locale-independent by
+    // definition, so we are not exposed to that bug — but the tables must stay identical for the
+    // comment above to be true, and a divergence here is exactly what this file exists to catch.
+    ["FIRST PROFESSIONAL DEGREE", 9],
+    ["DIPLOMA", 3],
+    ["UNDERGRADUATE CERTIFICATE", 3],
   ])("maps %s to %i", (degree, years) => {
     expect(maxYearsToGraduate(RULES, degree as string)).toBe(years);
   });
