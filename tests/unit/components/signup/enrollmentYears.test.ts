@@ -101,6 +101,17 @@ describe("validateEntryYear", () => {
     expect(validateEntryYear("2023", undefined)).toBe("Enrolment years are still loading.");
   });
 
+  /**
+   * The loading wording is unreachable in practice — the field is disabled while the request is in
+   * flight — so the FAILED state is the only one a user reads this message in, and there it has to
+   * be true and has to say what to do next.
+   */
+  it("blames the failure, not the load, once the rules request has failed", () => {
+    expect(validateEntryYear("2023", undefined, true)).toBe(
+      "We couldn't load the year rules — select Try again below.",
+    );
+  });
+
   it("requires four digits", () => {
     expect(validateEntryYear("12", RULES)).toBe("Enter a 4-digit entry year.");
     expect(validateEntryYear("", RULES)).toBe("Enter a 4-digit entry year.");
@@ -132,6 +143,16 @@ describe("validateClassYear", () => {
 
   it("tells the user which field to fill first when the window is unknowable", () => {
     expect(validateClassYear("2027", null)).toBe("Enter your entry year first.");
+  });
+
+  /**
+   * …but only when entry year is actually the missing input. With no rules the window is
+   * uncomputable whatever entry year holds, so the redirect would flag a field that is filled in
+   * right beside it — the exact confusion this message exists to prevent. Entry year's own
+   * validator already blocks the submit and names the real cause.
+   */
+  it("stays silent when the window is unknowable because the rules are missing", () => {
+    expect(validateClassYear("2027", null, false)).toBe(true);
   });
 
   it("requires four digits", () => {

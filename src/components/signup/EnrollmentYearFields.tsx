@@ -56,7 +56,7 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
           name={names.entryYear}
           rules={{
             required: "Please enter your entry year.",
-            validate: (v) => validateEntryYear(v as string, yearRules),
+            validate: (v) => validateEntryYear(v as string, yearRules, yearsUnavailable),
           }}
           render={({ field, fieldState }) => (
             <TextField
@@ -92,7 +92,9 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
         <Controller
           control={control}
           name={names.classYear}
-          rules={{ validate: (v) => validateClassYear(v as string, classRange) }}
+          rules={{
+            validate: (v) => validateClassYear(v as string, classRange, Boolean(yearRules)),
+          }}
           render={({ field, fieldState }) => (
             <TextField
               label="Class year"
@@ -103,10 +105,15 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
               // letting someone fill it first guarantees an error about a field they are not
               // looking at.
               disabled={rulesLoading || yearsUnavailable || !entryYearIsValid}
+              // Three states, not two: with no rules the window is unknowable for a reason that
+              // has nothing to do with entry year, so pointing at it would be the same wrong
+              // accusation the validator no longer makes.
               description={
                 classRange
                   ? `Expected graduation — ${classRange.min} to ${classRange.max}.`
-                  : "Enter your entry year first."
+                  : yearRules
+                    ? "Enter your entry year first."
+                    : "Available once the year rules load."
               }
               error={fieldState.error?.message}
               value={field.value as string}
@@ -127,7 +134,12 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
           for the whole round trip without `rulesFetching`. */}
       {yearsUnavailable ? (
         <div className="flex flex-wrap items-center gap-x-2">
-          <p className="field-error">We couldn&apos;t load the year rules.</p>
+          {/* `role="alert"` like every other error in this feature: it appears without the user
+              doing anything, and it is the only thing on screen that explains why a required
+              field is disabled. */}
+          <p role="alert" className="field-error">
+            We couldn&apos;t load the year rules.
+          </p>
           <Button
             type="button"
             variant="ghost"

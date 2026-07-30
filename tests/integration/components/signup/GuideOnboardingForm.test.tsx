@@ -622,9 +622,14 @@ describe("GuideOnboardingForm — enrolment years", () => {
     renderWithQuery(<GuideOnboardingForm />, { rulesState: "error" });
     expect(screen.getByLabelText(/Entry year/)).toBeDisabled();
     expect(screen.getByLabelText(/Class year/)).toBeDisabled();
-    expect(screen.getByText(/couldn't load/i)).toBeInTheDocument();
+    // Announced, not just styled red — it appears with no user action and it is the only thing
+    // explaining why a required field is disabled.
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn't load the year rules.");
     // No window to show, so the description falls back to the plain explanation.
     expect(screen.getByText(/The year you started at this university/i)).toBeInTheDocument();
+    // …and class year says what is actually missing rather than blaming entry year.
+    expect(screen.getByText("Available once the year rules load.")).toBeInTheDocument();
+    expect(screen.queryByText(/enter your entry year first/i)).not.toBeInTheDocument();
 
     const retry = screen.getByRole("button", { name: /try again/i });
     await user.click(retry);

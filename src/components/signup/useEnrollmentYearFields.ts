@@ -69,7 +69,7 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
 
   // The gate reuses the FIELD VALIDATOR rather than re-deriving the bounds check, so "valid enough
   // to unlock class year" and "valid enough to submit" can never disagree.
-  const entryYearIsValid = validateEntryYear(entryYearRaw, yearRules) === true;
+  const entryYearIsValid = validateEntryYear(entryYearRaw, yearRules, yearsUnavailable) === true;
   const classRange =
     yearRules && entryYearIsValid
       ? classYearRange(yearRules, Number(entryYearRaw), degreeValue)
@@ -79,12 +79,12 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
   // in the form, still passing. Re-run its validation whenever either input to the rule moves —
   // including a background refetch that changes `yearRules` itself.
   //
-  // Gated on `yearRules` being HERE, because without them `classYearRange` can't be computed and
-  // `validateClassYear` can only answer "Enter your entry year first." — which, on a form that
-  // seeds all three fields from a saved profile (`GuideProfileForm`), paints that message under a
-  // class year whose entry year is filled in right beside it. The precondition, not a run count:
-  // the rules can be absent on any run (a degree change while the request is still in flight), and
-  // being present on the first one is normal whenever the 1h-fresh query is already cached.
+  // Gated on `yearRules` being HERE: without them there is no window to judge against, so the run
+  // can only reach `validateClassYear`'s no-rules answer and re-render for nothing. The
+  // precondition, not a run count — the rules can be absent on any run (a degree change while the
+  // request is still in flight), and being present on the first one is normal whenever the 1h-fresh
+  // query is already cached. The validator carries the same guard, so a caller that triggers class
+  // year some other way (submit) gets the same answer, not a message about the wrong field.
   useEffect(() => {
     if (yearRules && getValues(classYearName)) void trigger(classYearName);
   }, [entryYearRaw, degreeValue, yearRules, classYearName, trigger, getValues]);

@@ -40,6 +40,11 @@ export function classYearRange(
  * Fails CLOSED while `rules` is undefined: entry year is required, and passing it against a window
  * nobody knows would let a value through that the server will then reject.
  *
+ * `rulesUnavailable` says WHICH kind of "no rules" that is — it is the same flag that puts the
+ * "Try again" button on screen, so the failed message can point at it. Without the distinction the
+ * loading wording is the only one a user ever actually reads (loading disables the field, so the
+ * form is not realistically submittable then) and it is untrue in the state it appears in.
+ *
  * `value` is optional so the same function can judge a react-hook-form `validate` argument (always
  * a string) AND a `useWatch` read taken before the field has mounted (possibly undefined) — one
  * function, so the gate that enables class year cannot disagree with the rule that blocks submit.
@@ -47,8 +52,13 @@ export function classYearRange(
 export function validateEntryYear(
   value: string | undefined,
   rules: EnrollmentYearRules | undefined,
+  rulesUnavailable = false,
 ): true | string {
-  if (!rules) return "Enrolment years are still loading.";
+  if (!rules) {
+    return rulesUnavailable
+      ? "We couldn't load the year rules — select Try again below."
+      : "Enrolment years are still loading.";
+  }
   if (!/^\d{4}$/.test((value ?? "").trim())) return "Enter a 4-digit entry year.";
   const year = Number(value);
   const { min, max } = rules.entryYear;
@@ -59,12 +69,19 @@ export function validateEntryYear(
  * Class year is OPTIONAL, so an empty value always passes. A non-empty one needs a window, and the
  * window is unknowable until entry year is valid — hence the explicit redirect rather than a
  * range message the user cannot act on.
+ *
+ * A null `range` has TWO causes and only one of them is the user's to fix, which is what
+ * `rulesKnown` separates. Without the rules nobody can compute the window, so the redirect would
+ * accuse a field that — on a form seeded from a saved profile — is filled in right beside it.
+ * Entry year's own validator already blocks the submit and names the real cause there.
  */
 export function validateClassYear(
   value: string,
   range: { min: number; max: number } | null,
+  rulesKnown = true,
 ): true | string {
   if (!value) return true;
+  if (!rulesKnown) return true;
   if (!range) return "Enter your entry year first.";
   if (!/^\d{4}$/.test(value.trim())) return "Enter a 4-digit graduation year.";
   const year = Number(value);
