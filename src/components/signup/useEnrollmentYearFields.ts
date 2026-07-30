@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   useWatch,
   type Control,
@@ -78,7 +78,19 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
   // Recomputing the window is not enough: a classYear typed under the old window is still sitting
   // in the form, still passing. Re-run its validation whenever either input to the rule moves —
   // including a background refetch that changes `yearRules` itself.
+  //
+  // Not on the FIRST run, though. `GuideProfileForm` seeds all three fields from the saved profile,
+  // and on mount the rules have not arrived yet — `classRange` is null, so the validator can only
+  // answer "Enter your entry year first." under a class year whose entry year is filled in right
+  // beside it. Nothing has been judged against an old window at that point, so there is nothing to
+  // re-judge; both forms validate on submit (and on blur), and the run after the rules land still
+  // covers the seeded value.
+  const rechecked = useRef(false);
   useEffect(() => {
+    if (!rechecked.current) {
+      rechecked.current = true;
+      return;
+    }
     if (getValues(classYearName)) void trigger(classYearName);
   }, [entryYearRaw, degreeValue, yearRules, classYearName, trigger, getValues]);
 

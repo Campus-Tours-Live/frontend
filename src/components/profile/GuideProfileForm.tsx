@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import {
   ApiError,
+  useDegrees,
   useMajors,
   useMe,
   useTourTopics,
@@ -23,6 +24,7 @@ import {
   type GuideProfile,
   type MeUser,
 } from "@/lib/data-access";
+import { EnrollmentYearFields } from "@/components/signup/EnrollmentYearFields";
 import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
 const LANGUAGES = [
@@ -43,7 +45,10 @@ interface FormValues {
   lastName: string;
   university: UniversityOption[];
   major: string;
+  /** Required by the server (CTL-96) AND the input to class year's ceiling — not optional here. */
+  degree: string;
   classYear: string;
+  entryYear: string;
   bio: string;
   languages: string[];
   specialties: string[];
@@ -75,7 +80,9 @@ function toFormValues(
     lastName: identity?.lastName ?? "",
     university: universitySeed(profile),
     major: university?.major ?? "",
+    degree: university?.degree ?? "",
     classYear: university?.classYear ?? "",
+    entryYear: university?.entryYear?.toString() ?? "",
     bio: profile.bio ?? "",
     languages: profile.spokenLanguages?.length ? profile.spokenLanguages : ["en-US"],
     specialties: profile.tourTopics ?? [],
@@ -94,6 +101,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
     watch,
     handleSubmit,
     reset,
+    trigger,
+    getValues,
+    clearErrors,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
@@ -105,6 +115,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   // saved major is preserved as a fallback option so editing other fields never loses it.
   const selectedUniversity = watch("university")?.[0];
   const { data: majorOptions = [] } = useMajors(selectedUniversity?.id);
+  // Degree levels the SELECTED school awards — the same live source the onboarding form uses, so
+  // the two forms offer the same vocabulary and neither hardcodes a list.
+  const { data: degreeOptions = [] } = useDegrees(selectedUniversity?.id);
 
   useEffect(() => {
     reset(toFormValues(profile, me?.user));
@@ -127,7 +140,13 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
         lastName: values.lastName.trim(),
         universityId: university.id,
         major: values.major.trim(),
+        // degree and entryYear are REQUIRED by the server, so they go unconditionally: on the wire
+        // `undefined` means "leave alone", and a `values.x ? … : undefined` fallback would turn a
+        // cleared field into a silent no-op — the server keeping the old value while the form
+        // reports success. Both fields are required in the form, so submit is unreachable empty.
+        degree: values.degree.trim(),
         classYear: values.classYear.trim() || undefined,
+        entryYear: Number(values.entryYear),
         bio: values.bio.trim() || undefined,
         spokenLanguages: values.languages,
         tourTopics: values.specialties,
@@ -135,7 +154,7 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
       setSaveMessage("Profile saved.");
     } catch (err) {
       const message = formSubmitErrorMessage(err, {
-        invalid: "Check your inputs — name, university, and major are required.",
+        invalid: "Check your inputs — name, university, major, and entry year are required.",
         generic: "Could not save your profile. Please try again.",
       });
       setError("root", { message });
@@ -209,8 +228,45 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
               </SelectField>
             )}
           />
-          <TextField label="Class year" optional {...register("classYear")} />
+          <Controller
+            control={control}
+            name="degree"
+            rules={{ required: "Degree is required" }}
+            render={({ field }) => (
+              <SelectField
+                label="Degree"
+                error={errors.degree?.message}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={!selectedUniversity}
+              >
+                <option value="">
+                  {selectedUniversity ? "Select a degree" : "Pick a university first"}
+                </option>
+                {/* Keep the saved degree selectable when the live list doesn't offer it — the
+                    server requires the field, so editing anything else must never blank it. */}
+                {field.value && !degreeOptions.some((o) => o.value === field.value) ? (
+                  <option value={field.value}>{field.value}</option>
+                ) : null}
+                {degreeOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+          />
         </div>
+
+        {/* Entry year + class year + the rules-unavailable retry — the same component
+            GuideOnboardingForm renders, so the order, the required rule, the gate, the windows and
+            the copy cannot land in one form and miss the other. */}
+        <EnrollmentYearFields
+          control={control}
+          getValues={getValues}
+          trigger={trigger}
+          clearErrors={clearErrors}
+        />
 
         <Textarea
           label="Short bio"

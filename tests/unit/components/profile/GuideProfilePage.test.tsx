@@ -1,6 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import { GuideProfilePage } from "@/components/profile/GuideProfilePage";
-import { useGuideProfile, useMe, type GuideProfile } from "@/lib/data-access";
+import {
+  useGuideProfile,
+  useMe,
+  type EnrollmentYearRules,
+  type GuideProfile,
+} from "@/lib/data-access";
+
+// Module-level const, not an inline literal: `useEnrollmentYearFields` keys an effect on the rules
+// object, so a fresh object per render would re-run it on every render of the edit form.
+const YEAR_RULES: EnrollmentYearRules = {
+  entryYear: { min: 2016, max: 2027 },
+  maxYearsToGraduate: [{ matches: ["bachelor"], years: 6 }],
+  defaultMaxYearsToGraduate: 8,
+};
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
@@ -12,6 +25,16 @@ jest.mock("@/lib/data-access", () => ({
     isLoading: false,
   }),
   useMajors: () => ({ data: [], isLoading: false }),
+  // The edit form's degree picker and enrolment-year rules are network hooks too — mocked here for
+  // the same reason as the rest: this page test renders without a QueryClientProvider.
+  useDegrees: () => ({ data: [], isLoading: false }),
+  useEnrollmentYears: () => ({
+    data: YEAR_RULES,
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    refetch: jest.fn(),
+  }),
 }));
 
 jest.mock("@/components/signup/UniversityMultiSelect", () => ({
