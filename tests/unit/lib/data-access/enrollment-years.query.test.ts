@@ -96,6 +96,17 @@ describe("enrollmentYearRulesSchema", () => {
     expect(options.refetchIntervalInBackground).toBe(false);
     expect(options.refetchOnWindowFocus).toBe(true);
   });
+
+  /**
+   * gcTime governs the cache entry while NOTHING observes it, which is a real state here:
+   * EnrollmentYearFields renders only on the wizard's first step, so the query loses its observer
+   * whenever the user moves on. At the 5-minute default the entry is evicted after a short detour
+   * and navigating Back re-disables both year fields until a refetch lands. This is independent of
+   * staleTime — dropping it would not fail any assertion above.
+   */
+  it("keeps the cached rules while no component observes them", () => {
+    expect(enrollmentYearsQuery().gcTime).toBe(24 * 60 * 60 * 1000);
+  });
 });
 
 describe("enrollmentYearsQuery queryFn", () => {

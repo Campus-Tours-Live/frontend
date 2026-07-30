@@ -79,4 +79,11 @@ export const enrollmentYearsQuery = () =>
     // Local override of the provider's global `false` — returning to a tab is the cheapest
     // moment to notice a year boundary passed while it was hidden.
     refetchOnWindowFocus: true,
+    // Survive periods with NO observer. EnrollmentYearFields renders only on the onboarding
+    // wizard's first step, so the query has no observer while the user is on a later step. Under
+    // the 5-minute default gcTime the cache entry is evicted after a few minutes away, and
+    // navigating Back re-disables both year fields until the refetch lands. The payload is a few
+    // hundred bytes and app-wide, so retaining it costs nothing; freshness is still governed by
+    // staleTime and refetchInterval, which gcTime does not affect.
+    gcTime: 24 * 60 * 60 * 1000,
   });
