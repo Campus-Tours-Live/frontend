@@ -110,6 +110,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
     defaultValues: toFormValues(profile, me?.user),
   });
 
+  // The saved university row this form edits — it seeds the selection above and owns the stored
+  // entry year the exemption below is keyed on.
+  const storedUniversity = profile.universities?.[0];
   // Majors are the fields of study the SELECTED school actually offers (live). Empty until a school
   // is picked, and empty for a pre-existing local university (whose id isn't a Scorecard id) — the
   // saved major is preserved as a fallback option so editing other fields never loses it.
@@ -279,7 +282,26 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           // disabled beside it, and no edit to any other field can be saved. The backend applies
           // the same rule (it range-checks only a changed value); onboarding, which has no stored
           // value, passes nothing here and stays fully range-checked.
-          storedEntryYear={profile.universities?.[0]?.entryYear}
+          //
+          // Keyed on the SELECTED university, not on the profile: the stored year belongs to a
+          // (guide, university) ROW, and the server looks that row up by the universityId this save
+          // is about to send. Switch schools and there is no such row — the first year against a
+          // new university IS a new value, the server range-checks it and 422s, so a client that
+          // stayed exempt would promise a save that fails and explain it only in the generic root
+          // alert, with nothing marked on the field at fault.
+          //
+          // What the id comparison actually asks is "is the university field UNTOUCHED", not "is it
+          // the same school": the seed carries the local universityId (`universitySeed` above) while
+          // every live-search option carries a Scorecard id (universities.query), and the backend
+          // reconciles the two only on save. So a guide who re-picks their OWN school from the
+          // search box loses the exemption and is asked for an in-window year. That edge is chosen,
+          // not overlooked — it is an unusual action, and it errs STRICTER than the server, which
+          // costs a clear message on the right field instead of a 422 the form cannot attribute.
+          storedEntryYear={
+            selectedUniversity?.id === storedUniversity?.universityId
+              ? storedUniversity?.entryYear
+              : undefined
+          }
         />
 
         <Textarea

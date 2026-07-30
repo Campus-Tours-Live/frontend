@@ -147,8 +147,10 @@ describe("validateEntryYear", () => {
     });
 
     it("is still range-checked once it is changed", () => {
+      // Both sides derived from RULES, so revising the window moves the input AND the message it
+      // is expected to name — a literal here would start asserting a window nothing serves.
       expect(validateEntryYear(String(stored - 1), RULES, false, stored)).toBe(
-        "Enter an entry year between 2016 and 2027.",
+        `Enter an entry year between ${RULES.entryYear.min} and ${RULES.entryYear.max}.`,
       );
     });
 

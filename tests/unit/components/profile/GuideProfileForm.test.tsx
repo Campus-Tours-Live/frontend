@@ -91,6 +91,14 @@ jest.mock("@/components/signup/UniversityMultiSelect", () => ({
       <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
         {value.length && value[0] ? value[0].shortName || value[0].name : "Pick university"}
       </button>
+      {/* A DIFFERENT school, with a different id — the live search returns Scorecard ids, so no
+          option it offers ever carries the saved profile's local universityId. */}
+      <button
+        type="button"
+        onClick={() => onChange([{ id: "scorecard-999", name: "Other University" }])}
+      >
+        Pick a different university
+      </button>
       <button type="button" onClick={() => onChange([])}>
         Clear university
       </button>
@@ -133,6 +141,12 @@ const enrolled = (entryYear: number, classYear: string): GuideProfile => ({
 // from the fixture rather than written as a literal, so revising the window above cannot quietly
 // stop this case being aged out.
 const AGED_OUT_ENTRY_YEAR = YEAR_RULES.entryYear.min - 2;
+// The fixture's degree is a bachelor's, so its class-year ceiling is that group's `years`. Read
+// from the rules for the same reason the entry year above is derived from them: revising the
+// fixture must move the window this test expects, not silently disagree with it.
+const BACHELOR_MAX_YEARS =
+  YEAR_RULES.maxYearsToGraduate.find((rule) => rule.matches.includes("bachelor"))?.years ??
+  YEAR_RULES.defaultMaxYearsToGraduate;
 // Its class year is still derived from the entry year exactly as ever — bachelor's is +6, so
 // 2015–2020 here, entirely in the past and entirely correct.
 const agedOut = enrolled(AGED_OUT_ENTRY_YEAR, String(AGED_OUT_ENTRY_YEAR + 4));
@@ -326,7 +340,7 @@ describe("GuideProfileForm", () => {
     expect(
       screen.getByText(
         new RegExp(
-          `Expected graduation .* ${AGED_OUT_ENTRY_YEAR + 1} to ${AGED_OUT_ENTRY_YEAR + 6}\\.`,
+          `Expected graduation .* ${AGED_OUT_ENTRY_YEAR + 1} to ${AGED_OUT_ENTRY_YEAR + BACHELOR_MAX_YEARS}\\.`,
         ),
       ),
     ).toBeInTheDocument();
@@ -344,6 +358,27 @@ describe("GuideProfileForm", () => {
     expect(mutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({ entryYear: AGED_OUT_ENTRY_YEAR, bio: "Still guiding." }),
     );
+  });
+
+  /**
+   * The exemption belongs to the (guide, university) ROW the save names, not to the profile. Pick a
+   * different school and the server has no stored year for it — the first year against that
+   * university is a NEW value, so it range-checks it and 422s. A client that stayed exempt would
+   * promise a save that then fails, explained only by the generic root alert and with nothing on
+   * the field at fault. Keying on the selected university is what keeps the two halves agreeing.
+   */
+  it("range-checks an aged-out stored entry year once the university is switched", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={agedOut} />);
+
+    await user.click(await screen.findByRole("button", { name: "Pick a different university" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    const { min, max } = YEAR_RULES.entryYear;
+    expect(
+      await screen.findByText(`Enter an entry year between ${min} and ${max}.`),
+    ).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 
   /**
