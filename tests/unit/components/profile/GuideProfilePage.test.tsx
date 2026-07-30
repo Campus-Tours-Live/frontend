@@ -109,10 +109,13 @@ describe("GuideProfilePage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Failed to load your guide profile.");
   });
 
-  it("renders read-only account details and the edit form", () => {
+  // The edit form's shared year fields re-validate the seeded class year on mount, and that
+  // settles a tick after render — so the tests that render it await a settle point first, keeping
+  // the update inside act(). Only the tests whose profile carries a class year need this.
+  it("renders read-only account details and the edit form", async () => {
     render(<GuideProfilePage />);
 
-    expect(screen.getByRole("heading", { name: "Profile" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Profile" })).toBeInTheDocument();
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
     expect(screen.getByText("March 2025")).toBeInTheDocument();
@@ -121,7 +124,7 @@ describe("GuideProfilePage", () => {
     expect(screen.getByRole("button", { name: "Save profile" })).toBeInTheDocument();
   });
 
-  it("falls back to em dashes when display name and email are missing", () => {
+  it("falls back to em dashes when display name and email are missing", async () => {
     mockUseMe.mockReturnValue({
       me: {
         provisioningStatus: "PROVISIONED",
@@ -137,7 +140,7 @@ describe("GuideProfilePage", () => {
     });
     render(<GuideProfilePage />);
 
-    expect(screen.getAllByText("—")).toHaveLength(2);
+    expect(await screen.findAllByText("—")).toHaveLength(2);
   });
 
   it("falls back to an em dash for verification when the guide has no universities yet", () => {
@@ -158,11 +161,11 @@ describe("GuideProfilePage", () => {
    * `me.provisioningStatus` before reading `user.createdAt` rather than assuming the caller already
    * did. Pin BOTH branches of that narrowing guard.
    */
-  it("defensively shows an em dash for member since when me is not (yet) a PROVISIONED principal", () => {
+  it("defensively shows an em dash for member since when me is not (yet) a PROVISIONED principal", async () => {
     mockUseMe.mockReturnValue({ me: undefined });
     render(<GuideProfilePage />);
 
     // Name + email + member-since all fall back to the same em dash when there is no principal.
-    expect(screen.getAllByText("—")).toHaveLength(3);
+    expect(await screen.findAllByText("—")).toHaveLength(3);
   });
 });

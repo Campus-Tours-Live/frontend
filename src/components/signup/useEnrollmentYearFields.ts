@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
   useWatch,
   type Control,
@@ -79,19 +79,14 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
   // in the form, still passing. Re-run its validation whenever either input to the rule moves —
   // including a background refetch that changes `yearRules` itself.
   //
-  // Not on the FIRST run, though. `GuideProfileForm` seeds all three fields from the saved profile,
-  // and on mount the rules have not arrived yet — `classRange` is null, so the validator can only
-  // answer "Enter your entry year first." under a class year whose entry year is filled in right
-  // beside it. Nothing has been judged against an old window at that point, so there is nothing to
-  // re-judge; both forms validate on submit (and on blur), and the run after the rules land still
-  // covers the seeded value.
-  const rechecked = useRef(false);
+  // Gated on `yearRules` being HERE, because without them `classYearRange` can't be computed and
+  // `validateClassYear` can only answer "Enter your entry year first." — which, on a form that
+  // seeds all three fields from a saved profile (`GuideProfileForm`), paints that message under a
+  // class year whose entry year is filled in right beside it. The precondition, not a run count:
+  // the rules can be absent on any run (a degree change while the request is still in flight), and
+  // being present on the first one is normal whenever the 1h-fresh query is already cached.
   useEffect(() => {
-    if (!rechecked.current) {
-      rechecked.current = true;
-      return;
-    }
-    if (getValues(classYearName)) void trigger(classYearName);
+    if (yearRules && getValues(classYearName)) void trigger(classYearName);
   }, [entryYearRaw, degreeValue, yearRules, classYearName, trigger, getValues]);
 
   return {

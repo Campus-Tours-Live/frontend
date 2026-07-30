@@ -1,4 +1,4 @@
-import { type ReactElement } from "react";
+import { type ReactElement, type ReactNode } from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -43,6 +43,11 @@ const YEAR_RULES: EnrollmentYearRules = {
   ],
   defaultMaxYearsToGraduate: 8,
 };
+// The rules are a network read: `false` is the in-flight state every cold load starts in, `true`
+// the already-cached one (the query is fresh for an hour, so a profile page opened after onboarding
+// renders with them in hand). Both are reachable at ANY render, which is why the hook gates on the
+// rules being present rather than on how many times its effect has run.
+let rulesReady = true;
 
 // firstName/lastName are identity fields — no longer part of GuideProfile (Profile Contract
 // v2), so the form sources its name defaults from useMe().user instead of the `profile` prop.
@@ -62,9 +67,9 @@ jest.mock("@/lib/data-access", () => ({
   useMajors: (schoolId: string | null | undefined) => mockUseMajors(schoolId),
   useDegrees: (schoolId: string | null | undefined) => mockUseDegrees(schoolId),
   useEnrollmentYears: () => ({
-    data: YEAR_RULES,
-    isLoading: false,
-    isFetching: false,
+    data: rulesReady ? YEAR_RULES : undefined,
+    isLoading: !rulesReady,
+    isFetching: !rulesReady,
     isError: false,
     refetch: jest.fn(),
   }),
@@ -120,14 +125,20 @@ const enrolled = (entryYear: number, classYear: string): GuideProfile => ({
   universities: [{ ...university, entryYear, classYear }],
 });
 
+// The provider goes in as a `wrapper` rather than around `ui`, so the returned `rerender` re-runs
+// the form inside the SAME client — which is how a test re-renders after flipping `rulesReady`.
 function renderWithQuery(ui: ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  const Wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
+  return render(ui, { wrapper: Wrapper });
 }
 
 beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(profile);
+  rulesReady = true;
   mockUseTourTopics.mockReturnValue({
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
@@ -170,10 +181,12 @@ describe("GuideProfileForm", () => {
     expect(screen.getByText("Profile saved.")).toBeInTheDocument();
   });
 
-  it("renders entry year before class year, prefilled from the profile", () => {
+  it("renders entry year before class year, prefilled from the profile", async () => {
     renderWithQuery(<GuideProfileForm profile={profile} />);
 
-    expect(screen.getByLabelText(/entry year/i)).toHaveValue("2023");
+    // `findBy` rather than `getBy`: a seeded class year makes the shared effect re-validate on
+    // mount, and that resolves a tick later — awaiting a settle point keeps the update inside act.
+    expect(await screen.findByLabelText(/entry year/i)).toHaveValue("2023");
     // Class year's window is derived from entry year, so asking for the derived value first is
     // what made the old rule feel arbitrary — the shared component fixes the order for both forms.
     const labels = screen.getAllByText(/Entry year|Class year/).map((el) => el.textContent);
@@ -209,18 +222,66 @@ describe("GuideProfileForm", () => {
   });
 
   /**
-   * The shared re-validate effect skips its FIRST run. This form seeds all three year inputs from
-   * the saved profile, and in the real app the rules have not arrived on that run — the class-year
-   * validator can only answer "Enter your entry year first." then, which would paint a red error
-   * under a disabled field on page load, beside a filled-in entry year.
+   * The COLD path. This form seeds all three year inputs from the saved profile, so the shared
+   * re-validate effect has something to judge from the very first render — but with the rules
+   * still in flight `validateClassYear` can only answer "Enter your entry year first.", which as
+   * an ERROR would sit under a class year whose entry year is filled in right beside it. Nothing
+   * is flagged until the rules land; then the real window applies.
    */
-  it("does not judge a seeded class year on the first render", () => {
-    // 2030 is outside the bachelor's window (2021–2026) — still nothing on screen until an input
-    // to the window actually moves.
+  it("waits for the year rules before flagging a seeded class year", async () => {
+    const user = userEvent.setup();
+    // One profile object across both renders: a new identity would re-run the form's `reset`
+    // effect, which clears errors and would mask what this test is watching for.
+    const seeded = enrolled(2020, "2030");
+    rulesReady = false;
+    const { rerender } = renderWithQuery(<GuideProfileForm profile={seeded} />);
+
+    // No field error anywhere — `field-error` is the only thing on this form with role="alert"
+    // until a save fails, so this covers the misleading message specifically.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    // The rules can still be missing on a LATER run: degree is gated on the university, not on the
+    // rules request, so it is editable throughout the load. Changing it re-runs the effect.
+    await user.selectOptions(screen.getByLabelText(/degree/i), "Master's Degree");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    rulesReady = true;
+    rerender(<GuideProfileForm profile={seeded} />);
+
+    // 2030 is outside the master's window (2021–2023), and now there are rules to say so.
+    expect(await screen.findByText(/graduation year between 2021 and 2023/i)).toBeInTheDocument();
+  });
+
+  /**
+   * The WARM path — same data, same screen, same answer. The rules query is fresh for an hour, so
+   * a profile page opened after onboarding renders with them already in hand and the effect's
+   * first run is the one that judges. Keying the guard on the rules rather than on a run count is
+   * what keeps this in step with the cold path above.
+   */
+  it("flags a seeded class year immediately when the rules are already cached", async () => {
     renderWithQuery(<GuideProfileForm profile={enrolled(2020, "2030")} />);
 
-    expect(screen.queryByText(/graduation year between/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/enter your entry year first/i)).not.toBeInTheDocument();
+    expect(await screen.findByText(/graduation year between 2021 and 2026/i)).toBeInTheDocument();
+  });
+
+  /**
+   * The backend has required degree since CTL-96, so a profile stored before that — with no degree
+   * at all — cannot save until the guide picks one. That is the intended consequence of sending it
+   * unconditionally, and it is a real population, so it gets a test.
+   */
+  it("blocks saving a profile that has no degree yet", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(
+      <GuideProfileForm
+        profile={{ ...profile, universities: [{ ...university, degree: undefined }] }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    // The same message GuideOnboardingForm shows for the same field.
+    expect(await screen.findByText("Please select your degree.")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 
   /** degree is an input to classYear's ceiling here too — same reactive wiring as onboarding. */
@@ -373,11 +434,11 @@ describe("GuideProfileForm", () => {
     expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ spokenLanguages: ["es"] }));
   });
 
-  it("shows loading copy while tour topics load", () => {
+  it("shows loading copy while tour topics load", async () => {
     mockUseTourTopics.mockReturnValue({ data: [], isLoading: true });
     renderWithQuery(<GuideProfileForm profile={profile} />);
 
-    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    expect(await screen.findByText("Loading…")).toBeInTheDocument();
   });
 
   it("toggles specialty chips", async () => {
@@ -403,18 +464,19 @@ describe("GuideProfileForm", () => {
     expect(screen.getByLabelText(/major/i)).toHaveValue("");
   });
 
-  it("defaults specialty and major options to empty lists when the hooks return no data", () => {
+  it("defaults specialty and major options to empty lists when the hooks return no data", async () => {
     mockUseTourTopics.mockReturnValue({ data: undefined, isLoading: false } as never);
     mockUseMajors.mockReturnValue({ data: undefined } as never);
     mockUseDegrees.mockReturnValue({ data: undefined } as never);
     renderWithQuery(<GuideProfileForm profile={profile} />);
 
+    // majorOptions defaults to [] → only the saved-major fallback option is present.
+    const majorSelect = await screen.findByLabelText(/major/i);
+
     // topicOptions defaults to [] → no specialty chips rendered (and not the loading copy).
     expect(screen.queryByText("Loading…")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "General campus" })).not.toBeInTheDocument();
 
-    // majorOptions defaults to [] → only the saved-major fallback option is present.
-    const majorSelect = screen.getByLabelText(/major/i);
     expect(within(majorSelect).getAllByRole("option")).toHaveLength(2);
     expect(
       within(majorSelect).getByRole("option", { name: "Computer Science" }),

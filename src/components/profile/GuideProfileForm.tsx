@@ -231,7 +231,9 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           <Controller
             control={control}
             name="degree"
-            rules={{ required: "Degree is required" }}
+            // Same wording as GuideOnboardingForm's degree rule — one field, one message. Nothing
+            // shared owns degree yet, so this is kept in step by hand (and by the test below).
+            rules={{ required: "Please select your degree." }}
             render={({ field }) => (
               <SelectField
                 label="Degree"
