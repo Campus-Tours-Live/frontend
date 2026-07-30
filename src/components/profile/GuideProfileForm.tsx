@@ -273,6 +273,13 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
           getValues={getValues}
           trigger={trigger}
           clearErrors={clearErrors}
+          // The year the SERVER returned. Leaving it UNCHANGED is exempt from the entry-year
+          // window, which advances every 1 January while a stored year does not — otherwise a guide
+          // who enrolled long enough ago is told their real entry year is invalid, class year is
+          // disabled beside it, and no edit to any other field can be saved. The backend applies
+          // the same rule (it range-checks only a changed value); onboarding, which has no stored
+          // value, passes nothing here and stays fully range-checked.
+          storedEntryYear={profile.universities?.[0]?.entryYear}
         />
 
         <Textarea

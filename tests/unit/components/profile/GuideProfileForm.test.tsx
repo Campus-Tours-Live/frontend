@@ -1,5 +1,5 @@
 import { type ReactElement, type ReactNode } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GuideProfileForm } from "@/components/profile/GuideProfileForm";
@@ -127,6 +127,15 @@ const enrolled = (entryYear: number, classYear: string): GuideProfile => ({
   ...profile,
   universities: [{ ...university, entryYear, classYear }],
 });
+
+// A stored entry year that has AGED OUT of the server's window: the window advances every
+// 1 January and a saved year does not, so this is every long-serving guide eventually. Derived
+// from the fixture rather than written as a literal, so revising the window above cannot quietly
+// stop this case being aged out.
+const AGED_OUT_ENTRY_YEAR = YEAR_RULES.entryYear.min - 2;
+// Its class year is still derived from the entry year exactly as ever — bachelor's is +6, so
+// 2015–2020 here, entirely in the past and entirely correct.
+const agedOut = enrolled(AGED_OUT_ENTRY_YEAR, String(AGED_OUT_ENTRY_YEAR + 4));
 
 // The provider goes in as a `wrapper` rather than around `ui`, so the returned `rerender` re-runs
 // the form inside the SAME client — which is how a test re-renders after flipping `rulesReady`.
@@ -296,6 +305,78 @@ describe("GuideProfileForm", () => {
     renderWithQuery(<GuideProfileForm profile={enrolled(2020, "2030")} />);
 
     expect(await screen.findByText(/graduation year between 2021 and 2026/i)).toBeInTheDocument();
+  });
+
+  /**
+   * The stored value is EXEMPT from the entry-year window. The window advances every 1 January and
+   * a stored year does not, so a guide who enrolled long enough ago was being told a true fact was
+   * invalid — with class year greyed out beside it, which is what stopped them ever reaching Save.
+   * The class-year window is still derived from the entry year, unchanged: in the past, and right.
+   */
+  it("accepts a stored entry year that has aged out, and leaves class year usable", async () => {
+    renderWithQuery(<GuideProfileForm profile={agedOut} />);
+
+    expect(await screen.findByLabelText(/entry year/i)).toHaveValue(String(AGED_OUT_ENTRY_YEAR));
+    // The seeded class year makes the shared re-validate effect run on mount, and it resolves a
+    // tick later — flushing it is what makes the "nothing is flagged" assertion below mean
+    // anything, since before this fix that run is where "Enter your entry year first." came from.
+    await act(async () => {});
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/class year/i)).toBeEnabled();
+    expect(
+      screen.getByText(
+        new RegExp(
+          `Expected graduation .* ${AGED_OUT_ENTRY_YEAR + 1} to ${AGED_OUT_ENTRY_YEAR + 6}\\.`,
+        ),
+      ),
+    ).toBeInTheDocument();
+  });
+
+  /** …and the point of all that: an edit to some OTHER field now actually saves. */
+  it("saves an edit elsewhere on a profile whose entry year has aged out", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={agedOut} />);
+
+    await user.clear(await screen.findByLabelText(/short bio/i));
+    await user.type(screen.getByLabelText(/short bio/i), "Still guiding.");
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ entryYear: AGED_OUT_ENTRY_YEAR, bio: "Still guiding." }),
+    );
+  });
+
+  /**
+   * The exemption is for the value the SERVER returned, not for "anything below the window" — a
+   * CHANGED value is checked against the live window exactly as before, so nobody can newly set an
+   * aged-out year from here.
+   */
+  it("still rejects an entry year edited to a different out-of-window value", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={agedOut} />);
+
+    await user.clear(await screen.findByLabelText(/entry year/i));
+    await user.type(screen.getByLabelText(/entry year/i), String(AGED_OUT_ENTRY_YEAR - 1));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    const { min, max } = YEAR_RULES.entryYear;
+    expect(
+      await screen.findByText(`Enter an entry year between ${min} and ${max}.`),
+    ).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("accepts an edit that moves an aged-out entry year into the window", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideProfileForm profile={agedOut} />);
+
+    await user.clear(await screen.findByLabelText(/entry year/i));
+    await user.type(screen.getByLabelText(/entry year/i), String(YEAR_RULES.entryYear.min));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ entryYear: YEAR_RULES.entryYear.min }),
+    );
   });
 
   /**

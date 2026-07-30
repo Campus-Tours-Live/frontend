@@ -319,6 +319,28 @@ describe("GuideOnboardingForm (multi-step wizard)", () => {
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
+  /**
+   * GuideProfileForm exempts an entry year that is UNCHANGED from the one the server returned, so
+   * a guide whose stored year has aged out of the window can still save. Onboarding has no stored
+   * year — every value here is a new one — so the same aged-out year must still be refused, or the
+   * exemption becomes a way to set one in the first place.
+   */
+  it("has no stored entry year to exempt, so an aged-out one is still rejected", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<GuideOnboardingForm />);
+    await completeStepOne(user);
+    const { min, max } = YEAR_RULES.entryYear;
+    await user.clear(screen.getByLabelText(/entry year/i));
+    await user.type(screen.getByLabelText(/entry year/i), String(min - 2));
+    await user.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(
+      await screen.findByText(`Enter an entry year between ${min} and ${max}.`),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/short bio/i)).not.toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
   it("clears the entry-year error on focus and re-validates on blur", async () => {
     const user = userEvent.setup();
     renderWithQuery(<GuideOnboardingForm />);

@@ -2,7 +2,7 @@
 
 import { Controller, type FieldValues, type UseFormClearErrors } from "react-hook-form";
 import { Button, TextField } from "@/components/ui";
-import { validateClassYear, validateEntryYear } from "./enrollmentYears";
+import { validateClassYear } from "./enrollmentYears";
 import {
   useEnrollmentYearFields,
   type EnrollmentYearFormFields,
@@ -34,6 +34,7 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
   getValues,
   trigger,
   clearErrors,
+  storedEntryYear,
 }: EnrollmentYearFieldsProps<T>) {
   const {
     yearRules,
@@ -41,10 +42,11 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
     rulesFetching,
     yearsUnavailable,
     refetchRules,
+    validateEntry,
     entryYearIsValid,
     classRange,
     names,
-  } = useEnrollmentYearFields({ control, getValues, trigger });
+  } = useEnrollmentYearFields({ control, getValues, trigger, storedEntryYear });
 
   return (
     <>
@@ -56,7 +58,7 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
           name={names.entryYear}
           rules={{
             required: "Please enter your entry year.",
-            validate: (v) => validateEntryYear(v as string, yearRules, yearsUnavailable),
+            validate: (v) => validateEntry(v as string),
           }}
           render={({ field, fieldState }) => (
             <TextField

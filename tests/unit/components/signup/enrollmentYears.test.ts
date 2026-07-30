@@ -132,6 +132,31 @@ describe("validateEntryYear", () => {
     expect(validateEntryYear("2015", RULES)).toBe("Enter an entry year between 2016 and 2027.");
     expect(validateEntryYear("2028", RULES)).toBe("Enter an entry year between 2016 and 2027.");
   });
+
+  /**
+   * The window advances every 1 January; a year already saved against it does not. Mirrors the
+   * backend, which range-checks only a value that DIFFERS from the stored one — without this a
+   * guide who enrolled long enough ago is told a true fact is invalid and can save nothing at all.
+   */
+  describe("a value already stored on the profile", () => {
+    // Aged out by construction, so revising RULES above cannot stop these cases being the case.
+    const stored = RULES.entryYear.min - 2;
+
+    it("is exempt from the window when it is unchanged", () => {
+      expect(validateEntryYear(String(stored), RULES, false, stored)).toBe(true);
+    });
+
+    it("is still range-checked once it is changed", () => {
+      expect(validateEntryYear(String(stored - 1), RULES, false, stored)).toBe(
+        "Enter an entry year between 2016 and 2027.",
+      );
+    });
+
+    /** The exemption covers the RANGE only — the format check runs first and still applies. */
+    it("is not exempt from the 4-digit check", () => {
+      expect(validateEntryYear("14", RULES, false, 14)).toBe("Enter a 4-digit entry year.");
+    });
+  });
 });
 
 describe("validateClassYear", () => {

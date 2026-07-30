@@ -48,11 +48,20 @@ export function classYearRange(
  * `value` is optional so the same function can judge a react-hook-form `validate` argument (always
  * a string) AND a `useWatch` read taken before the field has mounted (possibly undefined) — one
  * function, so the gate that enables class year cannot disagree with the rule that blocks submit.
+ *
+ * `storedEntryYear` is the year the SERVER returned for this profile, and a value EQUAL to it is
+ * exempt from the RANGE check — the same rule the backend applies, which range-checks only a value
+ * that differs from the stored one. The window advances every 1 January and a stored year does not,
+ * so a guide who enrolled 11+ years ago is otherwise told a true fact is invalid, has class year
+ * greyed out beside it, and cannot save an edit to any other field. A CHANGED value is still
+ * checked, so nobody can newly set an aged-out year; onboarding has no stored value, passes none,
+ * and stays fully checked.
  */
 export function validateEntryYear(
   value: string | undefined,
   rules: EnrollmentYearRules | undefined,
   rulesUnavailable = false,
+  storedEntryYear?: number,
 ): true | string {
   if (!rules) {
     return rulesUnavailable
@@ -61,6 +70,9 @@ export function validateEntryYear(
   }
   if (!/^\d{4}$/.test((value ?? "").trim())) return "Enter a 4-digit entry year.";
   const year = Number(value);
+  // Unchanged from what the server returned → exempt from the window (see above). Deliberately
+  // AFTER the format check: a stored value is never a way to get a non-year past the form.
+  if (year === storedEntryYear) return true;
   const { min, max } = rules.entryYear;
   return (year >= min && year <= max) || `Enter an entry year between ${min} and ${max}.`;
 }

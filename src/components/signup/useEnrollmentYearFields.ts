@@ -24,6 +24,12 @@ export interface UseEnrollmentYearFieldsArgs<T extends FieldValues & EnrollmentY
   control: Control<T>;
   getValues: UseFormGetValues<T>;
   trigger: UseFormTrigger<T>;
+  /**
+   * The entry year the SERVER returned for this profile, where there is one. An UNCHANGED value is
+   * exempt from the entry-year window — see `validateEntryYear` for why. Onboarding is always a NEW
+   * value, omits this, and stays fully range-checked.
+   */
+  storedEntryYear?: number;
 }
 
 /**
@@ -39,7 +45,7 @@ export interface UseEnrollmentYearFieldsArgs<T extends FieldValues & EnrollmentY
 export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFormFields>(
   args: UseEnrollmentYearFieldsArgs<T>,
 ) {
-  const { control, getValues, trigger } = args;
+  const { control, getValues, trigger, storedEntryYear } = args;
   // The field names are literals on `EnrollmentYearFormFields`, but TypeScript can't see through
   // the generic to say so — hence the one cast per name, kept here rather than at each call site.
   const entryYearName = "entryYear" as FieldPath<T>;
@@ -67,9 +73,12 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
 
   const yearsUnavailable = !rulesLoading && (rulesErrored || !yearRules);
 
-  // The gate reuses the FIELD VALIDATOR rather than re-deriving the bounds check, so "valid enough
-  // to unlock class year" and "valid enough to submit" can never disagree.
-  const entryYearIsValid = validateEntryYear(entryYearRaw, yearRules, yearsUnavailable) === true;
+  // ONE binding of the validator — handed to the field itself AND used for the gate below, so
+  // "valid enough to unlock class year" and "valid enough to submit" can never disagree, and the
+  // stored-year exemption reaches both without either side re-deriving it.
+  const validateEntry = (value: string | undefined) =>
+    validateEntryYear(value, yearRules, yearsUnavailable, storedEntryYear);
+  const entryYearIsValid = validateEntry(entryYearRaw) === true;
   const classRange =
     yearRules && entryYearIsValid
       ? classYearRange(yearRules, Number(entryYearRaw), degreeValue)
@@ -95,6 +104,7 @@ export function useEnrollmentYearFields<T extends FieldValues & EnrollmentYearFo
     rulesFetching,
     yearsUnavailable,
     refetchRules,
+    validateEntry,
     entryYearIsValid,
     classRange,
     // Handed back so `EnrollmentYearFields` can name its Controllers without repeating the casts.
