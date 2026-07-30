@@ -389,6 +389,17 @@
   .field-description {
     @apply mb-3 text-ui-sm text-ink-soft;
   }
+
+  /* Opt-in, and only where it earns its keep: a two-column row whose descriptions must line their
+     controls up. Scoped rather than global because `description` is used by six components, most of
+     them single-column or single-line — reserving two lines for all of them would add blank space
+     to unrelated forms to fix a problem they do not have. Gated at the `sm` breakpoint for the same
+     reason: stacked on mobile there is no neighbour to align with. */
+  @media (min-width: 640px) {
+    .paired-fields .field-description {
+      min-height: 2.5rem;
+    }
+  }
   .input {
     @apply w-full px-[15px] py-3 border-[1.5px] border-border rounded-field
            bg-white text-ink text-[14.5px] font-sans transition-all duration-150

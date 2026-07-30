@@ -50,7 +50,7 @@ export function EnrollmentYearFields<T extends FieldValues & EnrollmentYearFormF
     <>
       {/* Entry year FIRST: class year's window is derived from it, so asking for the derived
           value before its input is what made the old rule feel arbitrary. */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="paired-fields grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Controller
           control={control}
           name={names.entryYear}
