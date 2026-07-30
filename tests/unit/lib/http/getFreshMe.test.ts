@@ -45,7 +45,7 @@ describe("getFreshMe", () => {
   });
 
   it("throws when the body fails meSchema validation (fail-closed contract violation)", async () => {
-    mockedGetJson.mockResolvedValue({ accountState: "PROVISIONED", roles: [] } as never);
+    mockedGetJson.mockResolvedValue({ provisioningStatus: "PROVISIONED", roles: [] } as never);
 
     await expect(getFreshMe()).rejects.toThrow(/meSchema validation/);
   });

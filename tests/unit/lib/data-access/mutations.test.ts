@@ -74,7 +74,7 @@ describe("setCurrentRoleMutation", () => {
     // The unwrapped Me shape (see me.query.ts / fetchMe) — patch is `p.currentRole`, not
     // `p.data.currentRole`. Other fields survive untouched.
     const prevMe = {
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: { id: "u1" },
       roles: ["PARTICIPANT", "GUIDE"],
       currentRole: "PARTICIPANT",
@@ -85,7 +85,12 @@ describe("setCurrentRoleMutation", () => {
     expect(updater(null)).toBeNull();
     // No-op for a cached PENDING `me` too — a role switch is unreachable for a principal
     // holding no roles; never fabricate a currentRole onto it (CTL-97).
-    const pendingMe = { accountState: "PENDING", user: { id: null }, roles: [], currentRole: null };
+    const pendingMe = {
+      provisioningStatus: "PENDING",
+      user: { id: null },
+      roles: [],
+      currentRole: null,
+    };
     expect(updater(pendingMe)).toBe(pendingMe);
 
     const keys = invalidatedKeys(qc);
@@ -99,7 +104,7 @@ describe("setCurrentRoleMutation", () => {
     // cancellation/revert machinery (a stub QueryClient can't reproduce the race).
     const qc = new QueryClient();
     const seeded: Me = {
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: {
         id: "u1",
         firstName: null,

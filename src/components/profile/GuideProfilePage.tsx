@@ -55,7 +55,7 @@ export function GuideProfilePage() {
               Member since
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {formatMonthYear(me?.accountState === "PROVISIONED" ? me.user.createdAt : null)}
+              {formatMonthYear(me?.provisioningStatus === "PROVISIONED" ? me.user.createdAt : null)}
             </Body>
           </div>
           <div>

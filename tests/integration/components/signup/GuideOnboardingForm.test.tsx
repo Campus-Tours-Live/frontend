@@ -30,7 +30,7 @@ jest.mock("@/lib/data-access", () => ({
   useMe: () => ({
     me: meValue,
     isLoading: false,
-    isOnboarded: meValue?.accountState === "PROVISIONED",
+    isOnboarded: meValue?.provisioningStatus === "PROVISIONED",
     hasRole: () => false,
   }),
   useTourTopics: () => ({

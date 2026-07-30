@@ -45,7 +45,7 @@ beforeEach(() => {
 describe("useOnboardRole", () => {
   it("POSTs /v1/users/me/roles/{role} (lowercased) with the body, patches ['me'], and invalidates ['dashboard']", async () => {
     const commandBody = {
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: {
         id: "u1",
         firstName: null,
@@ -81,7 +81,7 @@ describe("useOnboardRole", () => {
       }),
     );
     expect(client.getQueryData(["me"])).toEqual({
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: commandBody.user,
       roles: ["PARTICIPANT", "GUIDE"],
       currentRole: "GUIDE",
@@ -144,7 +144,7 @@ describe("useOnboardRole", () => {
       .mockResolvedValueOnce(
         jsonResponse(200, {
           data: {
-            accountState: "PENDING",
+            provisioningStatus: "PENDING",
             user: {
               id: null,
               firstName: null,

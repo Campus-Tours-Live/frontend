@@ -15,7 +15,7 @@ describe("meSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual(body);
-      expect(result.data.accountState).toBe("PENDING");
+      expect(result.data.provisioningStatus).toBe("PENDING");
       expect(result.data.user.id).toBeNull();
       expect(result.data.roles).toEqual([]);
       expect(result.data.currentRole).toBeNull();
@@ -29,7 +29,7 @@ describe("meSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data).toEqual(body);
-      expect(result.data.accountState).toBe("PROVISIONED");
+      expect(result.data.provisioningStatus).toBe("PROVISIONED");
       expect(result.data.user.id).toBe("u1");
       expect(result.data.roles).toEqual(["PARTICIPANT", "GUIDE"]);
     }
@@ -87,8 +87,8 @@ describe("meSchema", () => {
     expect(meSchema.safeParse(body).success).toBe(false);
   });
 
-  it("FAILS on an unrecognized/missing accountState (no discriminant match)", () => {
-    expect(meSchema.safeParse({ accountState: "SUSPENDED" }).success).toBe(false);
+  it("FAILS on an unrecognized/missing provisioningStatus (no discriminant match)", () => {
+    expect(meSchema.safeParse({ provisioningStatus: "SUSPENDED" }).success).toBe(false);
     expect(meSchema.safeParse({}).success).toBe(false);
     expect(meSchema.safeParse(null).success).toBe(false);
   });
@@ -106,7 +106,7 @@ describe("meSchema", () => {
    */
   it("parses the REAL bff PENDING wire body — no accountStatus/ageBand/createdAt keys at all", () => {
     const realBffPendingBody = {
-      accountState: "PENDING",
+      provisioningStatus: "PENDING",
       user: {
         id: null,
         email: "x@y.z",
@@ -130,7 +130,7 @@ describe("meSchema", () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.accountState).toBe("PENDING");
+      expect(result.data.provisioningStatus).toBe("PENDING");
       expect(result.data.user).toEqual({
         id: null,
         email: "x@y.z",
@@ -151,7 +151,7 @@ describe("meSchema", () => {
   // that still happens to carry them must keep parsing too.
   it("still parses a PENDING body that ALSO carries the (now-unused) legacy keys", () => {
     const bodyWithLegacyKeys = {
-      accountState: "PENDING",
+      provisioningStatus: "PENDING",
       user: {
         id: null,
         email: "x@y.z",

@@ -9,7 +9,7 @@ import { GuideOnboardingForm } from "@/components/signup/GuideOnboardingForm";
  * accounts can't become guides (Core enforces this at submit too — this is the upfront UX block,
  * sourced from the participant profile, replacing the removed session onboardingRole marker).
  *
- * Branches explicitly on `accountState` (never inferred from `roles.length`/`id`):
+ * Branches explicitly on `provisioningStatus` (never inferred from `roles.length`/`id`):
  *  - unauthenticated               → /signin
  *  - PENDING                       → render (first onboarding — no roles, no participant
  *                                     profile yet, so the PARENT eligibility check below must
@@ -23,7 +23,7 @@ export default async function GuideOnboardingPage() {
   const me = await getServerMe();
   if (!me) redirect("/signin");
 
-  if (me.accountState === "PENDING") {
+  if (me.provisioningStatus === "PENDING") {
     return (
       <section className="mx-auto max-w-[680px] px-6 pb-24 pt-10">
         <GuideOnboardingForm />

@@ -28,13 +28,13 @@ type _PlainRoleArrayIsNotTheSameShape = Expect<
 // `PendingMe.roles` is exactly the empty tuple.
 type _PendingRolesIsEmptyTuple = Expect<Equal<PendingMe["roles"], readonly []>>;
 
-// `Me` is exactly the union of the two — narrowing on `accountState` must be exhaustive.
+// `Me` is exactly the union of the two — narrowing on `provisioningStatus` must be exhaustive.
 type _MeIsTheUnion = Expect<Equal<Me, PendingMe | ProvisionedMe>>;
 
-/** Narrows `Me` on `accountState` — this function only TYPECHECKS if narrowing actually works:
+/** Narrows `Me` on `provisioningStatus` — this function only TYPECHECKS if narrowing actually works:
  *  `roles[0]` is only known-defined once TS has narrowed to the non-empty tuple branch. */
 function narrow(me: Me): Role | undefined {
-  if (me.accountState === "PROVISIONED") {
+  if (me.provisioningStatus === "PROVISIONED") {
     const first: Role = me.roles[0]; // compiles only because of the non-empty tuple
     const id: string = me.user.id; // compiles only because ProvisionedUser.id is `string`
     void id;
@@ -50,7 +50,7 @@ function narrow(me: Me): Role | undefined {
 describe("Me discriminated union — type-level", () => {
   it("narrows PROVISIONED → roles[0]: Role, user.id: string (compile-time checked above)", () => {
     const result = narrow({
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: {
         id: "u1",
         firstName: null,
@@ -69,7 +69,7 @@ describe("Me discriminated union — type-level", () => {
 
   it("narrows PENDING → user.id: null, roles: readonly [] (compile-time checked above)", () => {
     const result = narrow({
-      accountState: "PENDING",
+      provisioningStatus: "PENDING",
       user: {
         id: null,
         firstName: null,

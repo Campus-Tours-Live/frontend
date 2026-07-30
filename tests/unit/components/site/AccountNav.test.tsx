@@ -27,10 +27,10 @@ function setupMe(me: MePartial | null, opts?: { isOnboarded?: boolean }) {
   (useMe as jest.Mock).mockReturnValue({
     me: me
       ? {
-          // AccountNav gates directly on `me.accountState` (CTL-97 constraint 2 — never on
+          // AccountNav gates directly on `me.provisioningStatus` (CTL-97 constraint 2 — never on
           // `roles.length`/a separate `isOnboarded` boolean), so a "not onboarded" fixture must
-          // carry a non-PROVISIONED accountState for the render-gate to actually reject it.
-          accountState: isOnboarded ? "PROVISIONED" : "PENDING",
+          // carry a non-PROVISIONED provisioningStatus for the render-gate to actually reject it.
+          provisioningStatus: isOnboarded ? "PROVISIONED" : "PENDING",
           currentRole: me.currentRole,
           roles: me.roles,
           user: { displayName: me.displayName, firstName: me.firstName },

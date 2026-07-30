@@ -25,7 +25,7 @@ export type OnboardableRole = "GUIDE" | "PARTICIPANT";
  */
 export const onboardingCommandResponseSchema = z
   .object({
-    accountState: z.literal("PROVISIONED"),
+    provisioningStatus: z.literal("PROVISIONED"),
     user: provisionedUserSchema,
     roles: z.array(roleSchema).min(1),
     acquiredRole: currentRoleValueSchema,
@@ -116,7 +116,7 @@ async function patchMeCache(qc: QueryClient, me: ProvisionedMe): Promise<void> {
 
 function toProvisionedMe(response: OnboardingCommandResponse): ProvisionedMe {
   return {
-    accountState: "PROVISIONED",
+    provisioningStatus: "PROVISIONED",
     user: response.user,
     // `.min(1)` above is enforced at runtime; bridges the same TS-level gap as
     // `me.schema.ts`'s `provisionedMeSchema` transform (`Role[]` → the non-empty tuple
@@ -142,7 +142,7 @@ function toProvisionedMe(response: OnboardingCommandResponse): ProvisionedMe {
 async function reconcile(role: OnboardableRole): Promise<ReconcileResult> {
   const fresh = await getFreshMe();
 
-  if (fresh.accountState === "PROVISIONED") {
+  if (fresh.provisioningStatus === "PROVISIONED") {
     return (fresh.roles as readonly Role[]).includes(role)
       ? { status: "ACQUIRED", me: fresh }
       : { status: "PROVISIONED_WITHOUT_ROLE", me: fresh };

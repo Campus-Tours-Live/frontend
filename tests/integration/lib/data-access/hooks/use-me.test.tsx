@@ -161,7 +161,7 @@ describe("useMe", () => {
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
   });
 
-  it("PENDING (no roles yet) → onboarded false even though me is present — gated on accountState, not roles.length", async () => {
+  it("PENDING (no roles yet) → onboarded false even though me is present — gated on provisioningStatus, not roles.length", async () => {
     routeFetch({
       authenticated: true,
       userinfo: () => jsonResponse(200, { data: pendingMe() }),
@@ -171,7 +171,7 @@ describe("useMe", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ accountState: "PENDING" });
+    expect(result.current.me).toMatchObject({ provisioningStatus: "PENDING" });
     expect(result.current.isOnboarded).toBe(false);
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
   });

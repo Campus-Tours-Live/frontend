@@ -194,12 +194,12 @@ describe("apiJson", () => {
 describe("getJson", () => {
   it("forwards init (e.g. cache: no-store) through to apiFetch and returns the unwrapped data", async () => {
     mockedApiFetch.mockResolvedValue(
-      makeRes({ ok: true, status: 200, json: { data: { accountState: "PENDING" } } }),
+      makeRes({ ok: true, status: 200, json: { data: { provisioningStatus: "PENDING" } } }),
     );
 
     const result = await getJson("/v1/userinfo", { cache: "no-store" });
 
-    expect(result).toEqual({ accountState: "PENDING" });
+    expect(result).toEqual({ provisioningStatus: "PENDING" });
     expect(mockedApiFetch).toHaveBeenCalledWith("/v1/userinfo", { cache: "no-store" });
   });
 

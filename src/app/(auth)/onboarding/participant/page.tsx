@@ -6,7 +6,7 @@ import { ParticipantOnboardingForm } from "@/components/signup/ParticipantOnboar
  * Participant onboarding shell + access guard. Acquisition-only: a user who already holds
  * PARTICIPANT goes to their dashboard; unauthenticated to auth. Everyone else is eligible.
  *
- * Branches explicitly on `accountState` (never inferred from `roles.length`/`id`):
+ * Branches explicitly on `provisioningStatus` (never inferred from `roles.length`/`id`):
  *  - unauthenticated                    → /signin
  *  - PENDING                            → render (first onboarding — no roles yet)
  *  - PROVISIONED, holds PARTICIPANT     → /dashboard
@@ -17,7 +17,7 @@ export default async function ParticipantOnboardingPage() {
   const me = await getServerMe();
   if (!me) redirect("/signin");
 
-  if (me.accountState === "PROVISIONED" && me.roles.includes("PARTICIPANT")) {
+  if (me.provisioningStatus === "PROVISIONED" && me.roles.includes("PARTICIPANT")) {
     redirect("/dashboard");
   }
   return (

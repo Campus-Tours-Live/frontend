@@ -44,7 +44,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockUseMe.mockReturnValue({
     me: {
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: {
         firstName: "Ada",
         lastName: "Lovelace",
@@ -100,7 +100,7 @@ describe("GuideProfilePage", () => {
   it("falls back to em dashes when display name and email are missing", () => {
     mockUseMe.mockReturnValue({
       me: {
-        accountState: "PROVISIONED",
+        provisioningStatus: "PROVISIONED",
         user: {
           firstName: null,
           lastName: null,
@@ -131,7 +131,7 @@ describe("GuideProfilePage", () => {
    * `createdAt` (CTL-97) only exists on `ProvisionedUser` — `PendingUser` genuinely has no such
    * field on the wire (bff `PendingUserInfo`). This route only renders once `currentRole ===
    * "GUIDE"` (itself only reachable once PROVISIONED), but the component defensively narrows
-   * `me.accountState` before reading `user.createdAt` rather than assuming the caller already
+   * `me.provisioningStatus` before reading `user.createdAt` rather than assuming the caller already
    * did. Pin BOTH branches of that narrowing guard.
    */
   it("defensively shows an em dash for member since when me is not (yet) a PROVISIONED principal", () => {

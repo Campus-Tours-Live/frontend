@@ -145,7 +145,7 @@ describe("getServerMe — with a session cookie and BFF_URL set", () => {
    */
   it("returns a PENDING Me (not null) for the real bff PENDING wire body", async () => {
     const realBffPendingBody = {
-      accountState: "PENDING",
+      provisioningStatus: "PENDING",
       user: {
         id: null,
         email: "x@y.z",
@@ -165,6 +165,6 @@ describe("getServerMe — with a session cookie and BFF_URL set", () => {
 
     expect(result).not.toBeNull();
     expect(result).toEqual(realBffPendingBody);
-    expect(result?.accountState).toBe("PENDING");
+    expect(result?.provisioningStatus).toBe("PENDING");
   });
 });

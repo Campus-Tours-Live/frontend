@@ -55,7 +55,7 @@ export const provisionedUserSchema = z.object({
 
 const pendingMeSchema = z
   .object({
-    accountState: z.literal("PENDING"),
+    provisioningStatus: z.literal("PENDING"),
     user: pendingUserSchema,
     roles: z.tuple([]),
     currentRole: z.null(),
@@ -64,7 +64,7 @@ const pendingMeSchema = z
 
 const provisionedMeSchema = z
   .object({
-    accountState: z.literal("PROVISIONED"),
+    provisioningStatus: z.literal("PROVISIONED"),
     user: provisionedUserSchema,
     roles: z.array(roleSchema).min(1),
     currentRole: currentRoleValueSchema.nullable(),
@@ -91,7 +91,7 @@ const provisionedMeSchema = z
     }),
   );
 
-export const meSchema = z.discriminatedUnion("accountState", [
+export const meSchema = z.discriminatedUnion("provisioningStatus", [
   pendingMeSchema,
   provisionedMeSchema,
 ]);

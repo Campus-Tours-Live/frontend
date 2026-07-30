@@ -8,7 +8,7 @@ import type { PendingMe, ProvisionedMe, Role } from "@/lib/data-access/types";
  */
 export function pendingMe(overrides: Partial<PendingMe["user"]> = {}): PendingMe {
   return {
-    accountState: "PENDING",
+    provisioningStatus: "PENDING",
     user: {
       id: null,
       firstName: null,
@@ -31,7 +31,7 @@ export function provisionedMe(
 ): ProvisionedMe {
   const { id = "u1", roles = ["PARTICIPANT"], currentRole, ...userOverrides } = opts;
   return {
-    accountState: "PROVISIONED",
+    provisioningStatus: "PROVISIONED",
     user: {
       id,
       firstName: null,

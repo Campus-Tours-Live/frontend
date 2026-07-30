@@ -30,7 +30,7 @@ describe("useMe", () => {
     expect(result.current.hasRole("GUIDE")).toBe(false);
   });
 
-  it("PENDING principal (no roles yet) → not onboarded, gated on accountState not roles.length", () => {
+  it("PENDING principal (no roles yet) → not onboarded, gated on provisioningStatus not roles.length", () => {
     useQueryMock.mockReturnValue({ data: pendingMe(), isLoading: false });
     const { result } = renderHook(() => useMe());
     expect(result.current.isOnboarded).toBe(false);

@@ -52,11 +52,12 @@ export function useMe() {
      * user is signed out. Treat as "unknown": never render a signed-out state off this.
      */
     sessionUnverified,
-    /** Onboarded = a PROVISIONED principal (always holds ≥1 role). Gated on `accountState`,
+    /** Onboarded = a PROVISIONED principal (always holds ≥1 role). Gated on `provisioningStatus`,
      *  NEVER inferred from `roles.length` — a bare/pending account has no roles yet, but
      *  `roles.length` alone can't distinguish "pending" from "an empty array we forgot to
      *  populate" the way the discriminant can. */
-    isOnboarded: me?.accountState === "PROVISIONED",
-    hasRole: (r: Role) => me != null && me.accountState === "PROVISIONED" && me.roles.includes(r),
+    isOnboarded: me?.provisioningStatus === "PROVISIONED",
+    hasRole: (r: Role) =>
+      me != null && me.provisioningStatus === "PROVISIONED" && me.roles.includes(r),
   };
 }

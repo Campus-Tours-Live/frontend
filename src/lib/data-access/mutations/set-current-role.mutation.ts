@@ -44,7 +44,7 @@ export const setCurrentRoleMutation = (qc: QueryClient) => ({
       // Only a PROVISIONED `me` can hold a role to switch into — a role switch is
       // unreachable for a PENDING principal (RoleSwitcher never renders for one), so this
       // is defensive: never fabricate a `currentRole` onto a cached `PendingMe`.
-      prev && prev.accountState === "PROVISIONED"
+      prev && prev.provisioningStatus === "PROVISIONED"
         ? { ...prev, currentRole: result.currentRole }
         : prev,
     );

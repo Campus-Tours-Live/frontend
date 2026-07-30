@@ -35,7 +35,7 @@ function makeQc() {
 /** A valid 201 OnboardingCommandResponse wire body. */
 function commandResponse(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    accountState: "PROVISIONED",
+    provisioningStatus: "PROVISIONED",
     user: {
       id: "u1",
       firstName: null,
@@ -73,7 +73,7 @@ describe("onboardRole — 201 happy path", () => {
 
     expect(mockedPostJson).toHaveBeenCalledWith("/v1/users/me/roles/guide", { bio: "hi" });
     expect(result).toEqual({
-      accountState: "PROVISIONED",
+      provisioningStatus: "PROVISIONED",
       user: body201.user,
       roles: ["PARTICIPANT", "GUIDE"],
       currentRole: "GUIDE",

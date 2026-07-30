@@ -14,7 +14,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  */
 export default async function GuideLayout({ children }: { children: React.ReactNode }) {
   const me = await getServerMe();
-  if (!me || me.accountState !== "PROVISIONED") redirect("/signup/role");
+  if (!me || me.provisioningStatus !== "PROVISIONED") redirect("/signup/role");
   if (!me.roles.includes("GUIDE") || me.currentRole !== "GUIDE") {
     redirect("/dashboard");
   }

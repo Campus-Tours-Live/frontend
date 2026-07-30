@@ -38,18 +38,18 @@ export type MeUser = PendingUser | ProvisionedUser;
 
 /**
  * Discriminated `Me` (CTL-97 defer-provisioning). A signed-in principal may exist in Core
- * without having chosen a role yet ("PENDING") — gate every consumer on `accountState`,
+ * without having chosen a role yet ("PENDING") — gate every consumer on `provisioningStatus`,
  * never infer pending-ness from `user.id === null` or `roles.length` directly.
  */
 export interface PendingMe {
-  accountState: "PENDING";
+  provisioningStatus: "PENDING";
   user: PendingUser;
   roles: readonly [];
   currentRole: null;
 }
 
 export interface ProvisionedMe {
-  accountState: "PROVISIONED";
+  provisioningStatus: "PROVISIONED";
   user: ProvisionedUser;
   /** Always holds ≥1 role — a bff invariant enforced at parse time by `meSchema`. */
   roles: readonly [Role, ...Role[]];

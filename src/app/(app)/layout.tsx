@@ -21,7 +21,7 @@ import { getServerMe } from "@/lib/http/serverMe";
  */
 export default async function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const me = await getServerMe();
-  if (!me || me.accountState !== "PROVISIONED") redirect("/signup/role");
+  if (!me || me.provisioningStatus !== "PROVISIONED") redirect("/signup/role");
   // `me` is a ProvisionedMe below — `roles` is guaranteed non-empty by `meSchema`.
 
   if (!me.roles.includes("PARTICIPANT") && !me.roles.includes("GUIDE")) redirect("/staff");

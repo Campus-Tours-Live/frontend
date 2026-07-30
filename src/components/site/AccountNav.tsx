@@ -120,8 +120,8 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
 
   // Logged out, or a bare/pending account (no roles yet) → render nothing. Checked directly on
   // `me` (not a separate `isOnboarded` boolean) so TS narrows `me` to `ProvisionedMe` below —
-  // gating on accountState, never on `roles.length` (CTL-97 constraint 2).
-  if (!me || me.accountState !== "PROVISIONED") return null;
+  // gating on provisioningStatus, never on `roles.length` (CTL-97 constraint 2).
+  if (!me || me.provisioningStatus !== "PROVISIONED") return null;
 
   // Current role decides which area's nav we render. Read currentRole (the authoritative
   // UX role) — there is no legacy `role` field on the wire.
