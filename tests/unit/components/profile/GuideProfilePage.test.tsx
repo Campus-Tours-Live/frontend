@@ -31,6 +31,7 @@ const profile: GuideProfile = {
       universityShortName: null,
       major: "Computer Science",
       classYear: "2027",
+      entryYear: 2023,
       verificationStatus: "VERIFIED",
     },
   ],

@@ -24,6 +24,7 @@ const guideData: GuideDashboard = {
         universityName: "State University",
         universityShortName: null,
         major: "Computer Science",
+        entryYear: 2023,
         verificationStatus: "VERIFIED",
       },
     ],

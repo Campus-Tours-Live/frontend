@@ -79,8 +79,9 @@ export interface GuideUniversity {
   major?: string;
   degree?: string;
   classYear?: string;
-  /** Year the guide entered this university, or null/undefined if unknown. */
-  entryYear?: number | null;
+  /** Year the guide entered this university. Core's column is NOT NULL and the read-model field
+   *  is REQUIRED — always present on the wire. */
+  entryYear: number;
   verificationStatus: string;
 }
 
@@ -118,6 +119,18 @@ export interface CreateOfferingInput {
   priceCents: number;
   description?: string;
   languages?: string[];
+}
+
+/**
+ * Server-sent validation rules for the two year fields (CTL-97). The numbers deliberately do NOT
+ * live in this repo: they were duplicated in Java and TypeScript and drifted by hand. `entryYear`
+ * is computed from the SERVER's UTC clock, so the browser never reads its own.
+ */
+export interface EnrollmentYearRules {
+  entryYear: { min: number; max: number };
+  /** Ordered — apply first-hit. Never sort or re-key this array. */
+  maxYearsToGraduate: readonly { matches: readonly string[]; years: number }[];
+  defaultMaxYearsToGraduate: number;
 }
 
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
