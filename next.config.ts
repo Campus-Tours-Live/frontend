@@ -18,6 +18,23 @@ const nextConfig: NextConfig = {
   },
   // Next.js 16 uses Turbopack by default for dev and build (Webpack-compatible,
   // Rust-based). No separate bundler (Vite/Webpack) config is required.
+  // ⚠️ Do NOT add a `headers()` entry matching `/v1/:path*`, and do not wrap these rewrites in
+  // anything that rewrites response headers.
+  //
+  // `GET /v1/meta/enrollment-years` carries a `Cache-Control` whose `max-age` is computed by Core
+  // to expire exactly when the server's year rolls over (spec CTL-97, invariant I6). This rewrite
+  // is the LAST hop before the browser: Core computes the age, the BFF relays it verbatim, and
+  // Next hands it on untouched — verified in Next's `proxy-request.js`, which sets only
+  // `x-forwarded-host` on the REQUEST and never touches the response, so http-proxy copies
+  // upstream response headers through as-is.
+  //
+  // A `headers()` rule here would override that per-response value with a constant, and clients
+  // would validate against a stale year window for up to a day. Note the failure is one-sided:
+  // DROPPING the header is harmless (the browser simply revalidates more often); only LENGTHENING
+  // `max-age` breaks I6. The same warning applies to any CDN or edge proxy in front of this app —
+  // `/v1/meta/enrollment-years` must not have its `Cache-Control` overridden at the edge.
+  //
+  // `tests/unit/next-config.test.ts` pins the parts of this that are checkable in-repo.
   async rewrites() {
     // beforeFiles → proxy to the BFF *before* local routes (so the real BFF
     // overrides the dev-only /auth/login stand-in once BFF_URL is configured).
