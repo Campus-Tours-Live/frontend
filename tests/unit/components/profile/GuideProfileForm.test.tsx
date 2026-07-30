@@ -43,11 +43,14 @@ const YEAR_RULES: EnrollmentYearRules = {
   ],
   defaultMaxYearsToGraduate: 8,
 };
-// The rules are a network read: `false` is the in-flight state every cold load starts in, `true`
+// The rules are a network read: "loading" is the in-flight state every cold load starts in, "ready"
 // the already-cached one (the query is fresh for an hour, so a profile page opened after onboarding
 // renders with them in hand). Both are reachable at ANY render, which is why the hook gates on the
-// rules being present rather than on how many times its effect has run.
-let rulesReady = true;
+// rules being present rather than on how many times its effect has run. "errored" is a THIRD state,
+// not `!ready`: a settled failure keeps `isLoading` false, and telling it apart from the in-flight
+// one is the whole point of the messages the user reads there.
+type RulesState = "ready" | "loading" | "errored";
+let rulesState: RulesState = "ready";
 
 // firstName/lastName are identity fields — no longer part of GuideProfile (Profile Contract
 // v2), so the form sources its name defaults from useMe().user instead of the `profile` prop.
@@ -67,10 +70,10 @@ jest.mock("@/lib/data-access", () => ({
   useMajors: (schoolId: string | null | undefined) => mockUseMajors(schoolId),
   useDegrees: (schoolId: string | null | undefined) => mockUseDegrees(schoolId),
   useEnrollmentYears: () => ({
-    data: rulesReady ? YEAR_RULES : undefined,
-    isLoading: !rulesReady,
-    isFetching: !rulesReady,
-    isError: false,
+    data: rulesState === "ready" ? YEAR_RULES : undefined,
+    isLoading: rulesState === "loading",
+    isFetching: rulesState === "loading",
+    isError: rulesState === "errored",
     refetch: jest.fn(),
   }),
   useMe: () => mockUseMe(),
@@ -138,7 +141,7 @@ function renderWithQuery(ui: ReactElement) {
 beforeEach(() => {
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(profile);
-  rulesReady = true;
+  rulesState = "ready";
   mockUseTourTopics.mockReturnValue({
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
@@ -219,6 +222,37 @@ describe("GuideProfileForm", () => {
 
     expect(await screen.findByText(/please enter your entry year/i)).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
+    // Pinned, because both assertions above are also satisfied by the BROWSER: `clear()` blurs the
+    // field (setting react-hook-form's message) on its way to the button, and a form without
+    // `novalidate` never fires `submit` at all when a `required` input is empty. Without this line
+    // the test passes for a reason it does not name — see the untouched-field test below.
+    expect(screen.getByLabelText(/entry year/i).closest("form")).toHaveAttribute("novalidate");
+  });
+
+  /**
+   * The same block, reached WITHOUT ever touching the field — no clear, no blur, no `trigger`.
+   * Entry year carries the DOM `required` attribute (that is what tells assistive tech it is
+   * required), so a form missing `noValidate` fails interactive validation and the `submit` event
+   * is never fired: `handleSubmit` never runs, nothing is validated, nothing is sent, and the user
+   * gets a Save button that does nothing and says nothing.
+   */
+  it("reports an untouched empty entry year instead of silently doing nothing", async () => {
+    const user = userEvent.setup();
+    // entryYear is NOT NULL on the wire, but `toFormValues` reads it defensively — this is the
+    // empty box the reviewer reproduced, with every other field seeded and valid.
+    renderWithQuery(
+      <GuideProfileForm
+        profile={{
+          ...profile,
+          universities: [{ ...university, entryYear: undefined as unknown as number }],
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(await screen.findByText(/please enter your entry year/i)).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 
   /**
@@ -233,7 +267,7 @@ describe("GuideProfileForm", () => {
     // One profile object across both renders: a new identity would re-run the form's `reset`
     // effect, which clears errors and would mask what this test is watching for.
     const seeded = enrolled(2020, "2030");
-    rulesReady = false;
+    rulesState = "loading";
     const { rerender } = renderWithQuery(<GuideProfileForm profile={seeded} />);
 
     // No field error anywhere — `field-error` is the only thing on this form with role="alert"
@@ -245,7 +279,7 @@ describe("GuideProfileForm", () => {
     await user.selectOptions(screen.getByLabelText(/degree/i), "Master's Degree");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 
-    rulesReady = true;
+    rulesState = "ready";
     rerender(<GuideProfileForm profile={seeded} />);
 
     // 2030 is outside the master's window (2021–2023), and now there are rules to say so.
@@ -262,6 +296,29 @@ describe("GuideProfileForm", () => {
     renderWithQuery(<GuideProfileForm profile={enrolled(2020, "2030")} />);
 
     expect(await screen.findByText(/graduation year between 2021 and 2026/i)).toBeInTheDocument();
+  });
+
+  /**
+   * A rules OUTAGE on a fully seeded profile. Both messages the guide used to get here were
+   * untrue: one said the rules were "still loading" (they had failed), the other told them to
+   * enter an entry year that reads 2023 right beside it — a value that came from the server.
+   */
+  it("names the failure and flags only the field with a real problem when the rules fail", async () => {
+    const user = userEvent.setup();
+    rulesState = "errored";
+    renderWithQuery(<GuideProfileForm profile={profile} />);
+
+    // Announced on arrival — the only explanation for a required field being disabled.
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn't load the year rules.");
+
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect(
+      await screen.findByText("We couldn't load the year rules — select Try again below."),
+    ).toBeInTheDocument();
+    // Not a word about entry year under class year: nothing there is the guide's to fix.
+    expect(screen.queryByText(/enter your entry year first/i)).not.toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
 
   /**

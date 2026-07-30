@@ -162,7 +162,12 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-8">
+    // `noValidate` for the same reason GuideOnboardingForm carries it: EnrollmentYearFields puts
+    // the DOM `required` attribute on entry year (so assistive tech knows), but react-hook-form
+    // owns validation and messaging. Without it the browser's own constraint check fails first and
+    // the `submit` event is never fired at all — handleSubmit never runs, and Save silently does
+    // nothing.
+    <form onSubmit={onSubmit} noValidate className="space-y-8">
       {errors.root ? <Alert variant="error">{errors.root.message}</Alert> : null}
       {saveMessage ? <Alert variant="success">{saveMessage}</Alert> : null}
 
