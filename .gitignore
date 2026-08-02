@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Superpowers brainstorm/SDD scratch
 .superpowers/
+
+# Superpowers plans/specs — working artifacts, same reasoning as .superpowers/ above.
+docs/superpowers/
