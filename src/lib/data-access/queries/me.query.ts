@@ -3,6 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { ApiError, apiJson } from "../http";
 import { clearAuthNotice, notifyAuthNotice } from "@/lib/auth";
 import { queryKeys } from "../keys";
+import { meSchema } from "../me.schema";
 import type { Me } from "../types";
 
 /** The BFF's problem `code` for its "session preserved, Google unreachable" 503. */
@@ -37,13 +38,16 @@ async function fetchMe(): Promise<Me | null> {
     //   3. `"ambient"` — the death is reported through the notice channel and the banner; the
     //      page stays usable, and the prompt is reserved for when the USER asks for something
     //      that needs a session.
-    const me = await apiJson<Me>("/v1/userinfo", { escalate: "ambient" });
+    const raw = await apiJson<unknown>("/v1/userinfo", { escalate: "ambient" });
     // Recovery. A successful principal read proves both that the session is good and that
     // the BFF could reach Google, so any standing notice is now stale. Without this the
     // banner had NO production path back to nothing — only the user closing it by hand —
     // which left a recovered system looking broken.
     clearAuthNotice();
-    return me;
+    // Same `meSchema` the server (`getServerMe`) parses with — no second, hand-rolled parser.
+    // A malformed body reads as "no usable principal" (null), matching `getServerMe`'s contract.
+    const parsed = meSchema.safeParse(raw);
+    return parsed.success ? parsed.data : null;
   } catch (error) {
     if (error instanceof ApiError) {
       // A 401 WITHOUT the re-auth signal is a genuine "not signed in" — stay quiet.

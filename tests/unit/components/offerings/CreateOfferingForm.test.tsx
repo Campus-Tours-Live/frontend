@@ -21,32 +21,23 @@ const mockUseTourTopics = jest.fn(() => ({
   data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
   isLoading: false,
 }));
+const mockUseGuideProfile = jest.fn(() => ({
+  data: {
+    universities: [
+      {
+        universityId: "uni-1",
+        universityName: "State University",
+        verificationStatus: "VERIFIED",
+      },
+    ],
+  },
+  isLoading: false,
+}));
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useCreateOffering: () => ({ mutateAsync, isPending: false }),
   useTourTopics: () => mockUseTourTopics(),
-}));
-
-jest.mock("@/components/signup/UniversityMultiSelect", () => ({
-  UniversityMultiSelect: ({
-    value,
-    onChange,
-  }: {
-    value: Array<{ id: string; name: string }>;
-    onChange: (next: Array<{ id: string; name: string }>) => void;
-  }) => (
-    <>
-      <button type="button" onClick={() => onChange([{ id: "uni-1", name: "State University" }])}>
-        {value.length && value[0] ? value[0].name : "Pick university"}
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange([null as unknown as { id: string; name: string }])}
-      >
-        Set invalid university
-      </button>
-    </>
-  ),
+  useGuideProfile: () => mockUseGuideProfile(),
 }));
 
 function renderWithQuery(ui: ReactElement) {
@@ -62,15 +53,28 @@ beforeEach(() => {
     data: [{ value: "GENERAL_CAMPUS", label: "General campus" }],
     isLoading: false,
   });
+  mockUseGuideProfile.mockReturnValue({
+    data: {
+      universities: [
+        {
+          universityId: "uni-1",
+          universityName: "State University",
+          verificationStatus: "VERIFIED",
+        },
+      ],
+    },
+    isLoading: false,
+  });
 });
 
 describe("CreateOfferingForm", () => {
-  it("creates a draft and navigates back to the list", async () => {
+  it("creates a draft with the auto-selected verified university and navigates back to the list", async () => {
     const user = userEvent.setup();
     renderWithQuery(<CreateOfferingForm />);
 
+    expect(screen.getByRole("radio", { name: "State University" })).toBeChecked();
+
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
@@ -91,37 +95,11 @@ describe("CreateOfferingForm", () => {
     renderWithQuery(<CreateOfferingForm />);
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     fireEvent.change(screen.getByLabelText(/price \(usd\)/i), { target: { value: "10" } });
     fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
 
     expect(await screen.findByText("Price must be between $20 and $200")).toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("does not submit when university is missing", async () => {
-    const user = userEvent.setup();
-    renderWithQuery(<CreateOfferingForm />);
-
-    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
-    fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
-
-    expect(await screen.findByText("University is required")).toBeInTheDocument();
-    expect(mutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("rejects an invalid university selection before calling the API", async () => {
-    const user = userEvent.setup();
-    renderWithQuery(<CreateOfferingForm />);
-
-    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Set invalid university" }));
-    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
-    await user.click(screen.getByRole("button", { name: "Save draft" }));
-
-    expect(await screen.findByText("University is required")).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
@@ -131,12 +109,11 @@ describe("CreateOfferingForm", () => {
     renderWithQuery(<CreateOfferingForm />);
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Check your inputs — title, university, topic, duration, and price are required.",
+      "Check your inputs — title, topic, duration, and price are required.",
     );
   });
 
@@ -155,12 +132,189 @@ describe("CreateOfferingForm", () => {
     renderWithQuery(<CreateOfferingForm />);
 
     await user.type(screen.getByLabelText(/public title/i), "Campus walk");
-    await user.click(screen.getByRole("button", { name: "Pick university" }));
     await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
     await user.click(screen.getByRole("button", { name: "Save draft" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Could not save this offering. Please try again.",
     );
+  });
+
+  it("disables submit while the guide profile is loading", () => {
+    mockUseGuideProfile.mockReturnValue({ data: undefined, isLoading: true } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+  });
+
+  it("disables submit and warns when the guide has no universities at all", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: { universities: [] },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(
+      screen.getByText(/Finish guide onboarding \(verify your school email\)/i),
+    ).toBeInTheDocument();
+  });
+
+  it("lists every university, but only lets the VERIFIED one be selected — with a per-item reason and a group warning", async () => {
+    const user = userEvent.setup();
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "VERIFIED",
+          },
+          {
+            universityId: "uni-2",
+            universityName: "Other College",
+            verificationStatus: "PENDING",
+          },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    const verifiedRadio = screen.getByRole("radio", { name: "State University" });
+    const unverifiedRadio = screen.getByRole("radio", { name: "Other College" });
+    expect(verifiedRadio).toBeChecked();
+    expect(verifiedRadio).toBeEnabled();
+    expect(unverifiedRadio).toBeDisabled();
+    expect(
+      screen.getByText("Verify your school email to create tours for this campus."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+
+    // A real user can't interact with a disabled radio at all (userEvent respects `disabled`).
+    await user.click(unverifiedRadio);
+    expect(verifiedRadio).toBeChecked();
+    expect(unverifiedRadio).not.toBeChecked();
+
+    // Defence-in-depth: even a forced change event (bypassing the disabled-attribute guard, as
+    // fireEvent does) must not move the selection onto the unverified campus.
+    fireEvent.click(unverifiedRadio);
+    expect(verifiedRadio).toBeChecked();
+    expect(unverifiedRadio).not.toBeChecked();
+  });
+
+  it("disables submit and explains when the guide has universities but none verified", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "PENDING",
+          },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("radio", { name: "State University" })).toBeDisabled();
+    expect(screen.getByText(/None of your universities are verified yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  });
+
+  it("treats a VERIFIED entry without a universityId as unselectable (defensive)", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          { universityId: null, universityName: null, verificationStatus: "VERIFIED" },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    const radio = screen.getByRole("radio", { name: "Your campus" });
+    expect(radio).toBeDisabled();
+    expect(
+      screen.getByText("Verify your school email to create tours for this campus."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/None of your universities are verified yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  });
+
+  it("lets the guide switch between multiple verified universities", async () => {
+    const user = userEvent.setup();
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "VERIFIED",
+          },
+          {
+            universityId: "uni-2",
+            universityName: "Metro University",
+            verificationStatus: "VERIFIED",
+          },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("radio", { name: "State University" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Metro University" })).not.toBeChecked();
+
+    await user.click(screen.getByRole("radio", { name: "Metro University" }));
+
+    expect(screen.getByRole("radio", { name: "Metro University" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "State University" })).not.toBeChecked();
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ universityId: "uni-2" }));
+  });
+
+  it("falls back to a default campus label when the university name is missing", () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          { universityId: "uni-1", universityName: null, verificationStatus: "VERIFIED" },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    renderWithQuery(<CreateOfferingForm />);
+
+    expect(screen.getByRole("radio", { name: "Your campus" })).toBeChecked();
+  });
+
+  it("does not submit when no verified university is selected, even if the form is force-submitted", async () => {
+    mockUseGuideProfile.mockReturnValue({
+      data: {
+        universities: [
+          {
+            universityId: "uni-1",
+            universityName: "State University",
+            verificationStatus: "PENDING",
+          },
+        ],
+      },
+      isLoading: false,
+    } as never);
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm />);
+
+    await user.type(screen.getByLabelText(/public title/i), "Campus walk");
+    await user.selectOptions(screen.getByLabelText(/^topic$/i), "GENERAL_CAMPUS");
+    fireEvent.submit(screen.getByRole("button", { name: "Save draft" }).closest("form")!);
+
+    expect(mutateAsync).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
   });
 });

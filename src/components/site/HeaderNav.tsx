@@ -66,7 +66,7 @@ export function HeaderNav({
   // (bare account mid first-signup, or not signed in) holds 0 roles → public.
   const loggedIn = isOnboarded;
   /* istanbul ignore next -- display-name fallbacks; split() always yields an element */
-  const name = (me?.displayName ?? me?.firstName ?? "").split(" ")[0] ?? "";
+  const name = (me?.user.displayName ?? me?.user.firstName ?? "").split(" ")[0] ?? "";
 
   const authedItems = showDashboard
     ? COMMON_MENU

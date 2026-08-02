@@ -1,12 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { AccountNav } from "@/components/site/AccountNav";
-import { useMe } from "@/lib/data-access";
+import { useGuideProfile, useMe } from "@/lib/data-access";
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
 }));
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
+  useGuideProfile: jest.fn(),
 }));
 // Isolate AccountNav from the RoleSwitcher's own data dependencies.
 jest.mock("@/components/site/RoleSwitcher", () => ({
@@ -14,8 +15,7 @@ jest.mock("@/components/site/RoleSwitcher", () => ({
 }));
 
 type MePartial = {
-  activeRole?: string | null;
-  guideStatus?: string | null;
+  currentRole?: string | null;
   displayName?: string | null;
   firstName?: string | null;
   roles?: string[];
@@ -23,19 +23,36 @@ type MePartial = {
 
 function setupMe(me: MePartial | null, opts?: { isOnboarded?: boolean }) {
   const roles = me?.roles ?? (me ? ["PARTICIPANT"] : []);
+  const isOnboarded = opts?.isOnboarded ?? (!!me && roles.length > 0);
   (useMe as jest.Mock).mockReturnValue({
-    me,
-    isOnboarded: opts?.isOnboarded ?? (!!me && roles.length > 0),
+    me: me
+      ? {
+          // AccountNav gates directly on `me.provisioningStatus` (CTL-97 constraint 2 — never on
+          // `roles.length`/a separate `isOnboarded` boolean), so a "not onboarded" fixture must
+          // carry a non-PROVISIONED provisioningStatus for the render-gate to actually reject it.
+          provisioningStatus: isOnboarded ? "PROVISIONED" : "PENDING",
+          currentRole: me.currentRole,
+          roles: me.roles,
+          user: { displayName: me.displayName, firstName: me.firstName },
+        }
+      : null,
+    isOnboarded,
   });
+}
+
+/** Guide application status now comes from useGuideProfile(), not me.guideStatus. */
+function setupGuideProfile(guideStatus: string | null = null) {
+  (useGuideProfile as jest.Mock).mockReturnValue({ data: { guideStatus } });
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
+  setupGuideProfile();
 });
 
 describe("AccountNav — render gate", () => {
   it("renders nothing when not onboarded", () => {
-    setupMe({ activeRole: "PARTICIPANT" }, { isOnboarded: false });
+    setupMe({ currentRole: "PARTICIPANT" }, { isOnboarded: false });
 
     const { container } = render(<AccountNav />);
 
@@ -55,7 +72,7 @@ describe("AccountNav — participant", () => {
   beforeEach(() => {
     setupMe(
       {
-        activeRole: "PARTICIPANT",
+        currentRole: "PARTICIPANT",
         displayName: "Ada Lovelace",
         roles: ["PARTICIPANT"],
       },
@@ -98,13 +115,13 @@ describe("AccountNav — guide", () => {
   it("renders the guide nav (Upcoming tours / Earnings / Verification)", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
+        currentRole: "GUIDE",
         firstName: "Grace",
-        guideStatus: "APPROVED",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
     );
+    setupGuideProfile("VERIFIED");
 
     render(<AccountNav />);
 
@@ -119,40 +136,55 @@ describe("AccountNav — guide", () => {
     expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute("href", "/profile");
   });
 
-  it("shows the default 'Guide account' subtitle when not pending review", () => {
+  it("shows the default 'Guide account' subtitle when not pending verification", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
-        guideStatus: "APPROVED",
+        currentRole: "GUIDE",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
     );
+    setupGuideProfile("VERIFIED");
 
     render(<AccountNav />);
 
     expect(screen.getByText("Guide account")).toBeInTheDocument();
   });
 
-  it("shows 'pending review' subtitle when guideStatus=PENDING_REVIEW", () => {
+  it("shows 'pending verification' subtitle when guideStatus=PENDING", () => {
     setupMe(
       {
-        activeRole: "GUIDE",
-        guideStatus: "PENDING_REVIEW",
+        currentRole: "GUIDE",
         roles: ["GUIDE"],
       },
       { isOnboarded: true },
     );
+    setupGuideProfile("PENDING");
 
     render(<AccountNav />);
 
-    expect(screen.getByText("Guide · pending review")).toBeInTheDocument();
+    expect(screen.getByText("Guide · pending verification")).toBeInTheDocument();
+  });
+
+  it("shows the default 'Guide account' subtitle while the guide profile is still loading", () => {
+    setupMe(
+      {
+        currentRole: "GUIDE",
+        roles: ["GUIDE"],
+      },
+      { isOnboarded: true },
+    );
+    (useGuideProfile as jest.Mock).mockReturnValue({ data: undefined });
+
+    render(<AccountNav />);
+
+    expect(screen.getByText("Guide account")).toBeInTheDocument();
   });
 });
 
 describe("AccountNav — defaults", () => {
-  it("falls back to the participant nav when activeRole is null", () => {
-    setupMe({ activeRole: null, roles: ["PARTICIPANT"] }, { isOnboarded: true });
+  it("falls back to the participant nav when currentRole is null", () => {
+    setupMe({ currentRole: null, roles: ["PARTICIPANT"] }, { isOnboarded: true });
 
     render(<AccountNav />);
 

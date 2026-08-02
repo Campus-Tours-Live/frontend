@@ -94,6 +94,22 @@ describe("UniversityMultiSelect", () => {
     expect(screen.queryByRole("button", { name: /Remove City College/i })).not.toBeInTheDocument();
   });
 
+  it("shows a live count and the 'remove one' hint once the max is reached", async () => {
+    const user = userEvent.setup();
+    render(<Harness max={2} />);
+
+    await user.type(screen.getByPlaceholderText(/search universities/i), "state");
+    await user.click(await screen.findByRole("button", { name: /State University/i }));
+    // Below max → count reflects progress, no "remove one" hint yet.
+    expect(screen.getByText(/1 of 2 selected/i)).toBeInTheDocument();
+
+    await user.type(screen.getByPlaceholderText(/search universities/i), "city");
+    await user.click(await screen.findByRole("button", { name: /City College/i }));
+    // At max → the search input is gone and the count gains the "remove one to add another" hint.
+    expect(screen.queryByPlaceholderText(/search universities/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/2 of 2 selected · remove one to add another/i)).toBeInTheDocument();
+  });
+
   it("falls back to the full name when an option has no shortName", async () => {
     const user = userEvent.setup();
     search.mockImplementation((query: string, opts?: { enabled?: boolean }) => ({
@@ -122,20 +138,21 @@ describe("UniversityMultiSelect", () => {
     expect(screen.queryByRole("button", { name: /university|college/i })).not.toBeInTheDocument();
   });
 
-  it("hides the input at max and gates the search (enabled:false)", async () => {
+  it("collapses to a single-select combobox once a school is chosen (max=1)", async () => {
     const user = userEvent.setup();
     render(<Harness max={1} />);
 
-    expect(screen.getByText(/pick up to 1/i)).toBeInTheDocument();
+    // Empty single-select shows just the search field — no multi-select caption.
+    expect(screen.queryByText(/pick up to 1/i)).not.toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText(/search universities/i), "state");
     await user.click(await screen.findByRole("button", { name: /State University/i }));
 
-    // At max → input removed and the "maximum" hint shown.
+    // Selected → combobox value row: the school name shows, the search input is gone,
+    // and there is no "maximum" caption or removable chip.
+    expect(screen.getByText("State University")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/search universities/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/maximum 1 selected/i)).toBeInTheDocument();
-    // Selection chip still present and removable.
-    expect(screen.getByRole("button", { name: /Remove State University/i })).toBeInTheDocument();
+    expect(screen.queryByText(/maximum 1 selected/i)).not.toBeInTheDocument();
 
     // The search hook was last called with enabled:false (gated at max).
     expect(search).toHaveBeenLastCalledWith(
@@ -143,9 +160,11 @@ describe("UniversityMultiSelect", () => {
       expect.objectContaining({ enabled: false }),
     );
 
-    // Removing frees a slot → input comes back.
-    await user.click(screen.getByRole("button", { name: /Remove State University/i }));
-    expect(screen.getByPlaceholderText(/search universities/i)).toBeInTheDocument();
-    expect(screen.getByText(/pick up to 1/i)).toBeInTheDocument();
+    // "Change university" clears the selection → the search input returns AND is auto-focused, so
+    // the user can retype without a second click.
+    await user.click(screen.getByRole("button", { name: /change university/i }));
+    const reopened = screen.getByPlaceholderText(/search universities/i);
+    expect(reopened).toBeInTheDocument();
+    expect(reopened).toHaveFocus();
   });
 });

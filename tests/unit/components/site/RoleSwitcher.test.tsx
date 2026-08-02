@@ -2,20 +2,17 @@ import { render, screen } from "@testing-library/react";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import userEvent from "@testing-library/user-event";
 import { RoleSwitcher } from "@/components/site/RoleSwitcher";
-import { useMe, useSetActiveRole } from "@/lib/data-access";
+import { useMe, useParticipantProfile, useSetCurrentRole } from "@/lib/data-access";
 
-const push = jest.fn();
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
-}));
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useMe: jest.fn(),
-  useSetActiveRole: jest.fn(),
+  useParticipantProfile: jest.fn(),
+  useSetCurrentRole: jest.fn(),
 }));
 
 type MePartial = {
-  activeRole?: string | null;
-  participantType?: string | null;
+  currentRole?: string | null;
   roles?: string[];
 };
 
@@ -27,9 +24,17 @@ function setupMe(me: MePartial | null) {
   });
 }
 
-function setupSetActiveRole(opts?: { mutateAsync?: jest.Mock; isPending?: boolean }) {
+/** The PARENT-hides-guide-CTA signal now comes from useParticipantProfile().type. */
+function setupParticipantProfile(type: string | null = null, opts?: { isLoading?: boolean }) {
+  (useParticipantProfile as jest.Mock).mockReturnValue({
+    data: { type },
+    isLoading: opts?.isLoading ?? false,
+  });
+}
+
+function setupSetCurrentRole(opts?: { mutateAsync?: jest.Mock; isPending?: boolean }) {
   const mutateAsync = opts?.mutateAsync ?? jest.fn().mockResolvedValue({});
-  (useSetActiveRole as jest.Mock).mockReturnValue({
+  (useSetCurrentRole as jest.Mock).mockReturnValue({
     mutateAsync,
     isPending: opts?.isPending ?? false,
   });
@@ -38,15 +43,16 @@ function setupSetActiveRole(opts?: { mutateAsync?: jest.Mock; isPending?: boolea
 
 beforeEach(() => {
   jest.clearAllMocks();
+  setupParticipantProfile();
 });
 
 describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
   it("renders a Participant/Guide toggle with the active side pressed", () => {
     setupMe({
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    setupSetActiveRole();
+    setupSetCurrentRole();
 
     render(<RoleSwitcher />);
 
@@ -58,15 +64,15 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     expect(participant).toBeEnabled();
     expect(guide).toHaveAttribute("aria-pressed", "false");
     expect(guide).toBeEnabled();
-    expect(screen.getByRole("group", { name: "Active role" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Current role" })).toBeInTheDocument();
   });
 
-  it("clicking Guide calls setActiveRole.mutateAsync('GUIDE')", async () => {
+  it("clicking Guide calls setCurrentRole.mutateAsync('GUIDE')", async () => {
     setupMe({
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    const mutateAsync = setupSetActiveRole();
+    const mutateAsync = setupSetCurrentRole();
 
     render(<RoleSwitcher />);
 
@@ -78,10 +84,10 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
 
   it("invokes onNavigate after a successful switch", async () => {
     setupMe({
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    setupSetActiveRole();
+    setupSetCurrentRole();
     const onNavigate = jest.fn();
 
     render(<RoleSwitcher onNavigate={onNavigate} />);
@@ -91,12 +97,12 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("when activeRole=GUIDE, the Guide side is active (pressed)", () => {
+  it("when currentRole=GUIDE, the Guide side is active (pressed)", () => {
     setupMe({
-      activeRole: "GUIDE",
+      currentRole: "GUIDE",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    setupSetActiveRole();
+    setupSetCurrentRole();
 
     render(<RoleSwitcher />);
 
@@ -111,10 +117,10 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
 
   it("clicking the already-active side does not call mutateAsync", async () => {
     setupMe({
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    const mutateAsync = setupSetActiveRole();
+    const mutateAsync = setupSetCurrentRole();
 
     render(<RoleSwitcher />);
 
@@ -126,10 +132,10 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
 
   it("surfaces an error Alert when the switch rejects", async () => {
     setupMe({
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    setupSetActiveRole({
+    setupSetCurrentRole({
       mutateAsync: jest.fn().mockRejectedValue(new Error("403")),
     });
 
@@ -143,8 +149,8 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
   it("attributes a dismissed sign-in prompt to auth, not to the switch failing", async () => {
     // N1a Symptom A′: the role switch never ran, so "couldn't switch right now, please try
     // again" would send the user retrying an action that was never the problem.
-    setupMe({ activeRole: "PARTICIPANT", roles: ["PARTICIPANT", "GUIDE"] });
-    setupSetActiveRole({
+    setupMe({ currentRole: "PARTICIPANT", roles: ["PARTICIPANT", "GUIDE"] });
+    setupSetCurrentRole({
       mutateAsync: jest.fn().mockRejectedValue(new AuthCancelledError()),
     });
 
@@ -158,10 +164,10 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
 
   it("disables both toggle buttons while a switch is pending", () => {
     setupMe({
-      activeRole: "PARTICIPANT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT", "GUIDE"],
     });
-    setupSetActiveRole({ isPending: true });
+    setupSetCurrentRole({ isPending: true });
 
     render(<RoleSwitcher />);
 
@@ -170,84 +176,124 @@ describe("RoleSwitcher — holds BOTH roles (segmented toggle)", () => {
   });
 });
 
-describe("RoleSwitcher — holds ONE role (become the other)", () => {
-  it("GUIDE only → 'Become a Participant' navigates to participant onboarding", async () => {
-    setupMe({ activeRole: "GUIDE", roles: ["GUIDE"] });
-    setupSetActiveRole();
+describe("RoleSwitcher — holds ONE role (become the other, in-app navigation)", () => {
+  it("GUIDE only → 'Become a Participant' navigates to /onboarding/participant (no mutation, no /auth/login)", async () => {
+    setupMe({ currentRole: "GUIDE", roles: ["GUIDE"] });
+    setupSetCurrentRole();
+    const navigate = jest.fn();
 
-    render(<RoleSwitcher />);
+    render(<RoleSwitcher navigate={navigate} />);
 
     const btn = screen.getByRole("button", { name: /become a participant/i });
     await userEvent.click(btn);
 
-    expect(push).toHaveBeenCalledWith("/onboarding/participant");
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith("/onboarding/participant");
+    const url = navigate.mock.calls[0][0] as string;
+    expect(url).not.toContain("/auth/login");
   });
 
-  it("PARTICIPANT only (not parent) → 'Become a Guide' navigates to guide onboarding", async () => {
+  it("PARTICIPANT only (not parent) → 'Become a Guide' navigates to /onboarding/guide", async () => {
     setupMe({
-      activeRole: "PARTICIPANT",
-      participantType: "STUDENT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT"],
     });
-    setupSetActiveRole();
+    setupParticipantProfile("STUDENT");
+    setupSetCurrentRole();
+    const navigate = jest.fn();
 
-    render(<RoleSwitcher />);
+    render(<RoleSwitcher navigate={navigate} />);
 
     const btn = screen.getByRole("button", { name: /become a guide/i });
     await userEvent.click(btn);
 
-    expect(push).toHaveBeenCalledWith("/onboarding/guide");
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledWith("/onboarding/guide");
   });
 
   it("calls onNavigate before navigating", async () => {
-    setupMe({ activeRole: "GUIDE", roles: ["GUIDE"] });
-    setupSetActiveRole();
+    setupMe({ currentRole: "GUIDE", roles: ["GUIDE"] });
+    setupSetCurrentRole();
     const onNavigate = jest.fn();
+    const navigate = jest.fn();
 
-    render(<RoleSwitcher onNavigate={onNavigate} />);
+    render(<RoleSwitcher onNavigate={onNavigate} navigate={navigate} />);
 
     await userEvent.click(screen.getByRole("button", { name: /become a participant/i }));
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenCalledTimes(1);
+    expect(navigate).toHaveBeenCalledTimes(1);
+  });
+
+  it("without a navigate prop, falls back to window.location.assign with the onboarding path", async () => {
+    setupMe({ currentRole: "GUIDE", roles: ["GUIDE"] });
+    setupSetCurrentRole();
+    const assign = jest.fn();
+    const original = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...original, assign },
+    });
+
+    try {
+      render(<RoleSwitcher />);
+      await userEvent.click(screen.getByRole("button", { name: /become a participant/i }));
+      expect(assign).toHaveBeenCalledTimes(1);
+      expect(assign).toHaveBeenCalledWith("/onboarding/participant");
+    } finally {
+      Object.defineProperty(window, "location", { configurable: true, value: original });
+    }
   });
 });
 
 describe("RoleSwitcher — renders nothing", () => {
-  it("PARTICIPANT only + participantType=PARENT → empty (can't become a guide)", () => {
+  it("PARTICIPANT only + type=PARENT → empty (can't become a guide)", () => {
     setupMe({
-      activeRole: "PARTICIPANT",
-      participantType: "PARENT",
+      currentRole: "PARTICIPANT",
       roles: ["PARTICIPANT"],
     });
-    setupSetActiveRole();
+    setupParticipantProfile("PARENT");
+    setupSetCurrentRole();
 
     const { container } = render(<RoleSwitcher />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("activeRole=null → empty", () => {
-    setupMe({ activeRole: null, roles: [] });
-    setupSetActiveRole();
+  it("PARTICIPANT only, participant profile still loading → empty (hold off until known)", () => {
+    setupMe({
+      currentRole: "PARTICIPANT",
+      roles: ["PARTICIPANT"],
+    });
+    setupParticipantProfile(null, { isLoading: true });
+    setupSetCurrentRole();
 
     const { container } = render(<RoleSwitcher />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("activeRole=ADMIN → empty", () => {
-    setupMe({ activeRole: "ADMIN", roles: ["ADMIN"] });
-    setupSetActiveRole();
+  it("currentRole=null → empty", () => {
+    setupMe({ currentRole: null, roles: [] });
+    setupSetCurrentRole();
 
     const { container } = render(<RoleSwitcher />);
 
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("activeRole=SUPPORT → empty", () => {
-    setupMe({ activeRole: "SUPPORT", roles: ["SUPPORT"] });
-    setupSetActiveRole();
+  it("currentRole=ADMIN → empty", () => {
+    setupMe({ currentRole: "ADMIN", roles: ["ADMIN"] });
+    setupSetCurrentRole();
+
+    const { container } = render(<RoleSwitcher />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("currentRole=SUPPORT → empty", () => {
+    setupMe({ currentRole: "SUPPORT", roles: ["SUPPORT"] });
+    setupSetCurrentRole();
 
     const { container } = render(<RoleSwitcher />);
 
@@ -256,7 +302,7 @@ describe("RoleSwitcher — renders nothing", () => {
 
   it("me=null → empty", () => {
     setupMe(null);
-    setupSetActiveRole();
+    setupSetCurrentRole();
 
     const { container } = render(<RoleSwitcher />);
 

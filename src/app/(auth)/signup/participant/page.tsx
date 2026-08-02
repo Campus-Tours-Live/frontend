@@ -69,7 +69,7 @@ export default function SignupParticipantPage() {
             </Body>
           </div>
 
-          <AuthOptions intent="signup" returnTo="/onboarding/participant" />
+          <AuthOptions intent="signup" returnTo="/onboarding/participant" role="PARTICIPANT" />
 
           <Caption as="p" className="text-center leading-relaxed">
             By continuing you agree to the{" "}

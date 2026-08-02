@@ -67,7 +67,7 @@ export default function SignupGuidePage() {
             </Body>
           </div>
 
-          <AuthOptions intent="signup" returnTo="/onboarding/guide" />
+          <AuthOptions intent="signup" returnTo="/onboarding/guide" role="GUIDE" />
 
           <Caption as="p" className="text-center leading-relaxed">
             By continuing you agree to the{" "}

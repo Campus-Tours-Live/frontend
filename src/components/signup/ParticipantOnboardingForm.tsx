@@ -4,10 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
-import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
-import { Alert, Body, Button, Chip, SectionHeading, Spinner, TextField } from "@/components/ui";
+import {
+  ApiError,
+  getOnboardingPrefill,
+  OnboardRetryableError,
+  useMe,
+  useOnboardRole,
+  useTourTopics,
+  type ParticipantProfileUpdate,
+} from "@/lib/data-access";
+import {
+  Alert,
+  Body,
+  Button,
+  ButtonRow,
+  Checkbox,
+  SectionHeading,
+  SegmentedControl,
+  TextField,
+  WizardSteps,
+} from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
+import { NAME_MAX_LENGTH, sanitizeName, validateName } from "@/lib/validation/name";
 import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
@@ -25,15 +43,28 @@ const PARTICIPANT_TYPES = [
   { value: "PARENT", label: "Parent or guardian" },
 ] as const;
 
-const STEPS = ["About you", "Universities", "Topics"] as const;
+const STEPS = ["About you", "University interests", "Topic interests"] as const;
+
+// One focused subtitle per step — the header title stays constant while the lead narrows to the
+// step's purpose (the "why"), staying clear of the field-level "how" descriptions below.
+const STEP_LEADS = [
+  "Tell us who’s joining so we can personalize your tour recommendations.",
+  "Add schools you’re considering to discover relevant tours and student guides.",
+  "Choose what you’d like to explore so we can personalize your tour recommendations.",
+] as const;
 
 export function ParticipantOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
-  const updateProfile = useUpdateParticipantProfile();
+  const onboardRole = useOnboardRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set when the command resolves STILL_PENDING (OnboardRetryableError) — Core's commit state is
+  // genuinely ambiguous, so this is neither a save failure nor a confirmed grant. Distinct from
+  // submitError: the form stays filled and retry RESUBMITS the same command — there is no
+  // separate session step any more, so a resolve from the command IS "session usable".
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -61,34 +92,61 @@ export function ParticipantOnboardingForm() {
   useEffect(() => {
     if (prefilled.current || !me) return;
     prefilled.current = true;
-    if (me.firstName && !getValues("firstName")) setValue("firstName", me.firstName);
-    if (me.lastName && !getValues("lastName")) setValue("lastName", me.lastName);
+    const prefill = getOnboardingPrefill(me);
+    if (prefill.firstName && !getValues("firstName")) setValue("firstName", prefill.firstName);
+    if (prefill.lastName && !getValues("lastName")) setValue("lastName", prefill.lastName);
   }, [me, setValue, getValues]);
 
-  const persist = async (values: FormValues) => {
+  /** Maps the wizard's form values to the onboarding COMMAND body — the same field mapping the
+   *  old PATCH used (the participant PATCH never had a `submit` field to strip). */
+  const buildBody = (values: FormValues): ParticipantProfileUpdate => ({
+    // names are required on step 1, so the `|| undefined` fallback is never taken
+    firstName: /* istanbul ignore next */ values.firstName || undefined,
+    lastName: /* istanbul ignore next */ values.lastName || undefined,
+    participantType: values.participantType,
+    universitiesOfInterest: values.universities.map((u) => u.id),
+    topicsOfInterest: values.topics,
+  });
+
+  /**
+   * One command call, reconcile-driven navigation: `onboardRole.mutateAsync` only RESOLVES a
+   * `ProvisionedMe` once the PARTICIPANT role is CONFIRMED held (its own 201, or an internal
+   * §4.3 reconcile) — there is no separate "activate session" step any more, so a resolve here IS
+   * the "session usable + currentRole set" signal and is the ONLY path that navigates.
+   *
+   * Shared by both the wizard's Submit (`persist`) and the retry panel (`retry`) below, so a
+   * STILL_PENDING retry resubmits the EXACT same mapped body rather than re-deriving it.
+   */
+  const submitOnboarding = async (values: FormValues) => {
     setSubmitError(null);
     try {
-      // The mutation's onSuccess invalidates ["me"] + the participant profile, so
-      // the header/dashboard reflect the just-granted role immediately.
-      await updateProfile.mutateAsync({
-        // names are required on step 1, so the `|| undefined` fallback is never taken
-        firstName: /* istanbul ignore next */ values.firstName || undefined,
-        lastName: /* istanbul ignore next */ values.lastName || undefined,
-        participantType: values.participantType,
-        universitiesOfInterest: values.universities.map((u) => u.id),
-        topicsOfInterest: values.topics,
-      });
-      router.push("/dashboard");
+      await onboardRole.mutateAsync({ role: "PARTICIPANT", body: buildBody(values) });
     } catch (err) {
+      // Core's commit state is genuinely ambiguous (§4.3 STILL_PENDING) — not a terminal failure,
+      // so no submitError message; the retry panel below owns its own copy.
+      if (err instanceof OnboardRetryableError) {
+        setRetryMessage(err.message);
+        return;
+      }
+      setRetryMessage(null);
       setSubmitError(
         isAuthCancelled(err)
           ? SIGN_IN_AGAIN_MESSAGE
-          : err instanceof Error
+          : err instanceof ApiError
             ? err.message
             : "Something went wrong. Please try again.",
       );
+      return;
     }
+    setRetryMessage(null);
+    router.push("/dashboard");
   };
+
+  const persist = (values: FormValues) => submitOnboarding(values);
+
+  // Resubmits the LAST wizard values (react-hook-form retains them once submitted — nothing here
+  // clears or resets the form) — never a fresh partial re-fill, and never a separate session call.
+  const retry = () => submitOnboarding(getValues());
 
   const submit = handleSubmit(persist);
   const isLast = step === STEPS.length - 1;
@@ -111,6 +169,32 @@ export function ParticipantOnboardingForm() {
 
   const bothNameMissing = Boolean(errors.firstName && errors.lastName);
 
+  // Core's commit state is ambiguous (§4.3 STILL_PENDING) — the role may or may not be held yet.
+  // Replace the wizard with a dedicated retry panel rather than a full re-fill: `retry` resubmits
+  // the SAME mapped body (a re-POST of an already-granted role reconciles to a resolve, never a
+  // duplicate grant).
+  if (retryMessage) {
+    return (
+      <>
+        <div className="mb-8">
+          <OnboardingBreadcrumb current="Onboarding" />
+        </div>
+        <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+          <div className="eyebrow">Participant onboarding</div>
+          <SectionHeading title="Tell us about yourself?" lead="Almost there." />
+          <Alert variant="error" className="mt-6">
+            {retryMessage}
+          </Alert>
+          <ButtonRow className="mt-6">
+            <Button onClick={() => void retry()} loading={onboardRole.isPending}>
+              Try again
+            </Button>
+          </ButtonRow>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Breadcrumb — pure navigation (no action buttons). */}
@@ -118,173 +202,175 @@ export function ParticipantOnboardingForm() {
         <OnboardingBreadcrumb current="Onboarding" />
       </div>
 
-      {/* Eyebrow row — Cancel aligns to it (✕ closes the task). */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="eyebrow">Participant onboarding</div>
-        <OnboardingCancel dirty={isDirty} disabled={isSubmitting} />
-      </div>
-      <SectionHeading
-        title="Tell us what you’re exploring"
-        lead="We use this to personalize tour recommendations and help guides prepare. Avoid sharing unnecessary sensitive information."
-      />
-
-      <form onSubmit={onSubmit} className="mt-10">
-        {/* Progress */}
-        <div
-          className="mb-6 flex items-center gap-2"
-          aria-label={`Step ${step + 1} of ${STEPS.length}`}
-        >
-          {STEPS.map((label, i) => (
-            <span
-              key={label}
-              className={cn(
-                "h-2 rounded-pill transition-all",
-                i === step ? "w-6 bg-primary" : i < step ? "w-2 bg-primary/50" : "w-2 bg-border",
-              )}
-            />
-          ))}
-          <Body as="span" size="small" color="muted" className="ml-2">
-            Step {step + 1} of {STEPS.length} · {STEPS[step]}
-          </Body>
+      {/* Fixed min-height + flex column: the footer (Back/Continue/Submit) is pinned to the card
+          bottom, and step content grows into the slack above it rather than pushing the buttons —
+          so height stays put across steps and as content changes (e.g. adding schools). */}
+      <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+        {/* Eyebrow row — Cancel aligns to it (✕ closes the task). */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="eyebrow">Participant onboarding</div>
+          <OnboardingCancel dirty={isDirty} disabled={isSubmitting} />
         </div>
+        <SectionHeading title="Tell us about yourself?" lead={STEP_LEADS[step]} />
 
-        {/* Step 1 — About you (required) */}
-        {step === 0 && (
-          <div className="flex flex-col gap-7">
-            <div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <TextField
-                  label="First name"
-                  autoComplete="given-name"
-                  placeholder="Jordan"
-                  error={bothNameMissing ? undefined : errors.firstName?.message}
-                  {...register("firstName", {
-                    required: "Please enter your first name.",
-                  })}
-                />
-                <TextField
-                  label="Last name"
-                  autoComplete="family-name"
-                  placeholder="Lee"
-                  error={bothNameMissing ? undefined : errors.lastName?.message}
-                  {...register("lastName", {
-                    required: "Please enter your last name.",
-                  })}
-                />
-              </div>
-              {bothNameMissing && (
-                <Body role="alert" size="small" weight={600} color="error" className="mt-2">
-                  Please enter your first and last name to continue.
-                </Body>
-              )}
-            </div>
+        <form onSubmit={onSubmit} className="mt-10 flex flex-1 flex-col">
+          <WizardSteps steps={STEPS} current={step} className="mb-9" />
 
-            <Controller
-              control={control}
-              name="participantType"
-              render={({ field }) => (
-                <fieldset>
-                  <Body as="legend" size="small" weight={700} className="mb-2 block">
-                    I am a…
+          {/* Step 1 — About you (required) */}
+          {step === 0 && (
+            <div className="flex flex-col gap-7">
+              <div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <TextField
+                    label="First name"
+                    autoComplete="given-name"
+                    placeholder="John"
+                    maxLength={NAME_MAX_LENGTH}
+                    error={bothNameMissing ? undefined : errors.firstName?.message}
+                    {...register("firstName", {
+                      required: "Please enter your first name.",
+                      validate: validateName,
+                      onChange: (e) => {
+                        const cleaned = sanitizeName(e.target.value);
+                        if (cleaned !== e.target.value) setValue("firstName", cleaned);
+                      },
+                    })}
+                  />
+                  <TextField
+                    label="Last name"
+                    autoComplete="family-name"
+                    placeholder="Doe"
+                    maxLength={NAME_MAX_LENGTH}
+                    error={bothNameMissing ? undefined : errors.lastName?.message}
+                    {...register("lastName", {
+                      required: "Please enter your last name.",
+                      validate: validateName,
+                      onChange: (e) => {
+                        const cleaned = sanitizeName(e.target.value);
+                        if (cleaned !== e.target.value) setValue("lastName", cleaned);
+                      },
+                    })}
+                  />
+                </div>
+                {bothNameMissing && (
+                  <Body role="alert" size="small" weight={600} color="error" className="mt-2">
+                    Please enter your first and last name to continue.
                   </Body>
-                  <div className="flex flex-wrap gap-2">
-                    {PARTICIPANT_TYPES.map((t) => (
-                      <Chip
-                        key={t.value}
-                        active={field.value === t.value}
-                        onClick={() => field.onChange(t.value)}
-                      >
-                        {t.label}
-                      </Chip>
-                    ))}
-                  </div>
-                </fieldset>
-              )}
-            />
-          </div>
-        )}
+                )}
+              </div>
 
-        {/* Step 2 — Universities (optional) */}
-        {step === 1 && (
-          <Controller
-            control={control}
-            name="universities"
-            render={({ field }) => (
-              <UniversityField
-                label="Universities of interest"
-                description="Search and add the campuses you want to explore. Optional — you can add or change these anytime in your profile."
-                optional
-                value={field.value}
-                onChange={field.onChange}
-                max={5}
-              />
-            )}
-          />
-        )}
-
-        {/* Step 3 — Topics (optional) */}
-        {step === 2 && (
-          <fieldset>
-            <Body as="legend" size="small" weight={700} className="mb-2 block">
-              Topics you care about <span className="font-normal text-ink-soft">(optional)</span>
-            </Body>
-            <Body size="medium" color="muted" className="mb-3">
-              Optional — you can change these anytime in your profile.
-            </Body>
-            {topicOptions.length === 0 ? (
-              <Body size="medium" color="muted">
-                Loading topics…
-              </Body>
-            ) : (
               <Controller
                 control={control}
-                name="topics"
+                name="participantType"
                 render={({ field }) => (
-                  <div className="flex flex-wrap gap-2">
-                    {topicOptions.map((t) => {
-                      const active = field.value.includes(t.value);
-                      return (
-                        <Chip
-                          key={t.value}
-                          active={active}
-                          onClick={() =>
-                            field.onChange(
-                              active
-                                ? field.value.filter((v) => v !== t.value)
-                                : [...field.value, t.value],
-                            )
-                          }
-                        >
-                          {t.label}
-                        </Chip>
-                      );
-                    })}
-                  </div>
+                  <fieldset>
+                    <legend className="form-label">I am joining as</legend>
+                    {/* Two mutually-exclusive identities → single-select segmented control. */}
+                    <SegmentedControl
+                      aria-label="I am joining as"
+                      options={PARTICIPANT_TYPES}
+                      value={field.value as (typeof PARTICIPANT_TYPES)[number]["value"]}
+                      onChange={field.onChange}
+                    />
+                  </fieldset>
                 )}
               />
-            )}
-          </fieldset>
-        )}
-
-        {submitError && (
-          <Alert variant="error" className="mt-5">
-            {submitError}
-          </Alert>
-        )}
-
-        {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. */}
-        <div className="mt-8 flex items-center justify-end gap-3">
-          {step > 0 && (
-            <Button variant="ghost" onClick={back} disabled={isSubmitting}>
-              Back
-            </Button>
+            </div>
           )}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Spinner />}
-            {isSubmitting ? "Saving…" : isLast ? "Submit" : "Continue"}
-          </Button>
-        </div>
-      </form>
+
+          {/* Step 2 — Universities (optional) */}
+          {step === 1 && (
+            <Controller
+              control={control}
+              name="universities"
+              render={({ field }) => (
+                <UniversityField
+                  label="Universities of interest"
+                  description="Search for and add up to 5 schools. You can update these anytime in your profile."
+                  optional
+                  // Reserve a constant height so adding/removing schools doesn't resize the field
+                  // (and jump the card). The selected list is capped + scrolls within this space.
+                  // Inline (not a Tailwind class) so it applies reliably regardless of JIT.
+                  style={{ minHeight: 384 }}
+                  value={field.value}
+                  onChange={field.onChange}
+                  max={5}
+                  // Live College Scorecard directory (every U.S. school), matching the guide flow.
+                  // Selected ids are Scorecard school ids, submitted as universitiesOfInterest.
+                  source="live"
+                />
+              )}
+            />
+          )}
+
+          {/* Step 3 — Topics (optional) */}
+          {step === 2 && (
+            <fieldset>
+              <legend className="form-label">
+                Topics you’re interested in{" "}
+                <span className="font-normal text-ink-soft">(optional)</span>
+              </legend>
+              <Body size="small" color="muted" className="mb-3">
+                Select all that apply. You can update these anytime in your profile.
+              </Body>
+              {topicOptions.length === 0 ? (
+                <Body size="medium" color="muted">
+                  Loading topics…
+                </Body>
+              ) : (
+                <Controller
+                  control={control}
+                  name="topics"
+                  render={({ field }) => (
+                    <div className="grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                      {topicOptions.map((t) => (
+                        <Checkbox
+                          key={t.value}
+                          label={t.label}
+                          checked={field.value.includes(t.value)}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.checked
+                                ? [...field.value, t.value]
+                                : field.value.filter((v) => v !== t.value),
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                />
+              )}
+            </fieldset>
+          )}
+
+          {/* Footer pinned to the bottom of the card (mt-auto), so the buttons stay put while the
+              step content above grows/shrinks. pt-12 keeps a comfortable gap even when a dense step
+              fills the card, so the buttons never look cramped against it. */}
+          <div className="mt-auto pt-12">
+            {submitError && (
+              <Alert variant="error" className="mb-5">
+                {submitError}
+              </Alert>
+            )}
+
+            {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. The empty span
+                keeps a lone Continue right-aligned when there's no Back to sit opposite it. */}
+            <ButtonRow align="between">
+              {step > 0 ? (
+                <Button variant="ghost" onClick={back} disabled={isSubmitting}>
+                  Back
+                </Button>
+              ) : (
+                <span />
+              )}
+              <Button type="submit" loading={isSubmitting}>
+                {isSubmitting ? "Saving…" : isLast ? "Submit" : "Continue"}
+              </Button>
+            </ButtonRow>
+          </div>
+        </form>
+      </div>
     </>
   );
 }

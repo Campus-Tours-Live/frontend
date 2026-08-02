@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
 import { Field } from "@/components/ui";
 import { UniversityMultiSelect, type UniversityOption } from "./UniversityMultiSelect";
 
@@ -17,9 +17,17 @@ export interface UniversityFieldProps {
   description?: ReactNode;
   error?: ReactNode;
   optional?: boolean;
+  /** Extra classes for the wrapping `.field`. */
+  className?: string;
+  /** Inline styles for the wrapping `.field` — e.g. a min-height so the field reserves a constant
+   *  footprint and the card doesn't jump as selections are added/removed (inline so it never depends
+   *  on Tailwind emitting a fresh arbitrary class). */
+  style?: CSSProperties;
   max?: number;
   /** "catalog" = local table (default); "live" = every U.S. school via the Scorecard proxy. */
   source?: "catalog" | "live";
+  /** Called when the control's search input gains focus (e.g. to clear a "required" error). */
+  onFocus?: () => void;
 }
 
 /**
@@ -36,12 +44,23 @@ export function UniversityField({
   description,
   error,
   optional,
+  className,
+  style,
   max,
   source,
+  onFocus,
 }: UniversityFieldProps) {
   const id = useId();
   return (
-    <Field label={label} htmlFor={id} description={description} error={error} optional={optional}>
+    <Field
+      label={label}
+      htmlFor={id}
+      description={description}
+      error={error}
+      optional={optional}
+      className={className}
+      style={style}
+    >
       <UniversityMultiSelect
         id={id}
         aria-labelledby={`${id}-label`}
@@ -51,6 +70,7 @@ export function UniversityField({
         onChange={onChange}
         max={max}
         source={source}
+        onFocus={onFocus}
       />
     </Field>
   );

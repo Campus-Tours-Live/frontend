@@ -372,8 +372,11 @@
   }
 
   /* ---------- Inputs ---------- */
-  .field label {
-    @apply block text-ui-sm font-bold mb-1.5 text-ink;
+  /* Shared field/legend label type — one hierarchy for every form (guide + participant):
+     14px on mobile, a touch larger (15px) on desktop. Fieldset legends use `.form-label` to match. */
+  .field label,
+  .form-label {
+    @apply block text-ui sm:text-ui-lg font-bold mb-1.5 text-ink;
   }
   .field-error {
     @apply mt-1 text-ui-sm font-semibold text-error-foreground;
@@ -381,9 +384,21 @@
   .field-hint {
     @apply mt-1 text-[12px] text-ink-soft;
   }
-  /* Help text ABOVE the control (below the label) — for help below, use .field-hint. */
+  /* Help text ABOVE the control (below the label) — smaller than the label (13px), same on every
+     screen. For help below, use .field-hint. */
   .field-description {
-    @apply mb-3 text-ui text-ink-soft;
+    @apply mb-3 text-ui-sm text-ink-soft;
+  }
+
+  /* Opt-in, and only where it earns its keep: a two-column row whose descriptions must line their
+     controls up. Scoped rather than global because `description` is used by six components, most of
+     them single-column or single-line — reserving two lines for all of them would add blank space
+     to unrelated forms to fix a problem they do not have. Gated at the `sm` breakpoint for the same
+     reason: stacked on mobile there is no neighbour to align with. */
+  @media (min-width: 640px) {
+    .paired-fields .field-description {
+      min-height: 2.5rem;
+    }
   }
   .input {
     @apply w-full px-[15px] py-3 border-[1.5px] border-border rounded-field

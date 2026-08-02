@@ -1,4 +1,5 @@
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +35,7 @@ import { cn } from "@/lib/utils";
  * default (`aria-hidden`); pass `title` for a standalone meaningful icon.
  */
 const ICONS = {
+  check: Check,
   chevronDown: ChevronDown,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,

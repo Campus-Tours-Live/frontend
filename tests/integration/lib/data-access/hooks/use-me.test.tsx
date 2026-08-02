@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMe } from "@/lib/data-access/hooks/use-me";
+import { MeHydration } from "@/lib/data-access/MeHydration";
+import type { Me } from "@/lib/data-access/types";
+import { pendingMe, provisionedMe } from "../../../../support/meFixtures";
 
 /**
  * Exercises the REAL useMe hook end-to-end. It is two-phase: GET /auth/session (always 200,
@@ -59,7 +62,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { id: "u1", roles: ["PARTICIPANT"], activeRole: "PARTICIPANT" },
+          data: provisionedMe({ id: "u1", roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" }),
         }),
     });
 
@@ -110,7 +113,7 @@ describe("useMe", () => {
       authenticated: true,
       userinfo: () =>
         jsonResponse(200, {
-          data: { id: "u1", roles: ["PARTICIPANT", "GUIDE"], activeRole: "GUIDE" },
+          data: provisionedMe({ id: "u1", roles: ["PARTICIPANT", "GUIDE"], currentRole: "GUIDE" }),
         }),
     });
 
@@ -118,7 +121,7 @@ describe("useMe", () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ id: "u1", activeRole: "GUIDE" });
+    expect(result.current.me).toMatchObject({ user: { id: "u1" }, currentRole: "GUIDE" });
     expect(result.current.isOnboarded).toBe(true);
     expect(result.current.hasRole("PARTICIPANT")).toBe(true);
     expect(result.current.hasRole("GUIDE")).toBe(true);
@@ -128,14 +131,15 @@ describe("useMe", () => {
   it("unwraps a bare (non-enveloped) userinfo body too", async () => {
     routeFetch({
       authenticated: true,
-      userinfo: () => jsonResponse(200, { id: "u2", roles: ["GUIDE"], activeRole: "GUIDE" }),
+      userinfo: () =>
+        jsonResponse(200, provisionedMe({ id: "u2", roles: ["GUIDE"], currentRole: "GUIDE" })),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.me).not.toBeNull());
 
-    expect(result.current.me?.id).toBe("u2");
+    expect(result.current.me?.user.id).toBe("u2");
     expect(result.current.hasRole("GUIDE")).toBe(true);
   });
 
@@ -159,18 +163,69 @@ describe("useMe", () => {
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
   });
 
-  it("roles=[] → onboarded false even though me is present", async () => {
+  it("PENDING (no roles yet) → onboarded false even though me is present — gated on provisioningStatus, not roles.length", async () => {
     routeFetch({
       authenticated: true,
-      userinfo: () => jsonResponse(200, { data: { id: "u3", roles: [], activeRole: null } }),
+      userinfo: () => jsonResponse(200, { data: pendingMe() }),
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.me).toMatchObject({ id: "u3" });
+    expect(result.current.me).toMatchObject({ provisioningStatus: "PENDING" });
     expect(result.current.isOnboarded).toBe(false);
     expect(result.current.hasRole("PARTICIPANT")).toBe(false);
+  });
+});
+
+/**
+ * The point of `MeHydration`: an RSC guard has already paid for `/v1/userinfo`, so the client
+ * must not pay again. Every test above proves useMe FETCHES; these prove it does NOT when the
+ * server seeded the cache — the same hook, the same two-phase logic, zero requests.
+ *
+ * `staleTime` matches `QueryProvider`'s 30s, because that is what makes seeded entries count as
+ * fresh. Without it React Query treats hydrated data as immediately stale and refetches, which
+ * would leave the round-trips in place while every other assertion still passed.
+ */
+describe("useMe with an RSC-seeded cache (MeHydration)", () => {
+  function makeHydratedWrapper(me: Me) {
+    const client = new QueryClient({
+      defaultOptions: { queries: { staleTime: 30_000, retry: false } },
+    });
+    return function Wrapper({ children }: { children: ReactNode }) {
+      return (
+        <QueryClientProvider client={client}>
+          <MeHydration me={me}>{children}</MeHydration>
+        </QueryClientProvider>
+      );
+    };
+  }
+
+  it("issues NO request — not /auth/session, not /v1/userinfo — for a seeded PENDING principal", async () => {
+    // Both routes are wired to succeed, so a passing test means the hook chose not to call
+    // them, never that a call failed silently.
+    routeFetch({ authenticated: true, userinfo: () => jsonResponse(200, { data: pendingMe() }) });
+    const me = pendingMe({ email: "first.timer@example.com" });
+
+    const { result } = renderHook(() => useMe(), { wrapper: makeHydratedWrapper(me) });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.me).toEqual(me);
+    expect(result.current.isOnboarded).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("issues NO request for a seeded PROVISIONED principal, and still derives roles correctly", async () => {
+    routeFetch({ authenticated: true, userinfo: () => jsonResponse(200, { data: pendingMe() }) });
+    const me = provisionedMe({ roles: ["PARTICIPANT"], currentRole: "PARTICIPANT" });
+
+    const { result } = renderHook(() => useMe(), { wrapper: makeHydratedWrapper(me) });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.isOnboarded).toBe(true);
+    expect(result.current.hasRole("PARTICIPANT")).toBe(true);
+    expect(result.current.hasRole("GUIDE")).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

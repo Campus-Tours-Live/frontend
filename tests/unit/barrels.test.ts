@@ -84,6 +84,7 @@ describe("public barrels", () => {
       "cancelAuth",
       "resetAuthGate",
       "AuthCancelledError",
+      "buildLoginUrl",
     ]);
   });
 
@@ -98,9 +99,8 @@ describe("public barrels", () => {
       "useUniversitySearch",
       "useUpdateParticipantProfile",
       "useUpdateGuideProfile",
-      "useSetActiveRole",
+      "useSetCurrentRole",
       "useDashboard",
-      "useOnboarding",
       "useOfferings",
       "useCreateOffering",
       "useActivateOffering",

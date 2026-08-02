@@ -16,11 +16,15 @@ import {
 } from "@/components/ui";
 import {
   ApiError,
+  useDegrees,
   useMajors,
+  useMe,
   useTourTopics,
   useUpdateGuideProfile,
   type GuideProfile,
+  type MeUser,
 } from "@/lib/data-access";
+import { EnrollmentYearFields } from "@/components/signup/EnrollmentYearFields";
 import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
 
 const LANGUAGES = [
@@ -41,11 +45,13 @@ interface FormValues {
   lastName: string;
   university: UniversityOption[];
   major: string;
+  /** Required by the server (CTL-96) AND the input to class year's ceiling — not optional here. */
+  degree: string;
   classYear: string;
+  entryYear: string;
   bio: string;
   languages: string[];
   specialties: string[];
-  basePrice: string;
 }
 
 export interface GuideProfileFormProps {
@@ -53,32 +59,38 @@ export interface GuideProfileFormProps {
 }
 
 function universitySeed(profile: GuideProfile): UniversityOption[] {
-  if (!profile.universityId || !profile.universityName) return [];
+  const university = profile.universities?.[0];
+  if (!university?.universityId || !university.universityName) return [];
   return [
     {
-      id: profile.universityId,
-      name: profile.universityName,
-      shortName: profile.universityShortName ?? null,
+      id: university.universityId,
+      name: university.universityName,
+      shortName: university.universityShortName ?? null,
     },
   ];
 }
 
-function toFormValues(profile: GuideProfile): FormValues {
-  const basePriceCents = profile.basePriceCents ?? 2800;
+function toFormValues(
+  profile: GuideProfile,
+  identity?: Pick<MeUser, "firstName" | "lastName"> | null,
+): FormValues {
+  const university = profile.universities?.[0];
   return {
-    firstName: profile.firstName ?? "",
-    lastName: profile.lastName ?? "",
+    firstName: identity?.firstName ?? "",
+    lastName: identity?.lastName ?? "",
     university: universitySeed(profile),
-    major: profile.major ?? "",
-    classYear: profile.classYear ?? "",
+    major: university?.major ?? "",
+    degree: university?.degree ?? "",
+    classYear: university?.classYear ?? "",
+    entryYear: university?.entryYear?.toString() ?? "",
     bio: profile.bio ?? "",
-    languages: profile.languages?.length ? profile.languages : ["en-US"],
-    specialties: profile.specialties ?? [],
-    basePrice: String(Math.round(basePriceCents / 100)),
+    languages: profile.spokenLanguages?.length ? profile.spokenLanguages : ["en-US"],
+    specialties: profile.tourTopics ?? [],
   };
 }
 
 export function GuideProfileForm({ profile }: GuideProfileFormProps) {
+  const { me } = useMe();
   const updateProfile = useUpdateGuideProfile();
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
@@ -89,30 +101,33 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
     watch,
     handleSubmit,
     reset,
+    trigger,
+    getValues,
+    clearErrors,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
-    defaultValues: toFormValues(profile),
+    defaultValues: toFormValues(profile, me?.user),
   });
 
+  // The saved university row this form edits — it seeds the selection above and owns the stored
+  // entry year the exemption below is keyed on.
+  const storedUniversity = profile.universities?.[0];
   // Majors are the fields of study the SELECTED school actually offers (live). Empty until a school
   // is picked, and empty for a pre-existing local university (whose id isn't a Scorecard id) — the
   // saved major is preserved as a fallback option so editing other fields never loses it.
   const selectedUniversity = watch("university")?.[0];
   const { data: majorOptions = [] } = useMajors(selectedUniversity?.id);
+  // Degree levels the SELECTED school awards — the same live source the onboarding form uses, so
+  // the two forms offer the same vocabulary and neither hardcodes a list.
+  const { data: degreeOptions = [] } = useDegrees(selectedUniversity?.id);
 
   useEffect(() => {
-    reset(toFormValues(profile));
-  }, [profile, reset]);
+    reset(toFormValues(profile, me?.user));
+  }, [profile, me, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     setSaveMessage(null);
-
-    const dollars = Number(values.basePrice);
-    if (Number.isNaN(dollars) || dollars < 20 || dollars > 200) {
-      setError("basePrice", { message: "Price must be between $20 and $200" });
-      return;
-    }
 
     // Defence-in-depth: the Controller's rules.validate already blocks submit on an
     // empty selection, so this only fires for the [null] slot case.
@@ -128,16 +143,21 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
         lastName: values.lastName.trim(),
         universityId: university.id,
         major: values.major.trim(),
+        // degree and entryYear are REQUIRED by the server, so they go unconditionally: on the wire
+        // `undefined` means "leave alone", and a `values.x ? … : undefined` fallback would turn a
+        // cleared field into a silent no-op — the server keeping the old value while the form
+        // reports success. Both fields are required in the form, so submit is unreachable empty.
+        degree: values.degree.trim(),
         classYear: values.classYear.trim() || undefined,
+        entryYear: Number(values.entryYear),
         bio: values.bio.trim() || undefined,
-        languages: values.languages,
-        specialties: values.specialties,
-        basePriceCents: Math.round(dollars * 100),
+        spokenLanguages: values.languages,
+        tourTopics: values.specialties,
       });
       setSaveMessage("Profile saved.");
     } catch (err) {
       const message = formSubmitErrorMessage(err, {
-        invalid: "Check your inputs — name, university, and major are required.",
+        invalid: "Check your inputs — name, university, major, and entry year are required.",
         generic: "Could not save your profile. Please try again.",
       });
       setError("root", { message });
@@ -145,7 +165,12 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-8">
+    // `noValidate` for the same reason GuideOnboardingForm carries it: EnrollmentYearFields puts
+    // the DOM `required` attribute on entry year (so assistive tech knows), but react-hook-form
+    // owns validation and messaging. Without it the browser's own constraint check fails first and
+    // the `submit` event is never fired at all — handleSubmit never runs, and Save silently does
+    // nothing.
+    <form onSubmit={onSubmit} noValidate className="space-y-8">
       {errors.root ? <Alert variant="error">{errors.root.message}</Alert> : null}
       {saveMessage ? <Alert variant="success">{saveMessage}</Alert> : null}
 
@@ -211,8 +236,73 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
               </SelectField>
             )}
           />
-          <TextField label="Class year" optional {...register("classYear")} />
+          <Controller
+            control={control}
+            name="degree"
+            // Same wording as GuideOnboardingForm's degree rule — one field, one message. Nothing
+            // shared owns degree yet, so this is kept in step by hand (and by the test below).
+            rules={{ required: "Please select your degree." }}
+            render={({ field }) => (
+              <SelectField
+                label="Degree"
+                error={errors.degree?.message}
+                value={field.value}
+                onChange={field.onChange}
+                disabled={!selectedUniversity}
+              >
+                <option value="">
+                  {selectedUniversity ? "Select a degree" : "Pick a university first"}
+                </option>
+                {/* Keep the saved degree selectable when the live list doesn't offer it — the
+                    server requires the field, so editing anything else must never blank it. */}
+                {field.value && !degreeOptions.some((o) => o.value === field.value) ? (
+                  <option value={field.value}>{field.value}</option>
+                ) : null}
+                {degreeOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </SelectField>
+            )}
+          />
         </div>
+
+        {/* Entry year + class year + the rules-unavailable retry — the same component
+            GuideOnboardingForm renders, so the order, the required rule, the gate, the windows and
+            the copy cannot land in one form and miss the other. */}
+        <EnrollmentYearFields
+          control={control}
+          getValues={getValues}
+          trigger={trigger}
+          clearErrors={clearErrors}
+          // The year the SERVER returned. Leaving it UNCHANGED is exempt from the entry-year
+          // window, which advances every 1 January while a stored year does not — otherwise a guide
+          // who enrolled long enough ago is told their real entry year is invalid, class year is
+          // disabled beside it, and no edit to any other field can be saved. The backend applies
+          // the same rule (it range-checks only a changed value); onboarding, which has no stored
+          // value, passes nothing here and stays fully range-checked.
+          //
+          // Keyed on the SELECTED university, not on the profile: the stored year belongs to a
+          // (guide, university) ROW, and the server looks that row up by the universityId this save
+          // is about to send. Switch schools and there is no such row — the first year against a
+          // new university IS a new value, the server range-checks it and 422s, so a client that
+          // stayed exempt would promise a save that fails and explain it only in the generic root
+          // alert, with nothing marked on the field at fault.
+          //
+          // What the id comparison actually asks is "is the university field UNTOUCHED", not "is it
+          // the same school": the seed carries the local universityId (`universitySeed` above) while
+          // every live-search option carries a Scorecard id (universities.query), and the backend
+          // reconciles the two only on save. So a guide who re-picks their OWN school from the
+          // search box loses the exemption and is asked for an in-window year. That edge is chosen,
+          // not overlooked — it is an unusual action, and it errs STRICTER than the server, which
+          // costs a clear message on the right field instead of a 422 the form cannot attribute.
+          storedEntryYear={
+            selectedUniversity?.id === storedUniversity?.universityId
+              ? storedUniversity?.entryYear
+              : undefined
+          }
+        />
 
         <Textarea
           label="Short bio"
@@ -290,18 +380,6 @@ export function GuideProfileForm({ profile }: GuideProfileFormProps) {
               )}
             </fieldset>
           )}
-        />
-
-        <TextField
-          label="Base price per tour (USD)"
-          type="number"
-          min={20}
-          max={200}
-          step={1}
-          fieldClassName="max-w-[220px]"
-          error={errors.basePrice?.message}
-          hint="Default pricing for new tour offerings."
-          {...register("basePrice", { required: "Price is required" })}
         />
       </Card>
 

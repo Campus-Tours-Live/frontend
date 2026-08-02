@@ -5,8 +5,8 @@ import { useUniversitySearch } from "@/lib/data-access/hooks/use-university-sear
 
 /**
  * Exercises the REAL useUniversitySearch hook end-to-end: useDebounced (250ms)
- * → query (enabled flag) → apiFetch → fetch(/v1/universities?q=…&limit=8) →
- * apiJson envelope unwrap. Only global.fetch is mocked.
+ * → query (enabled flag) → apiFetch → fetch(/v1/meta/universities?q=…) →
+ * apiJson envelope unwrap → { value, label } adapted to University. Only global.fetch is mocked.
  */
 
 function makeWrapper() {
@@ -56,9 +56,10 @@ describe("useUniversitySearch", () => {
     expect(result.current.data).toBeUndefined();
   });
 
-  it("does NOT fetch immediately — waits for the debounce, then hits /v1/universities", async () => {
-    const matches = [{ id: "u1", name: "Stanford University" }];
-    fetchMock.mockResolvedValue(jsonResponse(200, { data: matches }));
+  it("does NOT fetch immediately — waits for the debounce, then hits /v1/meta/universities", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(200, { data: [{ value: "u1", label: "Stanford University" }] }),
+    );
 
     const { result } = renderHook(() => useUniversitySearch("stanford"), {
       wrapper: makeWrapper(),
@@ -66,14 +67,16 @@ describe("useUniversitySearch", () => {
 
     // First debounced value is the INITIAL "stanford" (useState seed), so the
     // query is enabled from the start; but assert it ultimately fetches the
-    // debounced term and unwraps the data.
+    // debounced term and adapts the { value, label } directory option to a University.
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/universities?q=stanford&limit=8",
+      "/v1/meta/universities?q=stanford",
       expect.objectContaining({ credentials: "same-origin" }),
     );
-    expect(result.current.data).toEqual(matches);
+    expect(result.current.data).toEqual([
+      { id: "u1", name: "Stanford University", shortName: null, city: null, region: null },
+    ]);
   });
 
   it("debounces typing: the intermediate term is swallowed before the settled one is requested", async () => {
@@ -92,10 +95,10 @@ describe("useUniversitySearch", () => {
 
     // The final settled term "mit" must eventually be requested...
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith("/v1/universities?q=mit&limit=8", expect.anything()),
+      expect(fetchMock).toHaveBeenCalledWith("/v1/meta/universities?q=mit", expect.anything()),
     );
     // ...and the intermediate "mi" must NOT have been (debounce swallowed it).
-    expect(fetchMock).not.toHaveBeenCalledWith("/v1/universities?q=mi&limit=8", expect.anything());
+    expect(fetchMock).not.toHaveBeenCalledWith("/v1/meta/universities?q=mi", expect.anything());
   });
 
   it("url-encodes the query term", async () => {
@@ -108,7 +111,7 @@ describe("useUniversitySearch", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/v1/universities?q=a%26b%20state&limit=8",
+      "/v1/meta/universities?q=a%26b%20state",
       expect.anything(),
     );
   });

@@ -15,10 +15,11 @@ export const queryKeys = {
   tourDetail: (id: string) => ["tour-detail", id] as const,
   universitySearch: (q: string) => ["university-search", q] as const,
   majors: (schoolId: string) => ["majors", schoolId] as const,
+  degrees: (schoolId: string) => ["degrees", schoolId] as const,
+  enrollmentYears: () => ["enrollment-years"] as const,
   dashboard: () => ["dashboard"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
   tours: () => ["tours"] as const,
-  onboarding: (role: string) => ["onboarding", role] as const,
   // Availability v2 (CTL-55) — BFF Contract A (/v1/availability*, /v1/offerings/:id/slots).
   availabilityRules: () => ["availability-rules"] as const,
   availabilityExceptions: () => ["availability-exceptions"] as const,

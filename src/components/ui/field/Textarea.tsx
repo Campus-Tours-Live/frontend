@@ -20,6 +20,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
     label,
     error,
     hint,
+    description,
     optional,
     id,
     className,
@@ -49,12 +50,17 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
     onChange?.(event);
   };
 
+  const showCounter = maxLength != null;
+
   return (
     <Field
       label={label}
       htmlFor={inputId}
-      error={error}
+      // With a counter present, the error shares the counter's row (below) instead of
+      // rendering on its own line, so Field doesn't also print it.
+      error={showCounter ? undefined : error}
       hint={hint}
+      description={description}
       optional={optional}
       className={fieldClassName}
     >
@@ -69,10 +75,18 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         onChange={handleChange}
         {...props}
       />
-      {maxLength != null ? (
+      {showCounter ? (
         <>
-          <div className="mt-1 flex justify-end">
-            <Caption isMonospace aria-hidden className="tabular-nums">
+          {/* Error (if any) on the left, character counter on the right — one shared row. */}
+          <div className="mt-1 flex items-baseline justify-between gap-3">
+            {error ? (
+              <p role="alert" className="field-error !mt-0">
+                {error}
+              </p>
+            ) : (
+              <span />
+            )}
+            <Caption isMonospace aria-hidden className="tabular-nums shrink-0">
               {length} / {maxLength}
             </Caption>
           </div>

@@ -18,7 +18,7 @@ import {
   CircleDollarSign,
   type LucideIcon,
 } from "lucide-react";
-import { useMe } from "@/lib/data-access";
+import { useGuideProfile, useMe } from "@/lib/data-access";
 import { Body, Heading, MenuItem, MenuSection } from "@/components/ui";
 import { assetUrl } from "@/lib/assets";
 import { RoleSwitcher } from "./RoleSwitcher";
@@ -112,24 +112,32 @@ const GUIDE_NAV: NavGroup[] = [
 
 export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { me, isOnboarded } = useMe();
+  const { me } = useMe();
+  // Only fetch the guide profile when it's actually needed (the subtitle below) — a
+  // participant-context render never issues this call. Called unconditionally (before the
+  // render-gate return) per the rules of hooks; `enabled` does the actual gating.
+  const { data: guideProfile } = useGuideProfile(me?.currentRole === "GUIDE");
 
-  // Bare account (no roles) or logged out → render nothing.
-  if (!isOnboarded || !me) return null;
+  // Logged out, or a bare/pending account (no roles yet) → render nothing. Checked directly on
+  // `me` (not a separate `isOnboarded` boolean) so TS narrows `me` to `ProvisionedMe` below —
+  // gating on provisioningStatus, never on `roles.length` (CTL-97 constraint 2).
+  if (!me || me.provisioningStatus !== "PROVISIONED") return null;
 
-  // Active role decides which area's nav we render. Read activeRole (the authoritative
+  // Current role decides which area's nav we render. Read currentRole (the authoritative
   // UX role) — there is no legacy `role` field on the wire.
-  const activeRole: Role = me.activeRole ?? "PARTICIPANT";
+  const currentRole: Role = me.currentRole ?? "PARTICIPANT";
   /* istanbul ignore next -- display-name fallbacks; split() always yields an element */
-  const name = (me.displayName ?? me.firstName ?? "").split(" ")[0] ?? "";
+  const name = (me.user.displayName ?? me.user.firstName ?? "").split(" ")[0] ?? "";
+  // While the guide profile is still loading, `guideProfile` is undefined, which reads as
+  // not-pending — the same safe default the rest of the app uses for an unresolved status.
   const subtitle =
-    activeRole === "GUIDE"
-      ? me.guideStatus === "PENDING_REVIEW"
-        ? "Guide · pending review"
+    currentRole === "GUIDE"
+      ? guideProfile?.guideStatus === "PENDING"
+        ? "Guide · pending verification"
         : "Guide account"
       : "Participant account";
 
-  const groups = activeRole === "GUIDE" ? GUIDE_NAV : PARTICIPANT_NAV;
+  const groups = currentRole === "GUIDE" ? GUIDE_NAV : PARTICIPANT_NAV;
 
   return (
     <div>
@@ -151,7 +159,7 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
         </Body>
       </div>
 
-      {/* Switch active role / start a second role's onboarding */}
+      {/* Switch current role / start a second role's onboarding */}
       <RoleSwitcher onNavigate={onNavigate} />
 
       {/* Groups */}
