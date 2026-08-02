@@ -6,8 +6,8 @@ import { formatMonthYear } from "@/lib/format";
 import { GuideProfileForm } from "./GuideProfileForm";
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import {
-  applicationStatusLabel,
-  applicationStatusVariant,
+  guideStatusLabel,
+  guideStatusVariant,
   verificationStatusLabel,
 } from "./guideProfileStatus";
 
@@ -39,7 +39,7 @@ export function GuideProfilePage() {
               Display name
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {profile.displayName ?? "—"}
+              {me?.user.displayName ?? "—"}
             </Body>
           </div>
           <div>
@@ -47,7 +47,7 @@ export function GuideProfilePage() {
               Email
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {profile.email ?? "—"}
+              {me?.user.email ?? "—"}
             </Body>
           </div>
           <div>
@@ -55,7 +55,7 @@ export function GuideProfilePage() {
               Member since
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {formatMonthYear(me?.createdAt)}
+              {formatMonthYear(me?.provisioningStatus === "PROVISIONED" ? me.user.createdAt : null)}
             </Body>
           </div>
           <div>
@@ -63,8 +63,8 @@ export function GuideProfilePage() {
               Application
             </Body>
             <dd className="mt-1">
-              <StatusBadge variant={applicationStatusVariant(profile.applicationStatus)}>
-                {applicationStatusLabel(profile.applicationStatus)}
+              <StatusBadge variant={guideStatusVariant(profile.guideStatus)}>
+                {guideStatusLabel(profile.guideStatus)}
               </StatusBadge>
             </dd>
           </div>
@@ -73,7 +73,7 @@ export function GuideProfilePage() {
               Verification
             </Body>
             <Body as="dd" size="small" weight={600} color="ink">
-              {verificationStatusLabel(profile.verificationStatus)}
+              {verificationStatusLabel(profile.universities?.[0]?.verificationStatus)}
             </Body>
           </div>
         </dl>

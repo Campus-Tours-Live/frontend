@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
-import { useMe, useTourTopics, useUpdateParticipantProfile } from "@/lib/data-access";
+import {
+  ApiError,
+  getOnboardingPrefill,
+  OnboardRetryableError,
+  useMe,
+  useOnboardRole,
+  useTourTopics,
+  type ParticipantProfileUpdate,
+} from "@/lib/data-access";
 import {
   Alert,
   Body,
@@ -48,10 +56,15 @@ const STEP_LEADS = [
 export function ParticipantOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
-  const updateProfile = useUpdateParticipantProfile();
+  const onboardRole = useOnboardRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set when the command resolves STILL_PENDING (OnboardRetryableError) — Core's commit state is
+  // genuinely ambiguous, so this is neither a save failure nor a confirmed grant. Distinct from
+  // submitError: the form stays filled and retry RESUBMITS the same command — there is no
+  // separate session step any more, so a resolve from the command IS "session usable".
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -79,34 +92,61 @@ export function ParticipantOnboardingForm() {
   useEffect(() => {
     if (prefilled.current || !me) return;
     prefilled.current = true;
-    if (me.firstName && !getValues("firstName")) setValue("firstName", me.firstName);
-    if (me.lastName && !getValues("lastName")) setValue("lastName", me.lastName);
+    const prefill = getOnboardingPrefill(me);
+    if (prefill.firstName && !getValues("firstName")) setValue("firstName", prefill.firstName);
+    if (prefill.lastName && !getValues("lastName")) setValue("lastName", prefill.lastName);
   }, [me, setValue, getValues]);
 
-  const persist = async (values: FormValues) => {
+  /** Maps the wizard's form values to the onboarding COMMAND body — the same field mapping the
+   *  old PATCH used (the participant PATCH never had a `submit` field to strip). */
+  const buildBody = (values: FormValues): ParticipantProfileUpdate => ({
+    // names are required on step 1, so the `|| undefined` fallback is never taken
+    firstName: /* istanbul ignore next */ values.firstName || undefined,
+    lastName: /* istanbul ignore next */ values.lastName || undefined,
+    participantType: values.participantType,
+    universitiesOfInterest: values.universities.map((u) => u.id),
+    topicsOfInterest: values.topics,
+  });
+
+  /**
+   * One command call, reconcile-driven navigation: `onboardRole.mutateAsync` only RESOLVES a
+   * `ProvisionedMe` once the PARTICIPANT role is CONFIRMED held (its own 201, or an internal
+   * §4.3 reconcile) — there is no separate "activate session" step any more, so a resolve here IS
+   * the "session usable + currentRole set" signal and is the ONLY path that navigates.
+   *
+   * Shared by both the wizard's Submit (`persist`) and the retry panel (`retry`) below, so a
+   * STILL_PENDING retry resubmits the EXACT same mapped body rather than re-deriving it.
+   */
+  const submitOnboarding = async (values: FormValues) => {
     setSubmitError(null);
     try {
-      // The mutation's onSuccess invalidates ["me"] + the participant profile, so
-      // the header/dashboard reflect the just-granted role immediately.
-      await updateProfile.mutateAsync({
-        // names are required on step 1, so the `|| undefined` fallback is never taken
-        firstName: /* istanbul ignore next */ values.firstName || undefined,
-        lastName: /* istanbul ignore next */ values.lastName || undefined,
-        participantType: values.participantType,
-        universitiesOfInterest: values.universities.map((u) => u.id),
-        topicsOfInterest: values.topics,
-      });
-      router.push("/dashboard");
+      await onboardRole.mutateAsync({ role: "PARTICIPANT", body: buildBody(values) });
     } catch (err) {
+      // Core's commit state is genuinely ambiguous (§4.3 STILL_PENDING) — not a terminal failure,
+      // so no submitError message; the retry panel below owns its own copy.
+      if (err instanceof OnboardRetryableError) {
+        setRetryMessage(err.message);
+        return;
+      }
+      setRetryMessage(null);
       setSubmitError(
         isAuthCancelled(err)
           ? SIGN_IN_AGAIN_MESSAGE
-          : err instanceof Error
+          : err instanceof ApiError
             ? err.message
             : "Something went wrong. Please try again.",
       );
+      return;
     }
+    setRetryMessage(null);
+    router.push("/dashboard");
   };
+
+  const persist = (values: FormValues) => submitOnboarding(values);
+
+  // Resubmits the LAST wizard values (react-hook-form retains them once submitted — nothing here
+  // clears or resets the form) — never a fresh partial re-fill, and never a separate session call.
+  const retry = () => submitOnboarding(getValues());
 
   const submit = handleSubmit(persist);
   const isLast = step === STEPS.length - 1;
@@ -128,6 +168,32 @@ export function ParticipantOnboardingForm() {
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   const bothNameMissing = Boolean(errors.firstName && errors.lastName);
+
+  // Core's commit state is ambiguous (§4.3 STILL_PENDING) — the role may or may not be held yet.
+  // Replace the wizard with a dedicated retry panel rather than a full re-fill: `retry` resubmits
+  // the SAME mapped body (a re-POST of an already-granted role reconciles to a resolve, never a
+  // duplicate grant).
+  if (retryMessage) {
+    return (
+      <>
+        <div className="mb-8">
+          <OnboardingBreadcrumb current="Onboarding" />
+        </div>
+        <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+          <div className="eyebrow">Participant onboarding</div>
+          <SectionHeading title="Tell us about yourself?" lead="Almost there." />
+          <Alert variant="error" className="mt-6">
+            {retryMessage}
+          </Alert>
+          <ButtonRow className="mt-6">
+            <Button onClick={() => void retry()} loading={onboardRole.isPending}>
+              Try again
+            </Button>
+          </ButtonRow>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

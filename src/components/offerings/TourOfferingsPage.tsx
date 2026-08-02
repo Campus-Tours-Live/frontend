@@ -11,7 +11,7 @@ import {
   PageContainer,
   PageHeader,
 } from "@/components/ui";
-import { useMe, useOfferings, useTourTopics, type Offering } from "@/lib/data-access";
+import { useGuideProfile, useOfferings, useTourTopics, type Offering } from "@/lib/data-access";
 import { OfferingCard } from "./OfferingCard";
 import { filterOfferings, type OfferingFilter } from "./offeringStatus";
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
@@ -24,12 +24,13 @@ const FILTERS: { id: OfferingFilter; label: string }[] = [
 ];
 
 export function TourOfferingsPage() {
-  const { me } = useMe();
+  // /guide/tour-offerings is guide-only, so this always applies (no enabled-gating needed).
+  const { data: guideProfile } = useGuideProfile();
   const { data: offerings = [], isLoading, isError, error } = useOfferings();
   const { data: topics = [] } = useTourTopics();
   const [filter, setFilter] = useState<OfferingFilter>("all");
 
-  const canPublish = me?.guideStatus === "APPROVED";
+  const canPublish = guideProfile?.guideStatus === "VERIFIED";
 
   const topicByValue = useMemo(() => new Map(topics.map((t) => [t.value, t.label])), [topics]);
 

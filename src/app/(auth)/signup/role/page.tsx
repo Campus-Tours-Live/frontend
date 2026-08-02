@@ -50,12 +50,19 @@ export default async function SignupRolePage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  // A logged-in member (holds ≥1 role) doesn't pick a role here — they acquire a
+  // A logged-in member with a CURRENT role doesn't pick a role here — they acquire a
   // second role via the in-app "Become X" onboarding, not the signup funnel. A bare
   // account (signed in, 0 roles, mid first-signup) is allowed: this is where it picks
   // its first role. (Role-aware → must be the RSC guard; proxy can't read roles.)
+  //
+  // Gated on `currentRole`, NOT `roles.length`: this page is also the (app)-group guard's
+  // landing for a held-role-but-no-CURRENT-role session (see (app)/layout.tsx) — gating on
+  // roles.length here would bounce that session straight back to /dashboard, which bounces
+  // it straight back here, an infinite redirect loop. Its CTAs (via /signup/participant and
+  // /signup/guide → /auth/login?role=…) resolve that case too: the bff callback's "already
+  // holds requestedRole" branch just activates the role and lands on /dashboard.
   const me = await getServerMe();
-  if ((me?.roles?.length ?? 0) > 0) redirect("/dashboard");
+  if (me?.currentRole) redirect("/dashboard");
 
   const { error } = await searchParams;
   const parentNoGuide = error === "parent_no_guide";

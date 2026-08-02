@@ -2,32 +2,41 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { formSubmitErrorMessage } from "@/lib/errors";
 import { Controller, useForm, useWatch } from "react-hook-form";
+import { formSubmitErrorMessage } from "@/lib/errors";
 import {
   Alert,
   Body,
   Button,
   Card,
   Chip,
+  FormGroup,
   Icon,
   Link,
   Nudge,
+  Radio,
   SectionHeading,
   SelectField,
+  Skeleton,
   Spinner,
   TextField,
   Textarea,
 } from "@/components/ui";
-import { useCreateOffering, useLanguages, useTourFeatures, useTourTopics } from "@/lib/data-access";
-import { UniversityField, type UniversityOption } from "@/components/signup/UniversityField";
+import {
+  useCreateOffering,
+  useGuideProfile,
+  useLanguages,
+  useTourFeatures,
+  useTourTopics,
+} from "@/lib/data-access";
 
 const DURATIONS = [30, 45, 60, 90] as const;
 const MAX_FEATURES = 3;
+const UNVERIFIED_REASON = "Verify your school email to create tours for this campus.";
 
 interface FormValues {
   title: string;
-  university: UniversityOption[];
+  universityId: string;
   topic: string;
   durationMin: string;
   price: string;
@@ -42,6 +51,11 @@ export function CreateOfferingForm() {
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const { data: languageOptions = [], isLoading: languagesLoading } = useLanguages();
   const { byTopic, isLoading: featuresLoading } = useTourFeatures();
+  const { data: guideProfile, isLoading: profileLoading } = useGuideProfile();
+  const universities = guideProfile?.universities ?? [];
+  const firstVerifiedId =
+    universities.find((u) => u.verificationStatus === "VERIFIED" && u.universityId)?.universityId ??
+    "";
 
   const {
     register,
@@ -54,7 +68,7 @@ export function CreateOfferingForm() {
   } = useForm<FormValues>({
     defaultValues: {
       title: "",
-      university: [],
+      universityId: "",
       topic: "",
       durationMin: "60",
       price: "42",
@@ -65,34 +79,37 @@ export function CreateOfferingForm() {
   });
 
   const topic = useWatch({ control, name: "topic" });
+  const selectedUniversityId = useWatch({ control, name: "universityId" });
   const featureOptions = topic ? (byTopic[topic] ?? []) : [];
 
-  // Drop feature selections that are no longer valid for the chosen topic.
+  // Keep the guide on a verified university without overwriting a deliberate valid choice.
   useEffect(() => {
-    const allowed = new Set((topic ? (byTopic[topic] ?? []) : []).map((o) => o.value));
+    if (firstVerifiedId) setValue("universityId", firstVerifiedId);
+  }, [firstVerifiedId, setValue]);
+
+  // Drop feature selections that do not belong to the currently selected topic.
+  useEffect(() => {
+    const allowed = new Set((topic ? (byTopic[topic] ?? []) : []).map((option) => option.value));
     const current = getValues("features");
     const next = topic ? current.filter((code) => allowed.has(code)) : [];
-    if (next.length === current.length && next.every((code, i) => code === current[i])) return;
+    if (next.length === current.length && next.every((code, index) => code === current[index]))
+      return;
     setValue("features", next);
   }, [topic, byTopic, setValue, getValues]);
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!values.universityId) return;
+
     const dollars = Number(values.price);
     if (Number.isNaN(dollars) || dollars < 20 || dollars > 200) {
       setError("price", { message: "Price must be between $20 and $200" });
       return;
     }
 
-    const university = values.university[0];
-    if (!university) {
-      setError("university", { message: "University is required" });
-      return;
-    }
-
     try {
       await createOffering.mutateAsync({
         title: values.title.trim(),
-        universityId: university.id,
+        universityId: values.universityId,
         topic: values.topic,
         durationMin: Number(values.durationMin),
         priceCents: Math.round(dollars * 100),
@@ -102,11 +119,12 @@ export function CreateOfferingForm() {
       });
       router.push("/guide/tour-offerings");
     } catch (err) {
-      const message = formSubmitErrorMessage(err, {
-        invalid: "Check your inputs — title, university, topic, duration, and price are required.",
-        generic: "Could not save this offering. Please try again.",
+      setError("root", {
+        message: formSubmitErrorMessage(err, {
+          invalid: "Check your inputs — title, topic, duration, and price are required.",
+          generic: "Could not save this offering. Please try again.",
+        }),
       });
-      setError("root", { message });
     }
   });
 
@@ -134,22 +152,68 @@ export function CreateOfferingForm() {
           {...register("title", { required: "Title is required" })}
         />
 
-        <Controller
-          control={control}
-          name="university"
-          rules={{
-            validate: (value) => value.length > 0 || "University is required",
-          }}
-          render={({ field }) => (
-            <UniversityField
+        <div>
+          {profileLoading ? (
+            <>
+              <Body as="span" size="medium" weight={600} color="ink" className="mb-2 block">
+                University
+              </Body>
+              <Skeleton className="h-11 w-full rounded-field" />
+            </>
+          ) : universities.length === 0 ? (
+            <>
+              <Body as="span" size="medium" weight={600} color="ink" className="mb-2 block">
+                University
+              </Body>
+              <Alert variant="warning" className="mt-2">
+                Finish guide onboarding (verify your school email) before creating an offering.
+              </Alert>
+            </>
+          ) : (
+            <FormGroup
               label="University"
-              error={errors.university?.message}
-              value={field.value}
-              onChange={field.onChange}
-              max={1}
-            />
+              error={
+                !firstVerifiedId
+                  ? "None of your universities are verified yet. Verify your school email for at least one campus before you can create a tour offering."
+                  : undefined
+              }
+            >
+              {universities.map((university, index) => {
+                const verified =
+                  university.verificationStatus === "VERIFIED" && Boolean(university.universityId);
+                const reasonId = `university-reason-${university.universityId || index}`;
+                return (
+                  <div
+                    key={
+                      university.universityId || `${university.universityName ?? "campus"}-${index}`
+                    }
+                  >
+                    <Radio
+                      name="universityId"
+                      value={university.universityId ?? ""}
+                      label={university.universityName ?? "Your campus"}
+                      checked={verified && selectedUniversityId === university.universityId}
+                      disabled={!verified}
+                      aria-describedby={!verified ? reasonId : undefined}
+                      onChange={() => {
+                        if (verified) {
+                          setValue("universityId", university.universityId as string, {
+                            shouldValidate: true,
+                          });
+                        }
+                      }}
+                    />
+                    {!verified ? (
+                      <Body id={reasonId} size="small" color="muted" className="ml-7 mt-0.5">
+                        {UNVERIFIED_REASON}
+                      </Body>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </FormGroup>
           )}
-        />
+        </div>
 
         <SelectField
           label="Topic"
@@ -158,9 +222,9 @@ export function CreateOfferingForm() {
           {...register("topic", { required: "Topic is required" })}
         >
           <option value="">Select a topic</option>
-          {topicOptions.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          {topicOptions.map((topicOption) => (
+            <option key={topicOption.value} value={topicOption.value}>
+              {topicOption.label}
             </option>
           ))}
         </SelectField>
@@ -188,23 +252,23 @@ export function CreateOfferingForm() {
                 </Body>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {featureOptions.map((f) => {
-                    const active = field.value.includes(f.value);
+                  {featureOptions.map((feature) => {
+                    const active = field.value.includes(feature.value);
                     const atLimit = !active && field.value.length >= MAX_FEATURES;
                     return (
                       <Chip
-                        key={f.value}
+                        key={feature.value}
                         active={active}
                         disabled={atLimit}
                         onClick={() =>
                           field.onChange(
                             active
-                              ? field.value.filter((v) => v !== f.value)
-                              : [...field.value, f.value],
+                              ? field.value.filter((value) => value !== feature.value)
+                              : [...field.value, feature.value],
                           )
                         }
                       >
-                        {f.label}
+                        {feature.label}
                       </Chip>
                     );
                   })}
@@ -217,9 +281,7 @@ export function CreateOfferingForm() {
         <Controller
           control={control}
           name="languages"
-          rules={{
-            validate: (value) => value.length > 0 || "Select at least one language",
-          }}
+          rules={{ validate: (value) => value.length > 0 || "Select at least one language" }}
           render={({ field }) => (
             <fieldset>
               <Body as="legend" size="small" weight={700} className="mb-2 block">
@@ -231,21 +293,21 @@ export function CreateOfferingForm() {
                 </Body>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {languageOptions.map((l) => {
-                    const active = field.value.includes(l.value);
+                  {languageOptions.map((language) => {
+                    const active = field.value.includes(language.value);
                     return (
                       <Chip
-                        key={l.value}
+                        key={language.value}
                         active={active}
                         onClick={() =>
                           field.onChange(
                             active
-                              ? field.value.filter((v) => v !== l.value)
-                              : [...field.value, l.value],
+                              ? field.value.filter((value) => value !== language.value)
+                              : [...field.value, language.value],
                           )
                         }
                       >
-                        {l.label}
+                        {language.label}
                       </Chip>
                     );
                   })}
@@ -262,9 +324,9 @@ export function CreateOfferingForm() {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <SelectField label="Duration" {...register("durationMin")}>
-            {DURATIONS.map((d) => (
-              <option key={d} value={d}>
-                {d} minutes
+            {DURATIONS.map((duration) => (
+              <option key={duration} value={duration}>
+                {duration} minutes
               </option>
             ))}
           </SelectField>
@@ -292,7 +354,13 @@ export function CreateOfferingForm() {
         marketplace.
       </Nudge>
 
-      <Button type="submit" variant="primary" disabled={isSubmitting || createOffering.isPending}>
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={
+          isSubmitting || createOffering.isPending || profileLoading || !selectedUniversityId
+        }
+      >
         {isSubmitting || createOffering.isPending ? (
           <>
             <Spinner /> Saving draft…

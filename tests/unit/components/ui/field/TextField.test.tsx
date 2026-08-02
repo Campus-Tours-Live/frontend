@@ -37,6 +37,24 @@ describe("TextField", () => {
     expect(input.value).toBe("hi");
   });
 
+  /**
+   * Field mints `id="<inputId>-description"` for the help text; until something referenced it the
+   * description was visual-only. It is the only carrier of the acceptable entry-year window and of
+   * the reason class year is disabled, so a screen reader hearing just the label is missing the
+   * whole instruction.
+   */
+  it("gives the input an accessible description from `description`", () => {
+    render(<TextField label="Entry year" description="The year you started — 2016 to 2027." />);
+    expect(screen.getByLabelText("Entry year")).toHaveAccessibleDescription(
+      "The year you started — 2016 to 2027.",
+    );
+  });
+
+  it("does not set aria-describedby without a description", () => {
+    render(<TextField label="Entry year" />);
+    expect(screen.getByLabelText("Entry year")).not.toHaveAttribute("aria-describedby");
+  });
+
   it("merges className onto the input (not the field)", () => {
     render(<TextField label="Email" className="control-x" fieldClassName="field-x" />);
     expect(screen.getByLabelText("Email")).toHaveClass("input", "control-x");

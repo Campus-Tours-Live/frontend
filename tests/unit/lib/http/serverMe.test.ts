@@ -1,5 +1,6 @@
 import { getServerMe } from "@/lib/http/serverMe";
 import { cookies } from "next/headers";
+import { provisionedMe } from "../../../support/meFixtures";
 
 // next/headers is server-only; mock cookies() so we can control which session
 // cookie (if any) getServerMe sees. Each test sets the mock implementation.
@@ -82,8 +83,8 @@ describe("getServerMe — with a session cookie and BFF_URL set", () => {
     });
   });
 
-  it("unwraps the { data } envelope and returns json.data on a 2xx", async () => {
-    const me = { id: "u1", roles: ["PARTICIPANT"] };
+  it("unwraps the { data } envelope and returns the parsed Me on a 2xx", async () => {
+    const me = provisionedMe({ roles: ["PARTICIPANT"] });
     fetchMock.mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({ data: me }),
@@ -93,13 +94,22 @@ describe("getServerMe — with a session cookie and BFF_URL set", () => {
   });
 
   it("returns the whole json when there is no data envelope", async () => {
-    const raw = { id: "u1", roles: ["GUIDE"] };
+    const raw = provisionedMe({ roles: ["GUIDE"] });
     fetchMock.mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue(raw),
     });
 
     await expect(getServerMe()).resolves.toEqual(raw);
+  });
+
+  it("returns null when the body doesn't parse as a valid Me (fail-closed)", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ data: { id: "u1", roles: ["PARTICIPANT"] } }),
+    });
+
+    await expect(getServerMe()).resolves.toBeNull();
   });
 
   it("returns null when the BFF responds non-ok", async () => {
@@ -124,5 +134,37 @@ describe("getServerMe — with a session cookie and BFF_URL set", () => {
     });
 
     await expect(getServerMe()).resolves.toBeNull();
+  });
+
+  /**
+   * REGRESSION (CTL-97): the real bff PENDING `/v1/userinfo` body never carries
+   * `accountStatus`/`ageBand`/`createdAt` on `user` — an earlier version of `pendingUserSchema`
+   * required them, so this exact body used to fail `meSchema.safeParse` and `getServerMe` would
+   * return `null` for a genuinely-signed-in pending user, bouncing them to `/signin` from the
+   * onboarding guards. Pin the fix: this body must parse into a PENDING `Me`, not null.
+   */
+  it("returns a PENDING Me (not null) for the real bff PENDING wire body", async () => {
+    const realBffPendingBody = {
+      provisioningStatus: "PENDING",
+      user: {
+        id: null,
+        email: "x@y.z",
+        firstName: "A",
+        lastName: "B",
+        displayName: "A B",
+      },
+      roles: [],
+      currentRole: null,
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ data: realBffPendingBody }),
+    });
+
+    const result = await getServerMe();
+
+    expect(result).not.toBeNull();
+    expect(result).toEqual(realBffPendingBody);
+    expect(result?.provisioningStatus).toBe("PENDING");
   });
 });

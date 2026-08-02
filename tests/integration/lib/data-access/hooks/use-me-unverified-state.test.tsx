@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { useMe } from "@/lib/data-access";
 import { clearAuthNotice, resetAuthGate } from "@/lib/auth";
+import { provisionedMe } from "../../../../support/meFixtures";
 
 /**
  * "Still loading" and "we could not check" are DIFFERENT states, and folding the second into
@@ -85,12 +86,12 @@ describe("useMe exposes 'could not verify' as its own state", () => {
     routeFetch(() => {
       attempt += 1;
       return attempt === 1
-        ? jsonResponse(200, { data: { id: "u1", roles: ["GUIDE"] } })
+        ? jsonResponse(200, { data: provisionedMe({ id: "u1", roles: ["GUIDE"] }) })
         : jsonResponse(503, UNVERIFIABLE);
     });
 
     const { result } = renderHook(() => useMe(), { wrapper: makeWrapper() });
-    await waitFor(() => expect(result.current.me?.id).toBe("u1"));
+    await waitFor(() => expect(result.current.me?.user.id).toBe("u1"));
 
     // We know who they are; nothing is unverified from the UI's point of view.
     expect(result.current.sessionUnverified).toBe(false);

@@ -62,6 +62,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
             className,
           )}
           aria-invalid={error ? true : undefined}
+          // Field mints this id for the description it renders; without the reference the help
+          // text is visual-only — the same wiring UniversityField/Select/SelectMenu already have.
+          aria-describedby={description ? `${inputId}-description` : undefined}
           {...props}
         />
         {trailing ? (
