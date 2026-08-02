@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TourOfferingsPage } from "@/components/offerings/TourOfferingsPage";
-import { useMe, useOfferings, useTourTopics } from "@/lib/data-access";
-import type { Me, Offering } from "@/lib/data-access";
+import { useGuideProfile, useOfferings, useTourTopics } from "@/lib/data-access";
+import type { GuideProfile, Offering } from "@/lib/data-access";
 
 jest.mock("next/link", () => ({
   __esModule: true,
@@ -14,7 +14,7 @@ jest.mock("next/link", () => ({
 }));
 
 jest.mock("@/lib/data-access", () => ({
-  useMe: jest.fn(),
+  useGuideProfile: jest.fn(),
   useOfferings: jest.fn(),
   useTourTopics: jest.fn(),
   useActivateOffering: jest.fn(() => ({
@@ -23,7 +23,7 @@ jest.mock("@/lib/data-access", () => ({
   })),
 }));
 
-const mockUseMe = useMe as jest.Mock;
+const mockUseGuideProfile = useGuideProfile as jest.Mock;
 const mockUseOfferings = useOfferings as jest.Mock;
 const mockUseTourTopics = useTourTopics as jest.Mock;
 
@@ -40,34 +40,25 @@ const sampleOffering: Offering = {
   description: "A scenic route",
 };
 
-function makeMe(overrides: Partial<Me> = {}): Me {
+function makeGuideProfile(overrides: Partial<GuideProfile> = {}): GuideProfile {
   return {
-    id: "u1",
-    roles: ["GUIDE"],
-    activeRole: "GUIDE",
-    participantType: null,
-    guideStatus: "APPROVED",
-    accountStatus: "ACTIVE",
-    firstName: null,
-    lastName: null,
-    displayName: null,
-    email: null,
-    ageBand: null,
-    createdAt: null,
+    guideStatus: "VERIFIED",
     ...overrides,
   };
 }
 
 function setHooks(
   overrides: {
-    me?: Partial<ReturnType<typeof useMe>>;
+    guideProfile?: Partial<ReturnType<typeof useGuideProfile>>;
     offerings?: Partial<ReturnType<typeof useOfferings>>;
     topics?: Partial<ReturnType<typeof useTourTopics>>;
   } = {},
 ) {
-  mockUseMe.mockReturnValue({
-    me: makeMe(),
-    ...overrides.me,
+  mockUseGuideProfile.mockReturnValue({
+    data: makeGuideProfile(),
+    isLoading: false,
+    isError: false,
+    ...overrides.guideProfile,
   });
   mockUseOfferings.mockReturnValue({
     data: [sampleOffering],
@@ -153,14 +144,14 @@ describe("TourOfferingsPage", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("enables publish when me.guideStatus is APPROVED", () => {
+  it("enables publish when the guide profile's guideStatus is VERIFIED", () => {
     render(<TourOfferingsPage />);
 
     expect(screen.getByRole("button", { name: "Publish" })).toBeEnabled();
   });
 
-  it("disables publish when me.guideStatus is not APPROVED", () => {
-    setHooks({ me: { me: makeMe({ guideStatus: "PENDING" }) } });
+  it("disables publish when the guide profile's guideStatus is not VERIFIED", () => {
+    setHooks({ guideProfile: { data: makeGuideProfile({ guideStatus: "PENDING" }) } });
     render(<TourOfferingsPage />);
 
     expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();

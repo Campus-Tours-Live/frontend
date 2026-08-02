@@ -113,20 +113,6 @@ describe("queryKeys", () => {
     });
   });
 
-  describe("onboarding(role)", () => {
-    it("returns ['onboarding', role]", () => {
-      expect(queryKeys.onboarding("guide")).toEqual(["onboarding", "guide"]);
-    });
-
-    it("varies by role", () => {
-      expect(queryKeys.onboarding("guide")).not.toEqual(queryKeys.onboarding("participant"));
-    });
-
-    it("preserves the exact role value", () => {
-      expect(queryKeys.onboarding("participant")).toEqual(["onboarding", "participant"]);
-    });
-  });
-
   describe("referential shape", () => {
     const factories: Array<[string, () => readonly unknown[]]> = [
       ["me", () => queryKeys.me()],
@@ -138,7 +124,6 @@ describe("queryKeys", () => {
       ["dashboard", () => queryKeys.dashboard()],
       ["guideOfferings", () => queryKeys.guideOfferings()],
       ["universitySearch", () => queryKeys.universitySearch("x")],
-      ["onboarding", () => queryKeys.onboarding("x")],
       ["availabilityRules", () => queryKeys.availabilityRules()],
       ["availabilityExceptions", () => queryKeys.availabilityExceptions()],
       ["availabilitySettings", () => queryKeys.availabilitySettings()],
@@ -166,7 +151,6 @@ describe("queryKeys", () => {
         queryKeys.dashboard(),
         queryKeys.guideOfferings(),
         queryKeys.universitySearch("x"),
-        queryKeys.onboarding("x"),
         queryKeys.availabilityRules(),
         queryKeys.availabilityExceptions(),
         queryKeys.availabilitySettings(),

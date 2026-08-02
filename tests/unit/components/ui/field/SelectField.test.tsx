@@ -24,6 +24,28 @@ describe("SelectField", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Required");
   });
 
+  /** Same wiring as TextField: `description` reaches the Field AND the select points at it. */
+  it("gives the select an accessible description from `description`", () => {
+    render(
+      <SelectField label="Degree" description="Awarded by the school you picked.">
+        <option value="a">A</option>
+      </SelectField>,
+    );
+    const select = screen.getByLabelText("Degree");
+    expect(select).toHaveAccessibleDescription("Awarded by the school you picked.");
+    // …and it is no longer spread onto the <select> as an unknown attribute.
+    expect(select).not.toHaveAttribute("description");
+  });
+
+  it("does not set aria-describedby without a description", () => {
+    render(
+      <SelectField label="Degree">
+        <option value="a">A</option>
+      </SelectField>,
+    );
+    expect(screen.getByLabelText("Degree")).not.toHaveAttribute("aria-describedby");
+  });
+
   it("forwards a ref to the select element", () => {
     const ref = createRef<HTMLSelectElement>();
     render(

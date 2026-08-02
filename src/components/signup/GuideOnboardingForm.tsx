@@ -5,11 +5,15 @@ import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import {
+  ApiError,
+  getOnboardingPrefill,
+  OnboardRetryableError,
   useDegrees,
   useMajors,
   useMe,
+  useOnboardRole,
   useTourTopics,
-  useUpdateGuideProfile,
+  type GuideProfileUpdate,
 } from "@/lib/data-access";
 import {
   Alert,
@@ -25,7 +29,7 @@ import {
 } from "@/components/ui";
 import { OnboardingBreadcrumb } from "@/components/site/OnboardingBreadcrumb";
 import { NAME_MAX_LENGTH, sanitizeName, validateName } from "@/lib/validation/name";
-import { CLASS_YEAR_FLOOR_YEARS, gradYearBufferForDegree } from "./classYear";
+import { EnrollmentYearFields } from "./EnrollmentYearFields";
 import { UniversityField, type UniversityOption } from "./UniversityField";
 import { OnboardingCancel } from "./OnboardingCancel";
 
@@ -41,6 +45,7 @@ interface FormValues {
   major: string;
   degree: string;
   classYear: string;
+  entryYear: string;
   bio: string;
   languages: string[];
   specialties: string[];
@@ -60,6 +65,13 @@ const STEP_LEADS = [
 // Languages are open BCP-47 tags (not a controlled backend vocabulary like
 // tour_topic), so we offer a fixed common-language list client-side. The
 // persisted value is the BCP-47 tag.
+// Same copy as the pre-signup `/signup/role?error=parent_no_guide` banner (the role page can
+// only bounce a PARENT before onboarding even starts; this is the same ineligibility surfacing
+// from a second-role acquisition attempt instead) — keyed on the command's `ROLE_NOT_ELIGIBLE`
+// code + `properties.role === "GUIDE"`, never on message text.
+const PARENT_NO_GUIDE_MESSAGE =
+  "Parent or guardian accounts can’t become guides. You can continue as a participant.";
+
 const LANGUAGES: Option[] = [
   { value: "en-US", label: "English" },
   { value: "es", label: "Spanish" },
@@ -76,10 +88,16 @@ const LANGUAGES: Option[] = [
 export function GuideOnboardingForm() {
   const router = useRouter();
   const { me } = useMe();
-  const updateProfile = useUpdateGuideProfile();
+  const onboardRole = useOnboardRole();
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Set when the command resolves STILL_PENDING (OnboardRetryableError) — Core's commit state is
+  // genuinely ambiguous, so this is neither a save failure nor a confirmed grant. Distinct from
+  // submitError: the form stays filled and retry RESUBMITS the same command, it never re-runs a
+  // separate session step (there is none any more — the command itself is session-usable once
+  // resolved).
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -99,6 +117,7 @@ export function GuideOnboardingForm() {
       major: "",
       degree: "",
       classYear: "",
+      entryYear: "",
       bio: "",
       languages: ["en-US"],
       specialties: [],
@@ -146,8 +165,6 @@ export function GuideOnboardingForm() {
     !degreesLoading &&
     (degreesErrored || degreeOptions.length === 0);
 
-  const currentYear = new Date().getFullYear();
-
   // Prefill the name from the account — a member acquiring a second role already
   // entered it for the first (or it came from Google at signup). Fills empty fields
   // once, without clobbering input or marking the form dirty.
@@ -155,45 +172,80 @@ export function GuideOnboardingForm() {
   useEffect(() => {
     if (prefilled.current || !me) return;
     prefilled.current = true;
-    if (me.firstName && !getValues("firstName")) setValue("firstName", me.firstName);
-    if (me.lastName && !getValues("lastName")) setValue("lastName", me.lastName);
+    const prefill = getOnboardingPrefill(me);
+    if (prefill.firstName && !getValues("firstName")) setValue("firstName", prefill.firstName);
+    if (prefill.lastName && !getValues("lastName")) setValue("lastName", prefill.lastName);
   }, [me, setValue, getValues]);
 
   // Tour specialties are a controlled backend vocabulary (tour_topic enum), loaded
   // via useTourTopics above. Languages are static (see LANGUAGES above).
 
-  const persist = async (values: FormValues) => {
+  /** Maps the wizard's form values to the onboarding COMMAND body (the same field mapping the old
+   *  PATCH-submit used, minus `submit` — the command endpoint has no such field). */
+  const buildBody = (values: FormValues): Omit<GuideProfileUpdate, "submit"> => ({
+    // firstName/lastName/university/major are required on step 1 → the fallbacks never run
+    firstName: /* istanbul ignore next */ values.firstName || undefined,
+    lastName: /* istanbul ignore next */ values.lastName || undefined,
+    universityId: /* istanbul ignore next */ values.university[0]?.id,
+    major: /* istanbul ignore next */ values.major || undefined,
+    classYear: values.classYear || undefined,
+    // entryYear is required on step 1 → the fallback never runs
+    entryYear: /* istanbul ignore next */ values.entryYear ? Number(values.entryYear) : undefined,
+    // degree + bio are required (steps 1 and 2), so the `|| undefined` fallback is never taken
+    degree: /* istanbul ignore next */ values.degree || undefined,
+    bio: /* istanbul ignore next */ values.bio || undefined,
+    spokenLanguages: values.languages,
+    tourTopics: values.specialties,
+    verificationEmail: values.schoolEmail,
+  });
+
+  /**
+   * One command call, reconcile-driven navigation: `onboardRole.mutateAsync` only RESOLVES a
+   * `ProvisionedMe` once the GUIDE role is CONFIRMED held (its own 201, or an internal §4.3
+   * reconcile) — there is no separate "activate session" step any more, so a resolve here IS the
+   * "session usable + currentRole set" signal and is the ONLY path that navigates.
+   *
+   * Shared by both the wizard's Submit (`persist`) and the retry panel (`retry`) below, so a
+   * STILL_PENDING retry resubmits the EXACT same mapped body rather than re-deriving it.
+   */
+  const submitOnboarding = async (values: FormValues) => {
     setSubmitError(null);
     try {
-      // onSuccess invalidates ["me"] + the guide profile (submit=true grants GUIDE),
-      // so the header reflects it immediately. Land in the guide area. Base price is not set here —
-      // the backend keeps its default and the guide tunes pricing per tour later.
-      await updateProfile.mutateAsync({
-        // firstName/lastName/university/major are required on step 1 → the fallbacks never run
-        firstName: /* istanbul ignore next */ values.firstName || undefined,
-        lastName: /* istanbul ignore next */ values.lastName || undefined,
-        universityId: /* istanbul ignore next */ values.university[0]?.id,
-        major: /* istanbul ignore next */ values.major || undefined,
-        classYear: values.classYear || undefined,
-        // degree + bio are required (steps 1 and 2), so the `|| undefined` fallback is never taken
-        degree: /* istanbul ignore next */ values.degree || undefined,
-        bio: /* istanbul ignore next */ values.bio || undefined,
-        languages: values.languages,
-        specialties: values.specialties,
-        verificationEmail: values.schoolEmail,
-        submit: true,
-      });
-      router.push("/dashboard");
+      await onboardRole.mutateAsync({ role: "GUIDE", body: buildBody(values) });
     } catch (err) {
+      // Core's commit state is genuinely ambiguous (§4.3 STILL_PENDING) — not a terminal failure,
+      // so no submitError message; the retry panel below owns its own copy.
+      if (err instanceof OnboardRetryableError) {
+        setRetryMessage(err.message);
+        return;
+      }
+      setRetryMessage(null);
+      // Keyed on the machine code + the `role` extension property, NEVER on message text — a
+      // PARENT participant's second-role GUIDE attempt is the only 409 with its own copy.
+      const parentIneligible =
+        err instanceof ApiError &&
+        err.code === "ROLE_NOT_ELIGIBLE" &&
+        err.properties?.role === "GUIDE";
       setSubmitError(
         isAuthCancelled(err)
           ? SIGN_IN_AGAIN_MESSAGE
-          : err instanceof Error
-            ? err.message
-            : "Something went wrong. Please try again.",
+          : parentIneligible
+            ? PARENT_NO_GUIDE_MESSAGE
+            : err instanceof ApiError
+              ? err.message
+              : "Something went wrong. Please try again.",
       );
+      return;
     }
+    setRetryMessage(null);
+    router.push("/dashboard");
   };
+
+  const persist = (values: FormValues) => submitOnboarding(values);
+
+  // Resubmits the LAST wizard values (react-hook-form retains them once submitted — nothing here
+  // clears or resets the form) — never a fresh partial re-fill, and never a separate session call.
+  const retry = () => submitOnboarding(getValues());
 
   const submit = handleSubmit(persist);
   const isLast = step === STEPS.length - 1;
@@ -206,6 +258,9 @@ export function GuideOnboardingForm() {
         "university",
         "major",
         "degree",
+        // Visual order — entryYear is the input to classYear's window, and RHF reports errors in
+        // the order it validates them.
+        "entryYear",
         "classYear",
       ]);
       if (!ok) return;
@@ -223,6 +278,32 @@ export function GuideOnboardingForm() {
     else void advance();
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
+
+  // Core's commit state is ambiguous (§4.3 STILL_PENDING) — the role may or may not be held yet.
+  // Replace the wizard with a dedicated retry panel rather than a full re-fill: `retry` resubmits
+  // the SAME mapped body (a re-POST of an already-granted role reconciles to a resolve, never a
+  // duplicate grant).
+  if (retryMessage) {
+    return (
+      <>
+        <div className="mb-8">
+          <OnboardingBreadcrumb current="Guide onboarding" />
+        </div>
+        <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
+          <div className="eyebrow">Guide application</div>
+          <SectionHeading title="Set up your guide profile" lead="Almost there." />
+          <Alert variant="error" className="mt-6">
+            {retryMessage}
+          </Alert>
+          <ButtonRow className="mt-6">
+            <Button onClick={() => void retry()} loading={onboardRole.isPending}>
+              Try again
+            </Button>
+          </ButtonRow>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -242,7 +323,11 @@ export function GuideOnboardingForm() {
         </div>
         <SectionHeading title="Set up your guide profile" lead={STEP_LEADS[step]} />
 
-        <form onSubmit={onSubmit} className="mt-10 flex flex-1 flex-col">
+        {/* `noValidate`: entry year carries the DOM `required` attribute (so assistive tech knows
+            it is required), but react-hook-form owns validation and messaging. Without this the
+            browser's own constraint check would silently swallow the submit and show a native
+            bubble instead of the field's error — two validators, one of them invisible to us. */}
+        <form onSubmit={onSubmit} noValidate className="mt-10 flex flex-1 flex-col">
           <WizardSteps steps={STEPS} current={step} className="mb-9" />
 
           {/* Step 1 — About you (required) */}
@@ -403,44 +488,16 @@ export function GuideOnboardingForm() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Controller
-                  control={control}
-                  name="classYear"
-                  rules={{
-                    validate: (v) => {
-                      if (!v) return true;
-                      if (!/^\d{4}$/.test(v.trim())) return "Enter a 4-digit graduation year.";
-                      const min = currentYear - CLASS_YEAR_FLOOR_YEARS;
-                      const max = currentYear + gradYearBufferForDegree(getValues("degree"));
-                      const n = Number(v);
-                      if (n < min || n > max)
-                        return `Enter a graduation year between ${min} and ${max}.`;
-                      return true;
-                    },
-                  }}
-                  render={({ field }) => (
-                    <TextField
-                      label="Class year"
-                      optional
-                      inputMode="numeric"
-                      placeholder="2027"
-                      description="Expected if you're still enrolled, otherwise the year you graduated."
-                      error={errors.classYear?.message}
-                      value={field.value}
-                      // Numeric-only: strip non-digits as you type and cap at 4 digits.
-                      onChange={(e) =>
-                        field.onChange(e.target.value.replace(/\D/g, "").slice(0, 4))
-                      }
-                      onFocus={() => clearErrors("classYear")}
-                      onBlur={() => {
-                        field.onBlur();
-                        void trigger("classYear");
-                      }}
-                    />
-                  )}
-                />
-              </div>
+              {/* Entry year + class year + the rules-unavailable retry, all of it shared with
+                  GuideProfileForm. Everything about these two fields — order, the required rule,
+                  the gate, the windows, the copy — lives in that component, so a change here
+                  cannot land in one form and miss the other. */}
+              <EnrollmentYearFields
+                control={control}
+                getValues={getValues}
+                trigger={trigger}
+                clearErrors={clearErrors}
+              />
             </div>
           )}
 

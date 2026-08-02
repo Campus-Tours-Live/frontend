@@ -22,6 +22,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
     label,
     error,
     hint,
+    description,
     optional,
     id,
     className,
@@ -41,6 +42,9 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
       htmlFor={selectId}
       error={error}
       hint={hint}
+      // `description` is part of ControlExtras and was landing on the <select> as an unknown
+      // attribute instead of on the Field — so nothing rendered for aria-describedby to point at.
+      description={description}
       optional={optional}
       className={fieldClassName}
     >
@@ -55,6 +59,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
           id={selectId}
           className={cn("input", SIZE_CLASS[size], leadingIcon && "pl-10", className)}
           aria-invalid={error ? true : undefined}
+          aria-describedby={description ? `${selectId}-description` : undefined}
           {...props}
         >
           {children}

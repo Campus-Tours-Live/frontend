@@ -6,7 +6,7 @@ import { ParticipantOnboardingForm } from "@/components/signup/ParticipantOnboar
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 // Variants that the main suite's fixed mock can't express: an empty tour-topics
-// response, and a non-Error rejection.
+// response, and a non-ApiError rejection.
 const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
@@ -14,9 +14,10 @@ const mutateAsync = jest.fn();
 let topicsData: Array<{ value: string; label: string }> | undefined;
 
 jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
   useMe: () => ({ me: null, isLoading: false, isOnboarded: false, hasRole: () => false }),
   useTourTopics: () => ({ data: topicsData }),
-  useUpdateParticipantProfile: () => ({ mutateAsync }),
+  useOnboardRole: () => ({ mutateAsync, isPending: false }),
   useUniversitySearch: () => ({ data: [], isFetching: false }),
 }));
 
@@ -28,7 +29,6 @@ function renderWithQuery(ui: ReactElement) {
 beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
-  mutateAsync.mockResolvedValue({});
   topicsData = undefined;
 });
 
@@ -62,9 +62,10 @@ describe("ParticipantOnboardingForm edge cases", () => {
   });
 
   it("attributes a dismissed sign-in prompt to auth, not to onboarding failing", async () => {
-    // AuthCancelledError IS an Error, so the old `err.message` path already showed
+    // AuthCancelledError IS an Error, so a naive `err.message` path would already show
     // "Sign-in was cancelled." — correctly attributed but with no way to act on it, and
-    // phrased differently from every other site. Route it through the canonical message.
+    // phrased differently from every other site. Route it through the canonical message,
+    // checked FIRST (before the ApiError branches).
     topicsData = [{ value: "academics", label: "Academics" }];
     mutateAsync.mockRejectedValueOnce(new AuthCancelledError());
     const user = userEvent.setup();
@@ -75,7 +76,9 @@ describe("ParticipantOnboardingForm edge cases", () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it("shows a generic message when the rejection is not an Error", async () => {
+  it("shows a generic message for a non-ApiError rejection (Error or otherwise) — never the raw text", async () => {
+    // Keyed on the ApiError type, not "is this an Error" — an internal contract-violation Error
+    // (e.g. a malformed 201) is just as unactionable to show raw as a bare string throw.
     topicsData = [{ value: "academics", label: "Academics" }];
     mutateAsync.mockRejectedValueOnce("boom"); // non-Error rejection
     const user = userEvent.setup();

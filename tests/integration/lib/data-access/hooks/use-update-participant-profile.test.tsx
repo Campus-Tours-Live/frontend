@@ -7,7 +7,7 @@ import { useUpdateParticipantProfile } from "@/lib/data-access/hooks/use-update-
  * Exercises the REAL useUpdateParticipantProfile mutation end-to-end: mutate →
  * mutation → patchJson → apiFetch → fetch(PATCH /v1/participant/profile) →
  * apiJson unwrap → onSuccess invalidates ["me"], ["participant-profile"],
- * ["dashboard"], ["onboarding","participant"]. Only global.fetch is mocked.
+ * ["dashboard"]. Only global.fetch is mocked.
  */
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -69,7 +69,7 @@ describe("useUpdateParticipantProfile", () => {
     expect(result.current.data).toEqual(saved);
   });
 
-  it("invalidates me / participant-profile / dashboard / onboarding caches on success", async () => {
+  it("invalidates me / participant-profile / dashboard caches on success", async () => {
     fetchMock.mockResolvedValue(jsonResponse(200, { data: {} }));
 
     const client = makeClient();
@@ -86,7 +86,6 @@ describe("useUpdateParticipantProfile", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["me"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["participant-profile"] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["dashboard"] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["onboarding", "participant"] });
   });
 
   it("rejects (isError) when the response is not ok and does not invalidate", async () => {

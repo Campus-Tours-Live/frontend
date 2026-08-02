@@ -2,53 +2,95 @@
 
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
 
-export interface Me {
+/**
+ * The identity fields nested under `Me.user`. `PendingUser` and `ProvisionedUser` are
+ * deliberately NOT the same shape padded with optionality: a pending principal (no Core account
+ * yet) genuinely has no `accountStatus`/`ageBand`/`createdAt` on the wire — those keys are absent
+ * entirely, not present-and-null (bff `PendingUserInfo`,
+ * ../bff/src/api/userinfo/pendingIdentity.ts). Only `id`/`firstName`/`lastName`/`displayName`/
+ * `email` are common to both.
+ */
+export interface PendingUser {
+  /** No Core account exists yet. */
+  id: null;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  /** The bff guarantees a verified email for every PENDING principal — it 5xxs rather than
+   *  emit one without it (`IDENTITY_CLAIMS_INVALID`). */
+  email: string;
+}
+
+export interface ProvisionedUser {
   id: string;
-  roles: Role[];
-  activeRole: Role | null;
-  participantType: string | null;
-  guideStatus: string | null;
-  accountStatus: string | null;
   firstName: string | null;
   lastName: string | null;
   displayName: string | null;
   email: string | null;
+  accountStatus: string | null;
   ageBand: string | null;
   createdAt: string | null; // ISO-8601 (UTC) account creation; rendered as "Member since <Month Year>"
 }
 
+/** Union of both principal-identity shapes — for code that only touches fields common to
+ *  both (e.g. name prefill), not the state-specific `id`/`accountStatus`/`ageBand`. */
+export type MeUser = PendingUser | ProvisionedUser;
+
+/**
+ * Discriminated `Me` (CTL-97 defer-provisioning). A signed-in principal may exist in Core
+ * without having chosen a role yet ("PENDING") — gate every consumer on `provisioningStatus`,
+ * never infer pending-ness from `user.id === null` or `roles.length` directly.
+ */
+export interface PendingMe {
+  provisioningStatus: "PENDING";
+  user: PendingUser;
+  roles: readonly [];
+  currentRole: null;
+}
+
+export interface ProvisionedMe {
+  provisioningStatus: "PROVISIONED";
+  user: ProvisionedUser;
+  /** Always holds ≥1 role — a bff invariant enforced at parse time by `meSchema`. */
+  roles: readonly [Role, ...Role[]];
+  currentRole: Role | null;
+}
+
+export type Me = PendingMe | ProvisionedMe;
+
 export interface ParticipantProfile {
-  firstName?: string;
-  lastName?: string;
-  displayName?: string;
-  email?: string;
-  participantType?: string;
+  type?: string;
   gradeLevel?: string;
   intendedMajor?: string;
   topicsOfInterest?: string[];
   universitiesOfInterest?: string[];
   guardianRequired?: boolean;
+  participantStatus?: string;
+}
+
+/** A guide's affiliation with one university (Profile Contract v2's per-university shape).
+ *  The offering-create flow selects among ALL entries (gated on `verificationStatus`); profile
+ *  editing (`GuideProfileForm`) still reads/writes `universities[0]` — multi-university profile
+ *  editing is a future enhancement. */
+export interface GuideUniversity {
+  universityId: string;
+  universityName: string | null;
+  universityShortName: string | null;
+  major?: string;
+  degree?: string;
+  classYear?: string;
+  /** Year the guide entered this university. Core's column is NOT NULL and the read-model field
+   *  is REQUIRED — always present on the wire. */
+  entryYear: number;
+  verificationStatus: string;
 }
 
 export interface GuideProfile {
-  userId?: string;
-  firstName?: string;
-  lastName?: string;
-  displayName?: string;
-  email?: string;
-  accountStatus?: string;
-  universityId?: string | null;
-  universityName?: string | null;
-  universityShortName?: string | null;
-  major?: string;
-  classYear?: string;
+  universities?: GuideUniversity[];
   bio?: string | null;
-  languages?: string[];
-  specialties?: string[];
-  basePriceCents?: number | null;
-  currency?: string;
-  applicationStatus?: string | null;
-  verificationStatus?: string | null;
+  spokenLanguages?: string[];
+  tourTopics?: string[];
+  guideStatus?: string | null;
 }
 
 /** Lifecycle status of a guide's tour offering (Core TourOfferingStatus). */
@@ -79,6 +121,18 @@ export interface CreateOfferingInput {
   languages?: string[];
 }
 
+/**
+ * Server-sent validation rules for the two year fields (CTL-97). The numbers deliberately do NOT
+ * live in this repo: they were duplicated in Java and TypeScript and drifted by hand. `entryYear`
+ * is computed from the SERVER's UTC clock, so the browser never reads its own.
+ */
+export interface EnrollmentYearRules {
+  entryYear: { min: number; max: number };
+  /** Ordered — apply first-hit. Never sort or re-key this array. */
+  maxYearsToGraduate: readonly { matches: readonly string[]; years: number }[];
+  defaultMaxYearsToGraduate: number;
+}
+
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
 export interface GuideDashboard {
   kind: "guide";
@@ -95,22 +149,6 @@ export interface ParticipantDashboard {
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;
 
-/** GET /v1/onboarding?role= — derived onboarding progress. */
-export interface OnboardingStep {
-  key: string;
-  label: string;
-  done: boolean;
-}
-export interface OnboardingProgress {
-  role: "guide" | "participant";
-  started: boolean;
-  complete: boolean;
-  canSubmit: boolean;
-  applicationStatus: string | null;
-  verificationStatus: string | null;
-  steps: OnboardingStep[];
-}
-
 export interface ParticipantProfileUpdate {
   firstName?: string;
   lastName?: string;
@@ -126,10 +164,11 @@ export interface GuideProfileUpdate {
   major?: string;
   classYear?: string;
   degree?: string;
+  /** Year the guide entered the university (onboarding education step). */
+  entryYear?: number;
   bio?: string;
-  languages?: string[];
-  specialties?: string[];
-  basePriceCents?: number;
+  spokenLanguages?: string[];
+  tourTopics?: string[];
   verificationEmail?: string;
   submit?: boolean;
 }

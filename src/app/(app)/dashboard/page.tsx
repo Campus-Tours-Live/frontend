@@ -8,7 +8,7 @@ import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 
 /**
  * Shared signed-in dashboard — one route, one BFF aggregate. The BFF reads the
- * active role and returns a role-shaped payload (`kind`); this page just renders by
+ * current role and returns a role-shaped payload (`kind`); this page just renders by
  * `kind` (the role-branch decision lives in the BFF, not here). Switching role
  * invalidates ["dashboard"], so it re-renders the other area in place — no navigation.
  * AppShell provides the centered grid, so the summaries render bare.

@@ -1,10 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import { ParticipantSummary } from "@/components/dashboard/ParticipantSummary";
+import { useMe } from "@/lib/data-access";
 import type { ParticipantDashboard } from "@/lib/data-access";
 
-// Renders the real SectionHeading + MemberCard + Alert (no mocks). Note the
-// component surfaces topics/universities as COUNTS ("N selected"), not joined
-// lists, and the email only drives an "Email verified" pill (not the address).
+// Renders the real SectionHeading + MemberCard + Alert (no mocks, except useMe — identity
+// now comes from there, not the dashboard aggregate). Note the component surfaces
+// topics/universities as COUNTS ("N selected"), not joined lists, and the email only
+// drives an "Email verified" pill (not the address).
+
+jest.mock("@/lib/data-access", () => ({
+  ...jest.requireActual("@/lib/data-access"),
+  useMe: jest.fn(),
+}));
+
+const mockUseMe = useMe as jest.Mock;
 
 function makeData(
   overrides: Partial<ParticipantDashboard["participant"]> = {},
@@ -12,9 +21,7 @@ function makeData(
   return {
     kind: "participant",
     participant: {
-      displayName: "Grace Hopper",
-      email: "grace@example.com",
-      participantType: "STUDENT",
+      type: "STUDENT",
       topicsOfInterest: ["cs", "math", "physics"],
       universitiesOfInterest: ["mit", "stanford"],
       ...overrides,
@@ -22,6 +29,12 @@ function makeData(
     createdAt: "2025-03-15T00:00:00Z",
   };
 }
+
+beforeEach(() => {
+  mockUseMe.mockReturnValue({
+    me: { user: { displayName: "Grace Hopper", email: "grace@example.com" } },
+  });
+});
 
 describe("ParticipantSummary", () => {
   it("renders the participant display name in the heading and card", () => {
@@ -32,7 +45,7 @@ describe("ParticipantSummary", () => {
   });
 
   it("renders the participant type", () => {
-    render(<ParticipantSummary data={makeData({ participantType: "PARENT" })} />);
+    render(<ParticipantSummary data={makeData({ type: "PARENT" })} />);
     expect(screen.getByText("Type")).toBeInTheDocument();
     expect(screen.getByText("PARENT")).toBeInTheDocument();
   });
@@ -61,7 +74,7 @@ describe("ParticipantSummary", () => {
     const data = makeData();
     delete data.participant.topicsOfInterest;
     delete data.participant.universitiesOfInterest;
-    delete data.participant.participantType;
+    delete data.participant.type;
     render(<ParticipantSummary data={data} />);
     // Type, Topics, Universities all fall back.
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(3);
@@ -73,27 +86,26 @@ describe("ParticipantSummary", () => {
   });
 
   it("omits the 'Email verified' pill when email is missing", () => {
-    const data = makeData();
-    delete data.participant.email;
-    render(<ParticipantSummary data={data} />);
+    mockUseMe.mockReturnValue({ me: { user: { displayName: "Grace Hopper", email: null } } });
+    render(<ParticipantSummary data={makeData()} />);
     expect(screen.queryByText("Email Verified")).not.toBeInTheDocument();
   });
 
   it("renders the Guardian highlight for a PARENT participant", () => {
-    render(<ParticipantSummary data={makeData({ participantType: "PARENT" })} />);
+    render(<ParticipantSummary data={makeData({ type: "PARENT" })} />);
     expect(screen.getByText("Guardian consent active")).toBeInTheDocument();
     expect(screen.queryByText("Ready to explore")).not.toBeInTheDocument();
   });
 
   it("renders the explorer highlight for a non-PARENT participant", () => {
-    render(<ParticipantSummary data={makeData({ participantType: "STUDENT" })} />);
+    render(<ParticipantSummary data={makeData({ type: "STUDENT" })} />);
     expect(screen.getByText("Ready to explore")).toBeInTheDocument();
     expect(screen.queryByText("Guardian consent active")).not.toBeInTheDocument();
   });
 
   it("renders a bare 'Welcome.' and 'Member' when displayName is missing", () => {
+    mockUseMe.mockReturnValue({ me: { user: { displayName: null, email: null } } });
     const data = makeData();
-    delete data.participant.displayName;
     render(<ParticipantSummary data={data} />);
     expect(screen.getByText("Welcome.")).toBeInTheDocument();
     expect(screen.getByText("Member")).toBeInTheDocument();
