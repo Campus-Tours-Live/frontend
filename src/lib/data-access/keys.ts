@@ -17,6 +17,10 @@ export const queryKeys = {
   majors: (schoolId: string) => ["majors", schoolId] as const,
   degrees: (schoolId: string) => ["degrees", schoolId] as const,
   enrollmentYears: () => ["enrollment-years"] as const,
+  // The browsable directory (GET /v1/universities…). Keyed by state so each state's list is
+  // cached separately — that is what makes a state filter instant on a second visit.
+  universityCounts: () => ["university-counts"] as const,
+  stateUniversities: (stateCode: string) => ["state-universities", stateCode] as const,
   dashboard: () => ["dashboard"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
   tours: () => ["tours"] as const,
