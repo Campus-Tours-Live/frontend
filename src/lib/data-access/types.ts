@@ -142,9 +142,33 @@ export interface GuideDashboard {
   offerings: Offering[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
+
+export interface Money {
+  amount: number;
+  currency: string;
+}
+
+/** Contract-A booking shape from the BFF. Times are absolute UTC instants; display is viewer-local. */
+export interface BookingResponse {
+  id: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: Money;
+}
+
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
+  nextTour: BookingResponse | null;
+  upcomingBookings: BookingResponse[];
+  pendingActions: Record<string, unknown> | null;
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;

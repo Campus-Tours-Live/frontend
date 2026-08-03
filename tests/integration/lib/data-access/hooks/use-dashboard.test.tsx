@@ -42,6 +42,10 @@ describe("useDashboard", () => {
     const dashboard = {
       kind: "participant",
       participant: { firstName: "Ada" },
+      nextTour: null,
+      upcomingBookings: [],
+      pendingActions: null,
+      createdAt: "2026-01-15T09:30:00.000Z",
     };
     fetchMock.mockResolvedValue(jsonResponse(200, { data: dashboard }));
 
@@ -56,6 +60,58 @@ describe("useDashboard", () => {
       expect.objectContaining({ credentials: "same-origin" }),
     );
     expect(result.current.data).toEqual(dashboard);
+  });
+
+  it("preserves the participant booking aggregate returned by Contract A", async () => {
+    const dashboard = {
+      kind: "participant",
+      participant: { type: "STUDENT" },
+      nextTour: {
+        id: "bk_789",
+        status: "CONFIRMED",
+        scheduledStartAt: "2026-07-10T15:00:00Z",
+        scheduledEndAt: "2026-07-10T16:00:00Z",
+        durationMinutes: 60,
+        tourOfferingId: "off_123",
+        tourTitle: "Hidden gems of North Campus",
+        guideName: "Maya Chen",
+        guideResponseDeadline: null,
+        universityName: "North Campus University",
+        price: { amount: 4200, currency: "USD" },
+      },
+      upcomingBookings: [
+        {
+          id: "bk_790",
+          status: "WAITING_FOR_GUIDE",
+          scheduledStartAt: "2026-07-14T18:00:00Z",
+          scheduledEndAt: "2026-07-14T19:30:00Z",
+          durationMinutes: 90,
+          tourOfferingId: "off_456",
+          tourTitle: "Engineering quad tour",
+          guideName: "Sam Rivera",
+          guideResponseDeadline: "2026-07-12T18:00:00Z",
+          universityName: "North Campus University",
+          price: { amount: 6000, currency: "USD" },
+        },
+      ],
+      pendingActions: { unreadMessages: 2 },
+      createdAt: "2026-01-15T09:30:00.000Z",
+    };
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: dashboard }));
+
+    const { result } = renderHook(() => useDashboard(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(dashboard);
+    expect(result.current.data?.kind).toBe("participant");
+    if (result.current.data?.kind === "participant") {
+      expect(result.current.data.nextTour?.scheduledStartAt).toBe("2026-07-10T15:00:00Z");
+      expect(result.current.data.upcomingBookings[0]?.scheduledEndAt).toBe("2026-07-14T19:30:00Z");
+      expect(result.current.data.pendingActions).toEqual({ unreadMessages: 2 });
+    }
   });
 
   it("is loading initially with no data", () => {
