@@ -1,4 +1,7 @@
-import { Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
+"use client";
+
+import { Clock, GraduationCap, ImageIcon, MoveRight } from "lucide-react";
+import { Body, Button, Card, Heading, Icon, LineClamp, Link, StatusBadge } from "@/components/ui";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -10,7 +13,8 @@ export interface TourCardProps {
   university: string;
   guide: string;
   durationMinutes: number;
-  price: number;
+  /** Pre-formatted currency string, e.g. from {@link formatOfferingPrice} — already includes the symbol. */
+  price: string;
 }
 
 export function TourCard({ title, university, guide, durationMinutes, price }: TourCardProps) {
@@ -21,29 +25,38 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
       className="flex h-full flex-col overflow-hidden rounded-[18px]"
     >
       {/* Image placeholder — imported editorial campus crop */}
-      <Caption
-        as="div"
-        weight={500}
-        className="flex h-[150px] items-center justify-center bg-canvas"
-      >
-        Imported editorial campus crop
-      </Caption>
+      <div className="flex h-[150px] items-center justify-center bg-canvas">
+        <Icon icon={ImageIcon} size={32} strokeWidth={1.5} className="text-ink-soft/35" />
+      </div>
       <div className="flex flex-1 flex-col p-[18px]">
         <StatusBadge variant="success" className="self-start">
           Verified guide
         </StatusBadge>
         <Heading as="h4" size="h4" className="mb-1.5 mt-3.5 min-h-[2.6em]">
-          {title}
+          <LineClamp lines={2}>{title}</LineClamp>
         </Heading>
-        <Body as="div" size="small" color="muted">
-          {university} · {guide} · {durationMinutes} min
+        <Body as="div" size="small" color="muted" className="flex items-center gap-1.5">
+          <Link
+            href="/university"
+            onClick={(e) => e.stopPropagation()}
+            className="flex min-w-0 flex-1 items-center gap-1.5 hover:text-primary hover:underline"
+          >
+            <Icon icon={GraduationCap} size={14} className="shrink-0 text-sage-deep" />
+            <span className="min-w-0 flex-1 truncate">{university}</span>
+          </Link>
+          <span className="shrink-0">· {guide}</span>
+        </Body>
+        <Body as="div" size="small" color="muted" className="mt-1.5 flex items-center gap-1.5">
+          <Icon icon={Clock} size={14} className="shrink-0" />
+          <span>{durationMinutes} min</span>
         </Body>
         <div className="mt-auto flex items-center justify-between pt-4">
           {/* Off-scale on purpose: the price is the card's most prominent number; 18px has no
               type token and Heading would switch it to the display serif. */}
-          <span className="text-[18px] font-extrabold text-ink">${price}</span>
-          <Button variant="secondary" size="small">
+          <span className="text-[18px] font-extrabold text-ink">{price}</span>
+          <Button variant="secondary" size="small" className="flex items-center gap-1.5">
             View tour
+            <Icon icon={MoveRight} size={14} />
           </Button>
         </div>
       </div>
