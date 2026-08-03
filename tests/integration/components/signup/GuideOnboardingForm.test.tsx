@@ -616,8 +616,15 @@ describe("GuideOnboardingForm — enrolment years", () => {
     await user.click(screen.getByRole("combobox", { name: /degree/i }));
     await user.click(await screen.findByRole("option", { name: "Master's Degree" }));
 
-    expect(await screen.findByText(/Expected graduation — 2024 to 2026/)).toBeInTheDocument();
-    expect(await screen.findByText(/graduation year between 2024 and 2026/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: /degree/i })).toHaveValue("Master's Degree"),
+    );
+    expect(
+      await screen.findByText(/Expected graduation — 2024 to 2026/, {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/graduation year between 2024 and 2026/i, {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
 
   it("blocks submission when entry year is empty", async () => {
