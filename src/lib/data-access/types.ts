@@ -441,3 +441,29 @@ export interface UpdateAvailabilitySettingsInput {
 
 /** GET /v1/offerings/{id}/slots — participant-facing bookable slots for an offering. */
 export type OfferingSlot = AvailabilityOccurrence;
+
+/**
+ * How many universities each state has, keyed by USPS code — GET /v1/universities/state-summary.
+ *
+ * Every figure is the length of the list `StateUniversities` returns for that state: Core reads
+ * both off one directory snapshot, so a count can never disagree with the page behind it.
+ */
+export interface UniversityCounts {
+  byState: Record<string, number>;
+  total: number;
+}
+
+/** One university as the browsable directory lists it. */
+export interface DirectoryUniversity {
+  id: string;
+  name: string;
+  /** May be blank — the directory genuinely has schools with no city. */
+  city: string;
+}
+
+/** Every university in one state, sorted by name — GET /v1/universities?state=XX. */
+export interface StateUniversities {
+  state: string;
+  universities: DirectoryUniversity[];
+  total: number;
+}

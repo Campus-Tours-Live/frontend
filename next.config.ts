@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev" },
       // Static app assets (hero/signup/logo images — see @/lib/assets).
       { protocol: "https", hostname: "pub-211d5907b19d42af9733080e09f8ebbb.r2.dev" },
+      // State flags for the interactive US map (see @/lib/assets → stateFlagUrl). Allow-listed so
+      // the optimizer can serve them: the originals are ~2 MB each, which is far too heavy to hand
+      // to the browser on hover.
+      { protocol: "https", hostname: "pub-bc90afbcddd941ac9f960a2a22a522a5.r2.dev" },
     ],
   },
   // Next.js 16 uses Turbopack by default for dev and build (Webpack-compatible,

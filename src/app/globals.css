@@ -645,6 +645,31 @@
   }
 }
 
+/* ---- Interactive US map — the hovered state lifting off the map ---------------
+   Grows from the size it has on the map to its raised size, so the eye follows one shape rather
+   than seeing a second one appear. No travel: the raised copy sits over the original, and anything
+   that moved it would read as a glitch. The destination scale is applied inline (it is centred on
+   each state's own centroid and clamped to the frame); this animates the approach to it, and the
+   easing overshoots slightly so it lands with some weight. */
+/* Only a `from` — deliberately. With no `to`, the animation's end value is the element's OWN
+   computed transform (`scale(LIFT_SCALE)`), so the growth finishes exactly where the state rests
+   instead of overriding the placement for 260ms and snapping back to it. `scale(1)` is the state's
+   size on the map, so it grows out of its own footprint in one continuous motion. */
+@keyframes state-lift {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The lift still happens — it is the cue for which state is under the pointer, so removing it
+     would remove information. Only the animating-in is dropped. */
+  .state-lift {
+    animation: none;
+  }
+}
+
 /* ---- Collapsing header — animated Header panel + single-shell morph -----------
    The white Header itself morphs: an animated background PANEL (not the fixed <header>) carries the
    background, bottom border and elevation, and its HEIGHT interpolates 72↔146px so the whole header
