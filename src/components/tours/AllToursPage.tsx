@@ -28,7 +28,7 @@ import {
 } from "@/lib/data-access";
 import { TourProductCard } from "./TourProductCard";
 import { TourFiltersBar } from "./TourFiltersBar";
-import { TourFiltersModal } from "./TourFiltersModal";
+import { TourFiltersDropdown } from "./TourFiltersDropdown";
 import { useTourListState } from "./useTourListState";
 import { useResponsivePageWindow } from "./useResponsivePageWindow";
 
@@ -208,12 +208,13 @@ export function AllToursPage() {
     sort,
     page,
     changeTopics,
-    changeSort,
+    changeFilters,
     setPage,
     reset: resetState,
   } = useTourListState();
-  const [modalOpen, setModalOpen] = useState(false);
+  const [filtersAnchor, setFiltersAnchor] = useState<HTMLButtonElement | null>(null);
   const pageWindow = useResponsivePageWindow();
+  const filtersOpen = filtersAnchor !== null;
 
   const { data: topics } = useTourTopics();
   const allValues = useMemo(() => (topics ?? []).map((o) => o.value), [topics]);
@@ -300,16 +301,26 @@ export function AllToursPage() {
       <Container as="section" className="py-10">
         <TourFiltersBar
           topicIds={topicIds}
+          activeFilterCount={topicIds.length + (sort === "RECOMMENDED" ? 0 : 1)}
           onTopicsChange={changeTopics}
-          onOpenFilters={() => setModalOpen(true)}
+          filtersOpen={filtersOpen}
+          onToggleFilters={(anchorEl) => setFiltersAnchor((current) => (current ? null : anchorEl))}
         />
-        <TourFiltersModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          sort={sort}
-          resultCount={data?.totalElements ?? tours.length}
-          onApply={({ sort: next }) => changeSort(next)}
-        />
+        {filtersOpen ? (
+          <TourFiltersDropdown
+            open={filtersOpen}
+            anchorEl={filtersAnchor}
+            onClose={() => setFiltersAnchor(null)}
+            topicIds={topicIds}
+            sort={sort}
+            baseFilters={{
+              q: query.trim() || undefined,
+              universityId: universityId || undefined,
+            }}
+            resultCount={data?.totalElements ?? tours.length}
+            onApply={changeFilters}
+          />
+        ) : null}
 
         <div className="mt-8">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">

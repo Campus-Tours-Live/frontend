@@ -7,16 +7,20 @@ import { canonicalizeTopicIds, useTourTopics } from "@/lib/data-access";
 
 /**
  * TourFiltersBar — the Airbnb-style row under the header on /tours: a Filters button plus horizontal
- * topic quick-chips (multi-select). Chips apply instantly; the button opens the Filters modal.
+ * topic quick-chips (multi-select). Chips apply instantly; the button opens the Filters dropdown.
  */
 export function TourFiltersBar({
   topicIds,
+  activeFilterCount = topicIds.length,
+  filtersOpen = false,
   onTopicsChange,
-  onOpenFilters,
+  onToggleFilters,
 }: {
   topicIds: string[];
+  activeFilterCount?: number;
+  filtersOpen?: boolean;
   onTopicsChange: (ids: string[]) => void;
-  onOpenFilters: () => void;
+  onToggleFilters: (anchorEl: HTMLButtonElement) => void;
 }) {
   const { data: topics } = useTourTopics();
   const options = topics ?? [];
@@ -45,16 +49,19 @@ export function TourFiltersBar({
       <Button
         variant="secondary"
         size="small"
-        onClick={onOpenFilters}
-        disabled
-        title="Coming soon"
+        onClick={(event) => onToggleFilters(event.currentTarget)}
+        aria-label={activeFilterCount > 0 ? `Filters (${activeFilterCount} active)` : "Filters"}
+        aria-haspopup="dialog"
+        aria-expanded={filtersOpen}
         className="inline-flex shrink-0 items-center gap-1.5"
       >
         <SlidersHorizontal size={15} strokeWidth={2} aria-hidden />
         Filters
-        <span className="rounded-pill bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-ink-soft">
-          Soon
-        </span>
+        {activeFilterCount > 0 ? (
+          <span className="grid min-w-5 place-items-center rounded-pill bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+            {activeFilterCount}
+          </span>
+        ) : null}
       </Button>
       <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden />
       <Chip

@@ -16,6 +16,7 @@ export interface TourListState {
   changeQuery: (v: string) => void;
   changeTopics: (ids: string[]) => void;
   changeSort: (v: TourCatalogSort) => void;
+  changeFilters: (next: { topicIds: string[]; sort: TourCatalogSort }) => void;
   setPage: (p: number) => void;
   reset: () => void;
 }
@@ -107,6 +108,14 @@ export function useTourListState(): TourListState {
       }),
     [router, buildUrl],
   );
+  const changeFilters = useCallback(
+    ({ topicIds: nextTopicIds, sort: nextSort }: { topicIds: string[]; sort: TourCatalogSort }) =>
+      router.replace(
+        buildUrl({ sort: nextSort === "RECOMMENDED" ? null : nextSort, page: null }, nextTopicIds),
+        { scroll: false },
+      ),
+    [router, buildUrl],
+  );
   const setPage = useCallback(
     (p: number) => router.push(buildUrl({ page: p > 0 ? String(p + 1) : null }), { scroll: false }),
     [router, buildUrl],
@@ -125,6 +134,7 @@ export function useTourListState(): TourListState {
     changeQuery: setQuery,
     changeTopics,
     changeSort,
+    changeFilters,
     setPage,
     reset,
   };
