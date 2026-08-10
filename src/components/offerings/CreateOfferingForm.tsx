@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { formSubmitErrorMessage } from "@/lib/errors";
-import { useForm } from "react-hook-form";
 import {
   Alert,
   Body,
   Button,
   Card,
+  Chip,
   FormGroup,
   Icon,
   Link,
@@ -21,10 +22,16 @@ import {
   TextField,
   Textarea,
 } from "@/components/ui";
-import { ApiError, useCreateOffering, useGuideProfile, useTourTopics } from "@/lib/data-access";
+import {
+  useCreateOffering,
+  useGuideProfile,
+  useLanguages,
+  useTourFeatures,
+  useTourTopics,
+} from "@/lib/data-access";
 
 const DURATIONS = [30, 45, 60, 90] as const;
-
+const MAX_FEATURES = 3;
 const UNVERIFIED_REASON = "Verify your school email to create tours for this campus.";
 
 interface FormValues {
@@ -34,12 +41,16 @@ interface FormValues {
   durationMin: string;
   price: string;
   description: string;
+  languages: string[];
+  features: string[];
 }
 
 export function CreateOfferingForm() {
   const router = useRouter();
   const createOffering = useCreateOffering();
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
+  const { data: languageOptions = [], isLoading: languagesLoading } = useLanguages();
+  const { byTopic, isLoading: featuresLoading } = useTourFeatures();
   const { data: guideProfile, isLoading: profileLoading } = useGuideProfile();
   const universities = guideProfile?.universities ?? [];
   const firstVerifiedId =
@@ -48,9 +59,10 @@ export function CreateOfferingForm() {
 
   const {
     register,
+    control,
     handleSubmit,
-    watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
@@ -61,20 +73,29 @@ export function CreateOfferingForm() {
       durationMin: "60",
       price: "42",
       description: "",
+      languages: ["en-US"],
+      features: [],
     },
   });
 
-  const selectedUniversityId = watch("universityId");
+  const topic = useWatch({ control, name: "topic" });
+  const selectedUniversityId = useWatch({ control, name: "universityId" });
+  const featureOptions = topic ? (byTopic[topic] ?? []) : [];
 
-  // Default-select the guide's first VERIFIED university once the profile loads. Runs again only
-  // if the resolved default itself changes (e.g. profile refetches with a different verified
-  // school first) — it never clobbers a selection the guide already made among several verified
-  // campuses.
+  // Keep the guide on a verified university without overwriting a deliberate valid choice.
   useEffect(() => {
-    if (firstVerifiedId) {
-      setValue("universityId", firstVerifiedId);
-    }
+    if (firstVerifiedId) setValue("universityId", firstVerifiedId);
   }, [firstVerifiedId, setValue]);
+
+  // Drop feature selections that do not belong to the currently selected topic.
+  useEffect(() => {
+    const allowed = new Set((topic ? (byTopic[topic] ?? []) : []).map((option) => option.value));
+    const current = getValues("features");
+    const next = topic ? current.filter((code) => allowed.has(code)) : [];
+    if (next.length === current.length && next.every((code, index) => code === current[index]))
+      return;
+    setValue("features", next);
+  }, [topic, byTopic, setValue, getValues]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!values.universityId) return;
@@ -93,15 +114,17 @@ export function CreateOfferingForm() {
         durationMin: Number(values.durationMin),
         priceCents: Math.round(dollars * 100),
         description: values.description.trim() || undefined,
-        languages: ["en-US"],
+        languages: values.languages,
+        features: values.features.length ? values.features : undefined,
       });
       router.push("/guide/tour-offerings");
     } catch (err) {
-      const message = formSubmitErrorMessage(err, {
-        invalid: "Check your inputs — title, topic, duration, and price are required.",
-        generic: "Could not save this offering. Please try again.",
+      setError("root", {
+        message: formSubmitErrorMessage(err, {
+          invalid: "Check your inputs — title, topic, duration, and price are required.",
+          generic: "Could not save this offering. Please try again.",
+        }),
       });
-      setError("root", { message });
     }
   });
 
@@ -155,23 +178,26 @@ export function CreateOfferingForm() {
                   : undefined
               }
             >
-              {universities.map((uni, index) => {
-                const verified = uni.verificationStatus === "VERIFIED" && Boolean(uni.universityId);
-                const reasonId = `university-reason-${uni.universityId || index}`;
+              {universities.map((university, index) => {
+                const verified =
+                  university.verificationStatus === "VERIFIED" && Boolean(university.universityId);
+                const reasonId = `university-reason-${university.universityId || index}`;
                 return (
-                  <div key={uni.universityId || `${uni.universityName ?? "campus"}-${index}`}>
+                  <div
+                    key={
+                      university.universityId || `${university.universityName ?? "campus"}-${index}`
+                    }
+                  >
                     <Radio
                       name="universityId"
-                      value={uni.universityId ?? ""}
-                      label={uni.universityName ?? "Your campus"}
-                      checked={verified && selectedUniversityId === uni.universityId}
+                      value={university.universityId ?? ""}
+                      label={university.universityName ?? "Your campus"}
+                      checked={verified && selectedUniversityId === university.universityId}
                       disabled={!verified}
                       aria-describedby={!verified ? reasonId : undefined}
-                      // Defence-in-depth: the radio is also `disabled` for a non-VERIFIED entry, but
-                      // guard here too rather than assume the browser always blocks the interaction.
                       onChange={() => {
                         if (verified) {
-                          setValue("universityId", uni.universityId as string, {
+                          setValue("universityId", university.universityId as string, {
                             shouldValidate: true,
                           });
                         }
@@ -196,18 +222,111 @@ export function CreateOfferingForm() {
           {...register("topic", { required: "Topic is required" })}
         >
           <option value="">Select a topic</option>
-          {topicOptions.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
+          {topicOptions.map((topicOption) => (
+            <option key={topicOption.value} value={topicOption.value}>
+              {topicOption.label}
             </option>
           ))}
         </SelectField>
 
+        <Controller
+          control={control}
+          name="features"
+          render={({ field }) => (
+            <fieldset>
+              <Body as="legend" size="small" weight={700} className="mb-2 block">
+                Highlight features{" "}
+                <span className="font-normal text-ink-soft">(up to {MAX_FEATURES})</span>
+              </Body>
+              {!topic ? (
+                <Body size="medium" color="muted">
+                  Choose a topic to see available features.
+                </Body>
+              ) : featuresLoading ? (
+                <Body size="medium" color="muted">
+                  Loading features…
+                </Body>
+              ) : featureOptions.length === 0 ? (
+                <Body size="medium" color="muted">
+                  No features for this topic.
+                </Body>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {featureOptions.map((feature) => {
+                    const active = field.value.includes(feature.value);
+                    const atLimit = !active && field.value.length >= MAX_FEATURES;
+                    return (
+                      <Chip
+                        key={feature.value}
+                        active={active}
+                        disabled={atLimit}
+                        onClick={() =>
+                          field.onChange(
+                            active
+                              ? field.value.filter((value) => value !== feature.value)
+                              : [...field.value, feature.value],
+                          )
+                        }
+                      >
+                        {feature.label}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              )}
+            </fieldset>
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="languages"
+          rules={{ validate: (value) => value.length > 0 || "Select at least one language" }}
+          render={({ field }) => (
+            <fieldset>
+              <Body as="legend" size="small" weight={700} className="mb-2 block">
+                Languages for this tour
+              </Body>
+              {languagesLoading ? (
+                <Body size="medium" color="muted">
+                  Loading languages…
+                </Body>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {languageOptions.map((language) => {
+                    const active = field.value.includes(language.value);
+                    return (
+                      <Chip
+                        key={language.value}
+                        active={active}
+                        onClick={() =>
+                          field.onChange(
+                            active
+                              ? field.value.filter((value) => value !== language.value)
+                              : [...field.value, language.value],
+                          )
+                        }
+                      >
+                        {language.label}
+                      </Chip>
+                    );
+                  })}
+                </div>
+              )}
+              {errors.languages?.message ? (
+                <Body size="small" color="error" className="mt-2">
+                  {errors.languages.message}
+                </Body>
+              ) : null}
+            </fieldset>
+          )}
+        />
+
         <div className="grid gap-5 sm:grid-cols-2">
           <SelectField label="Duration" {...register("durationMin")}>
-            {DURATIONS.map((d) => (
-              <option key={d} value={d}>
-                {d} minutes
+            {DURATIONS.map((duration) => (
+              <option key={duration} value={duration}>
+                {duration} minutes
               </option>
             ))}
           </SelectField>

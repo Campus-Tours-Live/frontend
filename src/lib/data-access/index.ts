@@ -11,6 +11,7 @@ export { useParticipantProfile } from "./hooks/use-participant-profile";
 export { useGuideProfile } from "./hooks/use-guide-profile";
 export { useTourTopics } from "./hooks/use-tour-topics";
 export { useTourFeatures } from "./hooks/use-tour-features";
+export { useLanguages } from "./hooks/use-languages";
 export { useTourCatalog } from "./hooks/use-tour-catalog";
 export { useTourDetail } from "./hooks/use-tour-detail";
 export { useUniversitySearch } from "./hooks/use-university-search";
