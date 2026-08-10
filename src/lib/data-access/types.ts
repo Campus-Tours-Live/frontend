@@ -163,6 +163,22 @@ export interface BookingResponse {
   price: Money;
 }
 
+export interface CreateBookingInput {
+  tourOfferingId: string;
+  scheduledStartAt: string;
+  participantNotes?: string;
+}
+
+export interface CancelBookingInput {
+  bookingId: string;
+  reason?: string;
+}
+
+export interface RemoveCartItemInput {
+  cartItemId: string;
+  tourOfferingId?: string;
+}
+
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
@@ -252,13 +268,27 @@ export interface TourSummary {
 }
 
 /** Full public tour detail (Core TourDetailResponse). */
-export interface TourDetail extends TourSummary {
+export interface TourDetail {
+  id: string;
+  title: string;
+  slug: string;
+  topic: string;
   description: string | null;
   languages: string[];
+  universityId: string;
+  universityName: string;
+  universityImageUrl?: string | null;
   universitySlug: string;
   universityCity: string | null;
   universityRegion: string | null;
+  guideId: string;
+  guideDisplayName: string;
   guideBio: string | null;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
 }
 
 export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATING";

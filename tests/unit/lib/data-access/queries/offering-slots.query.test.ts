@@ -28,6 +28,15 @@ describe("offeringSlotsOptions", () => {
     expect(result).toBe(payload);
   });
 
+  it("encodes the offering id into the path", async () => {
+    mockedApiJson.mockResolvedValue([] as never);
+
+    const queryFn = offeringSlotsOptions("offering/1").queryFn as () => Promise<unknown>;
+    await queryFn();
+
+    expect(mockedApiJson).toHaveBeenCalledWith("/v1/offerings/offering%2F1/slots");
+  });
+
   it("defaults enabled to true", () => {
     expect(offeringSlotsOptions("o1").enabled).toBe(true);
   });

@@ -2,9 +2,12 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TourProductCard } from "@/components/tours/TourProductCard";
 import type { TourSummary } from "@/lib/data-access";
+import { tourIdFromRef } from "@/lib/tourRefs";
+
+const tourId = "7b7ad66c-3a2b-4cc9-95ba-95f9148f818e";
 
 const tour: TourSummary = {
-  id: "tour-1",
+  id: tourId,
   title: "Campus life and hidden study spots",
   slug: "campus-life",
   topic: "GENERAL_CAMPUS",
@@ -29,7 +32,11 @@ describe("TourProductCard", () => {
   it("renders campus, title, guide name and the topic label exactly once", () => {
     render(<TourProductCard tour={tour} />);
     expect(screen.getByText("North Coast University")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: tour.title })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: tour.title })).toHaveAttribute(
+      "href",
+      `/tours/${tourId}-campus-life`,
+    );
+    expect(tourIdFromRef(`${tourId}-campus-life`)).toBe(tour.id);
     expect(screen.getByText("Maya Chen")).toBeInTheDocument();
     // Topic is shown once (single chip) — the duplicate photo pill was removed.
     expect(screen.getAllByText("Campus life")).toHaveLength(1);
