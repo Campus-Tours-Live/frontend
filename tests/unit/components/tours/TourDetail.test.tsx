@@ -1,7 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ImgHTMLAttributes } from "react";
 import { TourDetail } from "@/components/tours/TourDetail";
 import type { TourDetail as TourDetailData } from "@/lib/data-access";
+import { CAMPUS_FALLBACK_IMAGE } from "@/components/tours/tourCard.visuals";
 
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -80,5 +81,16 @@ describe("TourDetail", () => {
     expect(screen.getByText("Ask the guide")).toBeInTheDocument();
     expect(screen.getByText("New tour")).toBeInTheDocument();
     expect(screen.queryByText("Arcata, CA")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the shared campus image when the backend image fails", () => {
+    const imageUrl = "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Broken%20Campus.png";
+
+    render(<TourDetail tour={{ ...tour, universityImageUrl: imageUrl }} />);
+
+    const heroImage = screen.getByRole("img", { name: /north coast university campus/i });
+    fireEvent.error(heroImage);
+
+    expect(heroImage).toHaveAttribute("src", CAMPUS_FALLBACK_IMAGE);
   });
 });
