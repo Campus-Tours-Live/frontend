@@ -18,6 +18,7 @@ export { useUniversitySearch } from "./hooks/use-university-search";
 export { useMajors } from "./hooks/use-majors";
 export { useDegrees } from "./hooks/use-degrees";
 export { useEnrollmentYears } from "./hooks/use-enrollment-years";
+export { useStateUniversities, useUniversityCounts } from "./hooks/use-university-directory";
 export { useUpdateParticipantProfile } from "./hooks/use-update-participant-profile";
 export { useUpdateGuideProfile } from "./hooks/use-update-guide-profile";
 export { useSetCurrentRole } from "./hooks/use-set-current-role";
@@ -59,6 +60,9 @@ export type {
   GuideProfileUpdate,
   University,
   EnrollmentYearRules,
+  UniversityCounts,
+  DirectoryUniversity,
+  StateUniversities,
   TourTopic,
   MetaOption,
   TourFeatureOptionsByTopic,
