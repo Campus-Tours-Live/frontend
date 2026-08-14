@@ -3,10 +3,14 @@ import { ParticipantSummary } from "@/components/dashboard/ParticipantSummary";
 import { useMe } from "@/lib/data-access";
 import type { ParticipantDashboard } from "@/lib/data-access";
 
-// Renders the real SectionHeading + MemberCard + Alert (no mocks, except useMe — identity
-// now comes from there, not the dashboard aggregate). Note the component surfaces
-// topics/universities as COUNTS ("N selected"), not joined lists, and the email only
-// drives an "Email verified" pill (not the address).
+// Renders the real SectionHeading + MemberCard (no mocks except useMe and RecommendedTours).
+// RecommendedTours is mocked out — it owns its own test file and requires a QueryClient.
+// Note the component surfaces topics/universities as COUNTS ("N selected"), not joined lists,
+// and the email only drives an "Email verified" pill (not the address).
+
+jest.mock("@/components/dashboard/RecommendedTours", () => ({
+  RecommendedTours: () => null,
+}));
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
@@ -39,7 +43,7 @@ beforeEach(() => {
 describe("ParticipantSummary", () => {
   it("renders the participant display name in the heading and card", () => {
     render(<ParticipantSummary data={makeData()} />);
-    expect(screen.getByText("Welcome, Grace Hopper.")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back, Grace Hopper.")).toBeInTheDocument();
     // Also rendered as the MemberCard name.
     expect(screen.getByText("Grace Hopper")).toBeInTheDocument();
   });
@@ -107,7 +111,7 @@ describe("ParticipantSummary", () => {
     mockUseMe.mockReturnValue({ me: { user: { displayName: null, email: null } } });
     const data = makeData();
     render(<ParticipantSummary data={data} />);
-    expect(screen.getByText("Welcome.")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back.")).toBeInTheDocument();
     expect(screen.getByText("Member")).toBeInTheDocument();
   });
 
