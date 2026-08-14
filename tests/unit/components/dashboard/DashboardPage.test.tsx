@@ -7,6 +7,11 @@ import type { GuideDashboard, ParticipantDashboard } from "@/lib/data-access";
 // can drive each branch (loading / error / no-data / guide / participant). We let
 // the real GuideSummary / ParticipantSummary (and MemberCard / Alert) render. Identity
 // (display name / email) now comes from useMe(), not the role-shaped aggregate.
+// RecommendedTours is mocked out — it owns its own tests and requires a QueryClient.
+jest.mock("@/components/dashboard/RecommendedTours", () => ({
+  RecommendedTours: () => null,
+}));
+
 jest.mock("@/lib/data-access", () => ({
   useDashboard: jest.fn(),
   useMe: jest.fn(),
@@ -120,7 +125,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Offerings")).toBeInTheDocument();
 
     // It should NOT render the participant welcome heading.
-    expect(screen.queryByText(/Your participant profile is saved\./)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Participant Dashboard/)).not.toBeInTheDocument();
   });
 
   it("renders the participant summary branch when data.kind is 'participant'", () => {
@@ -129,8 +134,12 @@ describe("DashboardPage", () => {
     render(<DashboardPage />);
 
     // Participant-specific signals: the welcome heading + lead copy.
-    expect(screen.getByText("Welcome, Grace Hopper.")).toBeInTheDocument();
-    expect(screen.getByText("Your participant profile is saved.")).toBeInTheDocument();
+    expect(screen.getByText("Welcome back, Grace Hopper.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Manage your next tour, find anything that needs attention, and keep exploring.",
+      ),
+    ).toBeInTheDocument();
 
     // It should NOT render the guide-only offerings row.
     expect(screen.queryByText("Offerings")).not.toBeInTheDocument();
