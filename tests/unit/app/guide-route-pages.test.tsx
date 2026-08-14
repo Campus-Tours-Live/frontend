@@ -14,11 +14,17 @@ jest.mock("@/components/earnings/GuideEarningsPage", () => ({
 jest.mock("@/components/offerings/CreateOfferingForm", () => ({
   CreateOfferingForm: () => <div data-testid="create-offering-form" />,
 }));
+jest.mock("@/components/offerings/EditOfferingPage", () => ({
+  EditOfferingPage: ({ offeringId }: { offeringId: string }) => (
+    <div data-testid="edit-offering-page">{offeringId}</div>
+  ),
+}));
 
 import GuideAvailabilityRoutePage from "@/app/(app)/guide/availability/page";
 import GuideEarningsRoutePage from "@/app/(app)/guide/earnings/page";
 import GuideTourOfferingsPage from "@/app/(app)/guide/tour-offerings/page";
 import NewTourOfferingPage from "@/app/(app)/guide/tour-offerings/new/page";
+import EditTourOfferingRoutePage from "@/app/(app)/guide/tour-offerings/[offeringId]/edit/page";
 
 describe("guide route shells", () => {
   it("availability route mounts the availability page", () => {
@@ -39,5 +45,10 @@ describe("guide route shells", () => {
   it("new tour-offering route mounts the create-offering form", () => {
     render(<NewTourOfferingPage />);
     expect(screen.getByTestId("create-offering-form")).toBeInTheDocument();
+  });
+
+  it("edit tour-offering route passes the URL offering id to the editor", async () => {
+    render(await EditTourOfferingRoutePage({ params: Promise.resolve({ offeringId: "o1" }) }));
+    expect(screen.getByTestId("edit-offering-page")).toHaveTextContent("o1");
   });
 });
