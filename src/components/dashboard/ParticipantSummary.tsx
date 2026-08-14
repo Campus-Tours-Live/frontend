@@ -1,5 +1,8 @@
+"use client";
+
 import { CalendarDays, Compass, GraduationCap, ShieldCheck, UserRound } from "lucide-react";
 import {
+  Link,
   MemberCard,
   SectionHeading,
   type MemberCardHighlight,
@@ -8,16 +11,16 @@ import {
 } from "@/components/ui";
 import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
+import { RecommendedTours } from "./RecommendedTours";
 
 /**
- * Participant dashboard slice — presentational. The /v1/dashboard aggregate already
- * composed everything (DashboardPage fetches once and branches on `kind`), so this
- * only renders its slice; no data fetching here. Sibling of GuideSummary.
+ * Participant dashboard — welcome header, profile member card, and recommended
+ * tours strip. The /v1/dashboard aggregate is fetched once in DashboardPage and
+ * forwarded here; future sections (bookings, pending actions) will use it too.
  */
 export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
   const { me } = useMe();
   const p = data.participant;
-  // A parent/guardian participant reads as a Guardian card (purple accent).
   const guardian = p.type === "PARENT";
   const role: MemberRole = guardian ? "GUARDIAN" : "PARTICIPANT";
 
@@ -33,11 +36,7 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       label: "Universities",
       value: p.universitiesOfInterest?.length ? `${p.universitiesOfInterest.length} selected` : "—",
     },
-    {
-      icon: CalendarDays,
-      label: "Member since",
-      value: formatMonthYear(data.createdAt),
-    },
+    { icon: CalendarDays, label: "Member since", value: formatMonthYear(data.createdAt) },
   ];
 
   const highlight: MemberCardHighlight = guardian
@@ -53,21 +52,28 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       };
 
   return (
-    <div>
+    <div className="flex flex-col gap-12">
       <SectionHeading
-        eyebrow="Dashboard"
-        title={`Welcome${me?.user.displayName ? `, ${me.user.displayName}` : ""}.`}
-        lead="Your participant profile is saved."
+        eyebrow="Participant Dashboard"
+        title={`Welcome back${me?.user.displayName ? `, ${me.user.displayName}` : ""}.`}
+        lead="Manage your next tour, find anything that needs attention, and keep exploring."
+        level={1}
+        action={
+          <Link href="/tours" variant="primary" className="shrink-0">
+            Find a Tour
+          </Link>
+        }
       />
 
       <MemberCard
-        className="mt-8"
         name={me?.user.displayName ?? "Member"}
         role={role}
         verification={me?.user.email ? "Email Verified" : undefined}
         items={items}
         highlight={highlight}
       />
+
+      <RecommendedTours />
     </div>
   );
 }
