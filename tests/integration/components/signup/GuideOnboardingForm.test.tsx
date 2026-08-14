@@ -613,8 +613,12 @@ describe("GuideOnboardingForm — enrolment years", () => {
 
     // Switch to a master's (+3): the window contracts to 2024–2026 and the value already sitting
     // in the form is re-validated against it — no Continue click, no second blur.
-    await user.click(screen.getByRole("combobox", { name: /degree/i }));
-    await user.click(await screen.findByRole("option", { name: "Master's Degree" }));
+    // waitFor retries the open+click sequence in case the dropdown is still animating
+    // closed from the earlier Bachelor's selection (flaky in slow CI environments).
+    await waitFor(async () => {
+      await user.click(screen.getByRole("combobox", { name: /degree/i }));
+      await user.click(screen.getByRole("option", { name: "Master's Degree" }));
+    });
 
     expect(await screen.findByText(/Expected graduation — 2024 to 2026/)).toBeInTheDocument();
     expect(await screen.findByText(/graduation year between 2024 and 2026/i)).toBeInTheDocument();
