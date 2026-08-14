@@ -21,7 +21,13 @@ import {
   TextField,
   Textarea,
 } from "@/components/ui";
-import { ApiError, useCreateOffering, useGuideProfile, useTourTopics } from "@/lib/data-access";
+import {
+  useCreateOffering,
+  useGuideProfile,
+  useTourTopics,
+  useUpdateOffering,
+  type Offering,
+} from "@/lib/data-access";
 
 const DURATIONS = [30, 45, 60, 90] as const;
 
@@ -36,9 +42,11 @@ interface FormValues {
   description: string;
 }
 
-export function CreateOfferingForm() {
+export function CreateOfferingForm({ offering }: { offering?: Offering }) {
   const router = useRouter();
   const createOffering = useCreateOffering();
+  const updateOffering = useUpdateOffering();
+  const isEditing = Boolean(offering);
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const { data: guideProfile, isLoading: profileLoading } = useGuideProfile();
   const universities = guideProfile?.universities ?? [];
@@ -51,16 +59,17 @@ export function CreateOfferingForm() {
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
     defaultValues: {
-      title: "",
-      universityId: "",
-      topic: "",
-      durationMin: "60",
-      price: "42",
-      description: "",
+      title: offering?.title ?? "",
+      universityId: offering?.universityId ?? "",
+      topic: offering?.topic ?? "",
+      durationMin: String(offering?.durationMin ?? 60),
+      price: String((offering?.priceCents ?? 4200) / 100),
+      description: offering?.description ?? "",
     },
   });
 
@@ -71,10 +80,22 @@ export function CreateOfferingForm() {
   // school first) — it never clobbers a selection the guide already made among several verified
   // campuses.
   useEffect(() => {
-    if (firstVerifiedId) {
+    if (firstVerifiedId && !selectedUniversityId) {
       setValue("universityId", firstVerifiedId);
     }
-  }, [firstVerifiedId, setValue]);
+  }, [firstVerifiedId, selectedUniversityId, setValue]);
+
+  useEffect(() => {
+    if (!offering) return;
+    reset({
+      title: offering.title,
+      universityId: offering.universityId ?? "",
+      topic: offering.topic ?? "",
+      durationMin: String(offering.durationMin),
+      price: String(offering.priceCents / 100),
+      description: offering.description ?? "",
+    });
+  }, [offering, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!values.universityId) return;
@@ -86,7 +107,7 @@ export function CreateOfferingForm() {
     }
 
     try {
-      await createOffering.mutateAsync({
+      const body = {
         title: values.title.trim(),
         universityId: values.universityId,
         topic: values.topic,
@@ -94,7 +115,12 @@ export function CreateOfferingForm() {
         priceCents: Math.round(dollars * 100),
         description: values.description.trim() || undefined,
         languages: ["en-US"],
-      });
+      };
+      if (offering) {
+        await updateOffering.mutateAsync({ offeringId: offering.id, body });
+      } else {
+        await createOffering.mutateAsync(body);
+      }
       router.push("/guide/tour-offerings");
     } catch (err) {
       const message = formSubmitErrorMessage(err, {
@@ -110,8 +136,12 @@ export function CreateOfferingForm() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionHeading
           eyebrow="Guide / Tour offerings"
-          title="Create tour offering"
-          lead="Save a draft now and publish when you're ready."
+          title={isEditing ? "Edit tour offering" : "Create tour offering"}
+          lead={
+            isEditing
+              ? "Update this paused or draft offering, then publish it when you're ready."
+              : "Save a draft now and publish when you're ready."
+          }
           level={1}
         />
         <Link href="/guide/tour-offerings" variant="ghost" size="small">
@@ -230,22 +260,33 @@ export function CreateOfferingForm() {
         />
       </Card>
 
-      <Nudge variant="info" leading={<Icon name="info" />} title="Saving creates a draft">
-        Publishing requires a verified guide account and makes the offering visible on the public
-        marketplace.
+      <Nudge
+        variant="info"
+        leading={<Icon name="info" />}
+        title={isEditing ? "Edit safely" : "Saving creates a draft"}
+      >
+        {isEditing
+          ? "Paused and draft offerings can be edited. Publish when the details are ready for participants."
+          : "Publishing requires a verified guide account and makes the offering visible on the public marketplace."}
       </Nudge>
 
       <Button
         type="submit"
         variant="primary"
         disabled={
-          isSubmitting || createOffering.isPending || profileLoading || !selectedUniversityId
+          isSubmitting ||
+          createOffering.isPending ||
+          updateOffering.isPending ||
+          profileLoading ||
+          !selectedUniversityId
         }
       >
-        {isSubmitting || createOffering.isPending ? (
+        {isSubmitting || createOffering.isPending || updateOffering.isPending ? (
           <>
             <Spinner /> Saving draft…
           </>
+        ) : isEditing ? (
+          "Save changes"
         ) : (
           "Save draft"
         )}

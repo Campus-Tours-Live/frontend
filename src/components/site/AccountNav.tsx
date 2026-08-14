@@ -91,7 +91,7 @@ const GUIDE_NAV: NavGroup[] = [
   },
   {
     label: "Earnings",
-    items: [{ label: "Earnings", icon: CircleDollarSign }],
+    items: [{ label: "Earnings", icon: CircleDollarSign, href: "/guide/earnings" }],
   },
   {
     label: "Account",
