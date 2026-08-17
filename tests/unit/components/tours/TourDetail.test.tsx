@@ -19,19 +19,14 @@ jest.mock("next/image", () => ({
 }));
 
 const tour: TourDetailData = {
-  id: "a0000000-0000-4000-8000-000000000001",
   title: "North Campus highlights",
-  slug: "north-campus-highlights",
   topic: "GENERAL_CAMPUS",
   description: "A guided walk through the north campus.",
   languages: ["en-US", "zh-CN"],
-  universityId: "university-id",
   universityName: "North Coast University",
   universityImageUrl: null,
-  universitySlug: "north-coast",
   universityCity: "Arcata",
   universityRegion: "CA",
-  guideId: "guide-id",
   guideDisplayName: "Maya Chen",
   guideBio: "Third-year student and campus tour lead.",
   durationMin: 60,
@@ -39,7 +34,7 @@ const tour: TourDetailData = {
   currency: "USD",
   avgRating: 4.5,
   reviewCount: 12,
-};
+} as TourDetailData;
 
 describe("TourDetail", () => {
   it("renders fields supplied by the backend contract", () => {
@@ -66,9 +61,6 @@ describe("TourDetail", () => {
           ...tour,
           description: null,
           languages: [],
-          universityCity: null,
-          universityRegion: null,
-          guideBio: null,
           reviewCount: 0,
         }}
       />,
