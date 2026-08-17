@@ -117,10 +117,8 @@ async function chooseSelectMenuOption(
 ) {
   const combobox = await screen.findByRole("combobox", { name: label });
   await waitFor(() => expect(combobox).toBeEnabled());
-
   await user.click(combobox);
   await waitFor(() => expect(combobox).toHaveAttribute("aria-expanded", "true"));
-
   await user.click(await screen.findByRole("option", { name: optionName }));
   await waitFor(() => expect(combobox).toHaveValue(optionName));
 }
