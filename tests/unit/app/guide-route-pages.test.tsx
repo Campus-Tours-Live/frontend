@@ -19,12 +19,16 @@ jest.mock("@/components/offerings/EditOfferingPage", () => ({
     <div data-testid="edit-offering-page">{offeringId}</div>
   ),
 }));
+jest.mock("@/components/bookings/GuideBookingsPage", () => ({
+  GuideBookingsPage: () => <div data-testid="guide-bookings-page" />,
+}));
 
 import GuideAvailabilityRoutePage from "@/app/(app)/guide/availability/page";
 import GuideEarningsRoutePage from "@/app/(app)/guide/earnings/page";
 import GuideTourOfferingsPage from "@/app/(app)/guide/tour-offerings/page";
 import NewTourOfferingPage from "@/app/(app)/guide/tour-offerings/new/page";
 import EditTourOfferingRoutePage from "@/app/(app)/guide/tour-offerings/[offeringId]/edit/page";
+import GuideBookingsRoutePage from "@/app/(app)/guide/bookings/page";
 
 describe("guide route shells", () => {
   it("availability route mounts the availability page", () => {
@@ -50,5 +54,10 @@ describe("guide route shells", () => {
   it("edit tour-offering route passes the URL offering id to the editor", async () => {
     render(await EditTourOfferingRoutePage({ params: Promise.resolve({ offeringId: "o1" }) }));
     expect(screen.getByTestId("edit-offering-page")).toHaveTextContent("o1");
+  });
+
+  it("bookings route mounts the bookings page", () => {
+    render(<GuideBookingsRoutePage />);
+    expect(screen.getByTestId("guide-bookings-page")).toBeInTheDocument();
   });
 });

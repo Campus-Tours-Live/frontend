@@ -83,6 +83,18 @@ describe("GuideBookingsPage", () => {
     expect(screen.getByText(/no pending or upcoming bookings/i)).toBeInTheDocument();
   });
 
+  it("shows filter-specific empty copy", async () => {
+    const user = userEvent.setup();
+    setHooks({ bookings: { data: [], isLoading: false, isError: false } });
+    render(<GuideBookingsPage />);
+
+    await user.click(screen.getByRole("button", { name: /^pending$/i }));
+    expect(screen.getByText(/no pending booking requests/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^upcoming$/i }));
+    expect(screen.getByText(/no upcoming confirmed tours/i)).toBeInTheDocument();
+  });
+
   it("lists bookings with accept/decline on pending rows", () => {
     render(<GuideBookingsPage />);
     expect(screen.getAllByText("Campus walk").length).toBeGreaterThanOrEqual(1);
@@ -101,6 +113,16 @@ describe("GuideBookingsPage", () => {
     expect(mutateAsync).toHaveBeenCalledWith("b1");
   });
 
+  it("surfaces an error when accept fails", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest.fn().mockRejectedValue(new Error("boom"));
+    setHooks({ accept: { mutateAsync } });
+    render(<GuideBookingsPage />);
+
+    await user.click(screen.getByRole("button", { name: /^accept$/i }));
+    expect(await screen.findByText(/could not accept this booking/i)).toBeInTheDocument();
+  });
+
   it("opens decline modal and calls decline mutation", async () => {
     const user = userEvent.setup();
     const mutateAsync = jest.fn().mockResolvedValue({});
@@ -114,6 +136,43 @@ describe("GuideBookingsPage", () => {
     const declineButtons = screen.getAllByRole("button", { name: /^decline$/i });
     await user.click(declineButtons[declineButtons.length - 1]!);
     expect(mutateAsync).toHaveBeenCalledWith({ bookingId: "b1", body: undefined });
+  });
+
+  it("declines with an optional reason and closes on cancel", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest.fn().mockResolvedValue({});
+    setHooks({ decline: { mutateAsync } });
+    render(<GuideBookingsPage />);
+
+    await user.click(screen.getByRole("button", { name: /^decline$/i }));
+    await user.type(screen.getByLabelText(/reason/i), "Schedule conflict");
+    const declineButtons = screen.getAllByRole("button", { name: /^decline$/i });
+    await user.click(declineButtons[declineButtons.length - 1]!);
+    expect(mutateAsync).toHaveBeenCalledWith({
+      bookingId: "b1",
+      body: { reason: "Schedule conflict" },
+    });
+  });
+
+  it("surfaces an error when decline fails", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest.fn().mockRejectedValue(new Error("boom"));
+    setHooks({ decline: { mutateAsync } });
+    render(<GuideBookingsPage />);
+
+    await user.click(screen.getByRole("button", { name: /^decline$/i }));
+    const declineButtons = screen.getAllByRole("button", { name: /^decline$/i });
+    await user.click(declineButtons[declineButtons.length - 1]!);
+    expect(await screen.findByText(/could not decline this booking/i)).toBeInTheDocument();
+  });
+
+  it("closes the decline modal via Cancel", async () => {
+    const user = userEvent.setup();
+    render(<GuideBookingsPage />);
+
+    await user.click(screen.getByRole("button", { name: /^decline$/i }));
+    await user.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(screen.queryByRole("heading", { name: /decline booking/i })).not.toBeInTheDocument();
   });
 
   it("switches filter chips", async () => {

@@ -5,6 +5,10 @@ import { updateGuideProfileMutation } from "@/lib/data-access/mutations/update-g
 import { createOfferingMutation } from "@/lib/data-access/mutations/create-offering.mutation";
 import { activateOfferingMutation } from "@/lib/data-access/mutations/activate-offering.mutation";
 import {
+  acceptBookingMutation,
+  declineBookingMutation,
+} from "@/lib/data-access/mutations/guide-booking.mutation";
+import {
   duplicateOfferingMutation,
   pauseOfferingMutation,
   retireOfferingMutation,
@@ -281,5 +285,40 @@ describe("offering lifecycle mutations", () => {
 
     expect(mockedPostJson).toHaveBeenCalledWith(`/v1/guide/offerings/offering-1${suffix}`, {});
     expect(invalidatedKeys(qc)).toContainEqual(queryKeys.guideOfferings());
+  });
+});
+
+describe("guide booking mutations", () => {
+  it("accept POSTs accept and invalidates guide bookings + dashboard", async () => {
+    const qc = makeQc();
+    const mutation = acceptBookingMutation(qc);
+
+    await mutation.mutationFn("b1");
+    mutation.onSuccess?.({} as never, "b1");
+
+    expect(mockedPostJson).toHaveBeenCalledWith("/v1/guide/bookings/b1/accept", {});
+    expect(invalidatedKeys(qc)).toEqual(
+      expect.arrayContaining([["guide-bookings"], queryKeys.dashboard()]),
+    );
+  });
+
+  it("decline POSTs decline with optional body and invalidates lists", async () => {
+    const qc = makeQc();
+    const mutation = declineBookingMutation(qc);
+    const vars = { bookingId: "b1", body: { reason: "Busy" } };
+
+    await mutation.mutationFn(vars);
+    mutation.onSuccess?.({} as never, vars);
+
+    expect(mockedPostJson).toHaveBeenCalledWith("/v1/guide/bookings/b1/decline", {
+      reason: "Busy",
+    });
+    expect(invalidatedKeys(qc)).toContainEqual(["guide-bookings"]);
+  });
+
+  it("decline sends an empty body when none is provided", async () => {
+    const qc = makeQc();
+    await declineBookingMutation(qc).mutationFn({ bookingId: "b2" });
+    expect(mockedPostJson).toHaveBeenCalledWith("/v1/guide/bookings/b2/decline", {});
   });
 });
