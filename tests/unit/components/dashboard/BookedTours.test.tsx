@@ -17,9 +17,21 @@ const baseBooking: BookingResponse = {
 };
 
 describe("BookedTours", () => {
-  it("renders nothing when bookings is an empty array", () => {
-    const { container } = render(<BookedTours bookings={[]} />);
-    expect(container).toBeEmptyDOMElement();
+  it("renders the section heading even when bookings is empty", () => {
+    render(<BookedTours bookings={[]} />);
+    expect(screen.getByText("Upcoming")).toBeInTheDocument();
+    expect(screen.getByText("Your booked tours")).toBeInTheDocument();
+  });
+
+  it("renders the empty state message and Find a tour link when bookings is empty", () => {
+    render(<BookedTours bookings={[]} />);
+    expect(screen.getByText("No upcoming tours booked yet.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Find a tour" })).toHaveAttribute("href", "/tours");
+  });
+
+  it("hides the 'View all' link when bookings is empty", () => {
+    render(<BookedTours bookings={[]} />);
+    expect(screen.queryByRole("link", { name: "View all" })).not.toBeInTheDocument();
   });
 
   it("renders the section heading when there are bookings", () => {
@@ -28,7 +40,7 @@ describe("BookedTours", () => {
     expect(screen.getByText("Your booked tours")).toBeInTheDocument();
   });
 
-  it("renders the 'View all' link pointing to /my-bookings", () => {
+  it("renders the 'View all' link pointing to /my-bookings when bookings exist", () => {
     render(<BookedTours bookings={[baseBooking]} />);
     const link = screen.getByRole("link", { name: "View all" });
     expect(link).toHaveAttribute("href", "/my-bookings");
