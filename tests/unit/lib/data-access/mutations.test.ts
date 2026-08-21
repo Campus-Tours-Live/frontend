@@ -294,7 +294,7 @@ describe("guide booking mutations", () => {
     const mutation = acceptBookingMutation(qc);
 
     await mutation.mutationFn("b1");
-    mutation.onSuccess?.({} as never, "b1");
+    mutation.onSuccess?.();
 
     expect(mockedPostJson).toHaveBeenCalledWith("/v1/guide/bookings/b1/accept", {});
     expect(invalidatedKeys(qc)).toEqual(
@@ -308,7 +308,7 @@ describe("guide booking mutations", () => {
     const vars = { bookingId: "b1", body: { reason: "Busy" } };
 
     await mutation.mutationFn(vars);
-    mutation.onSuccess?.({} as never, vars);
+    mutation.onSuccess?.();
 
     expect(mockedPostJson).toHaveBeenCalledWith("/v1/guide/bookings/b1/decline", {
       reason: "Busy",
