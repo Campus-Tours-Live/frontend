@@ -75,6 +75,8 @@ export type {
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,
+  BookingResponse,
+  BookingPrice,
   AvailabilityRule,
   AvailabilityException,
   AvailabilityExceptionKind,
