@@ -126,7 +126,10 @@ describe("AccountNav — guide", () => {
     render(<AccountNav />);
 
     expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
-    expect(screen.getByText("Upcoming tours")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upcoming tours" })).toHaveAttribute(
+      "href",
+      "/guide/bookings",
+    );
     // "Earnings" is both a section label and an item; assert the navigable item.
     expect(screen.getByRole("link", { name: "Earnings" })).toHaveAttribute(
       "href",
