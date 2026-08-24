@@ -1,5 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { ViewerLocalBookingTimeRange } from "@/components/booking/ViewerLocalBookingTimeRange";
+import { renderToString } from "react-dom/server.node";
+import {
+  ViewerLocalBookingTimeRange,
+  ViewerLocalTimeZoneLabel,
+} from "@/components/booking/ViewerLocalBookingTimeRange";
 import * as bookingTime from "@/lib/bookingTime";
 
 jest.mock("@/lib/bookingTime", () => {
@@ -52,5 +56,36 @@ describe("ViewerLocalBookingTimeRange", () => {
     await waitFor(() =>
       expect(screen.getByText("Fri, 7/10 · 8:00 AM – 9:00 AM PDT")).toBeInTheDocument(),
     );
+  });
+
+  it("renders a stable server placeholder for the viewer timezone label", () => {
+    mockGetViewerTimeZone.mockReturnValue("America/Chicago");
+
+    const html = renderToString(<ViewerLocalTimeZoneLabel />);
+
+    expect(html).toContain(bookingTime.BOOKING_TIME_PLACEHOLDER);
+    expect(html).not.toContain("America/Chicago");
+  });
+
+  it("formats the viewer timezone label after mount", async () => {
+    mockGetViewerTimeZone.mockReturnValue("America/Chicago");
+
+    render(<ViewerLocalTimeZoneLabel />);
+
+    expect(await screen.findByText("America/Chicago")).toBeInTheDocument();
+  });
+
+  it("refreshes the viewer timezone label when browser focus returns", async () => {
+    let timeZone = "America/Chicago";
+    mockGetViewerTimeZone.mockImplementation(() => timeZone);
+
+    render(<ViewerLocalTimeZoneLabel />);
+
+    expect(await screen.findByText("America/Chicago")).toBeInTheDocument();
+
+    timeZone = "America/Los_Angeles";
+    fireEvent.focus(window);
+
+    await waitFor(() => expect(screen.getByText("America/Los_Angeles")).toBeInTheDocument());
   });
 });

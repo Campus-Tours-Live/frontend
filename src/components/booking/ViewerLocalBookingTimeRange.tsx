@@ -12,12 +12,7 @@ export interface ViewerLocalBookingTimeRangeProps {
 
 const TIMEZONE_POLL_MS = 60_000;
 
-export function ViewerLocalBookingTimeRange({
-  scheduledStartAt,
-  scheduledEndAt,
-  className,
-  placeholder = bookingTime.BOOKING_TIME_PLACEHOLDER,
-}: ViewerLocalBookingTimeRangeProps) {
+export function useViewerTimeZone() {
   const [timeZone, setTimeZone] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +35,17 @@ export function ViewerLocalBookingTimeRange({
     };
   }, []);
 
+  return timeZone;
+}
+
+export function ViewerLocalBookingTimeRange({
+  scheduledStartAt,
+  scheduledEndAt,
+  className,
+  placeholder = bookingTime.BOOKING_TIME_PLACEHOLDER,
+}: ViewerLocalBookingTimeRangeProps) {
+  const timeZone = useViewerTimeZone();
+
   const label = useMemo(() => {
     if (!timeZone) return placeholder;
     const formatted = bookingTime.formatViewerLocalBookingTimeRange(
@@ -53,5 +59,23 @@ export function ViewerLocalBookingTimeRange({
     <time dateTime={scheduledStartAt ?? undefined} className={className} suppressHydrationWarning>
       {label}
     </time>
+  );
+}
+
+export interface ViewerLocalTimeZoneLabelProps {
+  className?: string;
+  placeholder?: string;
+}
+
+export function ViewerLocalTimeZoneLabel({
+  className,
+  placeholder = bookingTime.BOOKING_TIME_PLACEHOLDER,
+}: ViewerLocalTimeZoneLabelProps) {
+  const timeZone = useViewerTimeZone();
+
+  return (
+    <span className={className} suppressHydrationWarning>
+      {timeZone ?? placeholder}
+    </span>
   );
 }

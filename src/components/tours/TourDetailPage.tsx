@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -13,7 +13,10 @@ import {
   Star,
   TicketCheck,
 } from "lucide-react";
-import { ViewerLocalBookingTimeRange } from "@/components/booking/ViewerLocalBookingTimeRange";
+import {
+  ViewerLocalBookingTimeRange,
+  ViewerLocalTimeZoneLabel,
+} from "@/components/booking/ViewerLocalBookingTimeRange";
 import {
   Alert,
   Badge,
@@ -28,6 +31,7 @@ import {
   Skeleton,
   Tag,
   Textarea,
+  VisuallyHidden,
 } from "@/components/ui";
 import {
   ApiError,
@@ -137,6 +141,72 @@ function SelectedBookingNotice({ mode, booking }: { mode: SubmitMode; booking: B
   );
 }
 
+function BookingFact({
+  icon,
+  label,
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span
+        className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-pill bg-primary-soft text-primary-dark"
+        aria-hidden
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <Body as="span" size="small" weight={700} color="ink">
+          {label}
+        </Body>
+        <Body as="div" size="small" color="muted" className="mt-0.5">
+          {children}
+        </Body>
+      </div>
+    </div>
+  );
+}
+
+function SelectedSlotSummary({ slot, durationMin }: { slot: OfferingSlot; durationMin: number }) {
+  return (
+    <div
+      role="group"
+      aria-label="Selected time details"
+      className="mt-4 rounded-card border border-primary/25 bg-primary-soft/35 p-4"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Body as="span" size="small" weight={700} color="primary-dark" className="uppercase">
+            Selected time
+          </Body>
+          <ViewerLocalBookingTimeRange
+            scheduledStartAt={slot.startAt}
+            scheduledEndAt={slot.endAt}
+            className="mt-1 block font-display text-[18px] font-bold leading-snug text-ink"
+          />
+        </div>
+        <Badge variant="neutral">Ready</Badge>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <BookingFact icon={<Clock size={15} strokeWidth={2} />} label="Duration">
+          {durationMin} minutes
+        </BookingFact>
+        <BookingFact icon={<Globe size={15} strokeWidth={2} />} label="Browser timezone">
+          <ViewerLocalTimeZoneLabel />
+        </BookingFact>
+      </div>
+
+      <Body size="small" color="muted" className="mt-4">
+        We save the exact selected time; your screen shows it in your current local timezone.
+      </Body>
+    </div>
+  );
+}
+
 function SlotList({
   slots,
   selectedStartAt,
@@ -242,8 +312,8 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
 
       <div className="mt-5 rounded-card border border-border bg-muted/60 p-3">
         <Body size="small" color="muted">
-          Tour times are rendered in your browser timezone. The booking request keeps the original
-          UTC slot instant.
+          Tour times are rendered in your browser timezone. The booking request saves the exact
+          selected time.
         </Body>
       </div>
 
@@ -257,6 +327,20 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
           <Heading as="h3" size="large">
             Available times
           </Heading>
+          <VisuallyHidden as="p" role="status" aria-live="polite" aria-atomic>
+            {selectedSlot ? (
+              <>
+                Selected{" "}
+                <ViewerLocalBookingTimeRange
+                  scheduledStartAt={selectedSlot.startAt}
+                  scheduledEndAt={selectedSlot.endAt}
+                />
+                . Cart and booking actions are available.
+              </>
+            ) : (
+              "No time selected yet."
+            )}
+          </VisuallyHidden>
 
           {slotsQuery.isLoading ? (
             <div aria-label="Loading available times" className="mt-4 space-y-2">
@@ -267,7 +351,7 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
           ) : null}
 
           {slotsQuery.isError ? (
-            <Alert variant="warning" role="status" className="mt-4">
+            <Alert variant="warning" className="mt-4">
               <div>
                 <Heading as="h4" size="large">
                   Times are unavailable
@@ -288,8 +372,24 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
           ) : null}
 
           {!slotsQuery.isLoading && !slotsQuery.isError && slots.length === 0 ? (
-            <Alert variant="info" role="status" className="mt-4">
-              No bookable times are open for this tour yet.
+            <Alert
+              variant="info"
+              role="status"
+              className="mt-4"
+              action={
+                <Link href="/tours" variant="secondary" size="small">
+                  Browse other tours
+                </Link>
+              }
+            >
+              <div>
+                <Heading as="h4" size="large">
+                  No open times yet
+                </Heading>
+                <Body size="small" color="inherit" className="mt-1">
+                  No bookable times are open for this tour yet.
+                </Body>
+              </div>
             </Alert>
           ) : null}
 
@@ -303,6 +403,13 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
                   resetSelectionFeedback();
                 }}
               />
+              {selectedSlot ? (
+                <SelectedSlotSummary slot={selectedSlot} durationMin={tour.durationMin} />
+              ) : (
+                <Body size="small" color="muted" className="mt-3">
+                  Select a time to unlock cart and booking actions.
+                </Body>
+              )}
               <Textarea
                 label="Notes for the guide"
                 optional
@@ -320,6 +427,11 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
                   {submitError}
                 </Alert>
               ) : null}
+              {busy && selectedSlot ? (
+                <Alert variant="info" role="status" className="mt-4">
+                  Saving your selected time. Keep this tab open until the request finishes.
+                </Alert>
+              ) : null}
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <Button
                   variant="secondary"
@@ -328,7 +440,7 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
                   onClick={() => void submit("cart")}
                 >
                   <ShoppingCart size={16} strokeWidth={2} />
-                  Add to cart
+                  {addCartItem.isPending ? "Adding..." : "Add to cart"}
                 </Button>
                 <Button
                   variant="primary"
@@ -337,7 +449,7 @@ function BookingPanel({ tour }: { tour: TourDetail }) {
                   onClick={() => void submit("booking")}
                 >
                   <TicketCheck size={16} strokeWidth={2} />
-                  Book now
+                  {createBooking.isPending ? "Booking..." : "Book now"}
                 </Button>
               </div>
             </>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TourDetailPage } from "@/components/tours/TourDetailPage";
 import {
@@ -177,6 +177,59 @@ describe("TourDetailPage", () => {
     expect(screen.queryByRole("heading", { name: "Added to cart" })).not.toBeInTheDocument();
   });
 
+  it("shows a booking-action hint until a slot is selected", async () => {
+    const user = userEvent.setup();
+    render(<TourDetailPage tourRef={tourRef} />);
+
+    await user.click(screen.getByRole("button", { name: /choose time/i }));
+
+    expect(
+      await screen.findByText("Select a time to unlock cart and booking actions."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add to cart/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /book now/i })).toBeDisabled();
+  });
+
+  it("summarizes the selected slot in viewer-local time before checkout", async () => {
+    const user = userEvent.setup();
+    render(<TourDetailPage tourRef={tourRef} />);
+
+    await user.click(screen.getByRole("button", { name: /choose time/i }));
+    await user.click(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT"));
+
+    const summary = screen.getByRole("group", { name: "Selected time details" });
+    expect(within(summary).getByText("Selected time")).toBeInTheDocument();
+    expect(within(summary).getByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT")).toBeInTheDocument();
+    expect(within(summary).getByText("Duration")).toBeInTheDocument();
+    expect(within(summary).getByText("60 minutes")).toBeInTheDocument();
+    expect(within(summary).getByText("Browser timezone")).toBeInTheDocument();
+    expect(within(summary).getByText("America/Chicago")).toBeInTheDocument();
+    expect(
+      within(summary).getByText(
+        "We save the exact selected time; your screen shows it in your current local timezone.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("announces an in-flight booking action without clearing the selected slot", async () => {
+    const user = userEvent.setup();
+    mockUseAddCartItem.mockReturnValue({
+      isPending: true,
+      mutateAsync: addCartMutateAsync,
+    } as unknown as ReturnType<typeof useAddCartItem>);
+
+    render(<TourDetailPage tourRef={tourRef} />);
+    await user.click(screen.getByRole("button", { name: /choose time/i }));
+    await user.click(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT"));
+
+    expect(
+      screen.getByText("Saving your selected time. Keep this tab open until the request finishes."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /10:00 AM/i })).toBeChecked();
+    expect(screen.getByRole("button", { name: /adding/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /book now/i })).toBeDisabled();
+  });
+
   it("shows tour-detail load errors in the detail route empty state", () => {
     mockUseTourDetail.mockReturnValue({
       data: undefined,
@@ -203,6 +256,7 @@ describe("TourDetailPage", () => {
     await user.click(screen.getByRole("button", { name: /choose time/i }));
 
     expect(screen.getByRole("heading", { name: "Times are unavailable" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Times are unavailable");
     expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(refetchSlots).toHaveBeenCalledTimes(1);
@@ -245,6 +299,11 @@ describe("TourDetailPage", () => {
     render(<TourDetailPage tourRef={tourRef} />);
     await user.click(screen.getByRole("button", { name: /choose time/i }));
 
+    expect(screen.getByRole("heading", { name: "No open times yet" })).toBeInTheDocument();
     expect(screen.getByText("No bookable times are open for this tour yet.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Browse other tours" })).toHaveAttribute(
+      "href",
+      "/tours",
+    );
   });
 });
