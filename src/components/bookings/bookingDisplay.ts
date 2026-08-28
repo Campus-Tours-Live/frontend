@@ -60,3 +60,48 @@ export function formatDeadlineCountdown(
   const rem = mins % 60;
   return rem === 0 ? `${hours}h left to respond` : `${hours}h ${rem}m left to respond`;
 }
+
+export function bookingStatusEventLabel(reasonCode: string | null | undefined): string {
+  switch (reasonCode) {
+    case "PARTICIPANT_CREATED":
+      return "Booking created";
+    case "CART_ITEM_ADDED":
+      return "Added to cart";
+    case "CART_CHECKOUT":
+      return "Submitted for guide review";
+    case "GUIDE_ACCEPTED":
+      return "Guide accepted";
+    case "GUIDE_DECLINED":
+      return "Guide declined";
+    case "PARTICIPANT_CANCELLED":
+      return "Participant cancelled";
+    default:
+      return reasonCode?.replaceAll("_", " ").toLowerCase() ?? "Status updated";
+  }
+}
+
+export function bookingActorLabel(actor: string): string {
+  switch (actor) {
+    case "GUIDE":
+      return "Guide";
+    case "PARTICIPANT":
+      return "Participant";
+    case "SYSTEM":
+      return "System";
+    case "ADMIN":
+      return "Admin";
+    default:
+      return actor;
+  }
+}
+
+export function formatStatusEventWhen(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
+}

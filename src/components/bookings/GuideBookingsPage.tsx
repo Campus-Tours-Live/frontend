@@ -95,6 +95,7 @@ export function GuideBookingsPage() {
         filter === "upcoming" ? (
           <GuideUpcomingSchedule
             bookings={bookings}
+            returnFilter="upcoming"
             busy={cardHandlers.busy}
             onAccept={(booking) => void cardHandlers.onAccept(booking)}
             onDecline={cardHandlers.onDecline}
@@ -105,6 +106,7 @@ export function GuideBookingsPage() {
               <GuideBookingCard
                 key={booking.id}
                 booking={booking}
+                returnFilter={filter}
                 busy={cardHandlers.busy}
                 onAccept={() => void cardHandlers.onAccept(booking)}
                 onDecline={() => cardHandlers.onDecline(booking)}

@@ -5,6 +5,7 @@ import type { DeclineBookingInput, GuideBooking } from "../types";
 
 function invalidateGuideBookingViews(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: ["guide-bookings"] });
+  qc.invalidateQueries({ queryKey: ["guide-booking"] });
   qc.invalidateQueries({ queryKey: queryKeys.dashboard() });
 }
 

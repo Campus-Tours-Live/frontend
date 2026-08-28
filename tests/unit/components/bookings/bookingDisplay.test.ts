@@ -1,9 +1,12 @@
 import {
+  bookingActorLabel,
+  bookingStatusEventLabel,
   bookingStatusLabel,
   bookingStatusVariant,
   formatBookingTime,
   formatBookingWhen,
   formatDeadlineCountdown,
+  formatStatusEventWhen,
 } from "@/components/bookings/bookingDisplay";
 
 describe("bookingDisplay", () => {
@@ -47,5 +50,12 @@ describe("bookingDisplay", () => {
     expect(formatDeadlineCountdown("2026-08-01T11:00:00Z", now)).toBe("Response window expired");
     expect(formatDeadlineCountdown(null, now)).toBeNull();
     expect(formatDeadlineCountdown("not-a-date", now)).toBeNull();
+  });
+
+  it("labels status events and actors for the timeline", () => {
+    expect(bookingStatusEventLabel("GUIDE_ACCEPTED")).toBe("Guide accepted");
+    expect(bookingStatusEventLabel("UNKNOWN_CODE")).toBe("unknown code");
+    expect(bookingActorLabel("GUIDE")).toBe("Guide");
+    expect(formatStatusEventWhen("2026-08-01T15:00:00Z")).toMatch(/Aug/);
   });
 });

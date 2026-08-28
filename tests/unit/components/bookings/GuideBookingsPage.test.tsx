@@ -27,6 +27,7 @@ const mockUseDeclineBooking = useDeclineBooking as jest.Mock;
 
 const pendingBooking: GuideBooking = {
   id: "b1",
+  bookingNumber: "CTL-2026-00042",
   status: "WAITING_FOR_GUIDE",
   scheduledAt: "2026-08-01T15:00:00Z",
   offeringId: "o1",

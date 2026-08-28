@@ -1,7 +1,7 @@
 "use client";
 
-import { Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
-import type { GuideBooking } from "@/lib/data-access";
+import { Body, Button, Caption, Card, Heading, Link, StatusBadge } from "@/components/ui";
+import type { GuideBooking, GuideBookingFilter } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import {
   bookingStatusLabel,
@@ -16,20 +16,29 @@ export interface GuideBookingCardProps {
   busy: boolean;
   /** When true, show time only (date comes from a schedule section header). */
   scheduleMode?: boolean;
+  /** Restores the inbox filter on the detail page back link. */
+  returnFilter?: GuideBookingFilter;
   onAccept: () => void | Promise<void>;
   onDecline: () => void;
+}
+
+function detailHref(bookingId: string, returnFilter: GuideBookingFilter): string {
+  const base = `/guide/bookings/${bookingId}`;
+  return returnFilter === "all" ? base : `${base}?returnFilter=${returnFilter}`;
 }
 
 export function GuideBookingCard({
   booking,
   busy,
   scheduleMode = false,
+  returnFilter = "all",
   onAccept,
   onDecline,
 }: GuideBookingCardProps) {
   const pending = booking.status === "WAITING_FOR_GUIDE";
   const countdown = pending ? formatDeadlineCountdown(booking.guideResponseDeadline) : null;
   const price = formatOfferingPrice(booking.priceCents, booking.currency);
+  const href = detailHref(booking.id, returnFilter);
 
   return (
     <Card
@@ -42,9 +51,16 @@ export function GuideBookingCard({
             {bookingStatusLabel(booking.status)}
           </StatusBadge>
           <Caption as="span">{price}</Caption>
+          {booking.bookingNumber ? (
+            <Caption as="span" color="muted">
+              {booking.bookingNumber}
+            </Caption>
+          ) : null}
         </div>
         <Heading as="h2" size="small">
-          {booking.offeringTitle}
+          <Link href={href} className="hover:underline">
+            {booking.offeringTitle}
+          </Link>
         </Heading>
         <Body size="small" color="muted">
           {booking.participantName}
@@ -64,6 +80,9 @@ export function GuideBookingCard({
             {countdown}
           </Caption>
         ) : null}
+        <Link href={href} variant="secondary" className="inline-block text-ui-sm font-semibold">
+          View details
+        </Link>
       </div>
 
       {pending ? (

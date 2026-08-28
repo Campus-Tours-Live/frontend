@@ -10,3 +10,10 @@ export const guideBookingsOptions = (filter: GuideBookingFilter) =>
     queryFn: () =>
       apiJson<GuideBooking[]>(`/v1/guide/bookings?filter=${encodeURIComponent(filter)}`),
   });
+
+/** GET /v1/guide/bookings/{id} — one booking with status history. */
+export const guideBookingOptions = (bookingId: string) =>
+  queryOptions({
+    queryKey: queryKeys.guideBooking(bookingId),
+    queryFn: () => apiJson<GuideBooking>(`/v1/guide/bookings/${encodeURIComponent(bookingId)}`),
+  });

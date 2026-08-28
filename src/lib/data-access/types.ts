@@ -133,6 +133,7 @@ export type GuideBookingFilter = "pending" | "upcoming" | "all";
  */
 export interface GuideBooking {
   id: string;
+  bookingNumber: string;
   status: string;
   scheduledAt: string;
   offeringId: string;
@@ -144,6 +145,16 @@ export interface GuideBooking {
   durationMin: number;
   priceCents: number;
   currency: string;
+  /** Populated on GET /v1/guide/bookings/{id} only. */
+  statusHistory?: GuideBookingStatusEvent[];
+}
+
+export interface GuideBookingStatusEvent {
+  status: string;
+  previousStatus?: string | null;
+  actor: string;
+  reasonCode?: string | null;
+  occurredAt: string;
 }
 
 /** Optional body for POST /v1/guide/bookings/{id}/decline. */

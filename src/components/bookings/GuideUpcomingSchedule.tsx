@@ -1,12 +1,13 @@
 "use client";
 
 import { Heading } from "@/components/ui";
-import type { GuideBooking } from "@/lib/data-access";
+import type { GuideBooking, GuideBookingFilter } from "@/lib/data-access";
 import { GuideBookingCard } from "./GuideBookingCard";
 import { groupBookingsByScheduleDay } from "./guideSchedule";
 
 export interface GuideUpcomingScheduleProps {
   bookings: GuideBooking[];
+  returnFilter?: GuideBookingFilter;
   busy: boolean;
   onAccept: (booking: GuideBooking) => void | Promise<void>;
   onDecline: (booking: GuideBooking) => void;
@@ -14,6 +15,7 @@ export interface GuideUpcomingScheduleProps {
 
 export function GuideUpcomingSchedule({
   bookings,
+  returnFilter = "upcoming",
   busy,
   onAccept,
   onDecline,
@@ -33,6 +35,7 @@ export function GuideUpcomingSchedule({
                 key={booking.id}
                 booking={booking}
                 scheduleMode
+                returnFilter={returnFilter}
                 busy={busy}
                 onAccept={() => void onAccept(booking)}
                 onDecline={() => onDecline(booking)}

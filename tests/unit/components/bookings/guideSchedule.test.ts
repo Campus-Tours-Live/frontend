@@ -8,6 +8,7 @@ import type { GuideBooking } from "@/lib/data-access";
 
 const booking = (overrides: Partial<GuideBooking> = {}): GuideBooking => ({
   id: "b1",
+  bookingNumber: "CTL-2026-00042",
   status: "CONFIRMED",
   scheduledAt: "2026-08-01T15:00:00Z",
   offeringId: "o1",

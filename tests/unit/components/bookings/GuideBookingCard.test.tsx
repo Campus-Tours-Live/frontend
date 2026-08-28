@@ -5,6 +5,7 @@ import type { GuideBooking } from "@/lib/data-access";
 
 const base: GuideBooking = {
   id: "b1",
+  bookingNumber: "CTL-2026-00042",
   status: "WAITING_FOR_GUIDE",
   scheduledAt: "2026-08-01T15:00:00Z",
   offeringId: "o1",
@@ -122,5 +123,27 @@ describe("GuideBookingCard", () => {
     );
     expect(screen.getByText("Confirmed")).toBeInTheDocument();
     expect(screen.queryByText(/left to respond/i)).not.toBeInTheDocument();
+  });
+
+  it("links to the booking detail page with the return filter", () => {
+    render(
+      <GuideBookingCard
+        booking={base}
+        returnFilter="pending"
+        busy={false}
+        onAccept={jest.fn()}
+        onDecline={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Campus walk" })).toHaveAttribute(
+      "href",
+      "/guide/bookings/b1?returnFilter=pending",
+    );
+    expect(screen.getByRole("link", { name: "View details" })).toHaveAttribute(
+      "href",
+      "/guide/bookings/b1?returnFilter=pending",
+    );
+    expect(screen.getByText("CTL-2026-00042")).toBeInTheDocument();
   });
 });
