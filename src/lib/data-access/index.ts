@@ -84,6 +84,7 @@ export type {
   UpdateOfferingInput,
   GuideBooking,
   GuideBookingFilter,
+  GuideBookingStatusEvent,
   DeclineBookingInput,
   Dashboard,
   GuideDashboard,

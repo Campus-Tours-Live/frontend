@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Chip, InlineLoading, PageContainer, PageHeader } from "@/components/ui";
+import { Alert, Chip, InlineLoading, Link, PageContainer, PageHeader } from "@/components/ui";
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import {
   useAcceptBooking,
@@ -14,6 +14,8 @@ import { GuideBookingCard } from "./GuideBookingCard";
 import { DeclineBookingModal } from "./DeclineBookingModal";
 import { GuideUpcomingSchedule } from "./GuideUpcomingSchedule";
 import { useGuideBookingFilter } from "./useGuideBookingFilter";
+import { demoGuideBookingsEnabled } from "./guideBookingDemo";
+import { DEMO_GUIDE_BOOKING_IDS } from "./guideBookingFixtures";
 
 const FILTERS: { id: GuideBookingFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -64,6 +66,20 @@ export function GuideBookingsPage() {
   return (
     <PageContainer width="wide">
       <PageHeader title={copy.title} lead={copy.lead} />
+
+      {demoGuideBookingsEnabled() ? (
+        <Alert variant="info">
+          Local demo bookings are included in dev. Try{" "}
+          <Link href={`/guide/bookings/${DEMO_GUIDE_BOOKING_IDS.pending}?returnFilter=pending`}>
+            pending detail
+          </Link>{" "}
+          or{" "}
+          <Link href={`/guide/bookings/${DEMO_GUIDE_BOOKING_IDS.confirmed}?returnFilter=upcoming`}>
+            confirmed detail
+          </Link>
+          .
+        </Alert>
+      ) : null}
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter bookings">
         {FILTERS.map((tab) => (
