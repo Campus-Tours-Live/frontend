@@ -56,7 +56,7 @@ const PARTICIPANT_NAV: NavGroup[] = [
     items: [
       { label: "Explore tours", icon: Compass, href: "/tours" },
       { label: "My bookings", icon: Calendar },
-      { label: "Tour history", icon: Clock },
+      { label: "Tour history", icon: Clock, href: "/tour-history" },
     ],
   },
   {

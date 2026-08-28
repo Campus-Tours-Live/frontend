@@ -25,6 +25,7 @@ export { useOnboardRole } from "./hooks/use-onboard-role";
 export { OnboardRetryableError } from "./mutations/onboard-role.mutation";
 export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
+export { useBookingHistory } from "./hooks/use-booking-history";
 export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
@@ -75,6 +76,7 @@ export type {
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,
+  BookingResponse,
   AvailabilityRule,
   AvailabilityException,
   AvailabilityExceptionKind,

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui";
 import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
+import { ParticipantHistory } from "./ParticipantHistory";
 
 /**
  * Participant dashboard slice — presentational. The /v1/dashboard aggregate already
@@ -68,6 +69,10 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
         items={items}
         highlight={highlight}
       />
+
+      <div className="mt-10">
+        <ParticipantHistory />
+      </div>
     </div>
   );
 }
