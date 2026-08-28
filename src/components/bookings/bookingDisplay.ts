@@ -36,6 +36,15 @@ export function formatBookingWhen(iso: string): string {
   }).format(d);
 }
 
+export function formatBookingTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
+}
+
 export function formatDeadlineCountdown(
   deadlineIso: string | null | undefined,
   now = Date.now(),

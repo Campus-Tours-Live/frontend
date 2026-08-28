@@ -4,6 +4,17 @@ import { GuideBookingsPage } from "@/components/bookings/GuideBookingsPage";
 import { useAcceptBooking, useDeclineBooking, useGuideBookings } from "@/lib/data-access";
 import type { GuideBooking } from "@/lib/data-access";
 
+const replace = jest.fn((url: string) => {
+  search = url.includes("?") ? (url.split("?")[1] ?? "") : "";
+});
+let search = "";
+
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/guide/bookings",
+  useRouter: () => ({ replace }),
+  useSearchParams: () => new URLSearchParams(search),
+}));
+
 jest.mock("@/lib/data-access", () => ({
   useGuideBookings: jest.fn(),
   useAcceptBooking: jest.fn(),
@@ -36,6 +47,13 @@ const confirmedBooking: GuideBooking = {
   guideResponseDeadline: null,
 };
 
+const confirmedLater: GuideBooking = {
+  ...confirmedBooking,
+  id: "b3",
+  scheduledAt: "2026-08-02T18:00:00Z",
+  offeringTitle: "Evening stroll",
+};
+
 function setHooks(
   overrides: {
     bookings?: Partial<ReturnType<typeof useGuideBookings>>;
@@ -61,6 +79,7 @@ function setHooks(
 
 beforeEach(() => {
   jest.clearAllMocks();
+  search = "";
   setHooks();
 });
 
@@ -86,13 +105,39 @@ describe("GuideBookingsPage", () => {
   it("shows filter-specific empty copy", async () => {
     const user = userEvent.setup();
     setHooks({ bookings: { data: [], isLoading: false, isError: false } });
-    render(<GuideBookingsPage />);
+    const view = render(<GuideBookingsPage />);
 
     await user.click(screen.getByRole("button", { name: /^pending$/i }));
+    view.rerender(<GuideBookingsPage />);
     expect(screen.getByText(/no pending booking requests/i)).toBeInTheDocument();
+    expect(replace).toHaveBeenCalledWith("/guide/bookings?filter=pending");
 
     await user.click(screen.getByRole("button", { name: /^upcoming$/i }));
+    view.rerender(<GuideBookingsPage />);
     expect(screen.getByText(/no upcoming confirmed tours/i)).toBeInTheDocument();
+    expect(replace).toHaveBeenLastCalledWith("/guide/bookings?filter=upcoming");
+  });
+
+  it("initializes from ?filter=upcoming and shows schedule copy", () => {
+    search = "filter=upcoming";
+    setHooks({ bookings: { data: [confirmedBooking], isLoading: false, isError: false } });
+    render(<GuideBookingsPage />);
+
+    expect(screen.getByRole("heading", { name: /upcoming tours/i })).toBeInTheDocument();
+    expect(screen.getByText(/your confirmed schedule/i)).toBeInTheDocument();
+    expect(mockUseGuideBookings).toHaveBeenCalledWith("upcoming");
+  });
+
+  it("groups upcoming confirmed tours by schedule day", () => {
+    search = "filter=upcoming";
+    setHooks({
+      bookings: { data: [confirmedBooking, confirmedLater], isLoading: false, isError: false },
+    });
+    render(<GuideBookingsPage />);
+
+    expect(screen.getAllByRole("heading", { level: 2 }).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Campus walk")).toBeInTheDocument();
+    expect(screen.getByText("Evening stroll")).toBeInTheDocument();
   });
 
   it("lists bookings with accept/decline on pending rows", () => {
@@ -132,7 +177,6 @@ describe("GuideBookingsPage", () => {
     await user.click(screen.getByRole("button", { name: /^decline$/i }));
     expect(screen.getByRole("heading", { name: /decline booking/i })).toBeInTheDocument();
 
-    // Card Decline is still in the tree; prefer the modal footer button (last).
     const declineButtons = screen.getAllByRole("button", { name: /^decline$/i });
     await user.click(declineButtons[declineButtons.length - 1]!);
     expect(mutateAsync).toHaveBeenCalledWith({ bookingId: "b1", body: undefined });
@@ -175,10 +219,16 @@ describe("GuideBookingsPage", () => {
     expect(screen.queryByRole("heading", { name: /decline booking/i })).not.toBeInTheDocument();
   });
 
-  it("switches filter chips", async () => {
+  it("switches filter chips and updates the URL", async () => {
     const user = userEvent.setup();
-    render(<GuideBookingsPage />);
+    const view = render(<GuideBookingsPage />);
     await user.click(screen.getByRole("button", { name: /^pending$/i }));
+    view.rerender(<GuideBookingsPage />);
     expect(mockUseGuideBookings).toHaveBeenLastCalledWith("pending");
+    expect(replace).toHaveBeenCalledWith("/guide/bookings?filter=pending");
+
+    await user.click(screen.getByRole("button", { name: /^all$/i }));
+    view.rerender(<GuideBookingsPage />);
+    expect(replace).toHaveBeenLastCalledWith("/guide/bookings");
   });
 });

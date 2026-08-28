@@ -12,6 +12,8 @@ import {
 } from "@/lib/data-access";
 import { GuideBookingCard } from "./GuideBookingCard";
 import { DeclineBookingModal } from "./DeclineBookingModal";
+import { GuideUpcomingSchedule } from "./GuideUpcomingSchedule";
+import { useGuideBookingFilter } from "./useGuideBookingFilter";
 
 const FILTERS: { id: GuideBookingFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -19,20 +21,49 @@ const FILTERS: { id: GuideBookingFilter; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },
 ];
 
+const PAGE_COPY: Record<GuideBookingFilter, { title: string; lead: string }> = {
+  all: {
+    title: "Bookings",
+    lead: "Accept or decline new requests and review your upcoming confirmed tours.",
+  },
+  pending: {
+    title: "Booking requests",
+    lead: "Review and respond to new tour requests before their response window closes.",
+  },
+  upcoming: {
+    title: "Upcoming tours",
+    lead: "Your confirmed schedule — tours starting from today.",
+  },
+};
+
 export function GuideBookingsPage() {
-  const [filter, setFilter] = useState<GuideBookingFilter>("all");
+  const { filter, setFilter } = useGuideBookingFilter();
   const { data: bookings = [], isLoading, isError, error } = useGuideBookings(filter);
   const accept = useAcceptBooking();
   const decline = useDeclineBooking();
   const [declineTarget, setDeclineTarget] = useState<GuideBooking | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const copy = PAGE_COPY[filter];
+  const cardHandlers = {
+    busy: accept.isPending || decline.isPending,
+    onAccept: async (booking: GuideBooking) => {
+      setActionError(null);
+      try {
+        await accept.mutateAsync(booking.id);
+      } catch {
+        setActionError("Could not accept this booking. Please try again.");
+      }
+    },
+    onDecline: (booking: GuideBooking) => {
+      setActionError(null);
+      setDeclineTarget(booking);
+    },
+  };
+
   return (
     <PageContainer width="wide">
-      <PageHeader
-        title="Bookings"
-        lead="Accept or decline new requests and review your upcoming confirmed tours."
-      />
+      <PageHeader title={copy.title} lead={copy.lead} />
 
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter bookings">
         {FILTERS.map((tab) => (
@@ -60,27 +91,28 @@ export function GuideBookingsPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4">
-        {bookings.map((booking) => (
-          <GuideBookingCard
-            key={booking.id}
-            booking={booking}
-            busy={accept.isPending || decline.isPending}
-            onAccept={async () => {
-              setActionError(null);
-              try {
-                await accept.mutateAsync(booking.id);
-              } catch {
-                setActionError("Could not accept this booking. Please try again.");
-              }
-            }}
-            onDecline={() => {
-              setActionError(null);
-              setDeclineTarget(booking);
-            }}
+      {!isLoading && !isError && bookings.length > 0 ? (
+        filter === "upcoming" ? (
+          <GuideUpcomingSchedule
+            bookings={bookings}
+            busy={cardHandlers.busy}
+            onAccept={(booking) => void cardHandlers.onAccept(booking)}
+            onDecline={cardHandlers.onDecline}
           />
-        ))}
-      </div>
+        ) : (
+          <div className="grid gap-4">
+            {bookings.map((booking) => (
+              <GuideBookingCard
+                key={booking.id}
+                booking={booking}
+                busy={cardHandlers.busy}
+                onAccept={() => void cardHandlers.onAccept(booking)}
+                onDecline={() => cardHandlers.onDecline(booking)}
+              />
+            ))}
+          </div>
+        )
+      ) : null}
 
       <DeclineBookingModal
         key={declineTarget?.id ?? "closed"}

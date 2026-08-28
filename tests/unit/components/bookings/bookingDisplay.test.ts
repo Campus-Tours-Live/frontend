@@ -1,6 +1,7 @@
 import {
   bookingStatusLabel,
   bookingStatusVariant,
+  formatBookingTime,
   formatBookingWhen,
   formatDeadlineCountdown,
 } from "@/components/bookings/bookingDisplay";
@@ -25,6 +26,8 @@ describe("bookingDisplay", () => {
   it("formats a valid scheduled time and passes through invalid ISO", () => {
     expect(formatBookingWhen("not-a-date")).toBe("not-a-date");
     expect(formatBookingWhen("2026-08-01T15:00:00Z")).toMatch(/Aug/);
+    expect(formatBookingTime("2026-08-01T15:00:00Z")).toMatch(/\d/);
+    expect(formatBookingTime("not-a-date")).toBe("not-a-date");
   });
 
   it("formats a future deadline countdown", () => {

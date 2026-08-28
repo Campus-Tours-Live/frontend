@@ -6,6 +6,7 @@ import { formatOfferingPrice } from "@/lib/format";
 import {
   bookingStatusLabel,
   bookingStatusVariant,
+  formatBookingTime,
   formatBookingWhen,
   formatDeadlineCountdown,
 } from "./bookingDisplay";
@@ -13,11 +14,19 @@ import {
 export interface GuideBookingCardProps {
   booking: GuideBooking;
   busy: boolean;
+  /** When true, show time only (date comes from a schedule section header). */
+  scheduleMode?: boolean;
   onAccept: () => void | Promise<void>;
   onDecline: () => void;
 }
 
-export function GuideBookingCard({ booking, busy, onAccept, onDecline }: GuideBookingCardProps) {
+export function GuideBookingCard({
+  booking,
+  busy,
+  scheduleMode = false,
+  onAccept,
+  onDecline,
+}: GuideBookingCardProps) {
   const pending = booking.status === "WAITING_FOR_GUIDE";
   const countdown = pending ? formatDeadlineCountdown(booking.guideResponseDeadline) : null;
   const price = formatOfferingPrice(booking.priceCents, booking.currency);
@@ -42,7 +51,8 @@ export function GuideBookingCard({ booking, busy, onAccept, onDecline }: GuideBo
           {booking.universityName ? ` · ${booking.universityName}` : ""}
         </Body>
         <Body size="small">
-          {formatBookingWhen(booking.scheduledAt)} · {booking.durationMin} min
+          {(scheduleMode ? formatBookingTime : formatBookingWhen)(booking.scheduledAt)} ·{" "}
+          {booking.durationMin} min
         </Body>
         {booking.participantNotes ? (
           <Caption as="p" color="muted">
