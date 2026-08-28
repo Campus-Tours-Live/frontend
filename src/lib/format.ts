@@ -13,6 +13,17 @@ export function formatMonthYear(iso: string | null | undefined): string {
 }
 
 /**
+ * Render an ISO-8601 timestamp as "Month Day" — e.g. "2026-07-10T15:00:00Z" → "July 10".
+ * Used for booking date display on the Tour History page.
+ */
+export function formatShortDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(d);
+}
+
+/**
  * Render a minor-unit price (cents) as a locale-aware currency string.
  * e.g. 4200 USD → "$42.00", 4250 EUR → "€42.50" (en-US).
  */

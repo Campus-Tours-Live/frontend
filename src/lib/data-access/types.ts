@@ -133,6 +133,21 @@ export interface EnrollmentYearRules {
   defaultMaxYearsToGraduate: number;
 }
 
+/** Contract-A booking shape returned by the BFF (mirrors bff/src/api/_shared/reshape.ts). */
+export interface BookingResponse {
+  id: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: { amount: number; currency: string };
+}
+
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
 export interface GuideDashboard {
   kind: "guide";
