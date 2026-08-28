@@ -26,8 +26,17 @@ export { OnboardRetryableError } from "./mutations/onboard-role.mutation";
 export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useOfferings } from "./hooks/use-offerings";
+export { useGuideBookings } from "./hooks/use-guide-bookings";
+export { useGuideBooking } from "./hooks/use-guide-booking";
+export { useAcceptBooking, useDeclineBooking } from "./hooks/use-guide-booking-actions";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
+export {
+  useDuplicateOffering,
+  usePauseOffering,
+  useRetireOffering,
+  useUpdateOffering,
+} from "./hooks/use-offering-lifecycle";
 export {
   useAvailabilityExceptions,
   useAvailabilityRules,
@@ -72,6 +81,11 @@ export type {
   Offering,
   OfferingStatus,
   CreateOfferingInput,
+  UpdateOfferingInput,
+  GuideBooking,
+  GuideBookingFilter,
+  GuideBookingStatusEvent,
+  DeclineBookingInput,
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,
