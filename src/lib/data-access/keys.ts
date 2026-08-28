@@ -25,6 +25,7 @@ export const queryKeys = {
   stateUniversities: (stateCode: string) => ["state-universities", stateCode] as const,
   dashboard: () => ["dashboard"] as const,
   cart: () => ["cart"] as const,
+  bookingHistory: () => ["booking-history"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
   guideBookings: (filter: string) => ["guide-bookings", filter] as const,
   guideBooking: (id: string) => ["guide-booking", id] as const,

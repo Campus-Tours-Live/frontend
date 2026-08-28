@@ -29,6 +29,7 @@ export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useCreateBooking } from "./hooks/use-bookings";
 export { useAddCartItem } from "./hooks/use-cart";
+export { useBookingHistory } from "./hooks/use-booking-history";
 export { useOfferings } from "./hooks/use-offerings";
 export { useGuideBookings } from "./hooks/use-guide-bookings";
 export { useGuideBooking } from "./hooks/use-guide-booking";
