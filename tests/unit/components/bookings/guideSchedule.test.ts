@@ -43,6 +43,15 @@ describe("guideSchedule", () => {
     expect(formatScheduleDayHeading("2026-08-05", now)).toMatch(/Wednesday/);
   });
 
+  it("includes the year when the day is in a different calendar year", () => {
+    const now = new Date("2026-08-01T12:00:00");
+    expect(formatScheduleDayHeading("2027-01-15", now)).toMatch(/2027/);
+  });
+
+  it("passes through invalid day keys unchanged", () => {
+    expect(formatScheduleDayHeading("not-a-day")).toBe("not-a-day");
+  });
+
   it("groups bookings by day and sorts chronologically within each day", () => {
     const groups = groupBookingsByScheduleDay([
       booking({ id: "late", scheduledAt: "2026-08-02T18:00:00Z" }),

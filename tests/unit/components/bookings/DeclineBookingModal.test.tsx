@@ -58,4 +58,40 @@ describe("DeclineBookingModal", () => {
     );
     expect(screen.getByText(/Decline this booking request/)).toBeInTheDocument();
   });
+
+  it("calls onClose when Cancel is clicked", async () => {
+    const user = userEvent.setup();
+    const onClose = jest.fn();
+
+    render(
+      <DeclineBookingModal
+        open
+        booking={booking}
+        pending={false}
+        onClose={onClose}
+        onConfirm={jest.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("submits without a reason when the field is left blank", async () => {
+    const user = userEvent.setup();
+    const onConfirm = jest.fn();
+
+    render(
+      <DeclineBookingModal
+        open
+        booking={booking}
+        pending={false}
+        onClose={jest.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /^decline$/i }));
+    expect(onConfirm).toHaveBeenCalledWith("");
+  });
 });

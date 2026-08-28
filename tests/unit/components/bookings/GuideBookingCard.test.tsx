@@ -68,4 +68,59 @@ describe("GuideBookingCard", () => {
     );
     expect(screen.queryByRole("button", { name: /^accept$/i })).not.toBeInTheDocument();
   });
+
+  it("shows accept/decline actions and invokes handlers for pending bookings", async () => {
+    const user = userEvent.setup();
+    const onAccept = jest.fn();
+    const onDecline = jest.fn();
+
+    render(
+      <GuideBookingCard booking={base} busy={false} onAccept={onAccept} onDecline={onDecline} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /^accept$/i }));
+    expect(onAccept).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: /^decline$/i }));
+    expect(onDecline).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables actions while busy", () => {
+    render(<GuideBookingCard booking={base} busy onAccept={jest.fn()} onDecline={jest.fn()} />);
+
+    expect(screen.getByRole("button", { name: /^accept$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^decline$/i })).toBeDisabled();
+  });
+
+  it("shows time only in schedule mode", () => {
+    const { rerender } = render(
+      <GuideBookingCard booking={base} busy={false} onAccept={jest.fn()} onDecline={jest.fn()} />,
+    );
+    expect(screen.getByText(/Aug/)).toBeInTheDocument();
+
+    rerender(
+      <GuideBookingCard
+        booking={base}
+        scheduleMode
+        busy={false}
+        onAccept={jest.fn()}
+        onDecline={jest.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Aug/)).not.toBeInTheDocument();
+    expect(screen.getByText(/60 min/)).toBeInTheDocument();
+  });
+
+  it("shows confirmed status without a response countdown", () => {
+    render(
+      <GuideBookingCard
+        booking={{ ...base, status: "CONFIRMED", guideResponseDeadline: null }}
+        busy={false}
+        onAccept={jest.fn()}
+        onDecline={jest.fn()}
+      />,
+    );
+    expect(screen.getByText("Confirmed")).toBeInTheDocument();
+    expect(screen.queryByText(/left to respond/i)).not.toBeInTheDocument();
+  });
 });
