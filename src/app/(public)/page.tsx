@@ -1,5 +1,6 @@
 import { Hero } from "@/components/home/Hero";
 import { FeaturedTours } from "@/components/home/FeaturedTours";
+import { ExploreUniversities } from "@/components/home/ExploreUniversities";
 
 /**
  * Home — route "/" from CampusToursLive-design_new.html (#home).
@@ -12,6 +13,7 @@ export default function HomePage() {
     <>
       <Hero />
       <FeaturedTours />
+      <ExploreUniversities />
     </>
   );
 }
