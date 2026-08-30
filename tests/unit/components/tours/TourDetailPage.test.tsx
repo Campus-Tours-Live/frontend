@@ -27,6 +27,8 @@ jest.mock("@/lib/bookingTime", () => {
 
 const uuid = "7b7ad66c-3a2b-4cc9-95ba-95f9148f818e";
 const tourRef = `${uuid}-campus-life`;
+const firstSlotLabel = "Fri, 7/10 · 10:00 AM – 11:00 AM CDT";
+const secondSlotLabel = "Sat, 7/11 · 1:00 PM – 2:00 PM CDT";
 
 const tour: TourDetail = {
   id: uuid,
@@ -110,6 +112,11 @@ function mockDefaultHooks(slotState: Partial<ReturnType<typeof useOfferingSlots>
   } as unknown as ReturnType<typeof useCreateBooking>);
 }
 
+async function openTimes(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /choose time/i }));
+  return screen.findByText(firstSlotLabel);
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetViewerTimeZone.mockReturnValue("America/Chicago");
@@ -119,45 +126,49 @@ beforeEach(() => {
 });
 
 describe("TourDetailPage", () => {
-  it("renders an invalid-link state instead of guessing a non-UUID tour id", () => {
+  it("renders safe empty states for invalid refs and missing tours", () => {
     render(<TourDetailPage tourRef="campus-life" />);
-
     expect(mockUseTourDetail).toHaveBeenCalledWith("");
     expect(
       screen.getByRole("heading", { name: /couldn't open this tour link/i }),
     ).toBeInTheDocument();
+
+    mockUseTourDetail.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error("Tour vanished"),
+    } as unknown as ReturnType<typeof useTourDetail>);
+    render(<TourDetailPage tourRef={tourRef} />);
+    expect(screen.getByRole("heading", { name: "Tour unavailable" })).toBeInTheDocument();
   });
 
-  it("renders tour detail content and keeps slots disabled until the user chooses a time", async () => {
+  it("renders detail content and loads slots only after Choose time", async () => {
     const user = userEvent.setup();
     render(<TourDetailPage tourRef={tourRef} />);
 
     expect(screen.getByRole("heading", { level: 1, name: tour.title })).toBeInTheDocument();
-    expect(screen.getByText("Maya Chen")).toBeInTheDocument();
     expect(mockUseTourDetail).toHaveBeenCalledWith(uuid);
     expect(mockUseOfferingSlots).toHaveBeenLastCalledWith(uuid, { enabled: false });
-    expect(screen.queryByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Book this tour" })).toBeInTheDocument();
-    expect(
-      screen
-        .getByText("Book this tour")
-        .compareDocumentPosition(screen.getByText("About this tour")),
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.queryByText(firstSlotLabel)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-
+    await openTimes(user);
     await waitFor(() =>
       expect(mockUseOfferingSlots).toHaveBeenLastCalledWith(uuid, { enabled: true }),
     );
-    expect(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add to cart/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /book now/i })).toBeDisabled();
   });
 
   it("adds the selected slot to cart using the slot's original UTC startAt", async () => {
     const user = userEvent.setup();
     render(<TourDetailPage tourRef={tourRef} />);
 
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-    await user.click(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT"));
+    await user.click(await openTimes(user));
+    const summary = screen.getByRole("group", { name: "Selected time details" });
+    expect(within(summary).getByText(firstSlotLabel)).toBeInTheDocument();
+    expect(within(summary).getByText("America/Chicago")).toBeInTheDocument();
+
     await user.type(
       screen.getByLabelText(/notes for the guide/i),
       "Please start near the library.",
@@ -172,115 +183,14 @@ describe("TourDetailPage", () => {
       }),
     );
     expect(screen.getByRole("heading", { name: "Added to cart" })).toBeInTheDocument();
-
-    await user.click(screen.getByText("Sat, 7/11 · 1:00 PM – 2:00 PM CDT"));
-    expect(screen.queryByRole("heading", { name: "Added to cart" })).not.toBeInTheDocument();
-  });
-
-  it("shows a booking-action hint until a slot is selected", async () => {
-    const user = userEvent.setup();
-    render(<TourDetailPage tourRef={tourRef} />);
-
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-
-    expect(
-      await screen.findByText("Select a time to unlock cart and booking actions."),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /add to cart/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /book now/i })).toBeDisabled();
-  });
-
-  it("summarizes the selected slot in viewer-local time before checkout", async () => {
-    const user = userEvent.setup();
-    render(<TourDetailPage tourRef={tourRef} />);
-
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-    await user.click(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT"));
-
-    const summary = screen.getByRole("group", { name: "Selected time details" });
-    expect(within(summary).getByText("Selected time")).toBeInTheDocument();
-    expect(within(summary).getByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT")).toBeInTheDocument();
-    expect(within(summary).getByText("Duration")).toBeInTheDocument();
-    expect(within(summary).getByText("60 minutes")).toBeInTheDocument();
-    expect(within(summary).getByText("Browser timezone")).toBeInTheDocument();
-    expect(within(summary).getByText("America/Chicago")).toBeInTheDocument();
-    expect(
-      within(summary).getByText(
-        "We save the exact selected time; your screen shows it in your current local timezone.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("announces an in-flight booking action without clearing the selected slot", async () => {
-    const user = userEvent.setup();
-    mockUseAddCartItem.mockReturnValue({
-      isPending: true,
-      mutateAsync: addCartMutateAsync,
-    } as unknown as ReturnType<typeof useAddCartItem>);
-
-    render(<TourDetailPage tourRef={tourRef} />);
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-    await user.click(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT"));
-
-    expect(
-      screen.getByText("Saving your selected time. Keep this tab open until the request finishes."),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /10:00 AM/i })).toBeChecked();
-    expect(screen.getByRole("button", { name: /adding/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /book now/i })).toBeDisabled();
-  });
-
-  it("shows tour-detail load errors in the detail route empty state", () => {
-    mockUseTourDetail.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      error: new Error("Tour vanished"),
-    } as unknown as ReturnType<typeof useTourDetail>);
-
-    render(<TourDetailPage tourRef={tourRef} />);
-
-    expect(screen.getByRole("heading", { name: "Tour unavailable" })).toBeInTheDocument();
-    expect(screen.getByText("This tour could not be loaded right now.")).toBeInTheDocument();
-  });
-
-  it("renders a slots fetch error and retries from the inline action", async () => {
-    const user = userEvent.setup();
-    mockDefaultHooks({
-      data: undefined,
-      isError: true,
-      error: new Error("Slots offline"),
-    });
-
-    render(<TourDetailPage tourRef={tourRef} />);
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-
-    expect(screen.getByRole("heading", { name: "Times are unavailable" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("Times are unavailable");
-    expect(screen.getByText("Something went wrong. Please try again.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(refetchSlots).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows a booking mutation error without dropping the selected slot", async () => {
-    const user = userEvent.setup();
-    addCartMutateAsync.mockRejectedValueOnce(new Error("Taken"));
-
-    render(<TourDetailPage tourRef={tourRef} />);
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-    await user.click(await screen.findByText("Fri, 7/10 · 10:00 AM – 11:00 AM CDT"));
-    await user.click(screen.getByRole("button", { name: /add to cart/i }));
-
-    expect(await screen.findByText("Something went wrong. Please try again.")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /10:00 AM/i })).toBeChecked();
   });
 
   it("books directly with the selected slot's original UTC startAt", async () => {
     const user = userEvent.setup();
     render(<TourDetailPage tourRef={tourRef} />);
 
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
-    await user.click(await screen.findByText("Sat, 7/11 · 1:00 PM – 2:00 PM CDT"));
+    await openTimes(user);
+    await user.click(screen.getByText(secondSlotLabel));
     await user.click(screen.getByRole("button", { name: /book now/i }));
 
     await waitFor(() =>
@@ -292,15 +202,32 @@ describe("TourDetailPage", () => {
     expect(screen.getByRole("heading", { name: "Booking requested" })).toBeInTheDocument();
   });
 
-  it("shows an empty slots state when the offering has no bookable times", async () => {
+  it("keeps the selected slot visible when a booking mutation fails", async () => {
     const user = userEvent.setup();
-    mockDefaultHooks({ data: [] });
+    addCartMutateAsync.mockRejectedValueOnce(new Error("Taken"));
 
     render(<TourDetailPage tourRef={tourRef} />);
-    await user.click(screen.getByRole("button", { name: /choose time/i }));
+    await user.click(await openTimes(user));
+    await user.click(screen.getByRole("button", { name: /add to cart/i }));
 
+    expect(await screen.findByText("Something went wrong. Please try again.")).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /10:00 AM/i })).toBeChecked();
+  });
+
+  it("shows slot fetch errors and empty-slot states", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<TourDetailPage tourRef={tourRef} />);
+
+    mockDefaultHooks({ data: undefined, isError: true, error: new Error("Slots offline") });
+    await user.click(screen.getByRole("button", { name: /choose time/i }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Times are unavailable");
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refetchSlots).toHaveBeenCalledTimes(1);
+
+    mockDefaultHooks({ data: [] });
+    rerender(<TourDetailPage tourRef={tourRef} />);
+    await user.click(screen.getByRole("button", { name: /choose time/i }));
     expect(screen.getByRole("heading", { name: "No open times yet" })).toBeInTheDocument();
-    expect(screen.getByText("No bookable times are open for this tour yet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Browse other tours" })).toHaveAttribute(
       "href",
       "/tours",

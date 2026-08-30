@@ -2,61 +2,42 @@ import {
   BOOKING_TIME_PLACEHOLDER,
   formatViewerLocalBookingTimeRange,
   getViewerTimeZone,
+  type BookingTimeRangeInput,
 } from "@/lib/bookingTime";
 
+const summerSlot = {
+  scheduledStartAt: "2026-07-10T15:00:00Z",
+  scheduledEndAt: "2026-07-10T16:00:00Z",
+};
+
+function format(input: BookingTimeRangeInput, timeZone: string) {
+  return formatViewerLocalBookingTimeRange(input, timeZone);
+}
+
 describe("formatViewerLocalBookingTimeRange", () => {
-  it("formats UTC instants in the supplied viewer timezone", () => {
-    expect(
-      formatViewerLocalBookingTimeRange(
-        {
-          scheduledStartAt: "2026-07-10T15:00:00Z",
-          scheduledEndAt: "2026-07-10T16:00:00Z",
-        },
-        "America/Chicago",
-      ),
-    ).toBe("Fri, 7/10 · 10:00 AM – 11:00 AM CDT");
-  });
-
-  it("includes the end date when the viewer-local range crosses midnight", () => {
-    expect(
-      formatViewerLocalBookingTimeRange(
-        {
-          scheduledStartAt: "2026-07-10T15:00:00Z",
-          scheduledEndAt: "2026-07-10T16:00:00Z",
-        },
-        "Asia/Shanghai",
-      ),
-    ).toBe("Fri, 7/10 · 11:00 PM – Sat, 7/11 · 12:00 AM GMT+8");
-  });
-
-  it("includes both timezone labels when the range crosses a DST offset change", () => {
-    expect(
-      formatViewerLocalBookingTimeRange(
-        {
-          scheduledStartAt: "2026-11-01T06:30:00Z",
-          scheduledEndAt: "2026-11-01T07:30:00Z",
-        },
-        "America/Chicago",
-      ),
-    ).toBe("Sun, 11/1 · 1:30 AM CDT – 1:30 AM CST");
+  it.each([
+    ["America/Chicago", summerSlot, "Fri, 7/10 · 10:00 AM – 11:00 AM CDT"],
+    ["Asia/Shanghai", summerSlot, "Fri, 7/10 · 11:00 PM – Sat, 7/11 · 12:00 AM GMT+8"],
+    [
+      "America/Chicago",
+      {
+        scheduledStartAt: "2026-11-01T06:30:00Z",
+        scheduledEndAt: "2026-11-01T07:30:00Z",
+      },
+      "Sun, 11/1 · 1:30 AM CDT – 1:30 AM CST",
+    ],
+  ] as const)("formats UTC instants in %s", (timeZone, input, expected) => {
+    expect(format(input, timeZone)).toBe(expected);
   });
 
   it("returns a stable placeholder for invalid input or timezone", () => {
     expect(
-      formatViewerLocalBookingTimeRange(
-        { scheduledStartAt: "not-a-date", scheduledEndAt: "2026-07-10T16:00:00Z" },
+      format(
+        { scheduledStartAt: "not-a-date", scheduledEndAt: summerSlot.scheduledEndAt },
         "America/Chicago",
       ),
     ).toBe(BOOKING_TIME_PLACEHOLDER);
-    expect(
-      formatViewerLocalBookingTimeRange(
-        {
-          scheduledStartAt: "2026-07-10T15:00:00Z",
-          scheduledEndAt: "2026-07-10T16:00:00Z",
-        },
-        "not-a-timezone",
-      ),
-    ).toBe(BOOKING_TIME_PLACEHOLDER);
+    expect(format(summerSlot, "not-a-timezone")).toBe(BOOKING_TIME_PLACEHOLDER);
   });
 });
 
