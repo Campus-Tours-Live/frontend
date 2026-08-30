@@ -26,6 +26,9 @@ function makeData(
       universitiesOfInterest: ["mit", "stanford"],
       ...overrides,
     },
+    nextTour: null,
+    upcomingBookings: [],
+    pendingActions: null,
     createdAt: "2025-03-15T00:00:00Z",
   };
 }

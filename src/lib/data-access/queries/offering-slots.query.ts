@@ -7,6 +7,6 @@ import type { OfferingSlot } from "../types";
 export const offeringSlotsOptions = (offeringId: string, enabled = true) =>
   queryOptions({
     queryKey: queryKeys.offeringSlots(offeringId),
-    queryFn: () => apiJson<OfferingSlot[]>(`/v1/offerings/${offeringId}/slots`),
+    queryFn: () => apiJson<OfferingSlot[]>(`/v1/offerings/${encodeURIComponent(offeringId)}/slots`),
     enabled,
   });

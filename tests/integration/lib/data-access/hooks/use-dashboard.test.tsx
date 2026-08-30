@@ -42,6 +42,10 @@ describe("useDashboard", () => {
     const dashboard = {
       kind: "participant",
       participant: { firstName: "Ada" },
+      nextTour: null,
+      upcomingBookings: [],
+      pendingActions: null,
+      createdAt: "2026-01-15T09:30:00.000Z",
     };
     fetchMock.mockResolvedValue(jsonResponse(200, { data: dashboard }));
 

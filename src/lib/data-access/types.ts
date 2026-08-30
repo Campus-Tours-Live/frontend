@@ -142,9 +142,39 @@ export interface GuideDashboard {
   offerings: Offering[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
+
+export interface Money {
+  amount: number;
+  currency: string;
+}
+
+/** Contract-A booking shape from the BFF. Times are absolute UTC instants; display is viewer-local. */
+export interface BookingResponse {
+  id: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: Money;
+}
+
+export interface CreateBookingInput {
+  tourOfferingId: string;
+  scheduledStartAt: string;
+  participantNotes?: string;
+}
+
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
+  nextTour: BookingResponse | null;
+  upcomingBookings: BookingResponse[];
+  pendingActions: Record<string, unknown> | null;
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;
@@ -228,9 +258,25 @@ export interface TourSummary {
 }
 
 /** Full public tour detail (Core TourDetailResponse). */
-export interface TourDetail extends TourSummary {
+export interface TourDetail extends Pick<
+  TourSummary,
+  | "id"
+  | "title"
+  | "slug"
+  | "topic"
+  | "universityId"
+  | "universityName"
+  | "universityImageUrl"
+  | "guideId"
+  | "guideDisplayName"
+  | "durationMin"
+  | "priceCents"
+  | "currency"
+  | "avgRating"
+  | "reviewCount"
+  | "languages"
+> {
   description: string | null;
-  languages: string[];
   universitySlug: string;
   universityCity: string | null;
   universityRegion: string | null;

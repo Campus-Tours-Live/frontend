@@ -7,6 +7,7 @@ import { Clock, Globe, Heart, Star } from "lucide-react";
 import { Body, Heading, IconButton, Tag } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { TourSummary } from "@/lib/data-access";
+import { tourHref } from "@/lib/tourRefs";
 import {
   CAMPUS_FALLBACK_IMAGE,
   languageLabel,
@@ -156,7 +157,7 @@ export function TourProductCard({
             </Body>
             <Heading as="h3" size="large" className="mt-0.5 min-h-[2.4em] leading-tight">
               <Link
-                href={`/tours/${tour.slug}`}
+                href={tourHref(tour)}
                 className="no-underline after:absolute after:inset-0 hover:no-underline focus-visible:outline-none"
               >
                 {tour.title}

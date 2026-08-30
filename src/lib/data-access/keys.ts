@@ -22,6 +22,7 @@ export const queryKeys = {
   universityCounts: () => ["university-counts"] as const,
   stateUniversities: (stateCode: string) => ["state-universities", stateCode] as const,
   dashboard: () => ["dashboard"] as const,
+  cart: () => ["cart"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
   tours: () => ["tours"] as const,
   // Availability v2 (CTL-55) — BFF Contract A (/v1/availability*, /v1/offerings/:id/slots).
