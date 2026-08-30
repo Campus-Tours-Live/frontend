@@ -10,7 +10,6 @@ import {
   Star,
 } from "lucide-react";
 import {
-  Badge,
   Body,
   Button,
   Caption,
@@ -20,10 +19,11 @@ import {
   Link,
   Nudge,
   StatusBadge,
+  Tag,
 } from "@/components/ui";
 import { formatOfferingPrice } from "@/lib/format";
 import type { TourDetail as TourDetailData } from "@/lib/data-access";
-import { CAMPUS_FALLBACK_IMAGE } from "./tourCard.visuals";
+import { CAMPUS_FALLBACK_IMAGE, topicStyle } from "./tourCard.visuals";
 
 function guideInitials(name: string): string {
   return name
@@ -38,13 +38,11 @@ function campusLocation(tour: TourDetailData): string {
   return [tour.universityCity, tour.universityRegion].filter(Boolean).join(", ");
 }
 
-function topicLabel(topic: string): string {
-  return topic.replaceAll("_", " ");
-}
-
 export function TourDetail({ tour }: { tour: TourDetailData }) {
   const location = campusLocation(tour);
   const languages = tour.languages?.length ? tour.languages.join(" · ") : "Ask the guide";
+  const topic = topicStyle(tour.topic);
+  const TopicIcon = topic.icon;
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = imageFailed
     ? CAMPUS_FALLBACK_IMAGE
@@ -62,7 +60,7 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
             <div>
               <Card
                 padded={false}
-                className="relative min-h-[300px] overflow-hidden rounded-hero bg-gradient-to-br from-primary-soft via-card to-sage-soft md:min-h-[430px]"
+                className="relative min-h-[300px] overflow-hidden rounded-panel bg-gradient-to-br from-primary-soft via-card to-sage-soft md:min-h-[430px]"
               >
                 <Image
                   src={imageSrc}
@@ -90,7 +88,7 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
 
               <div className="mt-8">
                 <div className="eyebrow">{tour.universityName}</div>
-                <Heading as="h1" size="display" className="mt-2 max-w-3xl">
+                <Heading as="h1" size="h1" className="mt-2 max-w-3xl">
                   {tour.title}
                 </Heading>
                 <Body size="lead" color="muted" className="mt-5 max-w-3xl">
@@ -109,7 +107,13 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
                     {formatOfferingPrice(tour.priceCents, tour.currency)}
                   </div>
                 </div>
-                <Badge variant="sage">{topicLabel(tour.topic)}</Badge>
+                <Tag
+                  color={topic.tagColor}
+                  variant="inverse"
+                  leading={<TopicIcon size={14} strokeWidth={2} aria-hidden />}
+                >
+                  {topic.label}
+                </Tag>
               </div>
 
               <dl className="space-y-3 py-5">
