@@ -10,15 +10,21 @@ jest.mock("@tanstack/react-query", () => ({
 jest.mock("@/lib/data-access/mutations/guide-booking.mutation", () => ({
   acceptBookingMutation: jest.fn(() => ({ kind: "accept" })),
   declineBookingMutation: jest.fn(() => ({ kind: "decline" })),
+  completeBookingMutation: jest.fn(() => ({ kind: "complete" })),
+  markNoShowBookingMutation: jest.fn(() => ({ kind: "noshow" })),
 }));
 
 import {
   useAcceptBooking,
+  useCompleteBooking,
   useDeclineBooking,
+  useMarkNoShowBooking,
 } from "@/lib/data-access/hooks/use-guide-booking-actions";
 import {
   acceptBookingMutation,
+  completeBookingMutation,
   declineBookingMutation,
+  markNoShowBookingMutation,
 } from "@/lib/data-access/mutations/guide-booking.mutation";
 
 beforeEach(() => {
@@ -26,6 +32,8 @@ beforeEach(() => {
   useQueryClientMock.mockReset().mockReturnValue({ invalidateQueries: jest.fn() });
   (acceptBookingMutation as jest.Mock).mockClear();
   (declineBookingMutation as jest.Mock).mockClear();
+  (completeBookingMutation as jest.Mock).mockClear();
+  (markNoShowBookingMutation as jest.Mock).mockClear();
 });
 
 describe("use-guide-booking-actions", () => {
@@ -44,6 +52,24 @@ describe("use-guide-booking-actions", () => {
 
     expect(declineBookingMutation).toHaveBeenCalledWith(qc);
     expect(useMutationMock).toHaveBeenCalledWith({ kind: "decline" });
+    expect(result.current).toEqual({ mutation: true });
+  });
+
+  it("useCompleteBooking wires completeBookingMutation through TanStack Query", () => {
+    const qc = useQueryClientMock();
+    const { result } = renderHook(() => useCompleteBooking());
+
+    expect(completeBookingMutation).toHaveBeenCalledWith(qc);
+    expect(useMutationMock).toHaveBeenCalledWith({ kind: "complete" });
+    expect(result.current).toEqual({ mutation: true });
+  });
+
+  it("useMarkNoShowBooking wires markNoShowBookingMutation through TanStack Query", () => {
+    const qc = useQueryClientMock();
+    const { result } = renderHook(() => useMarkNoShowBooking());
+
+    expect(markNoShowBookingMutation).toHaveBeenCalledWith(qc);
+    expect(useMutationMock).toHaveBeenCalledWith({ kind: "noshow" });
     expect(result.current).toEqual({ mutation: true });
   });
 });

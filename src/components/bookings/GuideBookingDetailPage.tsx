@@ -19,16 +19,20 @@ import {
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import {
   useAcceptBooking,
+  useCompleteBooking,
   useDeclineBooking,
   useGuideBooking,
+  useMarkNoShowBooking,
   type GuideBookingFilter,
 } from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import { DeclineBookingModal } from "./DeclineBookingModal";
+import { NoShowBookingModal } from "./NoShowBookingModal";
 import { GuideBookingStatusTimeline } from "./GuideBookingStatusTimeline";
 import {
   bookingStatusLabel,
   bookingStatusVariant,
+  canMarkTourOutcome,
   formatBookingWhen,
   formatDeadlineCountdown,
 } from "./bookingDisplay";
@@ -46,10 +50,16 @@ export function GuideBookingDetailPage({ bookingId }: { bookingId: string }) {
   const { data: booking, isLoading, isError, error } = useGuideBooking(bookingId);
   const accept = useAcceptBooking();
   const decline = useDeclineBooking();
+  const complete = useCompleteBooking();
+  const noShow = useMarkNoShowBooking();
   const [declineOpen, setDeclineOpen] = useState(false);
+  const [noShowOpen, setNoShowOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const pending = booking?.status === "WAITING_FOR_GUIDE";
+  const canComplete = booking != null && canMarkTourOutcome(booking.status, booking.scheduledAt);
+  const actionBusy =
+    accept.isPending || decline.isPending || complete.isPending || noShow.isPending;
   const countdown =
     pending && booking ? formatDeadlineCountdown(booking.guideResponseDeadline) : null;
 
@@ -87,7 +97,7 @@ export function GuideBookingDetailPage({ bookingId }: { bookingId: string }) {
                   <Button
                     variant="primary"
                     size="small"
-                    disabled={accept.isPending || decline.isPending}
+                    disabled={actionBusy}
                     onClick={async () => {
                       setActionError(null);
                       try {
@@ -102,13 +112,43 @@ export function GuideBookingDetailPage({ bookingId }: { bookingId: string }) {
                   <Button
                     variant="secondary"
                     size="small"
-                    disabled={accept.isPending || decline.isPending}
+                    disabled={actionBusy}
                     onClick={() => {
                       setActionError(null);
                       setDeclineOpen(true);
                     }}
                   >
                     Decline
+                  </Button>
+                </div>
+              ) : canComplete ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="primary"
+                    size="small"
+                    disabled={actionBusy}
+                    onClick={async () => {
+                      setActionError(null);
+                      try {
+                        await complete.mutateAsync(booking.id);
+                        router.push(bookingsListHref("past"));
+                      } catch {
+                        setActionError("Could not mark this tour completed. Please try again.");
+                      }
+                    }}
+                  >
+                    Mark completed
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    disabled={actionBusy}
+                    onClick={() => {
+                      setActionError(null);
+                      setNoShowOpen(true);
+                    }}
+                  >
+                    Mark no-show
                   </Button>
                 </div>
               ) : null
@@ -196,7 +236,7 @@ export function GuideBookingDetailPage({ bookingId }: { bookingId: string }) {
           </div>
 
           <DeclineBookingModal
-            key={booking.id}
+            key={`decline-${booking.id}`}
             open={declineOpen}
             booking={booking}
             pending={decline.isPending}
@@ -212,6 +252,27 @@ export function GuideBookingDetailPage({ bookingId }: { bookingId: string }) {
               } catch {
                 setActionError("Could not decline this booking. Please try again.");
                 setDeclineOpen(false);
+              }
+            }}
+          />
+
+          <NoShowBookingModal
+            key={`noshow-${booking.id}`}
+            open={noShowOpen}
+            booking={booking}
+            pending={noShow.isPending}
+            onClose={() => setNoShowOpen(false)}
+            onConfirm={async (reason) => {
+              try {
+                await noShow.mutateAsync({
+                  bookingId: booking.id,
+                  body: reason ? { reason } : undefined,
+                });
+                setNoShowOpen(false);
+                router.push(bookingsListHref("past"));
+              } catch {
+                setActionError("Could not mark participant no-show. Please try again.");
+                setNoShowOpen(false);
               }
             }}
           />

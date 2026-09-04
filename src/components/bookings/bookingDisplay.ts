@@ -6,6 +6,12 @@ export function bookingStatusLabel(status: string): string {
       return "Pending";
     case "CONFIRMED":
       return "Confirmed";
+    case "COMPLETED":
+      return "Completed";
+    case "PARTICIPANT_NO_SHOW":
+      return "Participant no-show";
+    case "GUIDE_NO_SHOW":
+      return "Guide no-show";
     case "CANCELLED":
       return "Declined / cancelled";
     default:
@@ -19,6 +25,13 @@ export function bookingStatusVariant(status: string): StatusVariant {
       return "warning";
     case "CONFIRMED":
       return "success";
+    case "COMPLETED":
+      return "success";
+    case "PARTICIPANT_NO_SHOW":
+    case "GUIDE_NO_SHOW":
+      return "warning";
+    case "CANCELLED":
+      return "info";
     default:
       return "info";
   }
@@ -61,6 +74,14 @@ export function formatDeadlineCountdown(
   return rem === 0 ? `${hours}h left to respond` : `${hours}h ${rem}m left to respond`;
 }
 
+/** True when a confirmed tour may be marked completed or participant no-show. */
+export function canMarkTourOutcome(status: string, scheduledAt: string, now = Date.now()): boolean {
+  if (status !== "CONFIRMED") return false;
+  const start = new Date(scheduledAt).getTime();
+  if (Number.isNaN(start)) return false;
+  return start <= now;
+}
+
 export function bookingStatusEventLabel(reasonCode: string | null | undefined): string {
   switch (reasonCode) {
     case "PARTICIPANT_CREATED":
@@ -75,6 +96,10 @@ export function bookingStatusEventLabel(reasonCode: string | null | undefined): 
       return "Guide declined";
     case "PARTICIPANT_CANCELLED":
       return "Participant cancelled";
+    case "GUIDE_MARKED_COMPLETED":
+      return "Marked completed";
+    case "GUIDE_MARKED_PARTICIPANT_NO_SHOW":
+      return "Marked participant no-show";
     default:
       return reasonCode?.replaceAll("_", " ").toLowerCase() ?? "Status updated";
   }

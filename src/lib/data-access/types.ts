@@ -125,7 +125,7 @@ export interface CreateOfferingInput {
 export type UpdateOfferingInput = Partial<CreateOfferingInput>;
 
 /** Guide booking inbox filter (GET /v1/guide/bookings?filter=). */
-export type GuideBookingFilter = "pending" | "upcoming" | "all";
+export type GuideBookingFilter = "pending" | "upcoming" | "past" | "all";
 
 /**
  * A guide-facing booking (Core GuideBookingDetailResponse). `status` is the display string

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Calendar,
+  History,
   Clock,
   Compass,
   List,
@@ -85,6 +86,7 @@ const GUIDE_NAV: NavGroup[] = [
     items: [
       { label: "Explore tours", icon: Compass, href: "/tours" },
       { label: "Upcoming tours", icon: Calendar, href: "/guide/bookings?filter=upcoming" },
+      { label: "Past tours", icon: History, href: "/guide/bookings?filter=past" },
       { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
     ],

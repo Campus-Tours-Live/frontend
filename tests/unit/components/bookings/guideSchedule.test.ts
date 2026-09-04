@@ -27,6 +27,7 @@ describe("guideSchedule", () => {
   it("parses valid filter query values", () => {
     expect(parseGuideBookingFilter("upcoming")).toBe("upcoming");
     expect(parseGuideBookingFilter("pending")).toBe("pending");
+    expect(parseGuideBookingFilter("past")).toBe("past");
     expect(parseGuideBookingFilter("all")).toBe("all");
     expect(parseGuideBookingFilter("nope")).toBe("all");
     expect(parseGuideBookingFilter(null)).toBe("all");

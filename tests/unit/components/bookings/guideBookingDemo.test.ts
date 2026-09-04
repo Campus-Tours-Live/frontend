@@ -35,6 +35,9 @@ describe("guideBookingDemo", () => {
   it("filters demo bookings by inbox filter", () => {
     expect(demoGuideBookingsForFilter("pending")).toHaveLength(1);
     expect(demoGuideBookingsForFilter("upcoming")).toHaveLength(2);
+    expect(demoGuideBookingsForFilter("past").length).toBeGreaterThanOrEqual(3);
+    expect(demoGuideBookingsForFilter("past").some((b) => b.id === "demo-overdue")).toBe(true);
+    expect(demoGuideBookingsForFilter("past").some((b) => b.id === "demo-completed")).toBe(true);
     expect(demoGuideBookingsForFilter("all")).toHaveLength(3);
   });
 

@@ -21,6 +21,7 @@ const FILTERS: { id: GuideBookingFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "pending", label: "Pending" },
   { id: "upcoming", label: "Upcoming" },
+  { id: "past", label: "Past" },
 ];
 
 const PAGE_COPY: Record<GuideBookingFilter, { title: string; lead: string }> = {
@@ -35,6 +36,10 @@ const PAGE_COPY: Record<GuideBookingFilter, { title: string; lead: string }> = {
   upcoming: {
     title: "Upcoming tours",
     lead: "Your confirmed schedule — tours starting from today.",
+  },
+  past: {
+    title: "Past tours",
+    lead: "Completed tours, no-shows, and overdue confirmed bookings awaiting a final status.",
   },
 };
 
@@ -72,10 +77,14 @@ export function GuideBookingsPage() {
           Local demo bookings are included in dev. Try{" "}
           <Link href={`/guide/bookings/${DEMO_GUIDE_BOOKING_IDS.pending}?returnFilter=pending`}>
             pending detail
-          </Link>{" "}
-          or{" "}
+          </Link>
+          ,{" "}
           <Link href={`/guide/bookings/${DEMO_GUIDE_BOOKING_IDS.confirmed}?returnFilter=upcoming`}>
             confirmed detail
+          </Link>
+          , or{" "}
+          <Link href={`/guide/bookings/${DEMO_GUIDE_BOOKING_IDS.overdue}?returnFilter=past`}>
+            overdue past detail
           </Link>
           .
         </Alert>
@@ -103,7 +112,9 @@ export function GuideBookingsPage() {
             ? "No pending booking requests."
             : filter === "upcoming"
               ? "No upcoming confirmed tours."
-              : "You have no pending or upcoming bookings."}
+              : filter === "past"
+                ? "No past tours yet."
+                : "You have no pending or upcoming bookings."}
         </Alert>
       ) : null}
 

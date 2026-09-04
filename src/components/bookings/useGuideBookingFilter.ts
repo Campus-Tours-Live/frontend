@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { GuideBookingFilter } from "@/lib/data-access";
 
-const FILTERS = new Set<GuideBookingFilter>(["pending", "upcoming", "all"]);
+const FILTERS = new Set<GuideBookingFilter>(["pending", "upcoming", "past", "all"]);
 
 export function parseGuideBookingFilter(raw: string | null): GuideBookingFilter {
   if (raw && FILTERS.has(raw as GuideBookingFilter)) return raw as GuideBookingFilter;

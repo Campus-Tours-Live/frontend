@@ -1,7 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { GuideBookingDetailPage } from "@/components/bookings/GuideBookingDetailPage";
-import { useAcceptBooking, useDeclineBooking, useGuideBooking } from "@/lib/data-access";
+import {
+  useAcceptBooking,
+  useCompleteBooking,
+  useDeclineBooking,
+  useGuideBooking,
+  useMarkNoShowBooking,
+} from "@/lib/data-access";
 import type { GuideBooking } from "@/lib/data-access";
 
 const push = jest.fn();
@@ -15,17 +21,21 @@ jest.mock("@/lib/data-access", () => ({
   useGuideBooking: jest.fn(),
   useAcceptBooking: jest.fn(),
   useDeclineBooking: jest.fn(),
+  useCompleteBooking: jest.fn(),
+  useMarkNoShowBooking: jest.fn(),
 }));
 
 const mockUseGuideBooking = useGuideBooking as jest.Mock;
 const mockUseAcceptBooking = useAcceptBooking as jest.Mock;
 const mockUseDeclineBooking = useDeclineBooking as jest.Mock;
+const mockUseCompleteBooking = useCompleteBooking as jest.Mock;
+const mockUseMarkNoShowBooking = useMarkNoShowBooking as jest.Mock;
 
 const booking: GuideBooking = {
   id: "b1",
   bookingNumber: "CTL-2026-00042",
   status: "CONFIRMED",
-  scheduledAt: "2026-08-01T15:00:00Z",
+  scheduledAt: "2099-08-01T15:00:00Z",
   offeringId: "o1",
   offeringTitle: "Campus walk",
   participantName: "Sam Rivera",
@@ -61,6 +71,14 @@ beforeEach(() => {
     mutateAsync: jest.fn().mockResolvedValue({}),
     isPending: false,
   });
+  mockUseCompleteBooking.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue({}),
+    isPending: false,
+  });
+  mockUseMarkNoShowBooking.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue({}),
+    isPending: false,
+  });
 });
 
 describe("GuideBookingDetailPage", () => {
@@ -74,6 +92,7 @@ describe("GuideBookingDetailPage", () => {
       "href",
       "/guide/bookings?filter=upcoming",
     );
+    expect(screen.queryByRole("button", { name: /mark completed/i })).not.toBeInTheDocument();
   });
 
   it("shows accept/decline actions for pending bookings", async () => {
@@ -94,5 +113,27 @@ describe("GuideBookingDetailPage", () => {
 
     await user.click(screen.getByRole("button", { name: /^accept$/i }));
     expect(mutateAsync).toHaveBeenCalledWith("b1");
+  });
+
+  it("shows mark completed / no-show for started confirmed tours", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest.fn().mockResolvedValue({});
+    mockUseCompleteBooking.mockReturnValue({ mutateAsync, isPending: false });
+    mockUseGuideBooking.mockReturnValue({
+      data: {
+        ...booking,
+        status: "CONFIRMED",
+        scheduledAt: "2020-01-01T15:00:00Z",
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<GuideBookingDetailPage bookingId="b1" />);
+
+    expect(screen.getByRole("button", { name: /mark no-show/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /mark completed/i }));
+    expect(mutateAsync).toHaveBeenCalledWith("b1");
+    expect(push).toHaveBeenCalledWith("/guide/bookings?filter=past");
   });
 });
