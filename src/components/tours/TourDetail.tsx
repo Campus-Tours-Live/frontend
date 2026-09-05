@@ -2,6 +2,7 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   Clock3,
+  CheckCircle2,
   GraduationCap,
   Languages,
   MapPin,
@@ -22,8 +23,8 @@ import {
   Tag,
 } from "@/components/ui";
 import { formatOfferingPrice } from "@/lib/format";
-import type { TourDetail as TourDetailData } from "@/lib/data-access";
-import { CAMPUS_FALLBACK_IMAGE, topicStyle } from "./tourCard.visuals";
+import { useTourFeatures, type TourDetail as TourDetailData } from "@/lib/data-access";
+import { CAMPUS_FALLBACK_IMAGE, prettifyFeatureCode, topicStyle } from "./tourCard.visuals";
 
 function guideInitials(name: string): string {
   return name
@@ -41,8 +42,10 @@ function campusLocation(tour: TourDetailData): string {
 export function TourDetail({ tour }: { tour: TourDetailData }) {
   const location = campusLocation(tour);
   const languages = tour.languages?.length ? tour.languages.join(" · ") : "Ask the guide";
+  const features = tour.features ?? [];
   const topic = topicStyle(tour.topic);
   const TopicIcon = topic.icon;
+  const { labelByCode: featureLabels } = useTourFeatures();
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = imageFailed
     ? CAMPUS_FALLBACK_IMAGE
@@ -156,22 +159,46 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
       </section>
 
       <section className="mx-auto grid max-w-content gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:py-16">
-        <Card as="section" size="large" aria-labelledby="questions-heading">
-          <div className="flex items-start gap-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-coral-soft text-coral-foreground">
-              <Icon icon={MessageCircleQuestion} size={21} />
-            </span>
-            <div>
-              <Heading id="questions-heading" as="h2" size="h3">
-                Ask what university websites cannot tell you
+        <div className="space-y-6">
+          {features.length > 0 ? (
+            <Card as="section" size="large" aria-labelledby="features-heading">
+              <div className="eyebrow">What you&apos;ll cover</div>
+              <Heading id="features-heading" as="h2" size="h3" className="mt-2">
+                A few highlights for this live tour
               </Heading>
-              <Body color="muted" className="mt-2">
-                Live tours are designed for questions about classes, housing, food, student life,
-                and the everyday campus experience.
-              </Body>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {features.map((feature) => (
+                  <Tag
+                    key={feature}
+                    color="gray"
+                    variant="secondary"
+                    leading={<CheckCircle2 size={14} strokeWidth={2} aria-hidden />}
+                    className="px-3 py-1.5 text-[12.5px]"
+                  >
+                    {featureLabels[feature] ?? prettifyFeatureCode(feature)}
+                  </Tag>
+                ))}
+              </div>
+            </Card>
+          ) : null}
+
+          <Card as="section" size="large" aria-labelledby="questions-heading">
+            <div className="flex items-start gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-coral-soft text-coral-foreground">
+                <Icon icon={MessageCircleQuestion} size={21} />
+              </span>
+              <div>
+                <Heading id="questions-heading" as="h2" size="h3">
+                  Ask what university websites cannot tell you
+                </Heading>
+                <Body color="muted" className="mt-2">
+                  Live tours are designed for questions about classes, housing, food, student life,
+                  and the everyday campus experience.
+                </Body>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
 
         <div className="space-y-6">
           <Card as="section" aria-labelledby="guide-heading">

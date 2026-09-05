@@ -250,6 +250,8 @@ export interface TourDetail {
   currency: string;
   avgRating: number;
   reviewCount: number;
+  /** Feature codes the guide attached, when Core exposes them on the detail contract. */
+  features?: string[];
 }
 
 export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATING";

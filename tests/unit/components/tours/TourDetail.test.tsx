@@ -18,6 +18,15 @@ jest.mock("next/image", () => ({
   }) => <img src={String(src)} alt={alt ?? ""} {...props} />,
 }));
 
+jest.mock("@/lib/data-access", () => ({
+  useTourFeatures: () => ({
+    labelByCode: {
+      DINING_OVERVIEW: "Dining overview",
+      Q_AND_A: "Q&A included",
+    },
+  }),
+}));
+
 const tour: TourDetailData = {
   title: "North Campus highlights",
   topic: "GENERAL_CAMPUS",
@@ -34,6 +43,7 @@ const tour: TourDetailData = {
   currency: "USD",
   avgRating: 4.5,
   reviewCount: 12,
+  features: ["Q_AND_A", "DINING_OVERVIEW"],
 } as TourDetailData;
 
 describe("TourDetail", () => {
@@ -52,6 +62,9 @@ describe("TourDetail", () => {
     expect(screen.getByText("$42.00")).toBeInTheDocument();
     expect(screen.getByText("en-US · zh-CN")).toBeInTheDocument();
     expect(screen.getByText("4.5 from 12 reviews")).toBeInTheDocument();
+    expect(screen.getByText("What you'll cover")).toBeInTheDocument();
+    expect(screen.getByText("Q&A included")).toBeInTheDocument();
+    expect(screen.getByText("Dining overview")).toBeInTheDocument();
   });
 
   it("does not invent optional API fields", () => {
@@ -62,6 +75,7 @@ describe("TourDetail", () => {
           description: null,
           languages: [],
           reviewCount: 0,
+          features: [],
         }}
       />,
     );
@@ -70,6 +84,7 @@ describe("TourDetail", () => {
       screen.getByText(/ask the guide about this live campus experience/i),
     ).toBeInTheDocument();
     expect(screen.getByText("New tour")).toBeInTheDocument();
+    expect(screen.queryByText("What you'll cover")).not.toBeInTheDocument();
   });
 
   it("falls back to the shared campus image when the backend image fails", () => {
