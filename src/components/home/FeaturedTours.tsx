@@ -1,89 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Container, IconButton, Link, SectionHeading, Spinner } from "@/components/ui";
+import { TourCard } from "@/components/tours/TourCard";
+import { ApiError, useTourCatalog } from "@/lib/data-access";
 import { cn } from "@/lib/utils";
-import { Container, IconButton, Link, SectionHeading } from "@/components/ui";
-import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
 
 /**
  * FeaturedTours — featured section from design_new (#home .featured).
  *
  * Desktop (lg+): horizontal carousel — fixed-width cards (same size on every
- * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges
- * so the cut-off cards peek through. All 9 cards.
+ * screen), side chevron buttons, bottom dot pagination, and blurred/faded edges.
  *
  * Mobile/tablet (< lg, cards stacked vertically): only the first 3 cards are
  * shown, followed by a "View all tours" CTA.
  *
- * Data is hardcoded; "View tour" CTAs are inert for now.
+ * Data comes from the BFF public marketplace contract (GET /v1/tours).
  */
-const FEATURED_TOURS: TourCardProps[] = [
-  {
-    title: "Campus life and hidden study spots",
-    university: "North Coast University",
-    guide: "Maya Chen",
-    durationMinutes: 60,
-    price: 42,
-  },
-  {
-    title: "Engineering, labs, and student projects",
-    university: "Redwood State College",
-    guide: "Elias Brooks",
-    durationMinutes: 45,
-    price: 36,
-  },
-  {
-    title: "International student experience",
-    university: "Harborview University",
-    guide: "Sofia Patel",
-    durationMinutes: 60,
-    price: 44,
-  },
-  {
-    title: "Dorm tour and housing options",
-    university: "North Coast University",
-    guide: "Liam Walsh",
-    durationMinutes: 30,
-    price: 28,
-  },
-  {
-    title: "Arts, studios, and performance spaces",
-    university: "Lakeside College",
-    guide: "Aria Nguyen",
-    durationMinutes: 45,
-    price: 38,
-  },
-  {
-    title: "Sports, gyms, and student rec",
-    university: "Summit University",
-    guide: "Marcus Lee",
-    durationMinutes: 30,
-    price: 30,
-  },
-  {
-    title: "Libraries and quiet study corners",
-    university: "Harborview University",
-    guide: "Chloe Adams",
-    durationMinutes: 45,
-    price: 34,
-  },
-  {
-    title: "Dining halls and campus food scene",
-    university: "Redwood State College",
-    guide: "Diego Romero",
-    durationMinutes: 30,
-    price: 26,
-  },
-  {
-    title: "Research labs and grad pathways",
-    university: "Summit University",
-    guide: "Priya Shah",
-    durationMinutes: 60,
-    price: 48,
-  },
-];
-
-const COUNT = FEATURED_TOURS.length;
 
 /**
  * Page metrics from the live DOM: one "page" is however many whole cards are
@@ -91,14 +24,14 @@ const COUNT = FEATURED_TOURS.length;
  */
 function pageMetrics(el: HTMLDivElement): { stride: number; pageCount: number } {
   const kids = el.children;
-  /* istanbul ignore next -- defensive: the carousel always renders all 9 cards */
+  /* istanbul ignore next -- defensive: fewer than two cards need no paging */
   if (kids.length < 2) return { stride: el.clientWidth || 1, pageCount: 1 };
   const step = (kids[1] as HTMLElement).offsetLeft - (kids[0] as HTMLElement).offsetLeft;
   if (step <= 0) return { stride: el.clientWidth || 1, pageCount: 1 };
   const perView = Math.max(1, Math.round(el.clientWidth / step));
   return {
     stride: perView * step,
-    pageCount: Math.max(1, Math.ceil(COUNT / perView)),
+    pageCount: Math.max(1, Math.ceil(kids.length / perView)),
   };
 }
 
@@ -121,6 +54,11 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
 }
 
 export function FeaturedTours() {
+  const { data, isLoading, error } = useTourCatalog({
+    sort: "RECOMMENDED",
+    limit: 20,
+  });
+  const tours = data?.items ?? [];
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [pageCount, setPageCount] = useState(1);
@@ -138,7 +76,7 @@ export function FeaturedTours() {
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
-  }, [update]);
+  }, [update, tours.length]);
 
   // Jump a whole page at a time, with a smooth scroll transition.
   const goToPage = (page: number) => {
@@ -176,19 +114,56 @@ export function FeaturedTours() {
           onScroll={update}
           className="flex flex-col gap-5 lg:flex-row lg:overflow-x-auto lg:scroll-smooth lg:pb-3 lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden"
         >
-          {FEATURED_TOURS.map((tour, i) => (
+          {tours.map((tour, i) => (
             <div
-              key={tour.title}
+              key={tour.id}
               className={cn(
                 "w-full lg:w-[320px] lg:shrink-0",
                 // mobile vertical view shows only the first 3
                 i >= 3 && "hidden lg:block",
               )}
             >
-              <TourCard {...tour} />
+              <TourCard
+                id={tour.id}
+                title={tour.title}
+                university={tour.universityName}
+                guide={tour.guideDisplayName}
+                durationMinutes={tour.durationMin}
+                priceCents={tour.priceCents}
+                currency={tour.currency}
+                avgRating={tour.avgRating}
+                reviewCount={tour.reviewCount}
+              />
             </div>
           ))}
         </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-2 py-12 text-ink-soft">
+            <Spinner /> Loading tours…
+          </div>
+        ) : null}
+
+        {error ? (
+          <Alert variant="info" className="my-6">
+            {error instanceof ApiError && error.status === 401 ? (
+              <>
+                <Link href="/signin" className="font-bold">
+                  Sign in
+                </Link>{" "}
+                to browse the live tour catalog.
+              </>
+            ) : (
+              "Tours could not be loaded right now. Please try again later."
+            )}
+          </Alert>
+        ) : null}
+
+        {!isLoading && !error && tours.length === 0 ? (
+          <Alert variant="info" className="my-6">
+            No live tours are available yet.
+          </Alert>
+        ) : null}
 
         {/* Blurred peek edges (desktop carousel only) */}
         <div

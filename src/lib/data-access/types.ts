@@ -228,13 +228,30 @@ export interface TourSummary {
 }
 
 /** Full public tour detail (Core TourDetailResponse). */
-export interface TourDetail extends TourSummary {
+export interface TourDetail {
+  id: string;
+  title: string;
+  slug: string;
+  topic: string;
   description: string | null;
   languages: string[];
+  universityId: string;
+  universityName: string;
+  /** Campus photo URL (Cloudflare R2), or null when the university has no photo yet. */
+  universityImageUrl?: string | null;
   universitySlug: string;
   universityCity: string | null;
   universityRegion: string | null;
+  guideId: string;
+  guideDisplayName: string;
   guideBio: string | null;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
+  /** Feature codes the guide attached, when Core exposes them on the detail contract. */
+  features?: string[];
 }
 
 export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATING";
