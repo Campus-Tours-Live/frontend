@@ -2,30 +2,23 @@ import Image from "next/image";
 import { Body, Heading, Icon, Link, List, ListItem } from "@/components/ui";
 import { assetUrl } from "@/lib/assets";
 
-/**
- * Hero — home hero from design_new (#home .home-hero).
- * Two-column grid on desktop: copy on the left, campus illustration on the
- * right, vertically centered (grid-template-columns: 1.02fr .98fr; gap: 64px).
- * Collapses to a single stacked column below the lg breakpoint.
- * CTAs are inert placeholders for now.
- *
- * Image asset: the campus illustration is served from R2 as `hero_campus.png` (see @/lib/assets).
- */
 const TRUST_SIGNALS = [
   "Verified current students",
   "Secure payment authorization",
   "Recorded for safety",
 ];
 
+/** Main home-page hero. */
 export function Hero() {
   return (
     <section className="mx-auto grid max-w-content grid-cols-1 items-center gap-10 px-6 pb-16 pt-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:pt-[88px] xl:max-w-[1280px] 2xl:max-w-[1400px]">
-      {/* Left — copy */}
       <div>
         <div className="eyebrow">Live-guided virtual campus tours</div>
+
         <Heading as="h1" size="display" className="mt-3 max-w-[720px]">
           Explore campus with someone who actually studies there.
         </Heading>
+
         <Body as="p" size="lead" color="muted" className="mt-5">
           Ask the questions you cannot find on the university website. Book a live tour with a
           verified student guide.
@@ -54,12 +47,6 @@ export function Hero() {
         </List>
       </div>
 
-      {/* Right — campus illustration.
-          Rendered at its intrinsic aspect ratio (w-full + h-auto) so the WHOLE
-          image is always shown — never cropped — at any screen size. The box
-          height simply follows the image. width/height are the asset's native
-          pixels (used only to reserve space / avoid layout shift; h-auto uses
-          the real ratio). */}
       <div className="w-full overflow-hidden rounded-panel border border-border shadow-card">
         <Image
           src={assetUrl("hero_campus.png")}

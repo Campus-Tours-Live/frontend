@@ -4,13 +4,7 @@ import { useMe, type GuideDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { guideStatusLabel } from "@/components/profile/guideProfileStatus";
 
-/**
- * Guide dashboard slice — presentational. The /v1/dashboard aggregate composed the
- * profile, application status, `canPublish`, and offerings (DashboardPage fetches
- * once); this renders its slice. Publishing/booking actions are gated server-side on
- * application_status === VERIFIED — the highlight box reflects that state. Sibling of
- * ParticipantSummary.
- */
+/** Renders the guide portion of the dashboard. */
 export function GuideSummary({ data }: { data: GuideDashboard }) {
   const { guide, guideStatus, canPublish, offerings, createdAt } = data;
   const { me } = useMe();
