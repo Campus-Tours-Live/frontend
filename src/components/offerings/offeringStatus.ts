@@ -1,12 +1,13 @@
 import type { Offering, OfferingStatus } from "@/lib/data-access";
 
-export type OfferingFilter = "all" | "draft" | "published" | "retired";
+export type OfferingFilter = "all" | "draft" | "published" | "paused" | "retired";
 
 export function filterOfferings(offerings: Offering[], filter: OfferingFilter): Offering[] {
   if (filter === "all") return offerings;
   if (filter === "draft") return offerings.filter((o) => o.status === "DRAFT");
   if (filter === "published") return offerings.filter((o) => o.status === "ACTIVE");
-  return offerings.filter((o) => o.status === "ARCHIVED" || o.status === "PAUSED");
+  if (filter === "paused") return offerings.filter((o) => o.status === "PAUSED");
+  return offerings.filter((o) => o.status === "ARCHIVED");
 }
 
 export function offeringStatusLabel(status: OfferingStatus): string {

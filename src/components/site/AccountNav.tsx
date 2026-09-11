@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Calendar,
+  History,
+  Inbox,
   Clock,
   Compass,
   List,
@@ -84,14 +86,16 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Tours",
     items: [
       { label: "Explore tours", icon: Compass, href: "/tours" },
-      { label: "Upcoming tours", icon: Calendar },
+      { label: "Pending", icon: Inbox, href: "/guide/bookings?filter=pending" },
+      { label: "Upcoming tours", icon: Calendar, href: "/guide/bookings?filter=upcoming" },
+      { label: "Past tours", icon: History, href: "/guide/bookings?filter=past" },
       { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
     ],
   },
   {
     label: "Earnings",
-    items: [{ label: "Earnings", icon: CircleDollarSign }],
+    items: [{ label: "Earnings", icon: CircleDollarSign, href: "/guide/earnings" }],
   },
   {
     label: "Account",
@@ -166,22 +170,25 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
       <nav>
         {groups.map((group, gi) => (
           <MenuSection key={group.label ?? `group-${gi}`} label={group.label} bordered={gi > 0}>
-            {group.items.map((item) => (
-              <li key={item.label}>
-                <MenuItem
-                  variant="pill"
-                  icon={item.icon}
-                  href={item.href}
-                  active={
-                    Boolean(item.href) &&
-                    (pathname === item.href || pathname.startsWith(`${item.href}/`))
-                  }
-                  onSelect={onNavigate}
-                >
-                  {item.label}
-                </MenuItem>
-              </li>
-            ))}
+            {group.items.map((item) => {
+              const hrefPath = item.href?.split("?")[0];
+              return (
+                <li key={item.label}>
+                  <MenuItem
+                    variant="pill"
+                    icon={item.icon}
+                    href={item.href}
+                    active={
+                      Boolean(hrefPath) &&
+                      (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`))
+                    }
+                    onSelect={onNavigate}
+                  >
+                    {item.label}
+                  </MenuItem>
+                </li>
+              );
+            })}
           </MenuSection>
         ))}
       </nav>

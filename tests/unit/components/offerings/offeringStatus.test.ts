@@ -24,7 +24,8 @@ describe("offeringStatus helpers", () => {
     const rows = [offering("DRAFT"), offering("ACTIVE"), offering("ARCHIVED"), offering("PAUSED")];
     expect(filterOfferings(rows, "draft")).toHaveLength(1);
     expect(filterOfferings(rows, "published")).toHaveLength(1);
-    expect(filterOfferings(rows, "retired")).toHaveLength(2);
+    expect(filterOfferings(rows, "paused")).toHaveLength(1);
+    expect(filterOfferings(rows, "retired")).toHaveLength(1);
     expect(filterOfferings(rows, "all")).toHaveLength(4);
   });
 
