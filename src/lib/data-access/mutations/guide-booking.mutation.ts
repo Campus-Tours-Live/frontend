@@ -32,3 +32,9 @@ export const markNoShowBookingMutation = (qc: QueryClient) => ({
     postJson<GuideBooking>(`/v1/guide/bookings/${bookingId}/no-show`, body ?? {}),
   onSuccess: () => invalidateGuideBookingViews(qc),
 });
+
+export const cancelGuideBookingMutation = (qc: QueryClient) => ({
+  mutationFn: ({ bookingId, body }: { bookingId: string; body?: DeclineBookingInput }) =>
+    postJson<GuideBooking>(`/v1/guide/bookings/${bookingId}/cancel`, body ?? {}),
+  onSuccess: () => invalidateGuideBookingViews(qc),
+});

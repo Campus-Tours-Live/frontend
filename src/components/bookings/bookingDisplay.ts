@@ -82,6 +82,18 @@ export function canMarkTourOutcome(status: string, scheduledAt: string, now = Da
   return start <= now;
 }
 
+/** True when a confirmed tour may still be cancelled by the guide (before start). */
+export function canCancelConfirmedTour(
+  status: string,
+  scheduledAt: string,
+  now = Date.now(),
+): boolean {
+  if (status !== "CONFIRMED") return false;
+  const start = new Date(scheduledAt).getTime();
+  if (Number.isNaN(start)) return false;
+  return start > now;
+}
+
 export function bookingStatusEventLabel(reasonCode: string | null | undefined): string {
   switch (reasonCode) {
     case "PARTICIPANT_CREATED":
@@ -94,6 +106,8 @@ export function bookingStatusEventLabel(reasonCode: string | null | undefined): 
       return "Guide accepted";
     case "GUIDE_DECLINED":
       return "Guide declined";
+    case "GUIDE_CANCELLED":
+      return "Guide cancelled";
     case "PARTICIPANT_CANCELLED":
       return "Participant cancelled";
     case "GUIDE_MARKED_COMPLETED":

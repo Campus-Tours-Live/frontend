@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { GuideBookingDetailPage } from "@/components/bookings/GuideBookingDetailPage";
 import {
   useAcceptBooking,
+  useCancelGuideBooking,
   useCompleteBooking,
   useDeclineBooking,
   useGuideBooking,
@@ -23,6 +24,7 @@ jest.mock("@/lib/data-access", () => ({
   useDeclineBooking: jest.fn(),
   useCompleteBooking: jest.fn(),
   useMarkNoShowBooking: jest.fn(),
+  useCancelGuideBooking: jest.fn(),
 }));
 
 const mockUseGuideBooking = useGuideBooking as jest.Mock;
@@ -30,6 +32,7 @@ const mockUseAcceptBooking = useAcceptBooking as jest.Mock;
 const mockUseDeclineBooking = useDeclineBooking as jest.Mock;
 const mockUseCompleteBooking = useCompleteBooking as jest.Mock;
 const mockUseMarkNoShowBooking = useMarkNoShowBooking as jest.Mock;
+const mockUseCancelGuideBooking = useCancelGuideBooking as jest.Mock;
 
 const booking: GuideBooking = {
   id: "b1",
@@ -79,6 +82,10 @@ beforeEach(() => {
     mutateAsync: jest.fn().mockResolvedValue({}),
     isPending: false,
   });
+  mockUseCancelGuideBooking.mockReturnValue({
+    mutateAsync: jest.fn().mockResolvedValue({}),
+    isPending: false,
+  });
 });
 
 describe("GuideBookingDetailPage", () => {
@@ -93,6 +100,7 @@ describe("GuideBookingDetailPage", () => {
       "/guide/bookings?filter=upcoming",
     );
     expect(screen.queryByRole("button", { name: /mark completed/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /cancel booking/i })).toBeInTheDocument();
   });
 
   it("shows accept/decline actions for pending bookings", async () => {
@@ -131,6 +139,7 @@ describe("GuideBookingDetailPage", () => {
 
     render(<GuideBookingDetailPage bookingId="b1" />);
 
+    expect(screen.queryByRole("button", { name: /cancel booking/i })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mark no-show/i })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /mark completed/i }));
     expect(mutateAsync).toHaveBeenCalledWith("b1");

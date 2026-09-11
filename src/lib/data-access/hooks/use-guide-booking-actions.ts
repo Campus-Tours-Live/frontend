@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   acceptBookingMutation,
+  cancelGuideBookingMutation,
   completeBookingMutation,
   declineBookingMutation,
   markNoShowBookingMutation,
@@ -30,4 +31,10 @@ export function useCompleteBooking() {
 export function useMarkNoShowBooking() {
   const qc = useQueryClient();
   return useMutation(markNoShowBookingMutation(qc));
+}
+
+/** Cancel a confirmed tour before it starts (optional reason). */
+export function useCancelGuideBooking() {
+  const qc = useQueryClient();
+  return useMutation(cancelGuideBookingMutation(qc));
 }

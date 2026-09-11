@@ -12,16 +12,19 @@ jest.mock("@/lib/data-access/mutations/guide-booking.mutation", () => ({
   declineBookingMutation: jest.fn(() => ({ kind: "decline" })),
   completeBookingMutation: jest.fn(() => ({ kind: "complete" })),
   markNoShowBookingMutation: jest.fn(() => ({ kind: "noshow" })),
+  cancelGuideBookingMutation: jest.fn(() => ({ kind: "cancel" })),
 }));
 
 import {
   useAcceptBooking,
+  useCancelGuideBooking,
   useCompleteBooking,
   useDeclineBooking,
   useMarkNoShowBooking,
 } from "@/lib/data-access/hooks/use-guide-booking-actions";
 import {
   acceptBookingMutation,
+  cancelGuideBookingMutation,
   completeBookingMutation,
   declineBookingMutation,
   markNoShowBookingMutation,
@@ -34,6 +37,7 @@ beforeEach(() => {
   (declineBookingMutation as jest.Mock).mockClear();
   (completeBookingMutation as jest.Mock).mockClear();
   (markNoShowBookingMutation as jest.Mock).mockClear();
+  (cancelGuideBookingMutation as jest.Mock).mockClear();
 });
 
 describe("use-guide-booking-actions", () => {
@@ -70,6 +74,15 @@ describe("use-guide-booking-actions", () => {
 
     expect(markNoShowBookingMutation).toHaveBeenCalledWith(qc);
     expect(useMutationMock).toHaveBeenCalledWith({ kind: "noshow" });
+    expect(result.current).toEqual({ mutation: true });
+  });
+
+  it("useCancelGuideBooking wires cancelGuideBookingMutation through TanStack Query", () => {
+    const qc = useQueryClientMock();
+    const { result } = renderHook(() => useCancelGuideBooking());
+
+    expect(cancelGuideBookingMutation).toHaveBeenCalledWith(qc);
+    expect(useMutationMock).toHaveBeenCalledWith({ kind: "cancel" });
     expect(result.current).toEqual({ mutation: true });
   });
 });

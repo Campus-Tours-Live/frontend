@@ -4,6 +4,7 @@ import {
   bookingStatusLabel,
   bookingStatusVariant,
   canMarkTourOutcome,
+  canCancelConfirmedTour,
   formatBookingTime,
   formatBookingWhen,
   formatDeadlineCountdown,
@@ -60,6 +61,7 @@ describe("bookingDisplay", () => {
 
   it("labels status events and actors for the timeline", () => {
     expect(bookingStatusEventLabel("GUIDE_ACCEPTED")).toBe("Guide accepted");
+    expect(bookingStatusEventLabel("GUIDE_CANCELLED")).toBe("Guide cancelled");
     expect(bookingStatusEventLabel("GUIDE_MARKED_COMPLETED")).toBe("Marked completed");
     expect(bookingStatusEventLabel("GUIDE_MARKED_PARTICIPANT_NO_SHOW")).toBe(
       "Marked participant no-show",
@@ -75,5 +77,12 @@ describe("bookingDisplay", () => {
     expect(canMarkTourOutcome("CONFIRMED", "2026-09-04T13:00:00Z", now)).toBe(false);
     expect(canMarkTourOutcome("COMPLETED", "2026-09-04T11:00:00Z", now)).toBe(false);
     expect(canMarkTourOutcome("WAITING_FOR_GUIDE", "2026-09-04T11:00:00Z", now)).toBe(false);
+  });
+
+  it("allows cancel only for confirmed tours that have not started", () => {
+    const now = Date.parse("2026-09-04T12:00:00Z");
+    expect(canCancelConfirmedTour("CONFIRMED", "2026-09-04T13:00:00Z", now)).toBe(true);
+    expect(canCancelConfirmedTour("CONFIRMED", "2026-09-04T11:00:00Z", now)).toBe(false);
+    expect(canCancelConfirmedTour("WAITING_FOR_GUIDE", "2026-09-04T13:00:00Z", now)).toBe(false);
   });
 });

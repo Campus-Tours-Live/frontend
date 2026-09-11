@@ -33,6 +33,7 @@ export {
   useDeclineBooking,
   useCompleteBooking,
   useMarkNoShowBooking,
+  useCancelGuideBooking,
 } from "./hooks/use-guide-booking-actions";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
