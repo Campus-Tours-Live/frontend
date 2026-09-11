@@ -181,6 +181,7 @@ export interface GuideDashboard {
   guideStatus: string | null;
   canPublish: boolean;
   offerings: Offering[];
+  pendingBookingRequests: number;
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export interface ParticipantDashboard {

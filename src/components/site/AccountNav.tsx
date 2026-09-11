@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Calendar,
   History,
+  Inbox,
   Clock,
   Compass,
   List,
@@ -85,6 +86,7 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Tours",
     items: [
       { label: "Explore tours", icon: Compass, href: "/tours" },
+      { label: "Pending", icon: Inbox, href: "/guide/bookings?filter=pending" },
       { label: "Upcoming tours", icon: Calendar, href: "/guide/bookings?filter=upcoming" },
       { label: "Past tours", icon: History, href: "/guide/bookings?filter=past" },
       { label: "Availability", icon: Clock, href: "/guide/availability" },

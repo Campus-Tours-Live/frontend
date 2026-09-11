@@ -126,6 +126,10 @@ describe("AccountNav — guide", () => {
     render(<AccountNav />);
 
     expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
+    expect(screen.getByRole("link", { name: "Pending" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
     expect(screen.getByRole("link", { name: "Upcoming tours" })).toHaveAttribute(
       "href",
       "/guide/bookings?filter=upcoming",
