@@ -1,31 +1,35 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { isAuthCancelled, requireAuth, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
+
+import {
+  isAuthCancelled,
+  requireAuth,
+  SIGN_IN_AGAIN_MESSAGE,
+} from "@/lib/auth";
 import { Alert, Button } from "@/components/ui";
 
 /**
- * Error alert that tells the truth about WHY a query failed.
- *
- * A dismissed sign-in prompt rejects the in-flight request with `AuthCancelledError`, which
- * had no UI handling at all — so it fell through each page's generic branch and rendered
- * "Failed to load …". That mis-attributes a deliberate user choice as a broken page: the
- * user retries, sees the same thing, and reports a bug.
- *
- * Pass the query's `error` alongside the message you'd otherwise have shown; the auth case
- * gets an actionable prompt instead.
+ * Shows an auth-specific message when a query failed because the user
+ * cancelled re-authentication. Otherwise, it renders the normal error.
  */
-export function QueryErrorAlert({ error, children }: { error: unknown; children: ReactNode }) {
+export function QueryErrorAlert({
+  error,
+  children,
+}: {
+  error: unknown;
+  children: ReactNode;
+}) {
   if (isAuthCancelled(error)) {
     return (
       <Alert variant="error">
         <span className="flex flex-wrap items-center gap-2">
           {SIGN_IN_AGAIN_MESSAGE}
-          {/* `force`: the user's own cancel suppressed this epoch's prompts, so without it
-              their explicit click would be swallowed and the button would look broken. */}
           <Button
             variant="ghost"
-            onClick={() => void requireAuth({ force: true }).catch(() => undefined)}
+            onClick={() =>
+              void requireAuth({ force: true }).catch(() => undefined)
+            }
           >
             Sign in
           </Button>
