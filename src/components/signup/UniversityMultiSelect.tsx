@@ -1,5 +1,7 @@
 "use client";
 
+/** Searchable single- or multi-select university picker. */
+
 import { useEffect, useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { Body, Caption, Icon } from "@/components/ui";
@@ -13,14 +15,6 @@ export interface UniversityOption {
   region?: string | null;
 }
 
-/**
- * Debounced typeahead university picker backed by the search hook (catalog or live
- * Scorecard, via `source`). At `max={1}` it renders as a single-select combobox: the
- * chosen school shows in a bordered value row with a check and a "change" control.
- * At `max>1` it's a multi-select, ordered by what the user does: the search input and a live
- * "N of max selected" count sit on top, and the schools they've picked list below it (each row a
- * name + location + remove control), capped at `max`.
- */
 export function UniversityMultiSelect({
   value,
   onChange,
@@ -35,29 +29,21 @@ export function UniversityMultiSelect({
   value: UniversityOption[];
   onChange: (next: UniversityOption[]) => void;
   max?: number;
-  /** "catalog" = local table (default); "live" = every U.S. school via the Scorecard proxy. */
+  
   source?: "catalog" | "live";
-  /** Called when the search input gains focus (e.g. to clear a "required" error). */
+  
   onFocus?: () => void;
-  /** Id for the search input, so a wrapping `<label htmlFor>` associates + focuses it (present only
-   *  while below `max`). */
+  
   id?: string;
-  /** Ids of the element(s) naming this control. When set, the always-present outer container becomes
-   *  a labelled `role="group"`, so the field keeps an accessible name even at max (input unmounted). */
+  
   "aria-labelledby"?: string;
-  /** Ids of the element(s) describing this control (e.g. help text). Placed on the search input (so
-   *  it's announced on focus, the common case) AND on the persistent group container (so it still
-   *  survives at max, when the input has unmounted). */
+  
   "aria-describedby"?: string;
-  /** Marks the field invalid (e.g. a required selection is empty). Applied to the search input —
-   *  which is always present in the error state, since an empty required selection is below `max`. */
+  
   "aria-invalid"?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  // After clearing the single selection via ✕, drop the cursor straight into the search input
-  // (which only just re-mounted) so the user can retype without a second click. A ref flag — not
-  // state — so resetting it in the effect doesn't trigger an extra render.
   const inputRef = useRef<HTMLInputElement>(null);
   const focusOnClearRef = useRef(false);
   useEffect(() => {
@@ -68,61 +54,15 @@ export function UniversityMultiSelect({
 
   const atMax = value.length >= max;
   const selectedIds = new Set(value.map((v) => v.id));
-  // Single-select (max=1): once a school is chosen, show it as a combobox value row
-  // instead of a removable chip + "maximum" caption.
   const single = max === 1;
   const selectedSingle = single && value.length === 1 ? value[0] : null;
 
-  // Debounce, request cancellation, and caching all live in the hook now.
   const { data: results = [], isFetching: loading } = useUniversitySearch(query, {
     enabled: !atMax,
     source,
   });
 
-  const add = (o: UniversityOption) => {
-    /* istanbul ignore next -- guard: the dropdown hides selected options and the input at max */
-    if (atMax || selectedIds.has(o.id)) return;
-    onChange([...value, o]);
-    setQuery("");
-    setOpen(false);
-  };
-  const remove = (id: string) => onChange(value.filter((v) => v.id !== id));
-
-  return (
-    <div
-      // The container is only a named region when it has a label — keep its describedby paired with
-      // the group role so a stray describedby never lands on a roleless div (the input carries its
-      // own describedby below for the focus case).
-      role={ariaLabelledby ? "group" : undefined}
-      aria-labelledby={ariaLabelledby}
-      aria-describedby={ariaLabelledby ? ariaDescribedby : undefined}
-    >
-      {selectedSingle ? (
-        <div className="flex min-h-12 items-center gap-2.5 rounded-field border-[1.5px] border-border bg-white px-3">
-          <span
-            className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-success text-white"
-            aria-hidden="true"
-          >
-            <Check size={12} strokeWidth={3} />
-          </span>
-          <span className="flex-1 truncate text-[14.5px] font-semibold text-ink">
-            {selectedSingle.name}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              focusOnClearRef.current = true;
-              remove(selectedSingle.id);
-            }}
-            aria-label={`Change university, currently ${selectedSingle.name}`}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-field text-ink-soft transition-colors hover:bg-primary-soft hover:text-ink"
-          >
-            <X size={16} aria-hidden="true" />
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* Search first — adding is the primary action on this step, so the input leads. */}
+  const add = (o: UniversityOption) => 
           {!atMax && (
             <div className="relative">
               <span
@@ -179,7 +119,7 @@ export function UniversityMultiSelect({
             </div>
           )}
 
-          {/* Live count doubles as the cap indicator — more feedback than a static "Pick up to N". */}
+          
           {!single && (
             <Caption as="p" className="mt-1.5">
               {value.length} of {max} selected
@@ -187,9 +127,7 @@ export function UniversityMultiSelect({
             </Caption>
           )}
 
-          {/* Selected schools as a light list (name over location) rather than heavy solid chips:
-              long names get room, the location adds a second line, and the ✕ is an easy target.
-              Very-light-blue fill via the theme's primary-soft token (not a one-off colour). */}
+          
           {!single && value.length > 0 && (
             <ul className="mt-3 divide-y divide-border overflow-y-auto rounded-card border border-border bg-primary-soft/50">
               {value.map((v) => (
