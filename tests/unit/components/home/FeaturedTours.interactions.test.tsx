@@ -1,4 +1,31 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+
+const tours = Array.from({ length: 9 }, (_, index) => ({
+  id: `tour-${index}`,
+  title: `Tour ${index}`,
+  universityName: "Test University",
+  guideDisplayName: "Test Guide",
+  durationMin: 30,
+  priceCents: 2500,
+  currency: "USD",
+  avgRating: 0,
+  reviewCount: 0,
+}));
+
+jest.mock("@/lib/data-access", () => ({
+  ApiError: class ApiError extends Error {},
+  useTourCatalog: () => ({
+    data: {
+      items: tours,
+      page: 0,
+      size: 20,
+      totalElements: tours.length,
+      totalPages: 1,
+    },
+    isLoading: false,
+    error: null,
+  }),
+}));
 import { FeaturedTours } from "@/components/home/FeaturedTours";
 
 /**

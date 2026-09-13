@@ -1,19 +1,34 @@
-import { Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
+import { Body, Caption, Card, Heading, Link, StatusBadge } from "@/components/ui";
+import { formatOfferingPrice } from "@/lib/format";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
  * Full-height flex column so cards stay equal-sized in the carousel regardless
- * of title length (footer is pinned to the bottom). Inert "View tour" button.
+ * of title length (footer is pinned to the bottom).
  */
 export interface TourCardProps {
+  id: string;
   title: string;
   university: string;
   guide: string;
   durationMinutes: number;
-  price: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
 }
 
-export function TourCard({ title, university, guide, durationMinutes, price }: TourCardProps) {
+export function TourCard({
+  id,
+  title,
+  university,
+  guide,
+  durationMinutes,
+  priceCents,
+  currency,
+  avgRating,
+  reviewCount,
+}: TourCardProps) {
   return (
     <Card
       as="article"
@@ -38,13 +53,18 @@ export function TourCard({ title, university, guide, durationMinutes, price }: T
         <Body as="div" size="small" color="muted">
           {university} · {guide} · {durationMinutes} min
         </Body>
-        <div className="mt-auto flex items-center justify-between pt-4">
+        <Caption as="div" weight={600} className="mt-2">
+          {reviewCount > 0 ? `★ ${avgRating.toFixed(1)} (${reviewCount})` : "New tour"}
+        </Caption>
+        <div className="mt-auto flex items-center justify-between gap-4 pt-4">
           {/* Off-scale on purpose: the price is the card's most prominent number; 18px has no
               type token and Heading would switch it to the display serif. */}
-          <span className="text-[18px] font-extrabold text-ink">${price}</span>
-          <Button variant="secondary" size="small">
+          <span className="text-[18px] font-extrabold text-ink">
+            {formatOfferingPrice(priceCents, currency)}
+          </span>
+          <Link href={`/tours/${id}`} variant="secondary" size="small" aria-label={`View ${title}`}>
             View tour
-          </Button>
+          </Link>
         </div>
       </div>
     </Card>
