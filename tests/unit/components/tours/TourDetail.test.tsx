@@ -18,15 +18,6 @@ jest.mock("next/image", () => ({
   }) => <img src={String(src)} alt={alt ?? ""} {...props} />,
 }));
 
-jest.mock("@/lib/data-access", () => ({
-  useTourFeatures: () => ({
-    labelByCode: {
-      DINING_OVERVIEW: "Dining overview",
-      Q_AND_A: "Q&A included",
-    },
-  }),
-}));
-
 const tour: TourDetailData = {
   title: "North Campus highlights",
   topic: "GENERAL_CAMPUS",
@@ -61,10 +52,8 @@ describe("TourDetail", () => {
     expect(screen.getByText("Arcata, CA")).toBeInTheDocument();
     expect(screen.getByText("$42.00")).toBeInTheDocument();
     expect(screen.getByText("en-US · zh-CN")).toBeInTheDocument();
+    expect(screen.getByText("Q And A · Dining Overview")).toBeInTheDocument();
     expect(screen.getByText("4.5 from 12 reviews")).toBeInTheDocument();
-    expect(screen.getByText("What you'll cover")).toBeInTheDocument();
-    expect(screen.getByText("Q&A included")).toBeInTheDocument();
-    expect(screen.getByText("Dining overview")).toBeInTheDocument();
   });
 
   it("does not invent optional API fields", () => {
@@ -84,17 +73,13 @@ describe("TourDetail", () => {
       screen.getByText(/ask the guide about this live campus experience/i),
     ).toBeInTheDocument();
     expect(screen.getByText("New tour")).toBeInTheDocument();
-    expect(screen.queryByText("What you'll cover")).not.toBeInTheDocument();
+    expect(screen.queryByText("Highlights")).not.toBeInTheDocument();
   });
 
   it("falls back to the shared campus image when the backend image fails", () => {
-    const imageUrl = "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Broken%20Campus.png";
-
-    render(<TourDetail tour={{ ...tour, universityImageUrl: imageUrl }} />);
-
+    render(<TourDetail tour={{ ...tour, universityImageUrl: "/broken.png" }} />);
     const heroImage = screen.getByRole("img", { name: /north coast university campus/i });
     fireEvent.error(heroImage);
-
     expect(heroImage).toHaveAttribute("src", CAMPUS_FALLBACK_IMAGE);
   });
 });

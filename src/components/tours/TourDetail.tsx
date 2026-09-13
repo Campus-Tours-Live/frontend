@@ -2,7 +2,6 @@ import { useState } from "react";
 import Image from "next/image";
 import {
   Clock3,
-  CheckCircle2,
   GraduationCap,
   Languages,
   MapPin,
@@ -23,7 +22,7 @@ import {
   Tag,
 } from "@/components/ui";
 import { formatOfferingPrice } from "@/lib/format";
-import { useTourFeatures, type TourDetail as TourDetailData } from "@/lib/data-access";
+import type { TourDetail as TourDetailData } from "@/lib/data-access";
 import { CAMPUS_FALLBACK_IMAGE, prettifyFeatureCode, topicStyle } from "./tourCard.visuals";
 
 function guideInitials(name: string): string {
@@ -45,7 +44,6 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
   const features = tour.features ?? [];
   const topic = topicStyle(tour.topic);
   const TopicIcon = topic.icon;
-  const { labelByCode: featureLabels } = useTourFeatures();
   const [imageFailed, setImageFailed] = useState(false);
   const imageSrc = imageFailed
     ? CAMPUS_FALLBACK_IMAGE
@@ -134,6 +132,15 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
                     <dd className="font-bold">{languages}</dd>
                   </div>
                 </div>
+                {features.length > 0 ? (
+                  <div className="flex items-center gap-3 rounded-card bg-ivory px-4 py-3">
+                    <Icon icon={ShieldCheck} size={18} className="text-primary" />
+                    <div>
+                      <Caption as="dt">Highlights</Caption>
+                      <dd className="font-bold">{features.map(prettifyFeatureCode).join(" · ")}</dd>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="flex items-center gap-3 rounded-card bg-ivory px-4 py-3">
                   <Icon icon={Star} size={18} className="text-amber" />
                   <div>
@@ -159,46 +166,22 @@ export function TourDetail({ tour }: { tour: TourDetailData }) {
       </section>
 
       <section className="mx-auto grid max-w-content gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:py-16">
-        <div className="space-y-6">
-          {features.length > 0 ? (
-            <Card as="section" size="large" aria-labelledby="features-heading">
-              <div className="eyebrow">What you&apos;ll cover</div>
-              <Heading id="features-heading" as="h2" size="h3" className="mt-2">
-                A few highlights for this live tour
+        <Card as="section" size="large" aria-labelledby="questions-heading">
+          <div className="flex items-start gap-4">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-coral-soft text-coral-foreground">
+              <Icon icon={MessageCircleQuestion} size={21} />
+            </span>
+            <div>
+              <Heading id="questions-heading" as="h2" size="h3">
+                Ask what university websites cannot tell you
               </Heading>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {features.map((feature) => (
-                  <Tag
-                    key={feature}
-                    color="gray"
-                    variant="secondary"
-                    leading={<CheckCircle2 size={14} strokeWidth={2} aria-hidden />}
-                    className="px-3 py-1.5 text-[12.5px]"
-                  >
-                    {featureLabels[feature] ?? prettifyFeatureCode(feature)}
-                  </Tag>
-                ))}
-              </div>
-            </Card>
-          ) : null}
-
-          <Card as="section" size="large" aria-labelledby="questions-heading">
-            <div className="flex items-start gap-4">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-pill bg-coral-soft text-coral-foreground">
-                <Icon icon={MessageCircleQuestion} size={21} />
-              </span>
-              <div>
-                <Heading id="questions-heading" as="h2" size="h3">
-                  Ask what university websites cannot tell you
-                </Heading>
-                <Body color="muted" className="mt-2">
-                  Live tours are designed for questions about classes, housing, food, student life,
-                  and the everyday campus experience.
-                </Body>
-              </div>
+              <Body color="muted" className="mt-2">
+                Live tours are designed for questions about classes, housing, food, student life,
+                and the everyday campus experience.
+              </Body>
             </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
 
         <div className="space-y-6">
           <Card as="section" aria-labelledby="guide-heading">
