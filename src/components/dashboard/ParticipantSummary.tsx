@@ -71,16 +71,17 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
         lead="Your participant profile is saved."
       />
 
-      <MemberCard
-        className="mt-8"
-        name={me?.user.displayName ?? "Member"}
-        role={role}
-        verification={me?.user.email ? "Email Verified" : undefined}
-        items={items}
-        highlight={highlight}
-      />
-      <div className="mt-6">
-        <PendingActionsCard actions={pendingActions} waitingBooking={waitingBooking} />
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_auto]">
+        <MemberCard
+          name={me?.user.displayName ?? "Member"}
+          role={role}
+          verification={me?.user.email ? "Email Verified" : undefined}
+          items={items}
+          highlight={highlight}
+        />
+        <div className="lg:w-80">
+          <PendingActionsCard actions={pendingActions} waitingBooking={waitingBooking} />
+        </div>
       </div>
     </div>
   );
