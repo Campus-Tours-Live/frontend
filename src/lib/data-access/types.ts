@@ -166,11 +166,19 @@ export interface GuideDashboard {
   offerings: Offering[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
+/** Pending action counts from Core (GET /v1/dashboard participant variant). */
+export interface PendingActions {
+  paymentsToFinish: number;
+  waitingForGuide: number;
+  reviewsToWrite: number;
+}
+
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
-  /** Best-effort: [] when the Core call fails. */
-  upcomingBookings: BookingResponse[];
+  nextTour?: BookingResponse | null;
+  upcomingBookings?: BookingResponse[];
+  pendingActions?: PendingActions | null;
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;
