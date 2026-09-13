@@ -133,6 +133,21 @@ export interface EnrollmentYearRules {
   defaultMaxYearsToGraduate: number;
 }
 
+/** Contract-A booking shape returned by the BFF (mirrors bff/src/api/_shared/reshape.ts). */
+export interface BookingResponse {
+  id: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: { amount: number; currency: string };
+}
+
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
 export interface GuideDashboard {
   kind: "guide";
@@ -142,9 +157,19 @@ export interface GuideDashboard {
   offerings: Offering[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
+/** Pending action counts from Core (GET /v1/dashboard participant variant). */
+export interface PendingActions {
+  paymentsToFinish: number;
+  waitingForGuide: number;
+  reviewsToWrite: number;
+}
+
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
+  nextTour?: BookingResponse | null;
+  upcomingBookings?: BookingResponse[];
+  pendingActions?: PendingActions | null;
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;
