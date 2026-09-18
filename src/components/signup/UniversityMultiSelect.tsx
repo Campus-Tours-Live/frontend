@@ -162,6 +162,7 @@ export function UniversityMultiSelect({
                       <li key={r.id}>
                         <button
                           type="button"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => add(r)}
                           className="flex w-full flex-col items-start px-4 py-2 text-left transition-colors hover:bg-primary-soft"
                         >

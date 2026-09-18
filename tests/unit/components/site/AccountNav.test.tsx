@@ -126,10 +126,23 @@ describe("AccountNav — guide", () => {
     render(<AccountNav />);
 
     expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
-    expect(screen.getByText("Upcoming tours")).toBeInTheDocument();
-    // "Earnings" is both a section label and an item; assert the item button.
-    expect(screen.getByRole("button", { name: "Earnings" })).toBeInTheDocument();
-    expect(screen.getByText("Verification")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Pending" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
+    expect(screen.getByRole("link", { name: "Upcoming tours" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=upcoming",
+    );
+    // "Earnings" is both a section label and an item; assert the navigable item.
+    expect(screen.getByRole("link", { name: "Earnings" })).toHaveAttribute(
+      "href",
+      "/guide/earnings",
+    );
+    expect(screen.getByRole("link", { name: "Verification" })).toHaveAttribute(
+      "href",
+      "/guide/verification",
+    );
     // Participant-only items must NOT appear.
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
     expect(screen.queryByText("Guardian & consent")).not.toBeInTheDocument();
