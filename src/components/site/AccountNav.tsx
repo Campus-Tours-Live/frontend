@@ -101,7 +101,7 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Account",
     items: [
       { label: "Profile", icon: User, href: "/profile" },
-      { label: "Verification", icon: BadgeCheck },
+      { label: "Verification", icon: BadgeCheck, href: "/guide/verification" },
       { label: "Reviews", icon: Star },
     ],
   },

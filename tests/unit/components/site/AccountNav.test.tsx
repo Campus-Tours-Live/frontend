@@ -139,7 +139,10 @@ describe("AccountNav — guide", () => {
       "href",
       "/guide/earnings",
     );
-    expect(screen.getByText("Verification")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Verification" })).toHaveAttribute(
+      "href",
+      "/guide/verification",
+    );
     // Participant-only items must NOT appear.
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
     expect(screen.queryByText("Guardian & consent")).not.toBeInTheDocument();
