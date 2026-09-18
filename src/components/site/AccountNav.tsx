@@ -1,10 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Calendar,
+  History,
+  Inbox,
   Clock,
   Compass,
   List,
@@ -22,6 +25,7 @@ import { useGuideProfile, useMe } from "@/lib/data-access";
 import { Body, Heading, MenuItem, MenuSection } from "@/components/ui";
 import { assetUrl } from "@/lib/assets";
 import { RoleSwitcher } from "./RoleSwitcher";
+import { parseGuideBookingFilter } from "@/components/bookings/useGuideBookingFilter";
 
 /**
  * Role-aware account navigation, shared by the desktop left rail
@@ -29,8 +33,8 @@ import { RoleSwitcher } from "./RoleSwitcher";
  * current user to pick the participant vs guide menu, and renders nothing when
  * logged out.
  *
- * Item destinations are stubbed except Dashboard, Profile, and (for guides) Availability and
- * Tour offerings.
+ * Items without a destination remain stubs. Booking links match the current list filter
+ * or the detail page's return filter.
  * Icons use lucide-react.
  */
 export type Role = "PARTICIPANT" | "GUIDE" | "ADMIN" | "SUPPORT";
@@ -40,6 +44,7 @@ interface NavItem {
   icon: LucideIcon;
   /** When set the item navigates; otherwise it's a stub (no destination yet). */
   href?: string;
+  bookingFilter?: "pending" | "upcoming" | "past";
 }
 interface NavGroup {
   /** Omit for a lead group rendered without a section header (e.g. Dashboard). */
@@ -84,20 +89,37 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Tours",
     items: [
       { label: "Explore tours", icon: Compass, href: "/tours" },
-      { label: "Upcoming tours", icon: Calendar },
+      {
+        label: "Pending",
+        icon: Inbox,
+        href: "/guide/bookings?filter=pending",
+        bookingFilter: "pending",
+      },
+      {
+        label: "Upcoming tours",
+        icon: Calendar,
+        href: "/guide/bookings?filter=upcoming",
+        bookingFilter: "upcoming",
+      },
+      {
+        label: "Past tours",
+        icon: History,
+        href: "/guide/bookings?filter=past",
+        bookingFilter: "past",
+      },
       { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
     ],
   },
   {
     label: "Earnings",
-    items: [{ label: "Earnings", icon: CircleDollarSign }],
+    items: [{ label: "Earnings", icon: CircleDollarSign, href: "/guide/earnings" }],
   },
   {
     label: "Account",
     items: [
       { label: "Profile", icon: User, href: "/profile" },
-      { label: "Verification", icon: BadgeCheck },
+      { label: "Verification", icon: BadgeCheck, href: "/guide/verification" },
       { label: "Reviews", icon: Star },
     ],
   },
@@ -110,8 +132,22 @@ const GUIDE_NAV: NavGroup[] = [
   },
 ];
 
-export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
+export function AccountNav(props: { onNavigate?: () => void }) {
+  // Mobile navigation also mounts on static public pages. Keep the query-dependent
+  // account menu inside its own boundary so those pages can still be prerendered.
+  return (
+    <Suspense fallback={null}>
+      <AccountNavContent {...props} />
+    </Suspense>
+  );
+}
+
+function AccountNavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const bookingFilter = parseGuideBookingFilter(
+    searchParams.get(pathname === "/guide/bookings" ? "filter" : "returnFilter"),
+  );
   const { me } = useMe();
   // Only fetch the guide profile when it's actually needed (the subtitle below) — a
   // participant-context render never issues this call. Called unconditionally (before the
@@ -166,22 +202,26 @@ export function AccountNav({ onNavigate }: { onNavigate?: () => void }) {
       <nav>
         {groups.map((group, gi) => (
           <MenuSection key={group.label ?? `group-${gi}`} label={group.label} bordered={gi > 0}>
-            {group.items.map((item) => (
-              <li key={item.label}>
-                <MenuItem
-                  variant="pill"
-                  icon={item.icon}
-                  href={item.href}
-                  active={
-                    Boolean(item.href) &&
-                    (pathname === item.href || pathname.startsWith(`${item.href}/`))
-                  }
-                  onSelect={onNavigate}
-                >
-                  {item.label}
-                </MenuItem>
-              </li>
-            ))}
+            {group.items.map((item) => {
+              const hrefPath = item.href?.split("?")[0];
+              return (
+                <li key={item.label}>
+                  <MenuItem
+                    variant="pill"
+                    icon={item.icon}
+                    href={item.href}
+                    active={
+                      Boolean(hrefPath) &&
+                      (pathname === hrefPath || pathname.startsWith(`${hrefPath}/`)) &&
+                      (!item.bookingFilter || item.bookingFilter === bookingFilter)
+                    }
+                    onSelect={onNavigate}
+                  >
+                    {item.label}
+                  </MenuItem>
+                </li>
+              );
+            })}
           </MenuSection>
         ))}
       </nav>
