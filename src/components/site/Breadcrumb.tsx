@@ -1,10 +1,6 @@
 import { Breadcrumb as UIBreadcrumb, BreadcrumbItem } from "@/components/ui";
 
-/**
- * Breadcrumb — thin `items`-based adapter over the shared UI Breadcrumb. Pass an
- * ordered list; the last item renders as the current page (non-link). Example:
- *   <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Sign up" }]} />
- */
+/** Small adapter for rendering an ordered breadcrumb trail. */
 export interface Crumb {
   label: string;
   href?: string;

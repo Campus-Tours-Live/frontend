@@ -17,12 +17,7 @@ interface SearchProps {
 
 const DIVIDER = "ds-divider my-1 w-px shrink-0 self-stretch bg-border";
 
-/**
- * DesktopSearchShell — the single white search shell (see globals `.ds-shell`). ONE DOM node whose
- * geometry (top/width/height) morphs between expanded and compact; the expanded form and the compact
- * section-button group cross-fade INSIDE it. Exactly one layer is interactive at a time (`inert` +
- * `aria-hidden` keyed on `collapsed`). Desktop only — the mobile control is separate.
- */
+/** Desktop and mobile university/topic search presentation components. */
 export function DesktopSearchShell({
   search,
   universityInputRef,
@@ -49,8 +44,6 @@ export function DesktopSearchShell({
   );
 }
 
-/** Expanded layer — the segmented form. Each interactive segment sets `activeSection` (which is what
- *  Commit B's shared panel will key off). Language is non-interactive ("Soon"). */
 function ExpandedContent({
   search,
   universityInputRef,
@@ -75,8 +68,6 @@ function ExpandedContent({
     onSearchBlurCapture,
   } = search;
 
-  // The clear ✕ shows only when the University field both has content AND is the active/focused
-  // section — not on an idle, unfocused pill.
   const showClearUniversity = q.trim().length > 0 && activeSection === "university";
 
   return (
@@ -115,10 +106,7 @@ function ExpandedContent({
               className="min-w-0 bg-transparent text-ui-sm leading-tight outline-none placeholder:text-ink-soft"
             />
           </div>
-          {/* Always occupies its box so the field height never jumps between empty/filled;
-                when empty it's hidden (invisible + aria-hidden + untabbable) so there's no
-                visible ✕. preventDefault keeps the input focused (no blur) so clearing doesn't
-                collapse the panel; clearUniversity empties q without firing the schools API. */}
+          
           <button
             type="button"
             aria-label="Clear university"
@@ -184,9 +172,6 @@ function ExpandedContent({
   );
 }
 
-/** Compact layer — a GROUP (not one button): University and Topic are independent section buttons,
- *  Language is a non-interactive span, and the circular action opens the University section. Keeps
- *  the 3-segment structure aligned to the expanded grid. */
 function CompactContent({ search }: SearchProps) {
   const { universityValue, topicValue, openSection, collapsed } = search;
   return (
@@ -246,9 +231,6 @@ function CompactContent({ search }: SearchProps) {
   );
 }
 
-/** One University suggestion / recent row. Explicit `role="option"` (header-v2 §6.0), and
- *  `onMouseDown` preventDefault so clicking it does NOT blur the input — otherwise the input's blur
- *  would hide the panel and unmount this row before the click lands. */
 function UniversityOptionRow({
   name,
   active,
@@ -276,12 +258,6 @@ function UniversityOptionRow({
   );
 }
 
-/** UniversitySectionPanel — the shared University module. Its visibility is authored ONLY by
- *  `activeSection === "university"` + `panelVisible` (never by focus or suggestions length), so it is
- *  a STABLE container that switches content between recent / loading / results / empty-results. It's a
- *  header-layer sibling (see globals `.ds-panel`) so outside-click (headerRef.contains) covers it; the
- *  real scroll container carries `overscroll-behavior: contain` so panel scroll never chains to the
- *  page. Desktop only. */
 export function UniversitySectionPanel({ search }: SearchProps) {
   const {
     activeSection,
@@ -326,7 +302,6 @@ export function UniversitySectionPanel({ search }: SearchProps) {
             <p className="px-2 py-6 text-center text-ui-sm text-ink-soft">No schools found</p>
           )
         ) : (
-          // Empty input → recent history (if any) plus a Nearby shortcut.
           <div className="flex flex-col gap-0.5">
             {suggestions.length > 0 ? (
               <>
@@ -366,15 +341,6 @@ export function UniversitySectionPanel({ search }: SearchProps) {
   );
 }
 
-/** TopicSectionPanel — the Topic module, a real multi-select listbox. Same header-sibling
- *  `.ds-panel` container as the University module, gated by `activeSection === "topic"` +
- *  `panelVisible`. Options come from the backend topic vocabulary (`useTourTopics`) — never
- *  hard-coded. Rows are explicit `<button type="button" role="option" aria-selected>` (NOT
- *  `MenuItem` — header-v2 §6.0 forbids mixing `role="menuitem"` semantics with `aria-selected`).
- *  "All topics" is a plain `<button>` OUTSIDE the listbox — it is not a `TourTopic`, so it must not
- *  masquerade as an option. Toggling a topic updates the draft and keeps the panel open (no
- *  auto-submit, no auto-close); the header-level keyboard contract lives here (ArrowUp/Down/
- *  Home/End move an active index with `aria-activedescendant`, Space/Enter toggles). Desktop only. */
 export function TopicSectionPanel({ search }: SearchProps) {
   const {
     activeSection,
@@ -394,7 +360,6 @@ export function TopicSectionPanel({ search }: SearchProps) {
     if (activeSection === "topic" && panelVisible) listRef.current?.focus();
   }, [activeSection, panelVisible]);
 
-  // Clamp the active index if the vocab loads/changes; default to the first selected option.
   useEffect(() => {
     const firstSel = topicOptions.findIndex((t) => selectedTopicIds.includes(t.value));
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -435,7 +400,6 @@ export function TopicSectionPanel({ search }: SearchProps) {
       const opt = topicOptions[activeIdx];
       if (opt) toggleTopic(opt.value);
     }
-    // Escape: handled by SiteHeader's document keydown listener (→ endInteraction, keeps content); not here.
   };
 
   const activeId = topicOptions[activeIdx]?.value;
@@ -446,11 +410,6 @@ export function TopicSectionPanel({ search }: SearchProps) {
       id="header-topic-panel"
       role="region"
       aria-label="Topic"
-      // Focus moving OUT of the panel closes it (keeps the draft) — same as the University field.
-      // Close whenever focus is not landing on a child of the panel: Tab-away, another header
-      // control, OR clicking a blank part of the header (focus → body, a null relatedTarget). Clicking
-      // an option does NOT fire this — the option buttons preventDefault their mousedown, so focus
-      // stays on the listbox and no blur occurs.
       onBlur={(e) => {
         if (!panelRef.current?.contains(e.relatedTarget as Node | null)) endInteraction();
       }}
@@ -503,10 +462,6 @@ export function TopicSectionPanel({ search }: SearchProps) {
   );
 }
 
-/** HeaderSearchMobile — full-width pill that opens the full-screen search sheet, plus the sheet.
- *  Kept as-is for now; a dedicated mobile visual is a later step. */
-/** A destination row in the mobile "Where?" card (a live match or a recent search). Shows the bare
- *  school name, with the city/state (from a live "Name — City, ST" label) as a secondary line. */
 function MobileUniRow({
   label,
   icon: Icon,
@@ -534,7 +489,6 @@ function MobileUniRow({
   );
 }
 
-/** A collapsed accordion row (label left, current value right) — tap to expand that section. */
 function MobileCollapsedRow({
   label,
   value,
@@ -556,10 +510,6 @@ function MobileCollapsedRow({
   );
 }
 
-/** HeaderSearchMobile — the mobile control: a full-width pill that opens an Airbnb-style bottom-sheet
- *  accordion. Exactly one section (Where / Topic) is expanded as a white card; the other collapses to
- *  a summary row. Footer: Clear all + Search. Desktop uses the morphing shell instead (this is hidden
- *  at lg). */
 export function HeaderSearchMobile({ search }: SearchProps) {
   const {
     q,
@@ -582,11 +532,9 @@ export function HeaderSearchMobile({ search }: SearchProps) {
     commitSearch,
   } = search;
   const [section, setSection] = useState<"university" | "topic">("university");
-  // The clear ✕ shows only while the University input has content AND is focused (tapped).
   const [uniFocused, setUniFocused] = useState(false);
   const showClearUniversity = q.trim().length > 0 && uniFocused;
 
-  // Picking a school just fills the field (no auto-advance to Topic — the user decides what's next).
   const pickUniversity = (label: string) => {
     selectUniversity(label);
   };
@@ -638,7 +586,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
       >
         {sheetOpen ? (
           <div className="flex flex-col gap-3">
-            {/* Where / University */}
+            
             {section === "university" ? (
               <section className={cardCls}>
                 <Heading as="h2" size="h4" className="mb-4">
@@ -661,7 +609,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                     placeholder="Search a school"
                     className="min-w-0 flex-1 bg-transparent text-ui-sm outline-none placeholder:text-ink-soft"
                   />
-                  {/* Always occupies its box (height stays constant); hidden unless content + focused. */}
+                  
                   <button
                     type="button"
                     aria-label="Clear university"
@@ -678,8 +626,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
                 </div>
 
                 <div className="mt-4 flex flex-col gap-1">
-                  {/* Only show live results (or "No schools found") while ACTIVELY typing — a
-                      pre-filled field that hasn't been edited shows recent + Nearby, like desktop. */}
+                  
                   {uniQueryActive && queryHasText ? (
                     suggestions.length > 0 ? (
                       suggestions.map((label) => (
@@ -730,7 +677,7 @@ export function HeaderSearchMobile({ search }: SearchProps) {
               />
             )}
 
-            {/* Topic */}
+            
             {section === "topic" ? (
               <section className={cardCls}>
                 <Heading as="h2" size="h4" className="mb-4">
