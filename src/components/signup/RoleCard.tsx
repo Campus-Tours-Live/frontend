@@ -1,12 +1,7 @@
 import Image from "next/image";
 import { Body, Button, Heading, Icon, Link, List, ListItem, StatusBadge } from "@/components/ui";
 
-/**
- * RoleCard — signup-flow component (used by /signup/role).
- * Composes the UI primitives (Card-like surface, StatusBadge, Button/Link); it is
- * feature-specific (only the signup flow uses it), so it lives under
- * components/signup rather than a global common folder.
- */
+/** Role-selection card used by the signup flow. */
 export interface RoleCardProps {
   image: string;
   imageAlt: string;
@@ -17,7 +12,7 @@ export interface RoleCardProps {
   points: string[];
   cta: string;
   ctaVariant: "primary" | "secondary";
-  /** If set, the CTA navigates here; otherwise it's an inert button. */
+  
   ctaHref?: string;
 }
 
@@ -35,8 +30,7 @@ export function RoleCard({
 }: RoleCardProps) {
   return (
     <article className="card flex flex-col p-[30px] transition-all duration-200 hover:-translate-y-[3px] hover:border-sage hover:shadow-[0_14px_34px_rgba(47,52,55,0.09)]">
-      {/* Editorial illustration. Box tracks the asset's native 3:1 ratio, so
-          object-cover fills it with no cropping at any screen size. */}
+      
       <div className="relative mb-[22px] aspect-[3/1] w-full overflow-hidden rounded-[14px] bg-canvas">
         <Image
           src={image}

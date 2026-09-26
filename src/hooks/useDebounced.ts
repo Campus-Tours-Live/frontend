@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 
-/** Returns `value` after it has stopped changing for `ms` milliseconds. */
-export function useDebounced<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value);
+/** Returns a value after it has stopped changing for the given delay. */
+export function useDebounced<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), ms);
-    return () => clearTimeout(t);
-  }, [value, ms]);
-  return debounced;
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
 }

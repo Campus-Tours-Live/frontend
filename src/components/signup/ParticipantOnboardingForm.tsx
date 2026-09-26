@@ -1,5 +1,7 @@
 "use client";
 
+/** Three-step participant onboarding wizard and submission workflow. */
+
 import { useEffect, useRef, useState } from "react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 import { useRouter } from "next/navigation";
@@ -37,7 +39,6 @@ interface FormValues {
   topics: string[];
 }
 
-// Minimal participant types (Transfer/International live under topics).
 const PARTICIPANT_TYPES = [
   { value: "PROSPECTIVE", label: "Prospective student" },
   { value: "PARENT", label: "Parent or guardian" },
@@ -45,8 +46,6 @@ const PARTICIPANT_TYPES = [
 
 const STEPS = ["About you", "University interests", "Topic interests"] as const;
 
-// One focused subtitle per step — the header title stays constant while the lead narrows to the
-// step's purpose (the "why"), staying clear of the field-level "how" descriptions below.
 const STEP_LEADS = [
   "Tell us who’s joining so we can personalize your tour recommendations.",
   "Add schools you’re considering to discover relevant tours and student guides.",
@@ -60,10 +59,6 @@ export function ParticipantOnboardingForm() {
   const [step, setStep] = useState(0);
   const { data: topicOptions = [] } = useTourTopics();
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Set when the command resolves STILL_PENDING (OnboardRetryableError) — Core's commit state is
-  // genuinely ambiguous, so this is neither a save failure nor a confirmed grant. Distinct from
-  // submitError: the form stays filled and retry RESUBMITS the same command — there is no
-  // separate session step any more, so a resolve from the command IS "session usable".
   const [retryMessage, setRetryMessage] = useState<string | null>(null);
 
   const {
@@ -85,9 +80,6 @@ export function ParticipantOnboardingForm() {
     mode: "onSubmit",
   });
 
-  // Prefill the name from the account — a member acquiring a second role already
-  // entered it for the first (or it came from Google at signup). Fills empty fields
-  // once, without clobbering input or marking the form dirty.
   const prefilled = useRef(false);
   useEffect(() => {
     if (prefilled.current || !me) return;
@@ -97,10 +89,8 @@ export function ParticipantOnboardingForm() {
     if (prefill.lastName && !getValues("lastName")) setValue("lastName", prefill.lastName);
   }, [me, setValue, getValues]);
 
-  /** Maps the wizard's form values to the onboarding COMMAND body — the same field mapping the
-   *  old PATCH used (the participant PATCH never had a `submit` field to strip). */
+  
   const buildBody = (values: FormValues): ParticipantProfileUpdate => ({
-    // names are required on step 1, so the `|| undefined` fallback is never taken
     firstName: /* istanbul ignore next */ values.firstName || undefined,
     lastName: /* istanbul ignore next */ values.lastName || undefined,
     participantType: values.participantType,
@@ -108,22 +98,12 @@ export function ParticipantOnboardingForm() {
     topicsOfInterest: values.topics,
   });
 
-  /**
-   * One command call, reconcile-driven navigation: `onboardRole.mutateAsync` only RESOLVES a
-   * `ProvisionedMe` once the PARTICIPANT role is CONFIRMED held (its own 201, or an internal
-   * §4.3 reconcile) — there is no separate "activate session" step any more, so a resolve here IS
-   * the "session usable + currentRole set" signal and is the ONLY path that navigates.
-   *
-   * Shared by both the wizard's Submit (`persist`) and the retry panel (`retry`) below, so a
-   * STILL_PENDING retry resubmits the EXACT same mapped body rather than re-deriving it.
-   */
+  
   const submitOnboarding = async (values: FormValues) => {
     setSubmitError(null);
     try {
       await onboardRole.mutateAsync({ role: "PARTICIPANT", body: buildBody(values) });
     } catch (err) {
-      // Core's commit state is genuinely ambiguous (§4.3 STILL_PENDING) — not a terminal failure,
-      // so no submitError message; the retry panel below owns its own copy.
       if (err instanceof OnboardRetryableError) {
         setRetryMessage(err.message);
         return;
@@ -144,8 +124,6 @@ export function ParticipantOnboardingForm() {
 
   const persist = (values: FormValues) => submitOnboarding(values);
 
-  // Resubmits the LAST wizard values (react-hook-form retains them once submitted — nothing here
-  // clears or resets the form) — never a fresh partial re-fill, and never a separate session call.
   const retry = () => submitOnboarding(getValues());
 
   const submit = handleSubmit(persist);
@@ -159,7 +137,6 @@ export function ParticipantOnboardingForm() {
     setStep((s) => s + 1);
   };
 
-  // One submit handler: earlier steps advance; the last step actually submits.
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLast) void submit();
@@ -169,10 +146,6 @@ export function ParticipantOnboardingForm() {
 
   const bothNameMissing = Boolean(errors.firstName && errors.lastName);
 
-  // Core's commit state is ambiguous (§4.3 STILL_PENDING) — the role may or may not be held yet.
-  // Replace the wizard with a dedicated retry panel rather than a full re-fill: `retry` resubmits
-  // the SAME mapped body (a re-POST of an already-granted role reconciles to a resolve, never a
-  // duplicate grant).
   if (retryMessage) {
     return (
       <>
@@ -197,16 +170,14 @@ export function ParticipantOnboardingForm() {
 
   return (
     <>
-      {/* Breadcrumb — pure navigation (no action buttons). */}
+      
       <div className="mb-8">
         <OnboardingBreadcrumb current="Onboarding" />
       </div>
 
-      {/* Fixed min-height + flex column: the footer (Back/Continue/Submit) is pinned to the card
-          bottom, and step content grows into the slack above it rather than pushing the buttons —
-          so height stays put across steps and as content changes (e.g. adding schools). */}
+      
       <div className="flex min-h-[640px] flex-col rounded-panel border border-border bg-card p-6 shadow-card sm:min-h-[700px] sm:p-9">
-        {/* Eyebrow row — Cancel aligns to it (✕ closes the task). */}
+        
         <div className="flex items-center justify-between gap-4">
           <div className="eyebrow">Participant onboarding</div>
           <OnboardingCancel dirty={isDirty} disabled={isSubmitting} />
@@ -216,7 +187,7 @@ export function ParticipantOnboardingForm() {
         <form onSubmit={onSubmit} className="mt-10 flex flex-1 flex-col">
           <WizardSteps steps={STEPS} current={step} className="mb-9" />
 
-          {/* Step 1 — About you (required) */}
+          
           {step === 0 && (
             <div className="flex flex-col gap-7">
               <div>
@@ -265,7 +236,7 @@ export function ParticipantOnboardingForm() {
                 render={({ field }) => (
                   <fieldset>
                     <legend className="form-label">I am joining as</legend>
-                    {/* Two mutually-exclusive identities → single-select segmented control. */}
+                    
                     <SegmentedControl
                       aria-label="I am joining as"
                       options={PARTICIPANT_TYPES}
@@ -278,7 +249,7 @@ export function ParticipantOnboardingForm() {
             </div>
           )}
 
-          {/* Step 2 — Universities (optional) */}
+          
           {step === 1 && (
             <Controller
               control={control}
@@ -288,22 +259,17 @@ export function ParticipantOnboardingForm() {
                   label="Universities of interest"
                   description="Search for and add up to 5 schools. You can update these anytime in your profile."
                   optional
-                  // Reserve a constant height so adding/removing schools doesn't resize the field
-                  // (and jump the card). The selected list is capped + scrolls within this space.
-                  // Inline (not a Tailwind class) so it applies reliably regardless of JIT.
                   style={{ minHeight: 384 }}
                   value={field.value}
                   onChange={field.onChange}
                   max={5}
-                  // Live College Scorecard directory (every U.S. school), matching the guide flow.
-                  // Selected ids are Scorecard school ids, submitted as universitiesOfInterest.
                   source="live"
                 />
               )}
             />
           )}
 
-          {/* Step 3 — Topics (optional) */}
+          
           {step === 2 && (
             <fieldset>
               <legend className="form-label">
@@ -344,9 +310,7 @@ export function ParticipantOnboardingForm() {
             </fieldset>
           )}
 
-          {/* Footer pinned to the bottom of the card (mt-auto), so the buttons stay put while the
-              step content above grows/shrinks. pt-12 keeps a comfortable gap even when a dense step
-              fills the card, so the buttons never look cramped against it. */}
+          
           <div className="mt-auto pt-12">
             {submitError && (
               <Alert variant="error" className="mb-5">
@@ -354,8 +318,7 @@ export function ParticipantOnboardingForm() {
               </Alert>
             )}
 
-            {/* Nav — step navigation only (Back / Continue); Cancel lives top-right. The empty span
-                keeps a lone Continue right-aligned when there's no Back to sit opposite it. */}
+            
             <ButtonRow align="between">
               {step > 0 ? (
                 <Button variant="ghost" onClick={back} disabled={isSubmitting}>

@@ -1,19 +1,13 @@
 "use client";
 
+/** Shared onboarding cancel control with unsaved-changes confirmation. */
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { Body, Button, Heading, Modal } from "@/components/ui";
 import { useMe } from "@/lib/data-access";
 
-/**
- * Cancel control for the onboarding wizards — a low-emphasis "✕ Cancel" that sits
- * top-right (out of the main sightline), so the footer holds only the Back/Continue
- * pair (Stripe/Typeform-style). Abandons the whole form and returns to where you came
- * from: a member (reached onboarding via the in-app "Become X") → /dashboard; a
- * first-time signup → /signup/role. Confirms first only when the form has unsaved
- * input (no nagging on a pristine form). Distinct from "Back", which moves one step.
- */
 export function OnboardingCancel({ dirty, disabled }: { dirty: boolean; disabled?: boolean }) {
   const router = useRouter();
   const { isOnboarded } = useMe();

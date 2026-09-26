@@ -8,32 +8,25 @@ import { Caption, Drawer, IconButton, Link, MenuItem, MenuSection } from "@/comp
 import { AccountNav } from "./AccountNav";
 import { NAV_LINKS } from "./NavLinks";
 
-/**
- * Mobile/medium (<lg) navigation: a left slide-in drawer that overlays the page.
- * The trigger sits to the LEFT of the logo (see SiteHeader). The drawer contains
- * the account menu (when logged in, via AccountNav), the primary site links, and
- * the auth actions. Hidden on lg+ where the inline header nav + left rail apply.
- */
+/** Mobile navigation drawer with account and authentication actions. */
 export function MobileNav({
   showAuthActions = true,
 }: {
   showAuthActions?: boolean;
-  /** Accepted for API symmetry (single sign-in CTA always links to sign-in). */
+  
   showGetStarted?: boolean;
-  /** Accepted for API symmetry; the drawer always reflects auth state itself. */
+  
   showDashboard?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   const { isLoading, isOnboarded, sessionUnverified } = useMe();
 
-  // Logged-in = you are a member (hold ≥1 role); a not-yet-member (bare account
-  // mid first-signup, or not signed in) holds 0 roles → public.
   const loggedIn = isOnboarded;
 
   return (
     <div className="lg:hidden">
-      {/* Negative margin aligns the icon with the page content's left edge. */}
+      
       <IconButton
         a11yLabel="Open menu"
         variant="ghost"
@@ -44,9 +37,9 @@ export function MobileNav({
         <Menu size={22} strokeWidth={2} aria-hidden />
       </IconButton>
 
-      {/* Left slide-in drawer (backdrop + Esc + scroll-lock handled by Drawer). */}
+      
       <Drawer open={open} onClose={close} side="left" ariaLabel="Menu">
-        {/* Close — floats top-right, no title bar. */}
+        
         <IconButton
           a11yLabel="Close menu"
           variant="ghost"
@@ -57,7 +50,7 @@ export function MobileNav({
         </IconButton>
 
         <div className="flex-1 overflow-y-auto px-3 pb-6 pt-12">
-          {/* Logged out (incl. onboarding): welcome card with the sign-in CTA. */}
+          
           {showAuthActions && !isLoading && !sessionUnverified && !loggedIn && (
             <div className="mb-4 rounded-panel bg-primary-soft p-4">
               <Link href="/signin" variant="primary" block onClick={close}>
@@ -69,10 +62,10 @@ export function MobileNav({
             </div>
           )}
 
-          {/* Logged in: account menu. */}
+          
           {loggedIn && <AccountNav onNavigate={close} />}
 
-          {/* Primary site links (only when there are any — currently none). */}
+          
           {NAV_LINKS.length > 0 && (
             <MenuSection label="Discover" bordered>
               {NAV_LINKS.map((link) => (
@@ -85,7 +78,7 @@ export function MobileNav({
             </MenuSection>
           )}
 
-          {/* Sign out (logged in only). */}
+          
           {showAuthActions && loggedIn && (
             <MenuSection bordered>
               <li>
