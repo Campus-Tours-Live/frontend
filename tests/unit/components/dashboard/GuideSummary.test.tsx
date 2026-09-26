@@ -125,10 +125,13 @@ describe("GuideSummary", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("shows the under-review highlight when canPublish is false", () => {
-    render(<GuideSummary data={makeData({ canPublish: false })} />);
-    expect(screen.getByText("Application under review")).toBeInTheDocument();
-    expect(screen.getByText("Hosting unlocks once an admin approves you.")).toBeInTheDocument();
+  it("shows pending verification guidance when the guide is pending", () => {
+    render(<GuideSummary data={makeData({ guideStatus: "PENDING", canPublish: false })} />);
+    expect(screen.getByRole("link", { name: "Verification pending" })).toHaveAttribute(
+      "href",
+      "/guide/verification",
+    );
+    expect(screen.queryByText(/admin approves/)).not.toBeInTheDocument();
     // Unverified guides get the plain "Student Guide" role label.
     expect(screen.getByText("Student Guide")).toBeInTheDocument();
   });
@@ -173,5 +176,81 @@ describe("GuideSummary", () => {
       "href",
       "/guide/bookings?filter=pending",
     );
+  });
+
+  it.each([null, "UNKNOWN", "VERIFIED"])(
+    "does not claim hosting eligibility for %s with canPublish false",
+    (guideStatus) => {
+      render(<GuideSummary data={makeData({ guideStatus, canPublish: false })} />);
+      expect(
+        screen.getByRole("link", { name: "Verification status unavailable" }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Guide verified")).not.toBeInTheDocument();
+    },
+  );
+
+  it("keeps rejected guidance visible even with pending requests", () => {
+    render(
+      <GuideSummary
+        data={makeData({ guideStatus: "REJECTED", canPublish: false, pendingBookingRequests: 2 })}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Verification not approved" })).toHaveAttribute(
+      "href",
+      "/guide/verification",
+    );
+    expect(screen.queryByText("Application under review")).not.toBeInTheDocument();
+  });
+
+  it("uses singular copy for one confirmed pending request", () => {
+    render(<GuideSummary data={makeData({ pendingBookingRequests: 1 })} />);
+    expect(screen.getByRole("link", { name: "1 booking request waiting" })).toBeInTheDocument();
+  });
+
+  it("shows unavailable data instead of fallback zeroes with links to retry", () => {
+    render(
+      <GuideSummary
+        data={makeData({
+          offerings: [],
+          pendingBookingRequests: 0,
+          dataAvailability: { offerings: false, pendingBookingRequests: false },
+        })}
+      />,
+    );
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Some dashboard information could not be loaded",
+    );
+    const links = screen.getAllByRole("link", { name: "Unavailable" });
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/guide/tour-offerings",
+      "/guide/bookings?filter=pending",
+    ]);
+  });
+
+  it.each([
+    { offerings: false, pendingBookingRequests: true },
+    { offerings: true, pendingBookingRequests: false },
+  ])("preserves the available count when only one read fails (%j)", (dataAvailability) => {
+    render(
+      <GuideSummary
+        data={makeData({ offerings: [], pendingBookingRequests: 0, dataAvailability })}
+      />,
+    );
+    expect(screen.getAllByText("0")).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Unavailable" })).toHaveLength(1);
+  });
+
+  it("shows confirmed zeroes without a warning when both reads succeed", () => {
+    render(
+      <GuideSummary
+        data={makeData({
+          offerings: [],
+          dataAvailability: { offerings: true, pendingBookingRequests: true },
+        })}
+      />,
+    );
+    expect(screen.getAllByText("0")).toHaveLength(2);
+    expect(screen.queryByText(/Some dashboard information/)).not.toBeInTheDocument();
   });
 });

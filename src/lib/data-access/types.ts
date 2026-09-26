@@ -182,6 +182,8 @@ export interface GuideDashboard {
   canPublish: boolean;
   offerings: Offering[];
   pendingBookingRequests: number;
+  /** Additive BFF metadata; older deployments omit it. False marks compatibility fallback data. */
+  dataAvailability?: { offerings: boolean; pendingBookingRequests: boolean };
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export interface ParticipantDashboard {
