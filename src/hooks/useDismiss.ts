@@ -2,41 +2,51 @@
 
 import { useEffect, type RefObject } from "react";
 
-/**
- * Dismiss an open overlay via the Escape key and/or an outside pointer press.
- * Listeners are only attached while `enabled` is true.
- */
+interface UseDismissOptions {
+  enabled: boolean;
+  onDismiss: () => void;
+  escape?: boolean;
+  outside?: boolean;
+  ref?: RefObject<HTMLElement | null>;
+}
+
+/** Closes an overlay with Escape or an outside pointer press. */
 export function useDismiss({
   enabled,
   onDismiss,
   escape = true,
   outside = false,
   ref,
-}: {
-  enabled: boolean;
-  onDismiss: () => void;
-  /** Close on Escape (default true). */
-  escape?: boolean;
-  /** Close on pointer-down outside `ref` (default false). */
-  outside?: boolean;
-  ref?: RefObject<HTMLElement | null>;
-}) {
+}: UseDismissOptions) {
   useEffect(() => {
     if (!enabled) return;
 
-    const onKey = (e: KeyboardEvent) => {
-      if (escape && e.key === "Escape") onDismiss();
-    };
-    const onPointer = (e: PointerEvent) => {
-      const el = ref?.current;
-      if (el && !el.contains(e.target as Node)) onDismiss();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (escape && event.key === "Escape") {
+        onDismiss();
+      }
     };
 
-    window.addEventListener("keydown", onKey);
-    if (outside) document.addEventListener("pointerdown", onPointer);
+    const handlePointerDown = (event: PointerEvent) => {
+      const element = ref?.current;
+
+      if (element && !element.contains(event.target as Node)) {
+        onDismiss();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    if (outside) {
+      document.addEventListener("pointerdown", handlePointerDown);
+    }
+
     return () => {
-      window.removeEventListener("keydown", onKey);
-      if (outside) document.removeEventListener("pointerdown", onPointer);
+      window.removeEventListener("keydown", handleKeyDown);
+
+      if (outside) {
+        document.removeEventListener("pointerdown", handlePointerDown);
+      }
     };
   }, [enabled, onDismiss, escape, outside, ref]);
 }
