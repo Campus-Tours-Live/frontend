@@ -30,6 +30,7 @@ describe("TourProductCard", () => {
     render(<TourProductCard tour={tour} />);
     expect(screen.getByText("North Coast University")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: tour.title })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: tour.title })).toHaveAttribute("href", "/tours/tour-1");
     expect(screen.getByText("Maya Chen")).toBeInTheDocument();
     // Topic is shown once (single chip) — the duplicate photo pill was removed.
     expect(screen.getAllByText("Campus life")).toHaveLength(1);

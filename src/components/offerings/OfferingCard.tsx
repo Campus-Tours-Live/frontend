@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { Copy, ExternalLink, Pencil, Pause, Trash2 } from "lucide-react";
 import { isAuthCancelled, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
-import { Alert, Body, Button, Caption, Card, Heading, StatusBadge } from "@/components/ui";
-import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
+import { Alert, Body, Button, Caption, Card, Heading, Link, StatusBadge } from "@/components/ui";
+import {
+  ApiError,
+  useActivateOffering,
+  useDuplicateOffering,
+  usePauseOffering,
+  useRetireOffering,
+  type Offering,
+} from "@/lib/data-access";
 import { formatOfferingPrice } from "@/lib/format";
 import { offeringStatusLabel, offeringStatusVariant } from "./offeringStatus";
 
@@ -15,11 +23,17 @@ export interface OfferingCardProps {
 
 export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardProps) {
   const activate = useActivateOffering();
+  const pause = usePauseOffering();
+  const retire = useRetireOffering();
+  const duplicate = useDuplicateOffering();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const isDraft = offering.status === "DRAFT";
   const isPublished = offering.status === "ACTIVE";
+  const isEditable = offering.status === "DRAFT" || offering.status === "PAUSED";
+  const isPublishable = offering.status === "DRAFT" || offering.status === "PAUSED";
   const publishDisabled = !canPublish || activate.isPending;
+  const actionBusy =
+    activate.isPending || pause.isPending || retire.isPending || duplicate.isPending;
 
   const handlePublish = async () => {
     setActionError(null);
@@ -33,6 +47,21 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
         setActionError("Your guide application must be approved before you can publish.");
       } else {
         setActionError("Could not publish this offering. Please try again.");
+      }
+    }
+  };
+
+  const runAction = async (action: () => Promise<unknown>, fallbackMessage: string) => {
+    setActionError(null);
+    try {
+      await action();
+    } catch (err) {
+      if (isAuthCancelled(err)) {
+        setActionError(SIGN_IN_AGAIN_MESSAGE);
+      } else if (err instanceof ApiError) {
+        setActionError(err.message);
+      } else {
+        setActionError(fallbackMessage);
       }
     }
   };
@@ -97,7 +126,23 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
         ) : null}
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {isDraft ? (
+          {isPublished ? (
+            <Link href={`/tours/${offering.id}`} variant="secondary" size="small" target="_blank">
+              <ExternalLink size={15} aria-hidden="true" />
+              View public listing
+            </Link>
+          ) : null}
+          {isEditable ? (
+            <Link
+              href={`/guide/tour-offerings/${offering.id}/edit`}
+              variant="secondary"
+              size="small"
+            >
+              <Pencil size={15} aria-hidden="true" />
+              Edit
+            </Link>
+          ) : null}
+          {isPublishable ? (
             <Button
               variant="primary"
               size="small"
@@ -107,7 +152,53 @@ export function OfferingCard({ offering, canPublish, topicLabel }: OfferingCardP
               {activate.isPending ? "Publishing…" : "Publish"}
             </Button>
           ) : null}
-          {!canPublish && isDraft ? (
+          {isPublished ? (
+            <Button
+              variant="secondary"
+              size="small"
+              disabled={actionBusy}
+              onClick={() =>
+                void runAction(
+                  () => pause.mutateAsync(offering.id),
+                  "Could not pause this offering. Please try again.",
+                )
+              }
+            >
+              <Pause size={15} aria-hidden="true" />
+              {pause.isPending ? "Pausing…" : "Pause"}
+            </Button>
+          ) : null}
+          {offering.status !== "ARCHIVED" ? (
+            <Button
+              variant="ghost"
+              size="small"
+              disabled={actionBusy}
+              onClick={() =>
+                void runAction(
+                  () => retire.mutateAsync(offering.id),
+                  "Could not retire this offering. Please try again.",
+                )
+              }
+            >
+              <Trash2 size={15} aria-hidden="true" />
+              {retire.isPending ? "Retiring…" : "Retire"}
+            </Button>
+          ) : null}
+          <Button
+            variant="ghost"
+            size="small"
+            disabled={actionBusy}
+            onClick={() =>
+              void runAction(
+                () => duplicate.mutateAsync(offering.id),
+                "Could not duplicate this offering. Please try again.",
+              )
+            }
+          >
+            <Copy size={15} aria-hidden="true" />
+            {duplicate.isPending ? "Duplicating…" : "Duplicate"}
+          </Button>
+          {!canPublish && isPublishable ? (
             <Caption as="p">Publishing unlocks after your guide application is approved.</Caption>
           ) : null}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "../icon/Icon";
 import { FormHelperText } from "../form/FormHelperText";
@@ -69,27 +69,47 @@ export function SelectMenu({
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const [width, setWidth] = useState<number>();
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selected = options.find((o) => o.value === value) ?? null;
   const filtered = query
     ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
     : options;
 
+  const cancelScheduledClose = () => {
+    if (closeTimer.current !== null) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+
   const openMenu = () => {
+    // A previous focus change may still have its delayed blur close pending. Reopening must cancel
+    // it, otherwise that stale timer can close the newly opened menu before an option is clicked.
+    cancelScheduledClose();
     if (disabled || open) return;
     setWidth(anchorEl?.offsetWidth);
     setActive(0);
     setOpen(true);
   };
   const close = () => {
+    cancelScheduledClose();
     setOpen(false);
     setQuery("");
   };
   const choose = (v: string) => {
+    cancelScheduledClose();
     onChange(v);
     setOpen(false);
     setQuery("");
   };
+
+  useEffect(
+    () => () => {
+      cancelScheduledClose();
+    },
+    [],
+  );
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
@@ -150,7 +170,10 @@ export function SelectMenu({
           onClick={openMenu}
           onKeyDown={onKey}
           // Delay so an option's click lands before the menu closes on blur.
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onBlur={() => {
+            cancelScheduledClose();
+            closeTimer.current = setTimeout(close, 150);
+          }}
         />
         <Icon
           name="chevronDown"
