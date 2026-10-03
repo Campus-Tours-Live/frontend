@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import DashboardPage from "@/app/(app)/dashboard/page";
-import { useDashboard, useMe } from "@/lib/data-access";
+import { useDashboard, useMe, useGuideNextTour } from "@/lib/data-access";
 import type { GuideDashboard, ParticipantDashboard } from "@/lib/data-access";
 
 // The page is a thin role-router over the useDashboard() hook; mock the hook so we
@@ -10,6 +10,7 @@ import type { GuideDashboard, ParticipantDashboard } from "@/lib/data-access";
 jest.mock("@/lib/data-access", () => ({
   useDashboard: jest.fn(),
   useMe: jest.fn(),
+  useGuideNextTour: jest.fn(),
 }));
 
 const mockUseDashboard = useDashboard as jest.Mock;
@@ -69,6 +70,9 @@ function setHook(overrides: Partial<ReturnType<typeof useDashboard>>) {
 }
 
 beforeEach(() => {
+  jest
+    .mocked(useGuideNextTour)
+    .mockReturnValue({ data: null } as ReturnType<typeof useGuideNextTour>);
   // Identity is read off useMe() by the summaries now; a display name is set per-branch below.
   mockUseMe.mockReturnValue({ me: { user: { displayName: null } } });
 });
@@ -119,6 +123,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText("Student Guide")).toBeInTheDocument();
     // Offerings row (guide-only) reflects offerings.length.
     expect(screen.getByText("Offerings")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Next upcoming tour" })).toBeInTheDocument();
 
     // It should NOT render the participant welcome heading.
     expect(screen.queryByText(/Your participant profile is saved\./)).not.toBeInTheDocument();
@@ -135,5 +140,6 @@ describe("DashboardPage", () => {
 
     // It should NOT render the guide-only offerings row.
     expect(screen.queryByText("Offerings")).not.toBeInTheDocument();
+    expect(useGuideNextTour).not.toHaveBeenCalled();
   });
 });

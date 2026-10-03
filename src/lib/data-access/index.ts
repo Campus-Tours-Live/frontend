@@ -27,6 +27,7 @@ export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
 export { useOfferings } from "./hooks/use-offerings";
 export { useGuideBookings } from "./hooks/use-guide-bookings";
+export { useGuideNextTour } from "./hooks/use-guide-next-tour";
 export { useGuideBooking } from "./hooks/use-guide-booking";
 export {
   useAcceptBooking,
