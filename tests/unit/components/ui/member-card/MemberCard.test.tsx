@@ -1,6 +1,51 @@
 import { render, screen, within } from "@testing-library/react";
+import Link from "next/link";
 import { Mail, Phone, Star } from "lucide-react";
 import { MemberCard, type MemberRole } from "@/components/ui/member-card/MemberCard";
+
+describe("MemberCard — narrow screens", () => {
+  it.each(["GUIDE", "PARTICIPANT", "GUARDIAN"] as MemberRole[])(
+    "allows the %s card to shrink without hiding long profile information",
+    (role) => {
+      const name = "AlexandriaVeryLongUnbrokenName Campus Guide";
+      const major = "Aerospace, Aeronautical, and Astronautical/Space Engineering";
+      const { container } = render(
+        <MemberCard
+          name={name}
+          role={role}
+          items={[{ icon: Star, label: "Major", value: major }]}
+        />,
+      );
+      expect(container.firstChild).toHaveClass("w-full", "min-w-0", "max-w-[400px]");
+      expect(container.firstChild).not.toHaveClass("min-w-[368px]");
+      expect(screen.getByRole("heading", { name })).not.toHaveClass("truncate");
+      expect(screen.getByRole("heading", { name })).toHaveClass("[overflow-wrap:anywhere]");
+      expect(screen.getByText(major)).not.toHaveClass("truncate");
+      expect(screen.getByText(major)).toHaveClass("min-w-0", "[overflow-wrap:anywhere]");
+    },
+  );
+
+  it("keeps actionable values available in the stacked mobile rows", () => {
+    render(
+      <MemberCard
+        name="Guide"
+        role="GUIDE"
+        items={[
+          {
+            icon: Mail,
+            label: "Pending requests",
+            value: <Link href="/guide/bookings?filter=pending">Unavailable</Link>,
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("listitem")).toHaveClass("grid", "grid-cols-[18px_minmax(0,1fr)]");
+    expect(screen.getByRole("link", { name: "Unavailable" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
+  });
+});
 
 describe("MemberCard — initials derivation", () => {
   it("derives two initials from a two-word name", () => {
