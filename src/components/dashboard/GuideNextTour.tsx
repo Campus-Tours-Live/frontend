@@ -4,7 +4,6 @@ import {
   Alert,
   Body,
   Button,
-  Caption,
   Card,
   Heading,
   InlineLoading,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui";
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
 import { formatBookingWhen } from "@/components/bookings/bookingDisplay";
+import { BookingTimeZoneCaption } from "@/components/bookings/BookingTimeZoneCaption";
 import { useGuideNextTour } from "@/lib/data-access";
 
 /** Compact, read-only booking preview built from the same primitives as the booking cards. */
@@ -57,9 +57,7 @@ export function GuideNextTour() {
             <time dateTime={booking.scheduledAt}>{formatBookingWhen(booking.scheduledAt)}</time> ·{" "}
             {booking.durationMin} min
           </Body>
-          <Caption as="p" color="muted" className="break-words">
-            Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}
-          </Caption>
+          <BookingTimeZoneCaption />
           <Link
             href={`/guide/bookings/${encodeURIComponent(booking.id)}?returnFilter=upcoming`}
             variant="secondary"

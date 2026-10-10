@@ -12,6 +12,32 @@ import {
 } from "@/components/bookings/bookingDisplay";
 
 describe("bookingDisplay", () => {
+  it("includes the local calendar year and offset across year boundaries", () => {
+    const iso = "2027-01-01T00:30:00Z";
+    expect(formatBookingWhen(iso, "America/Los_Angeles")).toMatch(/Dec 31, 2026.*4:30 PM GMT-8/);
+    expect(formatBookingWhen(iso, "Asia/Tokyo")).toMatch(/Jan 1, 2027.*9:30 AM GMT\+9/);
+    expect(formatBookingTime(iso, "Asia/Kolkata")).toBe("6:00 AM GMT+5:30");
+    expect(formatBookingTime(iso, "UTC")).toBe("12:30 AM GMT");
+  });
+
+  it("distinguishes repeated hours when daylight saving ends", () => {
+    expect(formatBookingTime("2026-11-01T08:30:00Z", "America/Los_Angeles")).toBe("1:30 AM GMT-7");
+    expect(formatBookingTime("2026-11-01T09:30:00Z", "America/Los_Angeles")).toBe("1:30 AM GMT-8");
+  });
+
+  it("skips the missing hour when daylight saving begins", () => {
+    expect(formatBookingTime("2026-03-08T09:30:00Z", "America/Los_Angeles")).toBe("1:30 AM GMT-8");
+    expect(formatBookingTime("2026-03-08T10:30:00Z", "America/Los_Angeles")).toBe("3:30 AM GMT-7");
+  });
+
+  it("uses the same full date and timezone for status history", () => {
+    const iso = "2027-01-01T00:30:00Z";
+    expect(formatStatusEventWhen(iso, "America/Los_Angeles")).toBe(
+      formatBookingWhen(iso, "America/Los_Angeles"),
+    );
+    expect(formatStatusEventWhen("not-a-date")).toBe("not-a-date");
+  });
+
   it("labels waiting status as Pending", () => {
     expect(bookingStatusLabel("WAITING_FOR_GUIDE")).toBe("Pending");
   });

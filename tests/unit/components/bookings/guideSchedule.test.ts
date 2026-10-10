@@ -40,8 +40,8 @@ describe("guideSchedule", () => {
 
   it("labels today and tomorrow relative to now", () => {
     const now = new Date("2026-08-01T12:00:00");
-    expect(formatScheduleDayHeading("2026-08-01", now)).toBe("Today");
-    expect(formatScheduleDayHeading("2026-08-02", now)).toBe("Tomorrow");
+    expect(formatScheduleDayHeading("2026-08-01", now)).toBe("Today · Saturday, August 1, 2026");
+    expect(formatScheduleDayHeading("2026-08-02", now)).toBe("Tomorrow · Sunday, August 2, 2026");
     expect(formatScheduleDayHeading("2026-08-05", now)).toMatch(/Wednesday/);
   });
 
