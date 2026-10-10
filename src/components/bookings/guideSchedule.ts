@@ -26,15 +26,15 @@ export function formatScheduleDayHeading(dayKey: string, now = new Date()): stri
   tomorrow.setDate(tomorrow.getDate() + 1);
   const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  if (target.getTime() === today.getTime()) return "Today";
-  if (target.getTime() === tomorrow.getTime()) return "Tomorrow";
-
-  return new Intl.DateTimeFormat("en-US", {
+  const fullDate = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
-    ...(y !== now.getFullYear() ? { year: "numeric" as const } : {}),
+    year: "numeric",
   }).format(date);
+  if (target.getTime() === today.getTime()) return `Today · ${fullDate}`;
+  if (target.getTime() === tomorrow.getTime()) return `Tomorrow · ${fullDate}`;
+  return fullDate;
 }
 
 /** Chronological day groups for confirmed upcoming tours. */

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert, Chip, InlineLoading, Link, PageContainer, PageHeader } from "@/components/ui";
 import { QueryErrorAlert } from "@/components/auth/QueryErrorAlert";
+import { BookingTimeZoneCaption } from "./BookingTimeZoneCaption";
 import {
   useAcceptBooking,
   useDeclineBooking,
@@ -71,6 +72,7 @@ export function GuideBookingsPage() {
   return (
     <PageContainer width="wide">
       <PageHeader title={copy.title} lead={copy.lead} />
+      <BookingTimeZoneCaption />
 
       {demoGuideBookingsEnabled() ? (
         <Alert variant="info">

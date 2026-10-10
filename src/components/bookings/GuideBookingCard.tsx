@@ -67,8 +67,10 @@ export function GuideBookingCard({
           {booking.universityName ? ` · ${booking.universityName}` : ""}
         </Body>
         <Body size="small">
-          {(scheduleMode ? formatBookingTime : formatBookingWhen)(booking.scheduledAt)} ·{" "}
-          {booking.durationMin} min
+          <time dateTime={booking.scheduledAt}>
+            {(scheduleMode ? formatBookingTime : formatBookingWhen)(booking.scheduledAt)}
+          </time>{" "}
+          · {booking.durationMin} min
         </Body>
         {booking.participantNotes ? (
           <Caption as="p" color="muted">

@@ -37,24 +37,30 @@ export function bookingStatusVariant(status: string): StatusVariant {
   }
 }
 
-export function formatBookingWhen(iso: string): string {
+/** Defaults to the viewer's timezone; offsets belong to the event date (including DST). */
+export function formatBookingWhen(iso: string, timeZone?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
+    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZoneName: "shortOffset",
+    timeZone,
   }).format(d);
 }
 
-export function formatBookingTime(iso: string): string {
+export function formatBookingTime(iso: string, timeZone?: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
+    timeZoneName: "shortOffset",
+    timeZone,
   }).format(d);
 }
 
@@ -134,13 +140,6 @@ export function bookingActorLabel(actor: string): string {
   }
 }
 
-export function formatStatusEventWhen(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(d);
+export function formatStatusEventWhen(iso: string, timeZone?: string): string {
+  return formatBookingWhen(iso, timeZone);
 }

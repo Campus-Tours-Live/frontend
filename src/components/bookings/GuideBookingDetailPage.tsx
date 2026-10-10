@@ -1,5 +1,7 @@
 "use client";
 
+import { BookingTimeZoneCaption } from "./BookingTimeZoneCaption";
+
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -201,6 +203,7 @@ export function GuideBookingDetailPage({ bookingId }: { bookingId: string }) {
                     <time dateTime={booking.scheduledAt}>
                       {formatBookingWhen(booking.scheduledAt)} · {booking.durationMin} min
                     </time>
+                    <BookingTimeZoneCaption />
                   </Body>
                 </div>
                 <div>
