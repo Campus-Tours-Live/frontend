@@ -25,7 +25,9 @@ import PublicLayout from "@/app/(public)/layout";
 import AuthLayout from "@/app/(auth)/layout";
 import ProfilePage from "@/app/(app)/profile/page";
 import SupportPage from "@/app/(app)/support/page";
+import PaymentMethodsPage from "@/app/(app)/payment-methods/page";
 import StaffPage from "@/app/staff/page";
+import NotFound from "@/app/not-found";
 import { useMe } from "@/lib/data-access";
 
 const mockUseMe = useMe as jest.Mock;
@@ -99,9 +101,20 @@ describe("static / shell pages", () => {
     expect(screen.getByText("Support")).toBeInTheDocument();
   });
 
+  it("payment methods placeholder shows its heading", () => {
+    render(<PaymentMethodsPage />);
+    expect(screen.getByText("Payment methods")).toBeInTheDocument();
+  });
+
   it("staff placeholder shows the coming-soon notice", () => {
     render(<StaffPage />);
     expect(screen.getByText(/staff area/i)).toBeInTheDocument();
+  });
+
+  it("404 page shows the not-found message and a way back home", () => {
+    render(<NotFound />);
+    expect(screen.getByText("Page not found")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /back to home/i })).toHaveAttribute("href", "/");
   });
 
   // The guide/participant onboarding page guards (getServerMe/getServerParticipantType +
