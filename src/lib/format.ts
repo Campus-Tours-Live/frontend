@@ -13,6 +13,21 @@ export function formatMonthYear(iso: string | null | undefined): string {
 }
 
 /**
+ * Render a booking's ISO-8601 UTC start time as a human-readable date + time in
+ * the user's local timezone: "June 27 at 1:30 PM". Used on booking cards.
+ */
+export function formatBookingDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const datePart = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric" }).format(d);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
+  return `${datePart} at ${timePart}`;
+}
+
+/**
  * Render a minor-unit price (cents) as a locale-aware currency string.
  * e.g. 4200 USD → "$42.00", 4250 EUR → "€42.50" (en-US).
  */

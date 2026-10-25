@@ -133,6 +133,30 @@ export interface EnrollmentYearRules {
   defaultMaxYearsToGraduate: number;
 }
 
+/** Price in minor units returned by the BFF booking contract (Contract A). */
+export interface BookingPrice {
+  amount: number;
+  currency: string;
+}
+
+/**
+ * A single booking as shaped by the BFF (Contract A, /v1/dashboard → upcomingBookings).
+ * Field names differ from the Core DTO — see bff/src/api/_shared/reshape.ts.
+ */
+export interface BookingResponse {
+  id: string;
+  status: string; // "WAITING_FOR_GUIDE" | "CONFIRMED" | "COMPLETED" | "CANCELLED"
+  scheduledStartAt: string; // ISO-8601 UTC
+  scheduledEndAt: string; // ISO-8601 UTC (computed: start + durationMinutes)
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: BookingPrice;
+}
+
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
 export interface GuideDashboard {
   kind: "guide";
@@ -145,6 +169,8 @@ export interface GuideDashboard {
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
+  /** Best-effort: [] when the Core call fails. */
+  upcomingBookings: BookingResponse[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;

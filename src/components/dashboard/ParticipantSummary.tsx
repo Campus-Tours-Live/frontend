@@ -8,6 +8,7 @@ import {
 } from "@/components/ui";
 import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
+import { BookedTours } from "./BookedTours";
 
 /**
  * Participant dashboard slice — presentational. The /v1/dashboard aggregate already
@@ -53,7 +54,7 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       };
 
   return (
-    <div>
+    <div className="flex flex-col gap-12">
       <SectionHeading
         eyebrow="Dashboard"
         title={`Welcome${me?.user.displayName ? `, ${me.user.displayName}` : ""}.`}
@@ -61,13 +62,14 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       />
 
       <MemberCard
-        className="mt-8"
         name={me?.user.displayName ?? "Member"}
         role={role}
         verification={me?.user.email ? "Email Verified" : undefined}
         items={items}
         highlight={highlight}
       />
+
+      <BookedTours bookings={data.upcomingBookings} />
     </div>
   );
 }

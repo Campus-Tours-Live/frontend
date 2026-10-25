@@ -26,6 +26,7 @@ function makeData(
       universitiesOfInterest: ["mit", "stanford"],
       ...overrides,
     },
+    upcomingBookings: [],
     createdAt: "2025-03-15T00:00:00Z",
   };
 }
