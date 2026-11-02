@@ -65,7 +65,7 @@ const PARTICIPANT_NAV: NavGroup[] = [
     label: "Account",
     items: [
       { label: "Profile", icon: User, href: "/profile" },
-      { label: "Payment methods", icon: CreditCard },
+      { label: "Payment methods", icon: CreditCard, href: "/payment-methods" },
       { label: "Guardian & consent", icon: FileSignature },
     ],
   },
