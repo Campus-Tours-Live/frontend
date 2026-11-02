@@ -33,6 +33,16 @@ const tour = {
 };
 
 describe("TourDetailPage", () => {
+  it("renders when optional features are omitted", () => {
+    mockUseTourDetail.mockReturnValue({
+      data: { ...tour, features: undefined },
+      isLoading: false,
+      isError: false,
+    });
+    render(<TourDetailPage tourId="t1" />);
+    expect(screen.getByRole("heading", { name: "Campus walk" })).toBeInTheDocument();
+  });
+
   it("renders public offering information", () => {
     mockUseTourDetail.mockReturnValue({ data: tour, isLoading: false, isError: false });
     render(<TourDetailPage tourId="t1" />);
