@@ -61,6 +61,22 @@ beforeEach(() => {
 });
 
 describe("GuideSummary", () => {
+  it("shows unavailable instead of zero when pending requests could not be loaded", () => {
+    render(
+      <GuideSummary
+        data={makeData({
+          pendingBookingRequests: 0,
+          dataAvailability: { offerings: true, pendingBookingRequests: false },
+        })}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Unavailable" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
   it("renders the guide display name from useMe", () => {
     render(<GuideSummary data={makeData()} />);
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();

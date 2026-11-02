@@ -14,6 +14,7 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
   const { guide, guideStatus, canPublish, offerings, pendingBookingRequests, createdAt } = data;
   const { me } = useMe();
   const pendingCount = pendingBookingRequests ?? 0;
+  const pendingAvailable = data.dataAvailability?.pendingBookingRequests !== false;
 
   const items: MemberCardItem[] = [
     { icon: GraduationCap, label: "Major", value: guide.universities?.[0]?.major ?? "—" },
@@ -22,20 +23,21 @@ export function GuideSummary({ data }: { data: GuideDashboard }) {
     {
       icon: Inbox,
       label: "Pending requests",
-      value:
-        pendingCount > 0 ? (
-          <Link href="/guide/bookings?filter=pending" className="font-semibold">
-            {pendingCount}
-          </Link>
-        ) : (
-          "0"
-        ),
+      value: !pendingAvailable ? (
+        <Link href="/guide/bookings?filter=pending">Unavailable</Link>
+      ) : pendingCount > 0 ? (
+        <Link href="/guide/bookings?filter=pending" className="font-semibold">
+          {pendingCount}
+        </Link>
+      ) : (
+        "0"
+      ),
     },
     { icon: CalendarDays, label: "Member since", value: formatMonthYear(createdAt) },
   ];
 
   const highlight: MemberCardHighlight =
-    pendingCount > 0
+    pendingAvailable && pendingCount > 0
       ? {
           icon: Inbox,
           title: (
