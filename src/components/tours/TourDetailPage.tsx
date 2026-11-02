@@ -65,7 +65,7 @@ export function TourDetailPage({ tourId }: { tourId: string }) {
                 "Your guide will share their campus experience and answer your questions live."}
             </Body>
 
-            {tour.features.length ? (
+            {tour.features?.length ? (
               <div className="mt-7 flex flex-wrap gap-2">
                 {tour.features.map((feature) => (
                   <Tag key={feature} color="gray" variant="secondary">
