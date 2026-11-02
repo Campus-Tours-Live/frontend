@@ -17,7 +17,8 @@ describe("bookingDisplay", () => {
     expect(formatBookingWhen(iso, "America/Los_Angeles")).toMatch(/Dec 31, 2026.*4:30 PM GMT-8/);
     expect(formatBookingWhen(iso, "Asia/Tokyo")).toMatch(/Jan 1, 2027.*9:30 AM GMT\+9/);
     expect(formatBookingTime(iso, "Asia/Kolkata")).toBe("6:00 AM GMT+5:30");
-    expect(formatBookingTime(iso, "UTC")).toBe("12:30 AM GMT");
+    // ICU versions label zero offset as either GMT or GMT+0.
+    expect(formatBookingTime(iso, "UTC")).toMatch(/^12:30 AM GMT(?:\+0)?$/);
   });
 
   it("distinguishes repeated hours when daylight saving ends", () => {
