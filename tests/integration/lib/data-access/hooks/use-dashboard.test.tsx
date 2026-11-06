@@ -38,6 +38,22 @@ beforeEach(() => {
 });
 
 describe("useDashboard", () => {
+  it("preserves guide partial-data availability through the response envelope", async () => {
+    const dashboard = {
+      kind: "guide",
+      guide: {},
+      guideStatus: "PENDING",
+      canPublish: false,
+      offerings: [],
+      pendingBookingRequests: 0,
+      dataAvailability: { offerings: true, pendingBookingRequests: false },
+      createdAt: null,
+    };
+    fetchMock.mockResolvedValue(jsonResponse(200, { data: dashboard }));
+    const { result } = renderHook(() => useDashboard(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(dashboard);
+  });
   it("fetches /v1/dashboard with same-origin credentials and unwraps data", async () => {
     const dashboard = {
       kind: "participant",
