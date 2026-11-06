@@ -2,8 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { AccountNav } from "@/components/site/AccountNav";
 import { useGuideProfile, useMe } from "@/lib/data-access";
 
+let mockPathname = "/dashboard";
+let mockSearch = "";
 jest.mock("next/navigation", () => ({
-  usePathname: () => "/dashboard",
+  usePathname: () => mockPathname,
+  useSearchParams: () => new URLSearchParams(mockSearch),
 }));
 jest.mock("@/lib/data-access", () => ({
   useMe: jest.fn(),
@@ -47,6 +50,8 @@ function setupGuideProfile(guideStatus: string | null = null) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPathname = "/dashboard";
+  mockSearch = "";
   setupGuideProfile();
 });
 
@@ -126,10 +131,23 @@ describe("AccountNav — guide", () => {
     render(<AccountNav />);
 
     expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
-    expect(screen.getByText("Upcoming tours")).toBeInTheDocument();
-    // "Earnings" is both a section label and an item; assert the item button.
-    expect(screen.getByRole("button", { name: "Earnings" })).toBeInTheDocument();
-    expect(screen.getByText("Verification")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Pending" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
+    expect(screen.getByRole("link", { name: "Upcoming tours" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=upcoming",
+    );
+    // "Earnings" is both a section label and an item; assert the navigable item.
+    expect(screen.getByRole("link", { name: "Earnings" })).toHaveAttribute(
+      "href",
+      "/guide/earnings",
+    );
+    expect(screen.getByRole("link", { name: "Verification" })).toHaveAttribute(
+      "href",
+      "/guide/verification",
+    );
     // Participant-only items must NOT appear.
     expect(screen.queryByText("My bookings")).not.toBeInTheDocument();
     expect(screen.queryByText("Guardian & consent")).not.toBeInTheDocument();
@@ -191,5 +209,52 @@ describe("AccountNav — defaults", () => {
     expect(screen.getByRole("link", { name: "Explore tours" })).toHaveAttribute("href", "/tours");
     expect(screen.getByText("My bookings")).toBeInTheDocument();
     expect(screen.getByText("Participant account")).toBeInTheDocument();
+  });
+});
+
+describe("AccountNav — active guide destination", () => {
+  beforeEach(() => setupMe({ currentRole: "GUIDE", roles: ["GUIDE"] }));
+
+  it.each([
+    ["/guide/bookings", "filter=pending", "Pending"],
+    ["/guide/bookings", "filter=upcoming", "Upcoming tours"],
+    ["/guide/bookings", "filter=past", "Past tours"],
+    ["/guide/bookings/b1", "returnFilter=pending", "Pending"],
+    ["/guide/bookings/b1", "returnFilter=upcoming&filter=past", "Upcoming tours"],
+    ["/guide/bookings/b1", "returnFilter=past", "Past tours"],
+    ["/guide/verification", "", "Verification"],
+    ["/guide/tour-offerings/o1/edit", "", "Tour offerings"],
+  ])("selects only %s?%s's destination", (pathname, search, label) => {
+    mockPathname = pathname;
+    mockSearch = search;
+    render(<AccountNav />);
+    expect(screen.getAllByRole("link", { current: "page" })).toEqual([
+      screen.getByRole("link", { name: label }),
+    ]);
+  });
+
+  it.each([
+    ["/guide/bookings", ""],
+    ["/guide/bookings", "filter=all"],
+    ["/guide/bookings", "filter=invalid&returnFilter=pending"],
+    ["/guide/bookings/b1", ""],
+    ["/guide/bookings/b1", "returnFilter=invalid&filter=pending"],
+    ["/guide/bookings-other", "filter=pending"],
+  ])("does not select a filtered link for %s?%s", (pathname, search) => {
+    mockPathname = pathname;
+    mockSearch = search;
+    render(<AccountNav />);
+    expect(screen.queryAllByRole("link", { current: "page" })).toHaveLength(0);
+  });
+
+  it("updates the selected link when only the filter changes", () => {
+    mockPathname = "/guide/bookings";
+    mockSearch = "filter=pending";
+    const { rerender } = render(<AccountNav />);
+    mockSearch = "filter=past";
+    rerender(<AccountNav />);
+    expect(screen.getAllByRole("link", { current: "page" })).toEqual([
+      screen.getByRole("link", { name: "Past tours" }),
+    ]);
   });
 });
