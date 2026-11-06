@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { AllToursPage } from "@/components/tours/AllToursPage";
 import { useTourCatalog, type TourSummary } from "@/lib/data-access";
 
-// Same mock shape as AllToursPage.test.tsx.
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access/topics"),
   useTourCatalog: jest.fn(),
@@ -27,19 +26,6 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace, push }),
   usePathname: () => "/tours",
   useSearchParams: () => new URLSearchParams(""),
-}));
-
-// The real TourFiltersBar's "Filters" button is `disabled` ("Coming soon"), so it can't be used to
-// drive AllToursPage's open/close/apply wiring for TourFiltersModal (setModalOpen(true)/onClose/
-// onApply — lines that render the modal) from a real click in this suite yet. Stub just the
-// trigger so this file can exercise that wiring for when the button ships enabled; the modal
-// itself (TourFiltersModal) is NOT mocked — it renders and behaves for real once opened.
-jest.mock("@/components/tours/TourFiltersBar", () => ({
-  TourFiltersBar: ({ onOpenFilters }: { onOpenFilters: () => void }) => (
-    <button type="button" onClick={onOpenFilters}>
-      open-filters-test-hook
-    </button>
-  ),
 }));
 
 const mockUseTourCatalog = useTourCatalog as jest.MockedFunction<typeof useTourCatalog>;
@@ -90,31 +76,34 @@ beforeEach(() => {
   mockCatalog({ totalElements: 1 });
 });
 
-describe("AllToursPage — filters modal wiring", () => {
-  it("opens the filters modal from the trigger, applies a sort choice, and closes it", async () => {
+describe("AllToursPage filters dropdown wiring", () => {
+  it("opens the filters dropdown, applies a sort choice, and closes it", async () => {
     const user = userEvent.setup();
     render(<AllToursPage />);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "Filters" });
+    expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
 
-    await user.click(screen.getByRole("button", { name: "open-filters-test-hook" }));
+    await user.click(trigger);
     expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
 
     await user.selectOptions(screen.getByLabelText("Sort by"), "RATING");
     await user.click(screen.getByRole("button", { name: "Show 1 tours" }));
 
     expect(replace).toHaveBeenCalledWith("/tours?sort=RATING", { scroll: false });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument();
   });
 
-  it("closes the filters modal via its Close control without applying a sort change", async () => {
+  it("closes the filters dropdown with Escape without applying a sort change", async () => {
     const user = userEvent.setup();
     render(<AllToursPage />);
 
-    await user.click(screen.getByRole("button", { name: "open-filters-test-hook" }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Filters" }));
+    expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Close" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
 });

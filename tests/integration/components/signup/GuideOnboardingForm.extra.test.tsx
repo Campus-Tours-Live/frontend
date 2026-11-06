@@ -435,12 +435,19 @@ describe("GuideOnboardingForm edge cases", () => {
       await screen.findByRole("option", { name: "Economics" }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "computer_science" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(majorTrigger).toHaveAttribute("aria-expanded", "false"), {
+      timeout: 5000,
+    });
 
     // Same fallback behaviour for the degree picker.
     const degreeTrigger = screen.getByRole("combobox", { name: /degree/i });
     await waitFor(() => expect(degreeTrigger).toBeEnabled(), { timeout: 5000 });
     expect(degreeTrigger).toHaveValue("Bachelor's Degree");
     await user.click(degreeTrigger);
+    await waitFor(() => expect(degreeTrigger).toHaveAttribute("aria-expanded", "true"), {
+      timeout: 5000,
+    });
     expect(
       await screen.findByRole("option", { name: "Master's Degree" }, { timeout: 5000 }),
     ).toBeInTheDocument();

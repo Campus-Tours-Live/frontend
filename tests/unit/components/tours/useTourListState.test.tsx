@@ -69,6 +69,15 @@ describe("useTourListState", () => {
     expect(replace).toHaveBeenCalledWith("/tours", { scroll: false });
   });
 
+  it("changeFilters writes topic and sort together while resetting page", () => {
+    search = "q=campus&page=3";
+    const { result } = renderHook(() => useTourListState());
+    act(() => result.current.changeFilters({ topicIds: ["GENERAL_CAMPUS"], sort: "PRICE_ASC" }));
+    expect(replace).toHaveBeenCalledWith("/tours?q=campus&sort=PRICE_ASC&topic=GENERAL_CAMPUS", {
+      scroll: false,
+    });
+  });
+
   it("setPage pushes a 1-based page param; page 0 omits it", () => {
     const { result } = renderHook(() => useTourListState());
     act(() => result.current.setPage(2));

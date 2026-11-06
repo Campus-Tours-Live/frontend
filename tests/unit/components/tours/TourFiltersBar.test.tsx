@@ -20,7 +20,7 @@ describe("TourFiltersBar", () => {
     const user = userEvent.setup();
     const onTopicsChange = jest.fn();
     render(
-      <TourFiltersBar topicIds={[]} onTopicsChange={onTopicsChange} onOpenFilters={() => {}} />,
+      <TourFiltersBar topicIds={[]} onTopicsChange={onTopicsChange} onToggleFilters={() => {}} />,
     );
     await user.click(screen.getByRole("button", { name: "Campus life" }));
     expect(onTopicsChange).toHaveBeenLastCalledWith(["GENERAL_CAMPUS"]);
@@ -33,7 +33,7 @@ describe("TourFiltersBar", () => {
       <TourFiltersBar
         topicIds={["GENERAL_CAMPUS"]}
         onTopicsChange={onTopicsChange}
-        onOpenFilters={() => {}}
+        onToggleFilters={() => {}}
       />,
     );
     // the only selected chip is active, Any is not
@@ -52,25 +52,53 @@ describe("TourFiltersBar", () => {
       <TourFiltersBar
         topicIds={["GENERAL_CAMPUS", "DORM_HOUSING"]}
         onTopicsChange={onTopicsChange}
-        onOpenFilters={() => {}}
+        onToggleFilters={() => {}}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Any" }));
     expect(onTopicsChange).toHaveBeenLastCalledWith([]);
   });
 
-  it("disables the Filters button (coming soon) and does not open the modal", async () => {
-    const onOpenFilters = jest.fn();
+  it("opens the filters dropdown from the Filters button", async () => {
+    const onToggleFilters = jest.fn();
     const user = userEvent.setup();
     render(
-      <TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onOpenFilters={onOpenFilters} />,
+      <TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onToggleFilters={onToggleFilters} />,
     );
-    const filters = screen.getByRole("button", { name: /filters/i });
-    expect(filters).toBeDisabled();
-    expect(filters).toHaveTextContent(/soon/i);
+    const filters = screen.getByRole("button", { name: "Filters" });
+    expect(filters).toBeEnabled();
+    expect(filters).toHaveAttribute("aria-expanded", "false");
+    expect(filters).toHaveAttribute("aria-haspopup", "dialog");
     await user.click(filters);
-    expect(onOpenFilters).not.toHaveBeenCalled();
+    expect(onToggleFilters).toHaveBeenCalledWith(filters);
     expect(screen.getByRole("button", { name: "Any" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("marks the Filters button expanded when the dropdown is open", () => {
+    render(
+      <TourFiltersBar
+        topicIds={[]}
+        filtersOpen
+        onTopicsChange={jest.fn()}
+        onToggleFilters={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Filters" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("shows the active filter count on the Filters button", () => {
+    render(
+      <TourFiltersBar
+        topicIds={["GENERAL_CAMPUS"]}
+        activeFilterCount={2}
+        onTopicsChange={jest.fn()}
+        onToggleFilters={() => {}}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Filters (2 active)" })).toHaveTextContent("2");
   });
 
   it("renders only the Any chip (no topic quick-chips) when the topic catalog hasn't loaded yet", () => {
@@ -78,7 +106,7 @@ describe("TourFiltersBar", () => {
     // re-render (the "mounted" hydration gate), so queue the empty response for each.
     const empty = { data: undefined } as ReturnType<typeof useTourTopics>;
     mockUseTourTopics.mockReturnValueOnce(empty).mockReturnValueOnce(empty);
-    render(<TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onOpenFilters={() => {}} />);
+    render(<TourFiltersBar topicIds={[]} onTopicsChange={jest.fn()} onToggleFilters={() => {}} />);
     expect(screen.getByRole("button", { name: "Any" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Campus life" })).not.toBeInTheDocument();
   });

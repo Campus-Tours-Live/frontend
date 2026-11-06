@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AllToursPage } from "@/components/tours/AllToursPage";
 import { useTourCatalog, useTourTopics, type TourSummary } from "@/lib/data-access";
@@ -141,15 +141,24 @@ describe("AllToursPage", () => {
     expect(replace).toHaveBeenCalledWith("/tours?topic=DORM_HOUSING", { scroll: false });
   });
 
-  it("disables the Filters button (coming soon) — it does not open the modal", async () => {
+  it("opens the Filters dropdown and applies topic plus sort together", async () => {
     mockCatalog({ items: [tour], totalPages: 1, totalElements: 1 });
     const user = userEvent.setup();
     render(<AllToursPage />);
-    const filters = screen.getByRole("button", { name: /filters/i });
-    expect(filters).toBeDisabled();
-    expect(filters).toHaveTextContent(/soon/i);
+    const filters = screen.getByRole("button", { name: "Filters" });
+    expect(filters).toBeEnabled();
     await user.click(filters);
-    expect(screen.queryByRole("button", { name: /show 1 tours/i })).not.toBeInTheDocument();
+
+    const dialog = screen.getByRole("dialog", { name: "Filters" });
+    expect(dialog).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Dorms & housing" }));
+    await user.selectOptions(screen.getByLabelText("Sort by"), "RATING");
+    await user.click(screen.getByRole("button", { name: "Show 1 tours" }));
+
+    expect(replace).toHaveBeenCalledWith("/tours?sort=RATING&topic=DORM_HOUSING", {
+      scroll: false,
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("renders loading, empty, and fallback states", async () => {
