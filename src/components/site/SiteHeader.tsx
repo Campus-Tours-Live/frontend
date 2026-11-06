@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Suspense,
   useCallback,
   useEffect,
   useRef,
@@ -37,16 +38,26 @@ const EXPAND_FOCUS_FALLBACK_MS = 320;
  * focus University once the shell's width transition finishes; defensive blur if focus is somehow
  * inside the expanded form when it collapses) live here — `useHeaderSearch` stays DOM-free.
  */
-export function SiteHeader({
-  showGetStarted = true,
-  showAuthActions = true,
-  showDashboardLink = true,
-}: {
+type SiteHeaderProps = {
   showGetStarted?: boolean;
   showAuthActions?: boolean;
   /** Hide the Dashboard link in the header (e.g. on the dashboard itself). */
   showDashboardLink?: boolean;
-}) {
+};
+
+export function SiteHeader(props: SiteHeaderProps) {
+  return (
+    <Suspense fallback={<div className="header-spacer" aria-hidden />}>
+      <SiteHeaderContent {...props} />
+    </Suspense>
+  );
+}
+
+function SiteHeaderContent({
+  showGetStarted = true,
+  showAuthActions = true,
+  showDashboardLink = true,
+}: SiteHeaderProps) {
   const search = useHeaderSearch();
   const {
     collapsed,

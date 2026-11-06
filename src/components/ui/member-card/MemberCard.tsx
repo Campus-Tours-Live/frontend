@@ -131,9 +131,8 @@ export function MemberCard({
   return (
     <section
       className={cn(
-        // Clamp width (smaller on large screens) + a floor so content never
-        // overflows the card edges when the viewport shrinks.
-        "w-full min-w-[368px] max-w-[400px]",
+        // Keep the desktop cap without forcing horizontal scrolling on narrow screens.
+        "w-full min-w-0 max-w-[400px]",
         "rounded-panel border border-border bg-card p-6 shadow-card",
         className,
       )}
@@ -160,23 +159,23 @@ export function MemberCard({
         )}
 
         <div className="min-w-0 flex-1">
-          <h2 className="truncate font-display text-h3 text-ink">{name}</h2>
+          <h2 className="font-display text-h3 text-ink [overflow-wrap:anywhere]">{name}</h2>
           <span
             className={cn(
-              "mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-pill px-2.5 py-1 text-left text-[12px] font-bold leading-snug",
+              "mt-1.5 inline-flex max-w-full items-center gap-1.5 rounded-pill px-2.5 py-1 text-left text-[12px] font-bold leading-snug [overflow-wrap:anywhere]",
               accent.pill,
             )}
           >
-            <RoleIcon size={13} strokeWidth={2} aria-hidden />
-            {roleLabel ?? accent.label}
+            <RoleIcon size={13} strokeWidth={2} className="shrink-0" aria-hidden />
+            <span className="min-w-0">{roleLabel ?? accent.label}</span>
           </span>
         </div>
       </div>
 
       {verification ? (
         <span className="mt-4 inline-flex max-w-full items-center gap-1.5 rounded-pill bg-success-soft px-2.5 py-1 text-left text-[12.5px] font-semibold leading-snug text-success-foreground">
-          <CircleCheck size={14} strokeWidth={2} aria-hidden />
-          {verification}
+          <CircleCheck size={14} strokeWidth={2} className="shrink-0" aria-hidden />
+          <span className="min-w-0 [overflow-wrap:anywhere]">{verification}</span>
         </span>
       ) : null}
 
@@ -185,15 +184,20 @@ export function MemberCard({
           {items.map((item) => {
             const RowIcon = item.icon;
             return (
-              <li key={item.label} className="flex items-center gap-3 text-ui">
+              <li
+                key={item.label}
+                className="grid grid-cols-[18px_minmax(0,1fr)] items-start gap-x-3 gap-y-1 text-ui sm:grid-cols-[18px_auto_minmax(0,1fr)]"
+              >
                 <RowIcon
                   size={18}
                   strokeWidth={1.8}
                   className={cn("shrink-0", accent.rowIcon)}
                   aria-hidden
                 />
-                <span className="text-ink-soft">{item.label}</span>
-                <span className="ml-auto min-w-0 truncate text-right text-ink">{item.value}</span>
+                <span className="min-w-0 text-ink-soft [overflow-wrap:anywhere]">{item.label}</span>
+                <span className="col-start-2 min-w-0 text-ink [overflow-wrap:anywhere] sm:col-start-3 sm:text-right">
+                  {item.value}
+                </span>
               </li>
             );
           })}
@@ -211,7 +215,7 @@ export function MemberCard({
           >
             <HighlightIcon size={20} strokeWidth={1.8} />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 [overflow-wrap:anywhere]">
             <Body weight={600}>{highlight.title}</Body>
             {highlight.description ? (
               <Body size="small" color="muted" className="mt-0.5">
