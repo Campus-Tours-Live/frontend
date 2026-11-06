@@ -65,4 +65,11 @@ describe("PendingActionsCard", () => {
     render(<PendingActionsCard actions={emptyActions} waitingBooking={waitingBooking} />);
     expect(screen.getByRole("link", { name: "View" })).toBeInTheDocument();
   });
+
+  it("renders guide response card without deadline line when guideResponseDeadline is null", () => {
+    const bookingNoDeadline: BookingResponse = { ...waitingBooking, guideResponseDeadline: null };
+    render(<PendingActionsCard actions={emptyActions} waitingBooking={bookingNoDeadline} />);
+    expect(screen.getByText("Guide response pending")).toBeInTheDocument();
+    expect(screen.queryByText(/has until/)).not.toBeInTheDocument();
+  });
 });
