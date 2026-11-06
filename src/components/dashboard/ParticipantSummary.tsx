@@ -86,7 +86,6 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       </div>
 
       <BookedTours bookings={data.upcomingBookings} />
-      </div>
     </div>
   );
 }
