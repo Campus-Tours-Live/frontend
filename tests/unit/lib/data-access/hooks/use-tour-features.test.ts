@@ -12,12 +12,16 @@ describe("useTourFeatures", () => {
   it("no data yet → empty byTopic/labelByCode, loading reflected", () => {
     useQueryMock.mockReturnValue({ data: undefined, isLoading: true, isError: false });
 
-    const { result } = renderHook(() => useTourFeatures());
+    const { result, rerender } = renderHook(() => useTourFeatures());
 
     expect(result.current.byTopic).toEqual({});
     expect(result.current.labelByCode).toEqual({});
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isError).toBe(false);
+
+    const firstEmpty = result.current.byTopic;
+    rerender();
+    expect(result.current.byTopic).toBe(firstEmpty);
   });
 
   it("flattens per-topic options into a code→label map", () => {

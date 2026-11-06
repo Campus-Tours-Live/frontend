@@ -11,6 +11,7 @@ export const queryKeys = {
   guideProfile: () => ["guide-profile"] as const,
   tourTopics: () => ["tour-topics"] as const,
   tourFeatures: () => ["tour-features"] as const,
+  languages: () => ["languages"] as const,
   tourCatalog: (filters: TourCatalogFilters) => ["tour-catalog", filters] as const,
   tourDetail: (id: string) => ["tour-detail", id] as const,
   universitySearch: (q: string) => ["university-search", q] as const,
