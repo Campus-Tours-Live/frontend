@@ -4,6 +4,12 @@ import { updateParticipantProfileMutation } from "@/lib/data-access/mutations/up
 import { updateGuideProfileMutation } from "@/lib/data-access/mutations/update-guide-profile.mutation";
 import { createOfferingMutation } from "@/lib/data-access/mutations/create-offering.mutation";
 import { activateOfferingMutation } from "@/lib/data-access/mutations/activate-offering.mutation";
+import {
+  duplicateOfferingMutation,
+  pauseOfferingMutation,
+  retireOfferingMutation,
+  updateOfferingMutation,
+} from "@/lib/data-access/mutations/offering-lifecycle.mutation";
 import { postJson, patchJson } from "@/lib/data-access/http";
 import { queryKeys } from "@/lib/data-access/keys";
 import type { Me } from "@/lib/data-access/types";
@@ -239,5 +245,41 @@ describe("activateOfferingMutation", () => {
     expect(keys).toContainEqual(queryKeys.guideOfferings());
     expect(keys).toContainEqual(queryKeys.dashboard());
     expect(qc.invalidateQueries).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("offering lifecycle mutations", () => {
+  it("updates an offering and refreshes its guide and public views", async () => {
+    const qc = makeQc();
+    const mutation = updateOfferingMutation(qc);
+    const variables = { offeringId: "offering-1", body: { title: "Updated walk" } };
+
+    await mutation.mutationFn(variables);
+    mutation.onSuccess?.({ id: "offering-1" } as never, variables);
+
+    expect(mockedPatchJson).toHaveBeenCalledWith("/v1/guide/offerings/offering-1", variables.body);
+    expect(invalidatedKeys(qc)).toEqual(
+      expect.arrayContaining([
+        queryKeys.guideOfferings(),
+        queryKeys.dashboard(),
+        ["tour-catalog"],
+        queryKeys.tourDetail("offering-1"),
+      ]),
+    );
+  });
+
+  it.each([
+    ["pause", pauseOfferingMutation, "/pause"],
+    ["retire", retireOfferingMutation, "/retire"],
+    ["duplicate", duplicateOfferingMutation, "/duplicate"],
+  ])("%s POSTs the lifecycle action", async (_label, makeMutation, suffix) => {
+    const qc = makeQc();
+    const mutation = makeMutation(qc);
+
+    await mutation.mutationFn("offering-1");
+    mutation.onSuccess?.({ id: "offering-1" } as never, "offering-1");
+
+    expect(mockedPostJson).toHaveBeenCalledWith(`/v1/guide/offerings/offering-1${suffix}`, {});
+    expect(invalidatedKeys(qc)).toContainEqual(queryKeys.guideOfferings());
   });
 });

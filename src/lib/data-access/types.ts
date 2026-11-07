@@ -121,6 +121,9 @@ export interface CreateOfferingInput {
   languages?: string[];
 }
 
+/** Editable fields for a DRAFT or PAUSED offering. The API rejects an empty update. */
+export type UpdateOfferingInput = Partial<CreateOfferingInput>;
+
 /**
  * Server-sent validation rules for the two year fields (CTL-97). The numbers deliberately do NOT
  * live in this repo: they were duplicated in Java and TypeScript and drifted by hand. `entryYear`
