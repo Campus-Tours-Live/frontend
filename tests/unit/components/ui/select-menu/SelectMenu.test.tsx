@@ -141,4 +141,21 @@ describe("SelectMenu", () => {
     await user.click(screen.getByText("Major"));
     expect(combo()).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("keeps a reopened menu open when an earlier blur timer fires", () => {
+    jest.useFakeTimers();
+    try {
+      render(<Harness />);
+      fireEvent.focus(combo());
+      fireEvent.blur(combo());
+      fireEvent.focus(combo());
+
+      jest.advanceTimersByTime(150);
+
+      expect(combo()).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("option", { name: "Economics" })).toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
