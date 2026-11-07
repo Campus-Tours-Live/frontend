@@ -121,6 +121,36 @@ export interface CreateOfferingInput {
   languages?: string[];
 }
 
+/** Editable fields for a DRAFT or PAUSED offering. The API rejects an empty update. */
+export type UpdateOfferingInput = Partial<CreateOfferingInput>;
+
+/** Guide booking inbox filter (GET /v1/guide/bookings?filter=). */
+export type GuideBookingFilter = "pending" | "upcoming" | "all";
+
+/**
+ * A guide-facing booking (Core GuideBookingDetailResponse). `status` is the display string
+ * (e.g. WAITING_FOR_GUIDE, CONFIRMED, CANCELLED).
+ */
+export interface GuideBooking {
+  id: string;
+  status: string;
+  scheduledAt: string;
+  offeringId: string;
+  offeringTitle: string;
+  participantName: string;
+  participantNotes?: string | null;
+  guideResponseDeadline?: string | null;
+  universityName: string;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+}
+
+/** Optional body for POST /v1/guide/bookings/{id}/decline. */
+export interface DeclineBookingInput {
+  reason?: string;
+}
+
 /**
  * Server-sent validation rules for the two year fields (CTL-97). The numbers deliberately do NOT
  * live in this repo: they were duplicated in Java and TypeScript and drifted by hand. `entryYear`

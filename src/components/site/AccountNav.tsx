@@ -84,14 +84,14 @@ const GUIDE_NAV: NavGroup[] = [
     label: "Tours",
     items: [
       { label: "Explore tours", icon: Compass, href: "/tours" },
-      { label: "Upcoming tours", icon: Calendar },
+      { label: "Upcoming tours", icon: Calendar, href: "/guide/bookings" },
       { label: "Availability", icon: Clock, href: "/guide/availability" },
       { label: "Tour offerings", icon: List, href: "/guide/tour-offerings" },
     ],
   },
   {
     label: "Earnings",
-    items: [{ label: "Earnings", icon: CircleDollarSign }],
+    items: [{ label: "Earnings", icon: CircleDollarSign, href: "/guide/earnings" }],
   },
   {
     label: "Account",
