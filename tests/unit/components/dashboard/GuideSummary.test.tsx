@@ -48,6 +48,7 @@ function makeData(overrides: Partial<GuideDashboard> = {}): GuideDashboard {
     guideStatus: "VERIFIED",
     canPublish: true,
     offerings: [offering("1"), offering("2")],
+    pendingBookingRequests: 0,
     createdAt: "2025-03-15T00:00:00Z",
     ...overrides,
   };
@@ -60,6 +61,22 @@ beforeEach(() => {
 });
 
 describe("GuideSummary", () => {
+  it("shows unavailable instead of zero when pending requests could not be loaded", () => {
+    render(
+      <GuideSummary
+        data={makeData({
+          pendingBookingRequests: 0,
+          dataAvailability: { offerings: true, pendingBookingRequests: false },
+        })}
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Unavailable" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
   it("renders the guide display name from useMe", () => {
     render(<GuideSummary data={makeData()} />);
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
@@ -97,7 +114,9 @@ describe("GuideSummary", () => {
 
   it("shows 0 when there are no offerings", () => {
     render(<GuideSummary data={makeData({ offerings: [] })} />);
-    expect(screen.getByText("0")).toBeInTheDocument();
+    expect(screen.getByText("Offerings")).toBeInTheDocument();
+    expect(screen.getByText("Pending requests")).toBeInTheDocument();
+    expect(screen.getAllByText("0")).toHaveLength(2);
   });
 
   it("shows the major when present", () => {
@@ -157,5 +176,18 @@ describe("GuideSummary", () => {
     render(<GuideSummary data={makeData()} />);
     expect(screen.getByText("Member since")).toBeInTheDocument();
     expect(screen.getByText("March 2025")).toBeInTheDocument();
+  });
+
+  it("highlights pending booking requests when count is greater than zero", () => {
+    render(<GuideSummary data={makeData({ pendingBookingRequests: 2 })} />);
+    expect(screen.getByText("Pending requests")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "2" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
+    expect(screen.getByRole("link", { name: "2 booking requests waiting" })).toHaveAttribute(
+      "href",
+      "/guide/bookings?filter=pending",
+    );
   });
 });
