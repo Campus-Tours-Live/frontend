@@ -23,6 +23,7 @@ export const queryKeys = {
   stateUniversities: (stateCode: string) => ["state-universities", stateCode] as const,
   dashboard: () => ["dashboard"] as const,
   guideOfferings: () => ["guide-offerings"] as const,
+  guideBookings: (filter: string) => ["guide-bookings", filter] as const,
   tours: () => ["tours"] as const,
   // Availability v2 (CTL-55) — BFF Contract A (/v1/availability*, /v1/offerings/:id/slots).
   availabilityRules: () => ["availability-rules"] as const,
