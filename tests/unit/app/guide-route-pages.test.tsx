@@ -8,11 +8,15 @@ jest.mock("@/components/availability/GuideAvailabilityPage", () => ({
 jest.mock("@/components/offerings/TourOfferingsPage", () => ({
   TourOfferingsPage: () => <div data-testid="tour-offerings-page" />,
 }));
+jest.mock("@/components/earnings/GuideEarningsPage", () => ({
+  GuideEarningsPage: () => <div data-testid="guide-earnings-page" />,
+}));
 jest.mock("@/components/offerings/CreateOfferingForm", () => ({
   CreateOfferingForm: () => <div data-testid="create-offering-form" />,
 }));
 
 import GuideAvailabilityRoutePage from "@/app/(app)/guide/availability/page";
+import GuideEarningsRoutePage from "@/app/(app)/guide/earnings/page";
 import GuideTourOfferingsPage from "@/app/(app)/guide/tour-offerings/page";
 import NewTourOfferingPage from "@/app/(app)/guide/tour-offerings/new/page";
 
@@ -25,6 +29,11 @@ describe("guide route shells", () => {
   it("tour-offerings route mounts the offerings page", () => {
     render(<GuideTourOfferingsPage />);
     expect(screen.getByTestId("tour-offerings-page")).toBeInTheDocument();
+  });
+
+  it("earnings route mounts the earnings page", () => {
+    render(<GuideEarningsRoutePage />);
+    expect(screen.getByTestId("guide-earnings-page")).toBeInTheDocument();
   });
 
   it("new tour-offering route mounts the create-offering form", () => {
