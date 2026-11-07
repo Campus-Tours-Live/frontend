@@ -156,7 +156,7 @@ export function TourProductCard({
             </Body>
             <Heading as="h3" size="large" className="mt-0.5 min-h-[2.4em] leading-tight">
               <Link
-                href={`/tours/${tour.slug}`}
+                href={`/tours/${tour.id}`}
                 className="no-underline after:absolute after:inset-0 hover:no-underline focus-visible:outline-none"
               >
                 {tour.title}

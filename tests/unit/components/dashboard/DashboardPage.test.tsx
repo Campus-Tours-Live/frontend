@@ -45,6 +45,7 @@ const guideData: GuideDashboard = {
       currency: "USD",
     },
   ],
+  pendingBookingRequests: 0,
   createdAt: "2025-03-15T00:00:00Z",
 };
 
