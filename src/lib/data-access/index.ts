@@ -73,6 +73,7 @@ export type {
   TourCatalogSort,
   Offering,
   OfferingStatus,
+  CreateBookingInput,
   CreateOfferingInput,
   Dashboard,
   GuideDashboard,

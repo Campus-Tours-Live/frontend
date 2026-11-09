@@ -626,7 +626,11 @@ describe("GuideOnboardingForm — enrolment years", () => {
     // in the form is re-validated against it — no Continue click, no second blur.
     await chooseSelectMenuOption(user, /degree/i, "Master's Degree");
 
-    await waitFor(() => expect(degree).toHaveDisplayValue("Master's Degree"));
+    await waitFor(() =>
+      expect(screen.getByRole("combobox", { name: /degree/i })).toHaveDisplayValue(
+        "Master's Degree",
+      ),
+    );
     expect(
       await screen.findByText(/Expected graduation — 2024 to 2026/, {}, { timeout: 5000 }),
     ).toBeInTheDocument();
