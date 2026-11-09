@@ -120,7 +120,9 @@ async function chooseSelectMenuOption(
   await user.click(combobox);
   await waitFor(() => expect(combobox).toHaveAttribute("aria-expanded", "true"));
   await user.click(await screen.findByRole("option", { name: optionName }));
-  await waitFor(() => expect(combobox).toHaveValue(optionName));
+  await waitFor(() =>
+    expect(screen.getByRole("combobox", { name: label })).toHaveValue(optionName),
+  );
 }
 
 beforeEach(() => {
