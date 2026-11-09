@@ -110,6 +110,19 @@ function renderWithQuery(ui: ReactElement, options: { rulesState?: RulesState } 
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
 
+async function chooseSelectMenuOption(
+  user: ReturnType<typeof userEvent.setup>,
+  label: RegExp,
+  optionName: string,
+) {
+  const combobox = await screen.findByRole("combobox", { name: label });
+  await waitFor(() => expect(combobox).toBeEnabled());
+  await user.click(combobox);
+  await waitFor(() => expect(combobox).toHaveAttribute("aria-expanded", "true"));
+  await user.click(await screen.findByRole("option", { name: optionName }));
+  await waitFor(() => expect(combobox).toHaveValue(optionName));
+}
+
 beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
@@ -134,10 +147,8 @@ async function completeStepOne(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByPlaceholderText(/search universities/i), "state");
   await user.click(await screen.findByRole("button", { name: /State University/i }));
   // Major + degree are SelectMenu dropdowns (open, then pick the option); degree is required.
-  await user.click(await screen.findByRole("combobox", { name: /major/i }));
-  await user.click(await screen.findByRole("option", { name: "Computer Science" }));
-  await user.click(screen.getByRole("combobox", { name: /degree/i }));
-  await user.click(await screen.findByRole("option", { name: "Bachelor's Degree" }));
+  await chooseSelectMenuOption(user, /major/i, "Computer Science");
+  await chooseSelectMenuOption(user, /degree/i, "Bachelor's Degree");
   await user.type(screen.getByLabelText(/entry year/i), "2023");
 }
 
@@ -613,10 +624,7 @@ describe("GuideOnboardingForm — enrolment years", () => {
 
     // Switch to a master's (+3): the window contracts to 2024–2026 and the value already sitting
     // in the form is re-validated against it — no Continue click, no second blur.
-    const degree = screen.getByRole("combobox", { name: /degree/i });
-    await user.click(degree);
-    await user.type(degree, "Master");
-    await user.keyboard("{Enter}");
+    await chooseSelectMenuOption(user, /degree/i, "Master's Degree");
 
     await waitFor(() => expect(degree).toHaveDisplayValue("Master's Degree"));
     expect(

@@ -133,6 +133,30 @@ export interface EnrollmentYearRules {
   defaultMaxYearsToGraduate: number;
 }
 
+/** Price in minor units returned by the BFF booking contract (Contract A). */
+export interface BookingPrice {
+  amount: number;
+  currency: string;
+}
+
+/**
+ * A single booking as shaped by the BFF (Contract A, /v1/dashboard → upcomingBookings).
+ * Field names differ from the Core DTO — see bff/src/api/_shared/reshape.ts.
+ */
+export interface BookingResponse {
+  id: string;
+  status: string; // "WAITING_FOR_GUIDE" | "CONFIRMED" | "COMPLETED" | "CANCELLED"
+  scheduledStartAt: string; // ISO-8601 UTC
+  scheduledEndAt: string; // ISO-8601 UTC (computed: start + durationMinutes)
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: BookingPrice;
+}
+
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
 export interface GuideDashboard {
   kind: "guide";
@@ -172,9 +196,8 @@ export interface CreateBookingInput {
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
-  nextTour: BookingResponse | null;
+  /** Best-effort: [] when the Core call fails. */
   upcomingBookings: BookingResponse[];
-  pendingActions: Record<string, unknown> | null;
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;
@@ -258,29 +281,29 @@ export interface TourSummary {
 }
 
 /** Full public tour detail (Core TourDetailResponse). */
-export interface TourDetail extends Pick<
-  TourSummary,
-  | "id"
-  | "title"
-  | "slug"
-  | "topic"
-  | "universityId"
-  | "universityName"
-  | "universityImageUrl"
-  | "guideId"
-  | "guideDisplayName"
-  | "durationMin"
-  | "priceCents"
-  | "currency"
-  | "avgRating"
-  | "reviewCount"
-  | "languages"
-> {
+export interface TourDetail {
+  id: string;
+  title: string;
+  slug: string;
+  topic: string;
   description: string | null;
+  languages: string[];
+  universityId: string;
+  universityName: string;
+  /** Campus photo URL (Cloudflare R2), or null when the university has no photo yet. */
+  universityImageUrl?: string | null;
   universitySlug: string;
   universityCity: string | null;
   universityRegion: string | null;
+  guideId: string;
+  guideDisplayName: string;
   guideBio: string | null;
+  durationMin: number;
+  priceCents: number;
+  currency: string;
+  avgRating: number;
+  reviewCount: number;
+  features?: string[];
 }
 
 export type TourCatalogSort = "RECOMMENDED" | "PRICE_ASC" | "PRICE_DESC" | "RATING";
