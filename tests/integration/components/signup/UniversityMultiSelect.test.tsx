@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   UniversityMultiSelect,
@@ -102,11 +102,16 @@ describe("UniversityMultiSelect", () => {
     await user.click(await screen.findByRole("button", { name: /State University/i }));
     // Below max → count reflects progress, no "remove one" hint yet.
     expect(screen.getByText(/1 of 2 selected/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /City College/i })).not.toBeInTheDocument(),
+    );
 
     await user.type(screen.getByPlaceholderText(/search universities/i), "city");
     await user.click(await screen.findByRole("button", { name: /City College/i }));
     // At max → the search input is gone and the count gains the "remove one to add another" hint.
-    expect(screen.queryByPlaceholderText(/search universities/i)).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByPlaceholderText(/search universities/i)).not.toBeInTheDocument(),
+    );
     expect(screen.getByText(/2 of 2 selected · remove one to add another/i)).toBeInTheDocument();
   });
 
