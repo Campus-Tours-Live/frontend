@@ -26,6 +26,10 @@ describe("queryKeys", () => {
       expect(queryKeys.dashboard()).toEqual(["dashboard"]);
     });
 
+    it("cart() → ['cart']", () => {
+      expect(queryKeys.cart()).toEqual(["cart"]);
+    });
+
     it("guideOfferings() → ['guide-offerings']", () => {
       expect(queryKeys.guideOfferings()).toEqual(["guide-offerings"]);
     });
@@ -129,6 +133,7 @@ describe("queryKeys", () => {
       ["tourCatalog", () => queryKeys.tourCatalog({})],
       ["tourDetail", () => queryKeys.tourDetail("x")],
       ["dashboard", () => queryKeys.dashboard()],
+      ["cart", () => queryKeys.cart()],
       ["guideOfferings", () => queryKeys.guideOfferings()],
       ["universitySearch", () => queryKeys.universitySearch("x")],
       ["availabilityRules", () => queryKeys.availabilityRules()],
@@ -156,6 +161,7 @@ describe("queryKeys", () => {
         queryKeys.tourCatalog({}),
         queryKeys.tourDetail("x"),
         queryKeys.dashboard(),
+        queryKeys.cart(),
         queryKeys.guideOfferings(),
         queryKeys.universitySearch("x"),
         queryKeys.availabilityRules(),

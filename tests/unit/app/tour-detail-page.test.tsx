@@ -1,27 +1,27 @@
 import { render, screen } from "@testing-library/react";
 
-jest.mock("@/components/site/SiteHeader", () => ({
-  SiteHeader: () => <div data-testid="site-header" />,
-}));
-jest.mock("@/components/tours/TourDetailRoute", () => ({
-  TourDetailRoute: ({ tourId }: { tourId: string }) => (
-    <div data-testid="tour-detail" data-tour-id={tourId} />
+jest.mock("@/components/tours/TourDetailPage", () => ({
+  TourDetailPage: ({ tourRef }: { tourRef: string }) => (
+    <div data-testid="tour-detail" data-tour-ref={tourRef} />
   ),
 }));
 
-import TourDetailPage from "@/app/tours/[tourId]/page";
+import TourDetailPage, { metadata } from "@/app/(public)/tours/[tourRef]/page";
 
-describe("/tours/[tourId] page", () => {
-  it("passes the dynamic UUID to the API-backed detail route", async () => {
+describe("/tours/[tourRef] page", () => {
+  it("passes the dynamic public tour reference to the booking detail page", async () => {
     const element = await TourDetailPage({
-      params: Promise.resolve({ tourId: "a0000000-0000-4000-8000-000000000001" }),
+      params: Promise.resolve({ tourRef: "a0000000-0000-4000-8000-000000000001-campus-life" }),
     });
     render(element);
 
-    expect(screen.getByTestId("site-header")).toBeInTheDocument();
     expect(screen.getByTestId("tour-detail")).toHaveAttribute(
-      "data-tour-id",
-      "a0000000-0000-4000-8000-000000000001",
+      "data-tour-ref",
+      "a0000000-0000-4000-8000-000000000001-campus-life",
     );
+  });
+
+  it("describes the viewer-local booking experience", () => {
+    expect(metadata.title).toBe("Tour detail — CampusToursLive.ai");
   });
 });

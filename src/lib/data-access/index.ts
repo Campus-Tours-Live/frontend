@@ -27,6 +27,8 @@ export { useOnboardRole } from "./hooks/use-onboard-role";
 export { OnboardRetryableError } from "./mutations/onboard-role.mutation";
 export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
+export { useCreateBooking } from "./hooks/use-bookings";
+export { useAddCartItem } from "./hooks/use-cart";
 export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
@@ -74,6 +76,7 @@ export type {
   TourCatalogSort,
   Offering,
   OfferingStatus,
+  CreateBookingInput,
   CreateOfferingInput,
   Dashboard,
   GuideDashboard,
