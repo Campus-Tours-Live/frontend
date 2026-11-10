@@ -9,6 +9,9 @@ jest.mock("@/components/home/Hero", () => ({ Hero: () => <div data-testid="hero"
 jest.mock("@/components/home/FeaturedTours", () => ({
   FeaturedTours: () => <div data-testid="featured" />,
 }));
+jest.mock("@/components/home/ExploreUniversities", () => ({
+  ExploreUniversities: () => <div data-testid="explore-universities" />,
+}));
 jest.mock("@/components/tours/AllToursPage", () => ({
   AllToursPage: () => <div data-testid="all-tours-page" />,
 }));

@@ -1,5 +1,7 @@
+import Image from "next/image";
 import { Body, Caption, Card, Heading, Link, StatusBadge } from "@/components/ui";
 import { formatOfferingPrice } from "@/lib/format";
+import { CAMPUS_FALLBACK_IMAGE } from "./tourCard.visuals";
 
 /**
  * TourCard — presentational featured-tour card (design_new .tour-card).
@@ -16,6 +18,8 @@ export interface TourCardProps {
   currency: string;
   avgRating: number;
   reviewCount: number;
+  /** Campus photo URL; falls back to the shared campus image when absent. */
+  imageUrl?: string | null;
 }
 
 export function TourCard({
@@ -28,6 +32,7 @@ export function TourCard({
   currency,
   avgRating,
   reviewCount,
+  imageUrl,
 }: TourCardProps) {
   return (
     <Card
@@ -35,14 +40,15 @@ export function TourCard({
       padded={false}
       className="flex h-full flex-col overflow-hidden rounded-[18px]"
     >
-      {/* Image placeholder — imported editorial campus crop */}
-      <Caption
-        as="div"
-        weight={500}
-        className="flex h-[150px] items-center justify-center bg-canvas"
-      >
-        Imported editorial campus crop
-      </Caption>
+      <div className="relative h-[150px] bg-canvas">
+        <Image
+          src={imageUrl ?? CAMPUS_FALLBACK_IMAGE}
+          alt={`${university} campus`}
+          fill
+          sizes="320px"
+          className="object-cover"
+        />
+      </div>
       <div className="flex flex-1 flex-col p-[18px]">
         <StatusBadge variant="success" className="self-start">
           Verified guide
