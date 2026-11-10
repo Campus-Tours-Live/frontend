@@ -30,6 +30,12 @@ export { useOfferings } from "./hooks/use-offerings";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
 export {
+  useDuplicateOffering,
+  usePauseOffering,
+  useRetireOffering,
+  useUpdateOffering,
+} from "./hooks/use-offering-lifecycle";
+export {
   useAvailabilityExceptions,
   useAvailabilityRules,
   useAvailabilitySettings,
@@ -73,6 +79,7 @@ export type {
   Offering,
   OfferingStatus,
   CreateOfferingInput,
+  UpdateOfferingInput,
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,

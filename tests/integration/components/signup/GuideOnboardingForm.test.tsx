@@ -624,9 +624,11 @@ describe("GuideOnboardingForm — enrolment years", () => {
 
     // Switch to a master's (+3): the window contracts to 2024–2026 and the value already sitting
     // in the form is re-validated against it — no Continue click, no second blur.
+    const degreeTrigger = screen.getByRole("combobox", { name: /degree/i });
     await chooseSelectMenuOption(user, /degree/i, "Master's Degree");
 
-    expect(await screen.findByText(/Expected graduation — 2024 to 2026/)).toBeInTheDocument();
+    await waitFor(() => expect(degreeTrigger).toHaveValue("Master's Degree"));
+    expect(await screen.findByText(/Expected graduation.*2024 to 2026/)).toBeInTheDocument();
     expect(await screen.findByText(/graduation year between 2024 and 2026/i)).toBeInTheDocument();
   });
 
