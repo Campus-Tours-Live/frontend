@@ -78,6 +78,7 @@ export type {
   ParticipantDashboard,
   BookingResponse,
   BookingPrice,
+  PendingActions,
   AvailabilityRule,
   AvailabilityException,
   AvailabilityExceptionKind,

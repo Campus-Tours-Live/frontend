@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { ParticipantSummary } from "@/components/dashboard/ParticipantSummary";
 import { useMe } from "@/lib/data-access";
-import type { ParticipantDashboard } from "@/lib/data-access";
+import type { ParticipantDashboard, BookingResponse } from "@/lib/data-access";
 
 // Renders the real SectionHeading + MemberCard + Alert (no mocks, except useMe — identity
 // now comes from there, not the dashboard aggregate). Note the component surfaces
@@ -117,5 +117,23 @@ describe("ParticipantSummary", () => {
     render(<ParticipantSummary data={makeData()} />);
     expect(screen.getByText("Member since")).toBeInTheDocument();
     expect(screen.getByText("March 2025")).toBeInTheDocument();
+  });
+
+  it("surfaces a WAITING_FOR_GUIDE booking as a guide response nudge", () => {
+    const booking: BookingResponse = {
+      id: "bk_1",
+      status: "WAITING_FOR_GUIDE",
+      scheduledStartAt: "2026-09-20T15:00:00Z",
+      scheduledEndAt: "2026-09-20T16:00:00Z",
+      durationMinutes: 60,
+      tourOfferingId: "off_1",
+      tourTitle: "Campus life tour",
+      guideName: "Maya Chen",
+      guideResponseDeadline: "2026-09-15T09:30:00Z",
+      universityName: "North Coast University",
+      price: { amount: 4200, currency: "USD" },
+    };
+    render(<ParticipantSummary data={{ ...makeData(), upcomingBookings: [booking] }} />);
+    expect(screen.getByText("Guide response pending")).toBeInTheDocument();
   });
 });
