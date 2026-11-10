@@ -15,6 +15,7 @@ export { useLanguages } from "./hooks/use-languages";
 export { useTourCatalog } from "./hooks/use-tour-catalog";
 export { useTourDetail } from "./hooks/use-tour-detail";
 export { useUniversitySearch } from "./hooks/use-university-search";
+export { useUniversityDetails } from "./hooks/use-university-details";
 export { useMajors } from "./hooks/use-majors";
 export { useDegrees } from "./hooks/use-degrees";
 export { useEnrollmentYears } from "./hooks/use-enrollment-years";
@@ -46,6 +47,7 @@ export type { OnboardableRole } from "./hooks/use-onboard-role";
 export type { OnboardingPrefill } from "./onboardingPrefill";
 
 export type {
+  UniversityDetail,
   Me,
   PendingMe,
   ProvisionedMe,

@@ -513,3 +513,23 @@ export interface StateUniversities {
   universities: DirectoryUniversity[];
   total: number;
 }
+
+/** One platform university with its live-tour stats — GET /v1/universities/{slug} (Core
+ *  UniversityDetailResponse). 404s for a school that was never onboarded onto the platform. */
+export interface UniversityDetail {
+  id: string;
+  slug: string;
+  name: string;
+  shortName: string | null;
+  city: string | null;
+  region: string | null;
+  timezone: string;
+  /** Campus photo URL (Cloudflare R2), or null when the university has none yet. */
+  imageUrl: string | null;
+  status: string;
+  /** Tours currently bookable at this university. */
+  tourCount: number;
+  /** Cheapest live tour, or null when `tourCount` is 0. */
+  fromPriceCents: number | null;
+  currency: string | null;
+}

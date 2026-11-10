@@ -12,6 +12,8 @@ const tours = Array.from({ length: 9 }, (_, index) => ({
   topic: "GENERAL_CAMPUS",
   universityId: "university-id",
   universityName: "Test University",
+  universityImageUrl:
+    index === 0 ? "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Test.png" : null,
   guideId: "guide-id",
   guideDisplayName: "Jane Doe",
   guideMajor: "Computer Science",
@@ -46,6 +48,7 @@ jest.mock("@/lib/data-access", () => ({
 }));
 import { FeaturedTours } from "@/components/home/FeaturedTours";
 import { TourCard } from "@/components/tours/TourCard";
+import { CAMPUS_FALLBACK_IMAGE } from "@/components/tours/tourCard.visuals";
 import { ApiError } from "@/lib/data-access";
 
 beforeEach(() => {
@@ -53,6 +56,15 @@ beforeEach(() => {
 });
 
 describe("FeaturedTours", () => {
+  it("passes each tour's university photo to its card", () => {
+    render(<FeaturedTours />);
+
+    const imgs = screen.getAllByRole("img", { name: "Test University campus" });
+    expect(imgs).toHaveLength(9);
+    expect(imgs[0].getAttribute("src") ?? "").toContain("Test.png");
+    expect(imgs[1].getAttribute("src") ?? "").toContain(encodeURIComponent(CAMPUS_FALLBACK_IMAGE));
+  });
+
   it("renders the section heading", () => {
     render(<FeaturedTours />);
     expect(

@@ -72,6 +72,13 @@ describe("queryKeys", () => {
     });
   });
 
+  describe("universityDetail(slug)", () => {
+    it("returns ['university-detail', slug] and varies by slug", () => {
+      expect(queryKeys.universityDetail("duke")).toEqual(["university-detail", "duke"]);
+      expect(queryKeys.universityDetail("a")).not.toEqual(queryKeys.universityDetail("b"));
+    });
+  });
+
   describe("tourDetail(id)", () => {
     it("returns ['tour-detail', id]", () => {
       expect(queryKeys.tourDetail("abc")).toEqual(["tour-detail", "abc"]);

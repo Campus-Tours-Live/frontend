@@ -133,6 +133,7 @@ export function FeaturedTours() {
                 currency={tour.currency}
                 avgRating={tour.avgRating}
                 reviewCount={tour.reviewCount}
+                imageUrl={tour.universityImageUrl}
               />
             </div>
           ))}
