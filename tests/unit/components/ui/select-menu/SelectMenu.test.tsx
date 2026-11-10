@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SelectMenu, type SelectMenuOption } from "@/components/ui/select-menu/SelectMenu";
 
@@ -27,6 +27,20 @@ function Harness({ disabled = false }: { disabled?: boolean }) {
 const combo = () => screen.getByRole("combobox", { name: "Major" });
 
 describe("SelectMenu", () => {
+  it("keeps a reopened menu open when an earlier blur timer fires", () => {
+    jest.useFakeTimers();
+    try {
+      render(<Harness />);
+      fireEvent.focus(combo());
+      fireEvent.blur(combo());
+      fireEvent.focus(combo());
+      act(() => jest.advanceTimersByTime(150));
+      expect(combo()).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("option", { name: "Economics" })).toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
   it("renders a labelled, collapsed combobox showing the placeholder", () => {
     render(<Harness />);
     expect(combo()).toHaveAttribute("placeholder", "Select a major");
