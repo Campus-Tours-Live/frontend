@@ -108,6 +108,8 @@ export interface Offering {
   priceCents: number;
   currency: string;
   description?: string | null;
+  languages?: string[];
+  features?: string[];
 }
 
 /** Body for POST /v1/guide/offerings — creates a DRAFT offering. */
@@ -119,6 +121,8 @@ export interface CreateOfferingInput {
   priceCents: number;
   description?: string;
   languages?: string[];
+  /** Feature codes from GET /v1/meta/tour-features for the chosen topic (max 3). */
+  features?: string[];
 }
 
 /** Editable fields for a DRAFT or PAUSED offering. The API rejects an empty update. */
@@ -174,6 +178,30 @@ export interface EnrollmentYearRules {
   defaultMaxYearsToGraduate: number;
 }
 
+/** Price in minor units returned by the BFF booking contract (Contract A). */
+export interface BookingPrice {
+  amount: number;
+  currency: string;
+}
+
+/**
+ * A single booking as shaped by the BFF (Contract A, /v1/dashboard → upcomingBookings).
+ * Field names differ from the Core DTO — see bff/src/api/_shared/reshape.ts.
+ */
+export interface BookingResponse {
+  id: string;
+  status: string; // "WAITING_FOR_GUIDE" | "CONFIRMED" | "COMPLETED" | "CANCELLED"
+  scheduledStartAt: string; // ISO-8601 UTC
+  scheduledEndAt: string; // ISO-8601 UTC (computed: start + durationMinutes)
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: BookingPrice;
+}
+
 /** GET /v1/dashboard — the role-shaped home aggregate (discriminated by `kind`). */
 export interface GuideDashboard {
   kind: "guide";
@@ -183,9 +211,38 @@ export interface GuideDashboard {
   offerings: Offering[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
+
+export interface Money {
+  amount: number;
+  currency: string;
+}
+
+/** Contract-A booking shape from the BFF. Times are absolute UTC instants; display is viewer-local. */
+export interface BookingResponse {
+  id: string;
+  status: string;
+  scheduledStartAt: string;
+  scheduledEndAt: string;
+  durationMinutes: number;
+  tourOfferingId: string;
+  tourTitle: string;
+  guideName: string;
+  guideResponseDeadline: string | null;
+  universityName: string;
+  price: Money;
+}
+
+export interface CreateBookingInput {
+  tourOfferingId: string;
+  scheduledStartAt: string;
+  participantNotes?: string;
+}
+
 export interface ParticipantDashboard {
   kind: "participant";
   participant: ParticipantProfile;
+  /** Best-effort: [] when the Core call fails. */
+  upcomingBookings: BookingResponse[];
   createdAt: string | null; // account "member since" (ISO-8601, from MeResponse.createdAt)
 }
 export type Dashboard = GuideDashboard | ParticipantDashboard;

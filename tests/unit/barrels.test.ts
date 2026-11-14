@@ -101,6 +101,8 @@ describe("public barrels", () => {
       "useUpdateGuideProfile",
       "useSetCurrentRole",
       "useDashboard",
+      "useAddCartItem",
+      "useCreateBooking",
       "useOfferings",
       "useCreateOffering",
       "useActivateOffering",

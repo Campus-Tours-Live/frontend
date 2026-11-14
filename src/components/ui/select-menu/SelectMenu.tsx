@@ -84,8 +84,7 @@ export function SelectMenu({
   };
 
   const openMenu = () => {
-    // A previous focus change may still have its delayed blur close pending. Reopening must cancel
-    // it, otherwise that stale timer can close the newly opened menu before an option is clicked.
+    // Reopening must cancel an earlier blur's pending close.
     cancelScheduledClose();
     if (disabled || open) return;
     setWidth(anchorEl?.offsetWidth);
@@ -104,12 +103,7 @@ export function SelectMenu({
     setQuery("");
   };
 
-  useEffect(
-    () => () => {
-      cancelScheduledClose();
-    },
-    [],
-  );
+  useEffect(() => () => cancelScheduledClose(), []);
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {

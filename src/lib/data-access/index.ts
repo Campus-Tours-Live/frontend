@@ -11,6 +11,7 @@ export { useParticipantProfile } from "./hooks/use-participant-profile";
 export { useGuideProfile } from "./hooks/use-guide-profile";
 export { useTourTopics } from "./hooks/use-tour-topics";
 export { useTourFeatures } from "./hooks/use-tour-features";
+export { useLanguages } from "./hooks/use-languages";
 export { useTourCatalog } from "./hooks/use-tour-catalog";
 export { useTourDetail } from "./hooks/use-tour-detail";
 export { useUniversitySearch } from "./hooks/use-university-search";
@@ -25,6 +26,8 @@ export { useOnboardRole } from "./hooks/use-onboard-role";
 export { OnboardRetryableError } from "./mutations/onboard-role.mutation";
 export { getOnboardingPrefill } from "./onboardingPrefill";
 export { useDashboard } from "./hooks/use-dashboard";
+export { useCreateBooking } from "./hooks/use-bookings";
+export { useAddCartItem } from "./hooks/use-cart";
 export { useOfferings } from "./hooks/use-offerings";
 export { useGuideBookings } from "./hooks/use-guide-bookings";
 export { useGuideBooking } from "./hooks/use-guide-booking";
@@ -86,6 +89,7 @@ export type {
   TourCatalogSort,
   Offering,
   OfferingStatus,
+  CreateBookingInput,
   CreateOfferingInput,
   UpdateOfferingInput,
   GuideBooking,
@@ -95,6 +99,8 @@ export type {
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,
+  BookingResponse,
+  BookingPrice,
   AvailabilityRule,
   AvailabilityException,
   AvailabilityExceptionKind,
