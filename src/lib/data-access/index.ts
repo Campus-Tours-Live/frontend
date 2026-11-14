@@ -29,8 +29,23 @@ export { useDashboard } from "./hooks/use-dashboard";
 export { useCreateBooking } from "./hooks/use-bookings";
 export { useAddCartItem } from "./hooks/use-cart";
 export { useOfferings } from "./hooks/use-offerings";
+export { useGuideBookings } from "./hooks/use-guide-bookings";
+export { useGuideBooking } from "./hooks/use-guide-booking";
+export {
+  useAcceptBooking,
+  useDeclineBooking,
+  useCompleteBooking,
+  useMarkNoShowBooking,
+  useCancelGuideBooking,
+} from "./hooks/use-guide-booking-actions";
 export { useCreateOffering } from "./hooks/use-create-offering";
 export { useActivateOffering } from "./hooks/use-activate-offering";
+export {
+  useDuplicateOffering,
+  usePauseOffering,
+  useRetireOffering,
+  useUpdateOffering,
+} from "./hooks/use-offering-lifecycle";
 export {
   useAvailabilityExceptions,
   useAvailabilityRules,
@@ -76,6 +91,11 @@ export type {
   OfferingStatus,
   CreateBookingInput,
   CreateOfferingInput,
+  UpdateOfferingInput,
+  GuideBooking,
+  GuideBookingFilter,
+  GuideBookingStatusEvent,
+  DeclineBookingInput,
   Dashboard,
   GuideDashboard,
   ParticipantDashboard,

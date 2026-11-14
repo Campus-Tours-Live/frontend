@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CreateOfferingForm } from "@/components/offerings/CreateOfferingForm";
-import { ApiError } from "@/lib/data-access";
+import { ApiError, type Offering } from "@/lib/data-access";
 
 const push = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -17,6 +17,7 @@ jest.mock("next/link", () => ({
 }));
 
 const mutateAsync = jest.fn();
+const updateMutateAsync = jest.fn();
 const mockUseTourTopics = jest.fn();
 const mockUseLanguages = jest.fn();
 const mockUseTourFeatures = jest.fn();
@@ -44,6 +45,7 @@ const VERIFIED_UNIVERSITY = {
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useCreateOffering: () => ({ mutateAsync, isPending: false }),
+  useUpdateOffering: () => ({ mutateAsync: updateMutateAsync, isPending: false }),
   useTourTopics: () => mockUseTourTopics(),
   useLanguages: () => mockUseLanguages(),
   useTourFeatures: () => mockUseTourFeatures(),
@@ -64,6 +66,8 @@ beforeEach(() => {
   push.mockReset();
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue({ id: "o1" });
+  updateMutateAsync.mockReset();
+  updateMutateAsync.mockResolvedValue({ id: "o1" });
   mockUseTourTopics.mockReturnValue({
     data: [
       { value: "GENERAL_CAMPUS", label: "General campus" },
@@ -91,6 +95,70 @@ beforeEach(() => {
 });
 
 describe("CreateOfferingForm", () => {
+  const existingOffering: Offering = {
+    id: "o1",
+    title: "Existing campus walk",
+    slug: "existing-campus-walk",
+    status: "PAUSED",
+    topic: "GENERAL_CAMPUS",
+    universityId: "uni-1",
+    durationMin: 45,
+    priceCents: 5500,
+    currency: "USD",
+    description: "Existing description",
+    languages: ["es", "fil-PH"],
+    features: ["Q_AND_A"],
+  };
+
+  it("preserves the offering's saved fields and languages when editing", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm offering={existingOffering} />);
+
+    expect(screen.getByLabelText(/public title/i)).toHaveValue(existingOffering.title);
+    expect(screen.getByLabelText(/duration/i)).toHaveValue("45");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(updateMutateAsync).toHaveBeenCalledWith({
+      offeringId: "o1",
+      body: {
+        title: existingOffering.title,
+        universityId: "uni-1",
+        topic: "GENERAL_CAMPUS",
+        durationMin: 45,
+        priceCents: 5500,
+        description: "Existing description",
+        languages: ["es", "fil-PH"],
+        features: ["Q_AND_A"],
+      },
+    });
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("sends an empty feature list when the last saved feature is removed", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(<CreateOfferingForm offering={existingOffering} />);
+    await user.click(screen.getByRole("button", { name: "Q&A" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(updateMutateAsync).toHaveBeenCalledWith({
+      offeringId: "o1",
+      body: expect.objectContaining({ features: [] }),
+    });
+  });
+
+  it.each([
+    { isLoading: true, isError: false },
+    { isLoading: false, isError: true },
+  ])("preserves saved features while metadata is unavailable: %j", async (state) => {
+    const user = userEvent.setup();
+    mockUseTourFeatures.mockReturnValue({ byTopic: {}, ...state });
+    renderWithQuery(<CreateOfferingForm offering={existingOffering} />);
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(updateMutateAsync).toHaveBeenCalledWith({
+      offeringId: "o1",
+      body: expect.objectContaining({ features: ["Q_AND_A"] }),
+    });
+  });
+
   it("creates a draft using the verified university, selected language, and features", async () => {
     const user = userEvent.setup();
     renderWithQuery(<CreateOfferingForm />);

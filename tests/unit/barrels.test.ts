@@ -106,6 +106,10 @@ describe("public barrels", () => {
       "useOfferings",
       "useCreateOffering",
       "useActivateOffering",
+      "useUpdateOffering",
+      "usePauseOffering",
+      "useRetireOffering",
+      "useDuplicateOffering",
     ]);
   });
 });
