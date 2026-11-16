@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { TourCard, type TourCardProps } from "@/components/tours/TourCard";
+import { CAMPUS_FALLBACK_IMAGE } from "@/components/tours/tourCard.visuals";
 
 const base: TourCardProps = {
   id: "stanford-campus-life",
@@ -67,5 +68,29 @@ describe("TourCard", () => {
     expect(screen.getByRole("heading", { name: "Night Tour of the Quad" })).toBeInTheDocument();
     expect(screen.getByText("MIT · Grace H. · 90 min")).toBeInTheDocument();
     expect(screen.getByText("$55.00")).toBeInTheDocument();
+  });
+
+  const imgSrc = () =>
+    screen.getByRole("img", { name: "Stanford University campus" }).getAttribute("src") ?? "";
+
+  it("shows the campus photo from imageUrl with the university in the alt text", () => {
+    renderCard({ imageUrl: "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Stanford.png" });
+
+    expect(imgSrc()).toContain("Stanford.png");
+  });
+
+  it("falls back to the shared campus image when imageUrl is missing or null", () => {
+    const { unmount } = renderCard();
+    expect(imgSrc()).toContain(encodeURIComponent(CAMPUS_FALLBACK_IMAGE));
+    unmount();
+
+    renderCard({ imageUrl: null });
+    expect(imgSrc()).toContain(encodeURIComponent(CAMPUS_FALLBACK_IMAGE));
+  });
+
+  it("no longer renders the placeholder caption", () => {
+    renderCard();
+
+    expect(screen.queryByText("Imported editorial campus crop")).not.toBeInTheDocument();
   });
 });

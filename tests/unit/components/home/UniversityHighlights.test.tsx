@@ -1,21 +1,55 @@
 import { render, screen, within } from "@testing-library/react";
 import { UniversityHighlights } from "@/components/home/UniversityHighlights";
+import { CAMPUS_FALLBACK_IMAGE } from "@/components/tours/tourCard.visuals";
+
+const mockUseUniversityDetails = jest.fn();
+jest.mock("@/lib/data-access", () => ({
+  useUniversityDetails: (slugs: readonly string[]) => mockUseUniversityDetails(slugs),
+}));
+
+const detail = (over: Record<string, unknown> = {}) => ({
+  slug: "berkeley",
+  name: "University of California-Berkeley",
+  city: "Berkeley",
+  region: "CA",
+  tourCount: 60,
+  imageUrl: "https://pub-3225b84a9a0b4728b11f261ee52251ba.r2.dev/Berkeley.png",
+  ...over,
+});
+
+beforeEach(() => {
+  mockUseUniversityDetails.mockReturnValue([
+    { data: detail() },
+    { data: detail({ name: "Duke University", city: "Durham", region: "NC", tourCount: 1 }) },
+    { data: detail({ name: "University of Michigan", city: "Ann Arbor", region: "MI" }) },
+    { data: detail({ name: "Georgia Tech", city: "Atlanta", region: "GA", imageUrl: null }) },
+  ]);
+});
 
 describe("UniversityHighlights", () => {
-  it("renders a card per university with its name and location", () => {
+  it("asks Core for the four featured universities by slug", () => {
+    render(<UniversityHighlights />);
+
+    expect(mockUseUniversityDetails).toHaveBeenCalledWith([
+      "berkeley",
+      "duke",
+      "michigan",
+      "gatech",
+    ]);
+  });
+
+  it("renders a card per loaded university with its name and location", () => {
     render(<UniversityHighlights />);
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
 
-    expect(screen.getByRole("heading", { name: "North Coast University" })).toBeInTheDocument();
-    expect(screen.getByText("Coastal City, CA")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Blue Ridge Institute" })).toBeInTheDocument();
-    expect(screen.getByText("Morrison, CO")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "University of California-Berkeley" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Berkeley, CA")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Georgia Tech" })).toBeInTheDocument();
+    expect(screen.getByText("Atlanta, GA")).toBeInTheDocument();
   });
 
-  /**
-   * The banner's title is the section's h2, so these sit at h3 — skipping a level is the most
-   * common way a card grid breaks heading navigation.
-   */
   it("renders university names as h3, below the section heading", () => {
     render(<UniversityHighlights />);
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(4);
@@ -32,34 +66,61 @@ describe("UniversityHighlights", () => {
    */
   it("pluralises the tour count, singular included", () => {
     render(<UniversityHighlights />);
-    expect(screen.getByText("32 tours")).toBeInTheDocument();
 
-    // The default sample has no single-tour campus, which is exactly why "1 tours" survives to
-    // production elsewhere. Feed one in rather than trusting the ternary by eye.
+    expect(screen.getAllByText("60 tours").length).toBeGreaterThan(0);
+    expect(screen.getByText("1 tour")).toBeInTheDocument();
+    expect(screen.queryByText("1 tours")).not.toBeInTheDocument();
+  });
+
+  it("shows each campus photo, using the shared image when a university has none", () => {
+    render(<UniversityHighlights />);
+
+    expect(
+      screen.getByRole("img", { name: "University of California-Berkeley campus" }),
+    ).toHaveAttribute("src", expect.stringContaining("Berkeley.png"));
+    expect(screen.getByRole("img", { name: "Georgia Tech campus" })).toHaveAttribute(
+      "src",
+      expect.stringContaining(encodeURIComponent(CAMPUS_FALLBACK_IMAGE)),
+    );
+  });
+
+  it("leaves out a university that has not loaded or failed, keeping the rest", () => {
+    mockUseUniversityDetails.mockReturnValue([
+      { data: detail() },
+      { data: undefined, isError: true },
+      { data: undefined, isLoading: true },
+    ]);
+    render(<UniversityHighlights />);
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+  });
+
+  it("shows just the name when Core has no location for a school", () => {
+    mockUseUniversityDetails.mockReturnValue([
+      { data: detail({ name: "No Place College", city: null, region: null }) },
+    ]);
+    render(<UniversityHighlights />);
+
+    const card = screen.getByRole("heading", { name: "No Place College" }).closest("li")!;
+    expect(within(card).queryByText(",")).not.toBeInTheDocument();
+  });
+
+  it("renders nothing while nothing has loaded", () => {
+    mockUseUniversityDetails.mockReturnValue([{ data: undefined }, { data: undefined }]);
+    const { container } = render(<UniversityHighlights />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("uses the universities prop instead of Core when given", () => {
     render(
       <UniversityHighlights
         universities={[{ name: "Lone Pine College", location: "Bend, OR", tourCount: 1 }]}
       />,
     );
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.getByText("1 tour")).toBeInTheDocument();
-    expect(screen.queryByText("1 tours")).not.toBeInTheDocument();
-  });
-
-  /**
-   * A list item carries no accessible name of its own, so the card is reached through its heading
-   * rather than by role+name — which is also how a reader actually finds it.
-   */
-  it("keeps each card's action and count inside that card", () => {
-    render(<UniversityHighlights />);
-    const card = screen
-      .getByRole("heading", { name: "Harborview University" })
-      .closest("li") as HTMLElement;
-
-    expect(within(card).getByRole("button", { name: "Explore" })).toBeInTheDocument();
-    expect(within(card).getByText("5 tours")).toBeInTheDocument();
-    expect(within(card).getByText("Seattle, WA")).toBeInTheDocument();
-    // and not a neighbour's
-    expect(within(card).queryByText("32 tours")).not.toBeInTheDocument();
   });
 
   it("forwards a className onto the grid", () => {
