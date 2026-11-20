@@ -9,6 +9,7 @@ import {
 import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { BookedTours } from "./BookedTours";
+import { PendingActionsCard } from "./PendingActionsCard";
 
 /**
  * Participant dashboard slice — presentational. The /v1/dashboard aggregate already
@@ -18,6 +19,11 @@ import { BookedTours } from "./BookedTours";
 export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
   const { me } = useMe();
   const p = data.participant;
+  // undefined (field absent) and null (BFF getPendingActions failed) both become null so
+  // PendingActionsCard renders an unavailable state instead of misleading zeros.
+  const pendingActions = data.pendingActions ?? null;
+  const waitingBooking =
+    data.upcomingBookings?.find((b) => b.status === "WAITING_FOR_GUIDE") ?? null;
   // A parent/guardian participant reads as a Guardian card (purple accent).
   const guardian = p.type === "PARENT";
   const role: MemberRole = guardian ? "GUARDIAN" : "PARTICIPANT";
@@ -61,15 +67,20 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
         lead="Your participant profile is saved."
       />
 
-      <MemberCard
-        name={me?.user.displayName ?? "Member"}
-        role={role}
-        verification={me?.user.email ? "Email Verified" : undefined}
-        items={items}
-        highlight={highlight}
-      />
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_auto]">
+        <MemberCard
+          name={me?.user.displayName ?? "Member"}
+          role={role}
+          verification={me?.user.email ? "Email Verified" : undefined}
+          items={items}
+          highlight={highlight}
+        />
+        <div className="lg:w-80">
+          <PendingActionsCard actions={pendingActions} waitingBooking={waitingBooking} />
+        </div>
+      </div>
 
-      <BookedTours bookings={data.upcomingBookings} />
+      <BookedTours bookings={data.upcomingBookings ?? []} />
     </div>
   );
 }
