@@ -14,6 +14,7 @@ export const queryKeys = {
   languages: () => ["languages"] as const,
   tourCatalog: (filters: TourCatalogFilters) => ["tour-catalog", filters] as const,
   tourDetail: (id: string) => ["tour-detail", id] as const,
+  universityDetail: (slug: string) => ["university-detail", slug] as const,
   universitySearch: (q: string) => ["university-search", q] as const,
   majors: (schoolId: string) => ["majors", schoolId] as const,
   degrees: (schoolId: string) => ["degrees", schoolId] as const,

@@ -1,44 +1,68 @@
 "use client";
 
+import Image from "next/image";
 import { Body, Button, Caption, Card, CardMedia, Heading } from "@/components/ui";
+import { CAMPUS_FALLBACK_IMAGE } from "@/components/tours/tourCard.visuals";
+import { useUniversityDetails, type UniversityDetail } from "@/lib/data-access";
 import { cn } from "@/lib/utils";
 
 /**
  * UniversityHighlights — a row of university cards under the quick links: campus image, name,
  * location, how many tours are on offer, and a way in.
  *
- * Presentational only, with hardcoded content, matching how `FeaturedTours` seeds the home page
- * today. The media is a labelled placeholder rather than an image: there is no per-university
- * asset in the bucket yet, and inventing one by reusing the banner illustration four times would
- * read as a bug. It holds the card's 16:9 slot so the layout is already correct when real crops
- * arrive — same approach `TourCard` takes.
+ * Which campuses to feature is a fixed choice (the slugs below); everything shown for each one —
+ * name, location, tour count and campus photo — comes from Core's university detail read
+ * (GET /v1/universities/{slug}), so none of it is a made-up sample. A school that has not loaded
+ * (or whose request fails) is simply left out of the row rather than shown with invented figures.
+ * The photo holds the card's 16:9 slot and falls back to the shared campus image if a school has
+ * none.
  */
 export interface UniversityHighlight {
   name: string;
   location: string;
   tourCount: number;
+  /** Campus photo URL; falls back to the shared campus image when absent. */
+  imageUrl?: string | null;
 }
 
-const UNIVERSITIES: UniversityHighlight[] = [
-  { name: "North Coast University", location: "Coastal City, CA", tourCount: 32 },
-  { name: "Redwood State College", location: "Chico, CA", tourCount: 8 },
-  { name: "Harborview University", location: "Seattle, WA", tourCount: 5 },
-  { name: "Blue Ridge Institute", location: "Morrison, CO", tourCount: 3 },
-];
+/** The platform universities featured on the home page, by their Core slug. */
+const FEATURED_SLUGS = ["berkeley", "duke", "michigan", "gatech"] as const;
+
+/** City + state, tolerating a school Core has no location for. */
+function locationOf(u: UniversityDetail): string {
+  return [u.city, u.region].filter(Boolean).join(", ");
+}
 
 export interface UniversityHighlightsProps {
   className?: string;
   /**
-   * The campuses to show. Defaults to the hardcoded sample above; taking them as a prop is what
-   * lets the singular tour-count case be exercised, and is the seam real data will arrive through.
+   * The campuses to show. Defaults to the featured slugs above, loaded from Core; passing them in
+   * is what lets the singular tour-count case be exercised.
    */
   universities?: UniversityHighlight[];
 }
 
 export function UniversityHighlights({
   className,
-  universities = UNIVERSITIES,
+  universities: universitiesProp,
 }: UniversityHighlightsProps) {
+  const details = useUniversityDetails(FEATURED_SLUGS);
+  const loaded: UniversityHighlight[] = details.flatMap(({ data }) =>
+    data
+      ? [
+          {
+            name: data.name,
+            location: locationOf(data),
+            tourCount: data.tourCount,
+            imageUrl: data.imageUrl,
+          },
+        ]
+      : [],
+  );
+  const universities = universitiesProp ?? loaded;
+
+  if (universities.length === 0) return null;
+
   return (
     <ul
       className={cn(
@@ -48,7 +72,7 @@ export function UniversityHighlights({
         className,
       )}
     >
-      {universities.map(({ name, location, tourCount }) => (
+      {universities.map(({ name, location, tourCount, imageUrl }) => (
         <Card
           as="li"
           key={name}
@@ -58,14 +82,15 @@ export function UniversityHighlights({
           className="flex h-full flex-col overflow-hidden"
         >
           <CardMedia>
-            <Caption
-              as="div"
-              weight={500}
-              color="muted"
-              className="flex aspect-[16/9] items-center justify-center bg-canvas"
-            >
-              Campus photo
-            </Caption>
+            <div className="relative aspect-[16/9] bg-canvas">
+              <Image
+                src={imageUrl ?? CAMPUS_FALLBACK_IMAGE}
+                alt={`${name} campus`}
+                fill
+                sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 25vw"
+                className="object-cover"
+              />
+            </div>
           </CardMedia>
 
           <div className="flex flex-1 flex-col p-4">

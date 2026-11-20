@@ -1,6 +1,22 @@
 import { render, screen } from "@testing-library/react";
 import { ExploreUniversities } from "@/components/home/ExploreUniversities";
 
+// UniversityHighlights loads its campuses from Core; give it one loaded university.
+jest.mock("@/lib/data-access", () => ({
+  useUniversityDetails: () => [
+    {
+      data: {
+        slug: "duke",
+        name: "Duke University",
+        city: "Durham",
+        region: "NC",
+        tourCount: 60,
+        imageUrl: null,
+      },
+    },
+  ],
+}));
+
 describe("ExploreUniversities", () => {
   it("renders the eyebrow, headline and lead copy", () => {
     render(<ExploreUniversities />);
@@ -31,9 +47,15 @@ describe("ExploreUniversities", () => {
     expect(screen.getByRole("link", { name: "Browse all universities" })).toBeInTheDocument();
   });
 
-  /** Decorative illustration — empty alt, so it must not surface as an img to assistive tech. */
+  /**
+   * The banner illustration is decorative (empty alt), so it must not surface as an img to
+   * assistive tech; the only images exposed are the university cards' campus photos, each named.
+   */
   it("renders the illustration as decorative", () => {
-    render(<ExploreUniversities />);
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    const { container } = render(<ExploreUniversities />);
+    expect(container.querySelector('img[alt=""]')).toBeInTheDocument();
+    for (const img of screen.getAllByRole("img")) {
+      expect(img).toHaveAccessibleName(/ campus$/);
+    }
   });
 });
