@@ -9,6 +9,7 @@ import {
 import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { BookedTours } from "./BookedTours";
+import { ParticipantHistory } from "./ParticipantHistory";
 
 /**
  * Participant dashboard slice — presentational. The /v1/dashboard aggregate already
@@ -70,6 +71,10 @@ export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
       />
 
       <BookedTours bookings={data.upcomingBookings} />
+
+      <div className="mt-10">
+        <ParticipantHistory />
+      </div>
     </div>
   );
 }
