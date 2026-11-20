@@ -21,6 +21,9 @@ jest.mock("@/lib/data-access", () => ({
     mutateAsync: jest.fn(),
     isPending: false,
   })),
+  usePauseOffering: jest.fn(() => ({ mutateAsync: jest.fn(), isPending: false })),
+  useRetireOffering: jest.fn(() => ({ mutateAsync: jest.fn(), isPending: false })),
+  useDuplicateOffering: jest.fn(() => ({ mutateAsync: jest.fn(), isPending: false })),
 }));
 
 const mockUseGuideProfile = useGuideProfile as jest.Mock;

@@ -28,6 +28,8 @@ import {
   useLanguages,
   useTourFeatures,
   useTourTopics,
+  useUpdateOffering,
+  type Offering,
 } from "@/lib/data-access";
 
 const DURATIONS = [30, 45, 60, 90] as const;
@@ -45,12 +47,14 @@ interface FormValues {
   features: string[];
 }
 
-export function CreateOfferingForm() {
+export function CreateOfferingForm({ offering }: { offering?: Offering }) {
   const router = useRouter();
   const createOffering = useCreateOffering();
+  const updateOffering = useUpdateOffering();
+  const isEditing = Boolean(offering);
   const { data: topicOptions = [], isLoading: topicsLoading } = useTourTopics();
   const { data: languageOptions = [], isLoading: languagesLoading } = useLanguages();
-  const { byTopic, isLoading: featuresLoading } = useTourFeatures();
+  const { byTopic, isLoading: featuresLoading, isError: featuresError } = useTourFeatures();
   const { data: guideProfile, isLoading: profileLoading } = useGuideProfile();
   const universities = guideProfile?.universities ?? [];
   const firstVerifiedId =
@@ -62,19 +66,20 @@ export function CreateOfferingForm() {
     control,
     handleSubmit,
     setValue,
+    reset,
     getValues,
     formState: { errors, isSubmitting },
     setError,
   } = useForm<FormValues>({
     defaultValues: {
-      title: "",
-      universityId: "",
-      topic: "",
-      durationMin: "60",
-      price: "42",
-      description: "",
-      languages: ["en-US"],
-      features: [],
+      title: offering?.title ?? "",
+      universityId: offering?.universityId ?? "",
+      topic: offering?.topic ?? "",
+      durationMin: String(offering?.durationMin ?? 60),
+      price: String((offering?.priceCents ?? 4200) / 100),
+      description: offering?.description ?? "",
+      languages: offering?.languages ?? ["en-US"],
+      features: offering?.features ?? [],
     },
   });
 
@@ -84,18 +89,35 @@ export function CreateOfferingForm() {
 
   // Keep the guide on a verified university without overwriting a deliberate valid choice.
   useEffect(() => {
-    if (firstVerifiedId) setValue("universityId", firstVerifiedId);
-  }, [firstVerifiedId, setValue]);
+    if (firstVerifiedId && !selectedUniversityId) {
+      setValue("universityId", firstVerifiedId);
+    }
+  }, [firstVerifiedId, selectedUniversityId, setValue]);
+
+  useEffect(() => {
+    if (!offering) return;
+    reset({
+      title: offering.title,
+      universityId: offering.universityId ?? "",
+      topic: offering.topic ?? "",
+      durationMin: String(offering.durationMin),
+      price: String(offering.priceCents / 100),
+      description: offering.description ?? "",
+      languages: offering.languages ?? ["en-US"],
+      features: offering.features ?? [],
+    });
+  }, [offering, reset]);
 
   // Drop feature selections that do not belong to the currently selected topic.
   useEffect(() => {
+    if (featuresLoading || featuresError) return;
     const allowed = new Set((topic ? (byTopic[topic] ?? []) : []).map((option) => option.value));
     const current = getValues("features");
     const next = topic ? current.filter((code) => allowed.has(code)) : [];
     if (next.length === current.length && next.every((code, index) => code === current[index]))
       return;
     setValue("features", next);
-  }, [topic, byTopic, setValue, getValues]);
+  }, [topic, byTopic, featuresLoading, featuresError, setValue, getValues]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!values.universityId) return;
@@ -107,7 +129,7 @@ export function CreateOfferingForm() {
     }
 
     try {
-      await createOffering.mutateAsync({
+      const body = {
         title: values.title.trim(),
         universityId: values.universityId,
         topic: values.topic,
@@ -115,8 +137,13 @@ export function CreateOfferingForm() {
         priceCents: Math.round(dollars * 100),
         description: values.description.trim() || undefined,
         languages: values.languages,
-        features: values.features.length ? values.features : undefined,
-      });
+        features: isEditing || values.features.length ? values.features : undefined,
+      };
+      if (offering) {
+        await updateOffering.mutateAsync({ offeringId: offering.id, body });
+      } else {
+        await createOffering.mutateAsync(body);
+      }
       router.push("/guide/tour-offerings");
     } catch (err) {
       setError("root", {
@@ -133,8 +160,12 @@ export function CreateOfferingForm() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <SectionHeading
           eyebrow="Guide / Tour offerings"
-          title="Create tour offering"
-          lead="Save a draft now and publish when you're ready."
+          title={isEditing ? "Edit tour offering" : "Create tour offering"}
+          lead={
+            isEditing
+              ? "Update this paused or draft offering, then publish it when you're ready."
+              : "Save a draft now and publish when you're ready."
+          }
           level={1}
         />
         <Link href="/guide/tour-offerings" variant="ghost" size="small">
@@ -349,22 +380,33 @@ export function CreateOfferingForm() {
         />
       </Card>
 
-      <Nudge variant="info" leading={<Icon name="info" />} title="Saving creates a draft">
-        Publishing requires a verified guide account and makes the offering visible on the public
-        marketplace.
+      <Nudge
+        variant="info"
+        leading={<Icon name="info" />}
+        title={isEditing ? "Edit safely" : "Saving creates a draft"}
+      >
+        {isEditing
+          ? "Paused and draft offerings can be edited. Publish when the details are ready for participants."
+          : "Publishing requires a verified guide account and makes the offering visible on the public marketplace."}
       </Nudge>
 
       <Button
         type="submit"
         variant="primary"
         disabled={
-          isSubmitting || createOffering.isPending || profileLoading || !selectedUniversityId
+          isSubmitting ||
+          createOffering.isPending ||
+          updateOffering.isPending ||
+          profileLoading ||
+          !selectedUniversityId
         }
       >
-        {isSubmitting || createOffering.isPending ? (
+        {isSubmitting || createOffering.isPending || updateOffering.isPending ? (
           <>
             <Spinner /> Saving draft…
           </>
+        ) : isEditing ? (
+          "Save changes"
         ) : (
           "Save draft"
         )}

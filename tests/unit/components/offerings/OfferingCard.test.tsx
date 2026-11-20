@@ -1,15 +1,28 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { OfferingCard } from "@/components/offerings/OfferingCard";
-import { ApiError, useActivateOffering, type Offering } from "@/lib/data-access";
+import {
+  ApiError,
+  useActivateOffering,
+  useDuplicateOffering,
+  usePauseOffering,
+  useRetireOffering,
+  type Offering,
+} from "@/lib/data-access";
 import { AuthCancelledError, SIGN_IN_AGAIN_MESSAGE } from "@/lib/auth";
 
 jest.mock("@/lib/data-access", () => ({
   ...jest.requireActual("@/lib/data-access"),
   useActivateOffering: jest.fn(),
+  usePauseOffering: jest.fn(),
+  useRetireOffering: jest.fn(),
+  useDuplicateOffering: jest.fn(),
 }));
 
 const mockUseActivateOffering = useActivateOffering as jest.Mock;
+const mockUsePauseOffering = usePauseOffering as jest.Mock;
+const mockUseRetireOffering = useRetireOffering as jest.Mock;
+const mockUseDuplicateOffering = useDuplicateOffering as jest.Mock;
 
 const draftOffering: Offering = {
   id: "o1",
@@ -32,9 +45,16 @@ function setActivate(overrides: Partial<ReturnType<typeof useActivateOffering>> 
   });
 }
 
+function setLifecycleHooks() {
+  for (const hook of [mockUsePauseOffering, mockUseRetireOffering, mockUseDuplicateOffering]) {
+    hook.mockReturnValue({ mutateAsync: jest.fn().mockResolvedValue({}), isPending: false });
+  }
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   setActivate();
+  setLifecycleHooks();
 });
 
 describe("OfferingCard", () => {
@@ -136,5 +156,42 @@ describe("OfferingCard", () => {
     expect(screen.getByText("Visible publicly")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Publish" })).not.toBeInTheDocument();
     expect(screen.getByText("GENERAL_CAMPUS")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View public listing" })).toHaveAttribute(
+      "href",
+      "/tours/o1",
+    );
+    expect(screen.getByRole("button", { name: "Pause" })).toBeEnabled();
+  });
+
+  it("allows a paused offering to be published again", async () => {
+    const user = userEvent.setup();
+    const mutateAsync = jest.fn().mockResolvedValue({});
+    setActivate({ mutateAsync });
+
+    render(<OfferingCard offering={{ ...draftOffering, status: "PAUSED" }} canPublish />);
+
+    expect(screen.getByText("Paused")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Publish" }));
+    expect(mutateAsync).toHaveBeenCalledWith("o1");
+  });
+
+  it("can pause, retire, and duplicate an active offering", async () => {
+    const user = userEvent.setup();
+    const pause = jest.fn().mockResolvedValue({});
+    const retire = jest.fn().mockResolvedValue({});
+    const duplicate = jest.fn().mockResolvedValue({});
+    mockUsePauseOffering.mockReturnValue({ mutateAsync: pause, isPending: false });
+    mockUseRetireOffering.mockReturnValue({ mutateAsync: retire, isPending: false });
+    mockUseDuplicateOffering.mockReturnValue({ mutateAsync: duplicate, isPending: false });
+
+    render(<OfferingCard offering={{ ...draftOffering, status: "ACTIVE" }} canPublish />);
+
+    await user.click(screen.getByRole("button", { name: "Pause" }));
+    await user.click(screen.getByRole("button", { name: "Retire" }));
+    await user.click(screen.getByRole("button", { name: "Duplicate" }));
+
+    expect(pause).toHaveBeenCalledWith("o1");
+    expect(retire).toHaveBeenCalledWith("o1");
+    expect(duplicate).toHaveBeenCalledWith("o1");
   });
 });

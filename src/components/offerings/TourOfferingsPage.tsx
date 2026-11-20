@@ -20,6 +20,7 @@ const FILTERS: { id: OfferingFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "draft", label: "Draft" },
   { id: "published", label: "Published" },
+  { id: "paused", label: "Paused" },
   { id: "retired", label: "Retired" },
 ];
 
