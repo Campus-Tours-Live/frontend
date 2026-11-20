@@ -82,6 +82,17 @@ describe("TourHistoryPage", () => {
     expect(screen.getByRole("button", { name: "Leave Review" })).toBeInTheDocument();
   });
 
+  it("renders a neutral badge for non-COMPLETED bookings", () => {
+    const cancelledBooking: BookingResponse = { ...completedBooking, status: "CANCELLED" };
+    mockUseBookingHistory.mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: [cancelledBooking],
+    });
+    render(<TourHistoryPage />);
+    expect(screen.getByText("CANCELLED")).toBeInTheDocument();
+  });
+
   it("renders the page heading and subtitle", () => {
     mockUseBookingHistory.mockReturnValue({ isLoading: false, isError: false, data: [] });
     render(<TourHistoryPage />);

@@ -1,4 +1,9 @@
-import { formatMonthYear, formatOfferingPrice } from "@/lib/format";
+import {
+  formatMonthYear,
+  formatOfferingPrice,
+  formatBookingDate,
+  formatShortDate,
+} from "@/lib/format";
 
 describe("formatMonthYear", () => {
   it("renders an ISO timestamp as a spelled-out month + year (en-US)", () => {
@@ -15,6 +20,34 @@ describe("formatMonthYear", () => {
 
   it("returns an em-dash for an unparseable value", () => {
     expect(formatMonthYear("not-a-date")).toBe("—");
+  });
+});
+
+describe("formatBookingDate", () => {
+  it("renders a UTC ISO timestamp as 'Month Day at H:MM AM/PM' in local time", () => {
+    // Use midday UTC so local-tz shifts don't cross a date boundary.
+    const result = formatBookingDate("2026-06-27T18:00:00Z");
+    expect(result).toMatch(/June 27 at/);
+  });
+
+  it("returns an em-dash for an unparseable value", () => {
+    expect(formatBookingDate("not-a-date")).toBe("—");
+  });
+});
+
+describe("formatShortDate", () => {
+  it("renders an ISO timestamp as 'Month Day'", () => {
+    expect(formatShortDate("2026-07-10T15:00:00Z")).toMatch(/July 10/);
+  });
+
+  it("returns an em-dash for null / undefined / empty input", () => {
+    expect(formatShortDate(null)).toBe("—");
+    expect(formatShortDate(undefined)).toBe("—");
+    expect(formatShortDate("")).toBe("—");
+  });
+
+  it("returns an em-dash for an unparseable value", () => {
+    expect(formatShortDate("not-a-date")).toBe("—");
   });
 });
 
