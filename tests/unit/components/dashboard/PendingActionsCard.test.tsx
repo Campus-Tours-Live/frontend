@@ -72,4 +72,24 @@ describe("PendingActionsCard", () => {
     expect(screen.getByText("Guide response pending")).toBeInTheDocument();
     expect(screen.queryByText(/has until/)).not.toBeInTheDocument();
   });
+
+  it("renders the actual guide name in the deadline line, not a hardcoded name", () => {
+    const bookingOtherGuide: BookingResponse = { ...waitingBooking, guideName: "Alex Rivera" };
+    render(<PendingActionsCard actions={emptyActions} waitingBooking={bookingOtherGuide} />);
+    expect(screen.getByText(/Alex Rivera has until/)).toBeInTheDocument();
+    expect(screen.queryByText(/Maya/)).not.toBeInTheDocument();
+  });
+
+  it("shows counts unavailable when actions is null", () => {
+    render(<PendingActionsCard actions={null} />);
+    expect(screen.getByText("Counts unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("You're all caught up!")).not.toBeInTheDocument();
+  });
+
+  it("hides counters when actions is null", () => {
+    render(<PendingActionsCard actions={null} />);
+    expect(screen.queryByText("Payments to finish")).not.toBeInTheDocument();
+    expect(screen.queryByText("Waiting for guide")).not.toBeInTheDocument();
+    expect(screen.queryByText("Reviews to write")).not.toBeInTheDocument();
+  });
 });

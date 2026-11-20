@@ -119,6 +119,12 @@ describe("ParticipantSummary", () => {
     expect(screen.getByText("March 2025")).toBeInTheDocument();
   });
 
+  it("shows counts unavailable and not all-caught-up when pendingActions is null", () => {
+    render(<ParticipantSummary data={{ ...makeData(), pendingActions: null }} />);
+    expect(screen.getByText("Counts unavailable")).toBeInTheDocument();
+    expect(screen.queryByText("You're all caught up!")).not.toBeInTheDocument();
+  });
+
   it("surfaces a WAITING_FOR_GUIDE booking as a guide response nudge", () => {
     const booking: BookingResponse = {
       id: "bk_1",

@@ -6,7 +6,7 @@ import {
   type MemberCardItem,
   type MemberRole,
 } from "@/components/ui";
-import { useMe, type ParticipantDashboard, type PendingActions } from "@/lib/data-access";
+import { useMe, type ParticipantDashboard } from "@/lib/data-access";
 import { formatMonthYear } from "@/lib/format";
 import { BookedTours } from "./BookedTours";
 import { PendingActionsCard } from "./PendingActionsCard";
@@ -16,17 +16,12 @@ import { PendingActionsCard } from "./PendingActionsCard";
  * composed everything (DashboardPage fetches once and branches on `kind`), so this
  * only renders its slice; no data fetching here. Sibling of GuideSummary.
  */
-const EMPTY_ACTIONS: PendingActions = {
-  paymentsToFinish: 0,
-  waitingForGuide: 0,
-  reviewsToWrite: 0,
-};
-
 export function ParticipantSummary({ data }: { data: ParticipantDashboard }) {
   const { me } = useMe();
   const p = data.participant;
-  const pendingActions =
-    (data.pendingActions as PendingActions | null | undefined) ?? EMPTY_ACTIONS;
+  // undefined (field absent) and null (BFF getPendingActions failed) both become null so
+  // PendingActionsCard renders an unavailable state instead of misleading zeros.
+  const pendingActions = data.pendingActions ?? null;
   const waitingBooking =
     data.upcomingBookings?.find((b) => b.status === "WAITING_FOR_GUIDE") ?? null;
   // A parent/guardian participant reads as a Guardian card (purple accent).
